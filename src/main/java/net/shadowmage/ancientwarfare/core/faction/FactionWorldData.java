@@ -63,6 +63,10 @@ public final class FactionWorldData extends SavedData {
       this.setDirty();
    }
 
+   public Map<Long, String> provinceOwners() {
+      return Collections.unmodifiableMap(this.provinceOwners);
+   }
+
    /** Provinces decided so far that faction holds. */
    public List<Long> provincesOf(String faction) {
       List<Long> provinces = new ArrayList<>();
@@ -158,6 +162,7 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Garrison", settlement.garrison);
          entry.putInt("Tier", settlement.tier);
          entry.putBoolean("Manned", settlement.manned);
+         entry.putString("CapturedFrom", settlement.capturedFrom);
          list.add(entry);
       }
 
@@ -217,6 +222,7 @@ public final class FactionWorldData extends SavedData {
          settlement.garrison = entry.getInt("Garrison");
          settlement.tier = entry.getInt("Tier");
          settlement.manned = entry.getBoolean("Manned");
+         settlement.capturedFrom = entry.getString("CapturedFrom");
          data.settlements.add(settlement);
       }
 
@@ -264,7 +270,7 @@ public final class FactionWorldData extends SavedData {
     */
    public static final class Settlement {
       private final int id;
-      private final String faction;
+      private String faction;
       private final String kind;
       private final String template;
       private final BlockPos min;
@@ -276,6 +282,8 @@ public final class FactionWorldData extends SavedData {
       int tier;
       /** Set once the template's own spawners have fired, so respawns do not double them. */
       boolean manned;
+      /** The faction this settlement was taken from; its NPCs found here when the land loads are gone. */
+      String capturedFrom = "";
       /** Game time of the last garrison respawn; not saved. */
       long lastRespawn;
 
@@ -296,6 +304,10 @@ public final class FactionWorldData extends SavedData {
 
       public String faction() {
          return this.faction;
+      }
+
+      void setFaction(String faction) {
+         this.faction = faction;
       }
 
       public String kind() {

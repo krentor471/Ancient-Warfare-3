@@ -311,7 +311,7 @@ public final class ForgeFactionCommands {
       return totals.size();
    }
 
-   /** Registers a 33x33 settlement around the command position; for testing garrisons. */
+   /** Registers a 33x33 settlement around the command position and claims its province; for testing. */
    private static int found(CommandSourceStack source, String faction, int garrison) {
       if (!FactionRegistry.isKnown(faction)) {
          source.sendFailure(Component.literal("Unknown faction " + faction));
@@ -331,6 +331,7 @@ public final class ForgeFactionCommands {
             garrison,
             FactionSimulation.startingPopulation(garrison, 2)
          );
+      FactionWorldData.get(source.getLevel()).setProvinceOwner(settlement.province(), faction);
       tell(source, Component.literal("Founded settlement #" + settlement.id() + " of " + faction + " with garrison " + garrison));
       return settlement.id();
    }

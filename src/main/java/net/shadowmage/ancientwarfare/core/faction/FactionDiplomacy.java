@@ -51,7 +51,8 @@ public final class FactionDiplomacy {
          return false;
       }
 
-      FactionWorldData.get(level).setRelation(faction, other, new Relation(current.opinion(), state, level.getGameTime()));
+      FactionWorldData data = FactionWorldData.get(level);
+      data.setRelation(faction, other, new Relation(current.opinion(), state, data.lastSimulatedDay()));
       return true;
    }
 
@@ -84,6 +85,7 @@ public final class FactionDiplomacy {
       return new Relation(rivals ? RIVAL_OPINION : FRIENDLY_OPINION, RelationState.NEUTRAL, 0L);
    }
 
+   /** since: the faction day the state began. */
    public static record Relation(int opinion, RelationState state, long since) {
    }
 }

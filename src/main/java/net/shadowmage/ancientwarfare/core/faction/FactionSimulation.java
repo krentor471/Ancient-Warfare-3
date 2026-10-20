@@ -98,6 +98,7 @@ public final class FactionSimulation {
       }
 
       FactionExpansion.simulateDay(level, data, data.lastSimulatedDay());
+      FactionAI.simulateDay(level, data, data.lastSimulatedDay());
       data.setDirty();
       AncientWarfareCore.LOG.debug("Simulated faction day {}: recruits {}", data.lastSimulatedDay(), recruited);
    }
@@ -115,6 +116,28 @@ public final class FactionSimulation {
 
          data.setDirty();
       }
+   }
+
+   /**
+    * A faction NPC entered the world: if it belongs to the faction its settlement was taken from,
+    * it fell in that battle (soldiers) or now serves the new owner (civilians). Returns false when
+    * the NPC should not be added.
+    */
+   public static boolean onNpcJoin(ServerLevel level, FactionNpcEntity npc) {
+      FactionWorldData data = FactionWorldData.get(level);
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.capturedFrom.equals(npc.getFactionName()) && settlement.contains(npc.getX(), npc.getZ(), GARRISON_MARGIN)) {
+            if (isCivilian(npc)) {
+               npc.setFactionName(settlement.faction());
+               return true;
+            }
+
+            return false;
+         }
+      }
+
+      return true;
    }
 
    public static FactionWorldData.Settlement settlementAt(FactionWorldData data, String faction, double x, double z, int margin) {

@@ -7,6 +7,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.LootParams.Builder;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.event.TickEvent.ServerTickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -38,6 +40,16 @@ public final class ForgeFactionEvents {
    public static void onServerTick(ServerTickEvent event) {
       if (event.phase == Phase.END) {
          FactionSimulation.tick(event.getServer().overworld());
+      }
+   }
+
+   @SubscribeEvent
+   public static void onFactionNpcJoin(EntityJoinLevelEvent event) {
+      if (event.getEntity() instanceof FactionNpcEntity npc
+         && event.getLevel() instanceof ServerLevel serverLevel
+         && serverLevel.dimension() == Level.OVERWORLD
+         && !FactionSimulation.onNpcJoin(serverLevel, npc)) {
+         event.setCanceled(true);
       }
    }
 

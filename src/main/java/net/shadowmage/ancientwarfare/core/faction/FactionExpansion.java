@@ -67,6 +67,10 @@ public final class FactionExpansion {
             iterator.remove();
             data.setDirty();
             boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction());
+            if (built) {
+               FactionNews.founded(level, plan.faction(), plan.x(), plan.z());
+            }
+
             AncientWarfareCore.LOG.info("Faction {} {} its planned village at {}, {}", plan.faction(), built ? "built" : "could not build", plan.x(), plan.z());
             return;
          }
