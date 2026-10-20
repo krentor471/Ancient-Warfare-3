@@ -17,11 +17,11 @@ public class WorksiteUpgradeSlot extends Slot {
       this.quarry = quarry;
    }
 
-   public boolean m_5857_(ItemStack stack) {
-      return WorksiteUpgradeHelper.mayPlace(this.f_40218_, this.m_150661_(), stack, this.upgradeSlotStart, this.upgradeSlotCount, this.quarry);
+   public boolean mayPlace(ItemStack stack) {
+      return WorksiteUpgradeHelper.mayPlace(this.container, this.getContainerSlot(), stack, this.upgradeSlotStart, this.upgradeSlotCount, this.quarry);
    }
 
-   public int m_6641_() {
+   public int getMaxStackSize() {
       return 1;
    }
 }

@@ -283,8 +283,8 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    private int repeatCastsRemaining;
    private int repeatCastDelay;
    private int forcedMeleeFallbackTicks;
-   private ItemStack cachedMainHand = ItemStack.f_41583_;
-   private ItemStack cachedOffHand = ItemStack.f_41583_;
+   private ItemStack cachedMainHand = ItemStack.EMPTY;
+   private ItemStack cachedOffHand = ItemStack.EMPTY;
    private final Set<IronsCombatNpcEntity.AppliedMagicModifier> appliedHandMagicModifiers = new HashSet<>();
 
    public IronsCombatNpcEntity(EntityType<? extends CombatNpcEntity> entityType, Level level) {
@@ -293,9 +293,9 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    @Override
-   protected void m_8099_() {
-      super.m_8099_();
-      this.f_21345_.m_25352_(2, new IronsCombatNpcEntity.SpellbookCastingGoal());
+   protected void registerGoals() {
+      super.registerGoals();
+      this.goalSelector.addGoal(2, new IronsCombatNpcEntity.SpellbookCastingGoal());
    }
 
    @Override
@@ -306,8 +306,8 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    private void rebuildSpellPool() {
       this.spellPool.clear();
       Map<String, IronsCombatNpcEntity.SpellChoice> spellsById = new HashMap<>();
-      this.collectSpells(this.m_21205_(), SpellSelectionManager.MAINHAND, spellsById);
-      this.collectSpells(this.m_21206_(), SpellSelectionManager.OFFHAND, spellsById);
+      this.collectSpells(this.getMainHandItem(), SpellSelectionManager.MAINHAND, spellsById);
+      this.collectSpells(this.getOffhandItem(), SpellSelectionManager.OFFHAND, spellsById);
       this.spellPool.addAll(spellsById.values());
       if (this.spellPool.isEmpty() && this.isCasting()) {
          this.cancelCast();
@@ -315,7 +315,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    private void collectSpells(ItemStack stack, String equipmentSlot, Map<String, IronsCombatNpcEntity.SpellChoice> spellsById) {
-      if (!stack.m_41619_() && ISpellContainer.isSpellContainer(stack)) {
+      if (!stack.isEmpty() && ISpellContainer.isSpellContainer(stack)) {
          ISpellContainer container = ISpellContainer.get(stack);
          if (container != null) {
             for (SpellSlot slot : container.getActiveSpells()) {
@@ -332,8 +332,8 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
       }
    }
 
-   protected void m_8024_() {
-      super.m_8024_();
+   protected void customServerAiStep() {
+      super.customServerAiStep();
       this.npcCooldowns.replaceAll((id, ticks) -> Math.max(0, ticks - 1));
       this.npcCooldowns.values().removeIf(ticks -> ticks <= 0);
       if (this.globalCastDelay > 0) {
@@ -350,21 +350,21 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    @Override
-   public void m_8107_() {
-      super.m_8107_();
-      if (this.m_9236_().f_46443_) {
+   public void aiStep() {
+      super.aiStep();
+      if (this.level().isClientSide) {
          this.refreshSpellPoolFromHands();
       }
    }
 
    private void refreshSpellPoolFromHands() {
-      ItemStack mainHand = this.m_21205_();
-      ItemStack offHand = this.m_21206_();
-      if (!ItemStack.m_150942_(mainHand, this.cachedMainHand) || !ItemStack.m_150942_(offHand, this.cachedOffHand)) {
-         this.cachedMainHand = mainHand.m_41777_();
-         this.cachedOffHand = offHand.m_41777_();
+      ItemStack mainHand = this.getMainHandItem();
+      ItemStack offHand = this.getOffhandItem();
+      if (!ItemStack.isSameItemSameTags(mainHand, this.cachedMainHand) || !ItemStack.isSameItemSameTags(offHand, this.cachedOffHand)) {
+         this.cachedMainHand = mainHand.copy();
+         this.cachedOffHand = offHand.copy();
          this.rebuildSpellPool();
-         if (!this.m_9236_().f_46443_) {
+         if (!this.level().isClientSide) {
             this.refreshHandMagicAttributes(mainHand, offHand);
          }
       }
@@ -374,15 +374,15 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
       this.clearHandMagicAttributes();
       this.applyHeldSpellbookAttributes(mainHand, 0, "mainhand_spellbook");
       this.applyHeldSpellbookAttributes(offHand, 1, "offhand_spellbook");
-      Multimap<Attribute, AttributeModifier> nativeOffhand = offHand.m_41638_(EquipmentSlot.OFFHAND);
+      Multimap<Attribute, AttributeModifier> nativeOffhand = offHand.getAttributeModifiers(EquipmentSlot.OFFHAND);
       boolean hasNativeOffhandMagic = nativeOffhand.keySet().stream().anyMatch(attribute -> attribute instanceof IMagicAttribute);
       if (!hasNativeOffhandMagic) {
-         this.applyMagicAttributes(offHand.m_41638_(EquipmentSlot.MAINHAND), "offhand_item");
+         this.applyMagicAttributes(offHand.getAttributeModifiers(EquipmentSlot.MAINHAND), "offhand_item");
       }
    }
 
    private void applyHeldSpellbookAttributes(ItemStack stack, int handIndex, String source) {
-      if (!stack.m_41619_() && ISpellContainer.isSpellContainer(stack) && stack.m_41720_() instanceof ICurioItem curioItem) {
+      if (!stack.isEmpty() && ISpellContainer.isSpellContainer(stack) && stack.getItem() instanceof ICurioItem curioItem) {
          HashMultimap var10 = HashMultimap.create();
          UUID curioUuid = magicModifierUuid(source, null, null);
          SlotContext context = new SlotContext(Curios.SPELLBOOK_SLOT, this, handIndex, false, true);
@@ -404,11 +404,11 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    private void applyMagicAttributes(Multimap<Attribute, AttributeModifier> modifiers, String source) {
       modifiers.forEach((attribute, modifier) -> {
          if (attribute instanceof IMagicAttribute) {
-            AttributeInstance instance = this.m_21051_(attribute);
+            AttributeInstance instance = this.getAttribute(attribute);
             if (instance != null) {
                UUID uuid = magicModifierUuid(source, attribute, modifier);
-               instance.m_22120_(uuid);
-               instance.m_22118_(new AttributeModifier(uuid, "Ancient Warfare held magic equipment bonus", modifier.m_22218_(), modifier.m_22217_()));
+               instance.removeModifier(uuid);
+               instance.addTransientModifier(new AttributeModifier(uuid, "Ancient Warfare held magic equipment bonus", modifier.getAmount(), modifier.getOperation()));
                this.appliedHandMagicModifiers.add(new IronsCombatNpcEntity.AppliedMagicModifier(attribute, uuid));
             }
          }
@@ -417,9 +417,9 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
 
    private void clearHandMagicAttributes() {
       for (IronsCombatNpcEntity.AppliedMagicModifier applied : this.appliedHandMagicModifiers) {
-         AttributeInstance instance = this.m_21051_(applied.attribute());
+         AttributeInstance instance = this.getAttribute(applied.attribute());
          if (instance != null) {
-            instance.m_22120_(applied.uuid());
+            instance.removeModifier(applied.uuid());
          }
       }
 
@@ -427,8 +427,8 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    private static UUID magicModifierUuid(String source, @Nullable Attribute attribute, @Nullable AttributeModifier modifier) {
-      String attributeId = attribute == null ? "none" : String.valueOf(BuiltInRegistries.f_256951_.m_7981_(attribute));
-      String originalId = modifier == null ? "none" : modifier.m_22209_().toString();
+      String attributeId = attribute == null ? "none" : String.valueOf(BuiltInRegistries.ATTRIBUTE.getKey(attribute));
+      String originalId = modifier == null ? "none" : modifier.getId().toString();
       String key = "ancientwarfare:irons_hand_bonus/" + source + "/" + attributeId + "/" + originalId;
       return UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8));
    }
@@ -437,14 +437,14 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
       if (this.castingSpell != null) {
          AbstractSpell spell = this.castingSpell.getSpell();
          LivingEntity target = this.castingTarget;
-         if (target != null && target.m_6084_()) {
+         if (target != null && target.isAlive()) {
             this.faceTargetImmediately(target);
          }
 
-         if (target == null || target.m_6084_() && !spell.shouldAIStopCasting(this.castingSpell.getLevel(), this, target)) {
+         if (target == null || target.isAlive() && !spell.shouldAIStopCasting(this.castingSpell.getLevel(), this, target)) {
             this.magicData.handleCastDuration();
             if (this.magicData.isCasting()) {
-               spell.onServerCastTick(this.m_9236_(), this.castingSpell.getLevel(), this, this.magicData);
+               spell.onServerCastTick(this.level(), this.castingSpell.getLevel(), this, this.magicData);
             }
 
             if (this.magicData.getCastDurationRemaining() <= 0) {
@@ -466,7 +466,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
       if ("wall_of_fire".equals(spell.getSpellName()) && target != null) {
          this.castNpcWallOfFire(spell, spellLevel, target);
       } else {
-         spell.onCast(this.m_9236_(), spellLevel, this, CastSource.MOB, this.magicData);
+         spell.onCast(this.level(), spellLevel, this, CastSource.MOB, this.magicData);
       }
 
       if (!isRepeat && NPC_REPEAT_SPELLS.contains(spell.getSpellName())) {
@@ -488,28 +488,28 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    private void castNpcWallOfFire(AbstractSpell spell, int spellLevel, LivingEntity target) {
-      Vec3 forward = target.m_20182_().m_82546_(this.m_20182_()).m_82542_(1.0, 0.0, 1.0);
-      if (forward.m_82556_() < 0.01) {
-         forward = this.m_20154_().m_82542_(1.0, 0.0, 1.0);
+      Vec3 forward = target.position().subtract(this.position()).multiply(1.0, 0.0, 1.0);
+      if (forward.lengthSqr() < 0.01) {
+         forward = this.getLookAngle().multiply(1.0, 0.0, 1.0);
       }
 
-      forward = forward.m_82541_();
-      Vec3 sideways = new Vec3(-forward.f_82481_, 0.0, forward.f_82479_);
+      forward = forward.normalize();
+      Vec3 sideways = new Vec3(-forward.z, 0.0, forward.x);
       double halfLength = Math.min(12.0, 5.0 + (double)spellLevel * 1.5);
-      Vec3 center = target.m_20182_().m_82546_(forward.m_82490_(2.0));
-      List<Vec3> anchors = List.of(center.m_82549_(sideways.m_82490_(halfLength)), center.m_82546_(sideways.m_82490_(halfLength)));
-      WallOfFireEntity wall = new WallOfFireEntity(this.m_9236_(), this, anchors, spell.getSpellPower(spellLevel, this));
-      wall.m_146884_(center);
-      this.m_9236_().m_7967_(wall);
+      Vec3 center = target.position().subtract(forward.scale(2.0));
+      List<Vec3> anchors = List.of(center.add(sideways.scale(halfLength)), center.subtract(sideways.scale(halfLength)));
+      WallOfFireEntity wall = new WallOfFireEntity(this.level(), this, anchors, spell.getSpellPower(spellLevel, this));
+      wall.setPos(center);
+      this.level().addFreshEntity(wall);
    }
 
    private void tickRepeatCast() {
       if (this.repeatSpell == null || this.repeatCastsRemaining <= 0) {
          this.clearRepeatCast();
       } else if (!this.isCasting()) {
-         if (this.repeatTarget != null && this.repeatTarget.m_6084_()) {
+         if (this.repeatTarget != null && this.repeatTarget.isAlive()) {
             this.faceTargetImmediately(this.repeatTarget);
-            this.m_21573_().m_26573_();
+            this.getNavigation().stop();
             if (this.repeatCastDelay-- <= 0) {
                this.executeSpellCast(this.repeatSpell.getSpell(), this.repeatSpell.getLevel(), this.repeatTarget, true);
                this.repeatCastsRemaining--;
@@ -536,7 +536,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    private void beginCast(IronsCombatNpcEntity.SpellChoice choice, @Nullable LivingEntity target) {
-      if (choice != null && !this.isCasting() && !this.m_9236_().f_46443_) {
+      if (choice != null && !this.isCasting() && !this.level().isClientSide) {
          AbstractSpell spell = choice.spell();
          this.castingTarget = target;
          if (target != null) {
@@ -546,7 +546,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
          if (TARGET_DATA_SPELLS.contains(spell.getSpellName()) && target != null) {
             this.magicData.setAdditionalCastData(new TargetEntityCastData(target));
          } else if ("telekinesis".equals(spell.getSpellName()) && target != null) {
-            this.magicData.setAdditionalCastData(new TelekinesisData(this.m_20270_(target), target, 6));
+            this.magicData.setAdditionalCastData(new TelekinesisData(this.distanceTo(target), target, 6));
          } else if (CONTINUOUS_AIM_SPELLS.contains(spell.getSpellName()) && target != null) {
             CastingMobAimingData aimData = new CastingMobAimingData();
             aimData.updateAim(target, 1.0F);
@@ -556,14 +556,14 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
          }
 
          boolean hasExplicitTarget = (TARGET_DATA_SPELLS.contains(spell.getSpellName()) || "telekinesis".equals(spell.getSpellName())) && target != null;
-         if (!hasExplicitTarget && !spell.checkPreCastConditions(this.m_9236_(), choice.level(), this, this.magicData)) {
+         if (!hasExplicitTarget && !spell.checkPreCastConditions(this.level(), choice.level(), this, this.magicData)) {
             this.magicData.resetAdditionalCastData();
             this.castingTarget = null;
             this.globalCastDelay = 5;
             this.forcedMeleeFallbackTicks = 40;
          } else {
             if ("telekinesis".equals(spell.getSpellName()) && target != null) {
-               this.magicData.setAdditionalCastData(new TelekinesisData(this.m_20270_(target), target, 6));
+               this.magicData.setAdditionalCastData(new TelekinesisData(this.distanceTo(target), target, 6));
             } else if (TARGET_DATA_SPELLS.contains(spell.getSpellName()) && target != null) {
                this.magicData.setAdditionalCastData(new TargetEntityCastData(target));
             }
@@ -571,8 +571,8 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
             this.castingSpell = new SpellData(spell, choice.level());
             this.forcedMeleeFallbackTicks = 0;
             this.magicData.initiateCast(spell, choice.level(), spell.getEffectiveCastTime(choice.level(), this), CastSource.MOB, choice.equipmentSlot());
-            spell.onServerPreCast(this.m_9236_(), choice.level(), this, this.magicData);
-            this.m_21011_(InteractionHand.MAIN_HAND, true);
+            spell.onServerPreCast(this.level(), choice.level(), this, this.magicData);
+            this.swing(InteractionHand.MAIN_HAND, true);
          }
       }
    }
@@ -583,7 +583,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
       } else {
          AbstractSpell spell = this.castingSpell.getSpell();
          int level = this.castingSpell.getLevel();
-         spell.onServerCastComplete(this.m_9236_(), level, this, this.magicData, cancelled);
+         spell.onServerCastComplete(this.level(), level, this, this.magicData, cancelled);
          if (!cancelled) {
             int cooldown = Math.max(20, Utils.applyCooldownReduction(spell.getSpellCooldown(), this));
             this.npcCooldowns.put(spell.getSpellName(), cooldown);
@@ -601,8 +601,8 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
 
    private IronsCombatNpcEntity.SpellSelection chooseSpell(LivingEntity enemy) {
       LivingEntity woundedAlly = this.findWoundedAlly();
-      double distance = enemy == null ? Double.MAX_VALUE : (double)this.m_20270_(enemy);
-      int nearbyEnemies = enemy == null ? 0 : this.m_9236_().m_6443_(LivingEntity.class, enemy.m_20191_().m_82400_(5.0), this::isValidEnemy).size();
+      double distance = enemy == null ? Double.MAX_VALUE : (double)this.distanceTo(enemy);
+      int nearbyEnemies = enemy == null ? 0 : this.level().getEntitiesOfClass(LivingEntity.class, enemy.getBoundingBox().inflate(5.0), this::isValidEnemy).size();
       List<IronsCombatNpcEntity.ScoredSpell> scored = new ArrayList<>();
 
       for (IronsCombatNpcEntity.SpellChoice choice : this.spellPool) {
@@ -619,7 +619,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
                   score -= 80;
                }
 
-               score += this.f_19796_.m_188503_(16);
+               score += this.random.nextInt(16);
                if (score > 0) {
                   scored.add(new IronsCombatNpcEntity.ScoredSpell(choice, target, score));
                }
@@ -638,7 +638,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
             total += Math.max(1, scored.get(i).score());
          }
 
-         int roll = this.f_19796_.m_188503_(Math.max(1, total));
+         int roll = this.random.nextInt(Math.max(1, total));
 
          for (int i = 0; i < candidates; i++) {
             IronsCombatNpcEntity.ScoredSpell entry = scored.get(i);
@@ -655,9 +655,9 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
 
    @Override
    protected boolean canUseMeleeCombatGoal() {
-      LivingEntity enemy = this.m_5448_();
-      if (enemy != null && enemy.m_6084_() && !this.isCasting() && this.repeatSpell == null && this.hasMeleeFallbackWeapon()) {
-         double distanceSqr = this.m_20280_(enemy);
+      LivingEntity enemy = this.getTarget();
+      if (enemy != null && enemy.isAlive() && !this.isCasting() && this.repeatSpell == null && this.hasMeleeFallbackWeapon()) {
+         double distanceSqr = this.distanceToSqr(enemy);
          if (this.forcedMeleeFallbackTicks > 0) {
             return true;
          } else {
@@ -670,15 +670,15 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    private boolean hasMeleeFallbackWeapon() {
-      ItemStack weapon = this.m_21205_();
-      return !weapon.m_41619_() && weapon.m_41638_(EquipmentSlot.MAINHAND).containsKey(Attributes.f_22281_);
+      ItemStack weapon = this.getMainHandItem();
+      return !weapon.isEmpty() && weapon.getAttributeModifiers(EquipmentSlot.MAINHAND).containsKey(Attributes.ATTACK_DAMAGE);
    }
 
    private boolean hasUsableSpell(LivingEntity enemy) {
-      if (enemy != null && enemy.m_6084_() && this.repeatSpell == null && this.m_21574_().m_148306_(enemy)) {
+      if (enemy != null && enemy.isAlive() && this.repeatSpell == null && this.getSensing().hasLineOfSight(enemy)) {
          LivingEntity woundedAlly = this.findWoundedAlly();
-         double distance = (double)this.m_20270_(enemy);
-         int nearbyEnemies = this.m_9236_().m_6443_(LivingEntity.class, enemy.m_20191_().m_82400_(5.0), this::isValidEnemy).size();
+         double distance = (double)this.distanceTo(enemy);
+         int nearbyEnemies = this.level().getEntitiesOfClass(LivingEntity.class, enemy.getBoundingBox().inflate(5.0), this::isValidEnemy).size();
 
          for (IronsCombatNpcEntity.SpellChoice choice : this.spellPool) {
             String id = choice.spell().getSpellName();
@@ -717,14 +717,14 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    private int scoreSpell(String id, @Nullable LivingEntity target, LivingEntity enemy, double distance, int nearbyEnemies) {
-      float healthRatio = this.m_21223_() / this.m_21233_();
+      float healthRatio = this.getHealth() / this.getMaxHealth();
       if (SELF_HEALS.contains(id)) {
          return healthRatio < 0.75F ? 35 + (int)((1.0F - healthRatio) * 100.0F) : 0;
       } else if (ALLY_HEALS.contains(id)) {
          if ("cloud_of_regeneration".equals(id)) {
             LivingEntity wounded = this.findWoundedAlly();
-            if (wounded != null && !(this.m_20280_(wounded) > 25.0)) {
-               float missing = 1.0F - wounded.m_21223_() / wounded.m_21233_();
+            if (wounded != null && !(this.distanceToSqr(wounded) > 25.0)) {
+               float missing = 1.0F - wounded.getHealth() / wounded.getMaxHealth();
                return 50 + (int)(missing * 100.0F) + this.countWoundedNearbyAllies() * 12;
             } else {
                return 0;
@@ -732,7 +732,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
          } else if (target == null) {
             return 0;
          } else {
-            float missing = 1.0F - target.m_21223_() / target.m_21233_();
+            float missing = 1.0F - target.getHealth() / target.getMaxHealth();
             return missing > 0.2F ? 35 + (int)(missing * 90.0F) : 0;
          }
       } else if (ALLY_BUFFS.contains(id)) {
@@ -749,11 +749,11 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
          return !SummonManager.getSummons(this).isEmpty() ? 0 : 48 + nearbyEnemies * 9;
       } else if ("sacrifice".equals(id)) {
          if (target instanceof IMagicSummon && enemy != null) {
-            return target.m_20280_(enemy) <= 36.0 ? 62 + nearbyEnemies * 12 : 0;
+            return target.distanceToSqr(enemy) <= 36.0 ? 62 + nearbyEnemies * 12 : 0;
          } else {
             return 0;
          }
-      } else if (enemy == null || target == null || !this.m_21574_().m_148306_(enemy)) {
+      } else if (enemy == null || target == null || !this.getSensing().hasLineOfSight(enemy)) {
          return 0;
       } else if (DEFENSE.contains(id)) {
          int score = healthRatio < 0.55F ? 55 : 8;
@@ -866,19 +866,19 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    private LivingEntity findWoundedAlly() {
       return this.nearbyAllies()
          .stream()
-         .filter(ally -> ally.m_21223_() < ally.m_21233_() * 0.8F)
-         .min(Comparator.comparingDouble(ally -> (double)(ally.m_21223_() / ally.m_21233_())))
+         .filter(ally -> ally.getHealth() < ally.getMaxHealth() * 0.8F)
+         .min(Comparator.comparingDouble(ally -> (double)(ally.getHealth() / ally.getMaxHealth())))
          .orElse(null);
    }
 
    @Nullable
    private LivingEntity findNearestAlly() {
-      return this.nearbyAllies().stream().filter(ally -> ally != this).min(Comparator.comparingDouble(this::m_20280_)).orElse(this);
+      return this.nearbyAllies().stream().filter(ally -> ally != this).min(Comparator.comparingDouble(this::distanceToSqr)).orElse(this);
    }
 
    private List<LivingEntity> nearbyAllies() {
-      AABB area = this.m_20191_().m_82377_(16.0, 8.0, 16.0);
-      return this.m_9236_().m_6443_(LivingEntity.class, area, this::isFriendlyEntity);
+      AABB area = this.getBoundingBox().inflate(16.0, 8.0, 16.0);
+      return this.level().getEntitiesOfClass(LivingEntity.class, area, this::isFriendlyEntity);
    }
 
    private int countNearbyAllies() {
@@ -886,20 +886,20 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    private int countWoundedNearbyAllies() {
-      return (int)this.nearbyAllies().stream().filter(ally -> ally.m_21223_() < ally.m_21233_() * 0.8F).count();
+      return (int)this.nearbyAllies().stream().filter(ally -> ally.getHealth() < ally.getMaxHealth() * 0.8F).count();
    }
 
    @Nullable
    private LivingEntity findOwnedSummonNear(@Nullable LivingEntity enemy) {
-      if (this.m_9236_() instanceof ServerLevel serverLevel && enemy != null) {
+      if (this.level() instanceof ServerLevel serverLevel && enemy != null) {
          return SummonManager.getSummons(this)
             .stream()
-            .<Entity>map(serverLevel::m_8791_)
+            .<Entity>map(serverLevel::getEntity)
             .filter(LivingEntity.class::isInstance)
             .map(LivingEntity.class::cast)
-            .filter(Entity::m_6084_)
-            .filter(summon -> summon.m_20280_(enemy) <= 64.0)
-            .min(Comparator.comparingDouble(summon -> summon.m_20280_(enemy)))
+            .filter(Entity::isAlive)
+            .filter(summon -> summon.distanceToSqr(enemy) <= 64.0)
+            .min(Comparator.comparingDouble(summon -> summon.distanceToSqr(enemy)))
             .orElse(null);
       }
 
@@ -907,7 +907,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    private boolean hasHarmfulEffectNearby() {
-      return this.nearbyAllies().stream().anyMatch(ally -> ally.m_21220_().stream().anyMatch(effect -> !effect.m_19544_().m_19486_()));
+      return this.nearbyAllies().stream().anyMatch(ally -> ally.getActiveEffects().stream().anyMatch(effect -> !effect.getEffect().isBeneficial()));
    }
 
    private boolean isActivelyCasting(@Nullable LivingEntity entity) {
@@ -922,17 +922,17 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
       if (entity == this) {
          return true;
       } else if (entity instanceof Player player) {
-         return this.getOwner().map(player.m_20148_()::equals).orElse(false);
+         return this.getOwner().map(player.getUUID()::equals).orElse(false);
       } else if (!(entity instanceof PlayerOwnedNpcEntity owned)) {
-         return entity instanceof IMagicSummon summon ? summon.getSummoner() == this : this.m_7307_(entity);
+         return entity instanceof IMagicSummon summon ? summon.getSummoner() == this : this.isAlliedTo(entity);
       } else {
          return this.getOwner().isPresent() && this.getOwner().equals(owned.getOwner());
       }
    }
 
    @Override
-   public boolean m_7307_(Entity entity) {
-      if (entity instanceof Player player && this.getOwner().map(player.m_20148_()::equals).orElse(false)) {
+   public boolean isAlliedTo(Entity entity) {
+      if (entity instanceof Player player && this.getOwner().map(player.getUUID()::equals).orElse(false)) {
          return true;
       }
 
@@ -944,23 +944,23 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
          return true;
       }
 
-      return super.m_7307_(entity);
+      return super.isAlliedTo(entity);
    }
 
    private boolean isValidEnemy(LivingEntity entity) {
-      return entity != null && entity.m_6084_() && !this.isFriendlyEntity(entity) && (!(entity instanceof Player player) || !player.m_7500_());
+      return entity != null && entity.isAlive() && !this.isFriendlyEntity(entity) && (!(entity instanceof Player player) || !player.isCreative());
    }
 
    private void faceTargetImmediately(LivingEntity target) {
-      Vec3 delta = target.m_146892_().m_82546_(this.m_146892_());
-      double horizontal = Math.sqrt(delta.f_82479_ * delta.f_82479_ + delta.f_82481_ * delta.f_82481_);
-      float yaw = (float)(Mth.m_14136_(delta.f_82481_, delta.f_82479_) * 180.0F / (float)Math.PI) - 90.0F;
-      float pitch = (float)(-(Mth.m_14136_(delta.f_82480_, horizontal) * 180.0F / (float)Math.PI));
-      this.m_146922_(yaw);
-      this.f_20885_ = yaw;
-      this.f_20883_ = yaw;
-      this.m_146926_(pitch);
-      this.m_21563_().m_24960_(target, 360.0F, 360.0F);
+      Vec3 delta = target.getEyePosition().subtract(this.getEyePosition());
+      double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
+      float yaw = (float)(Mth.atan2(delta.z, delta.x) * 180.0F / (float)Math.PI) - 90.0F;
+      float pitch = (float)(-(Mth.atan2(delta.y, horizontal) * 180.0F / (float)Math.PI));
+      this.setYRot(yaw);
+      this.yHeadRot = yaw;
+      this.yBodyRot = yaw;
+      this.setXRot(pitch);
+      this.getLookControl().setLookAt(target, 360.0F, 360.0F);
    }
 
    public MagicData getMagicData() {
@@ -968,7 +968,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    public void setSyncedSpellData(SyncedSpellData syncedSpellData) {
-      if (this.m_9236_().f_46443_) {
+      if (this.level().isClientSide) {
          boolean wasCasting = this.magicData.isCasting();
          this.magicData.setSyncedData(syncedSpellData);
          this.castingSpell = syncedSpellData.isCasting()
@@ -978,7 +978,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
             InteractionHand castingHand = SpellSelectionManager.OFFHAND.equals(syncedSpellData.getCastingEquipmentSlot())
                ? InteractionHand.OFF_HAND
                : InteractionHand.MAIN_HAND;
-            this.castingSpell.getSpell().onClientPreCast(this.m_9236_(), this.castingSpell.getLevel(), this, castingHand, this.magicData);
+            this.castingSpell.getSpell().onClientPreCast(this.level(), this.castingSpell.getLevel(), this, castingHand, this.magicData);
          }
       }
    }
@@ -993,7 +993,7 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    public void initiateCastSpell(AbstractSpell spell, int spellLevel) {
-      this.beginCast(new IronsCombatNpcEntity.SpellChoice(spell, spellLevel, SpellSelectionManager.MAINHAND), this.m_5448_());
+      this.beginCast(new IronsCombatNpcEntity.SpellChoice(spell, spellLevel, SpellSelectionManager.MAINHAND), this.getTarget());
    }
 
    public void cancelCast() {
@@ -1032,30 +1032,30 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
    }
 
    @Override
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
       ListTag cooldownList = new ListTag();
       this.npcCooldowns.forEach((id, ticks) -> {
          if (ticks > 0) {
             CompoundTag entry = new CompoundTag();
-            entry.m_128359_("Spell", id);
-            entry.m_128405_("Ticks", ticks);
+            entry.putString("Spell", id);
+            entry.putInt("Ticks", ticks);
             cooldownList.add(entry);
          }
       });
       if (!cooldownList.isEmpty()) {
-         tag.m_128365_("IronsSpellCooldowns", cooldownList);
+         tag.put("IronsSpellCooldowns", cooldownList);
       }
    }
 
    @Override
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
       this.npcCooldowns.clear();
 
-      for (Tag value : tag.m_128437_("IronsSpellCooldowns", 10)) {
+      for (Tag value : tag.getList("IronsSpellCooldowns", 10)) {
          CompoundTag entry = (CompoundTag)value;
-         this.npcCooldowns.put(entry.m_128461_("Spell"), Math.max(0, entry.m_128451_("Ticks")));
+         this.npcCooldowns.put(entry.getString("Spell"), Math.max(0, entry.getInt("Ticks")));
       }
 
       this.magicData.resetCastingState();
@@ -1064,8 +1064,8 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
       this.clearRepeatCast();
       this.forcedMeleeFallbackTicks = 0;
       this.clearHandMagicAttributes();
-      this.cachedMainHand = ItemStack.f_41583_;
-      this.cachedOffHand = ItemStack.f_41583_;
+      this.cachedMainHand = ItemStack.EMPTY;
+      this.cachedOffHand = ItemStack.EMPTY;
       this.rebuildSpellPool();
    }
 
@@ -1085,43 +1085,43 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
       private LivingEntity enemy;
 
       private SpellbookCastingGoal() {
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
-         this.enemy = IronsCombatNpcEntity.this.m_5448_();
+      public boolean canUse() {
+         this.enemy = IronsCombatNpcEntity.this.getTarget();
          return !IronsCombatNpcEntity.this.spellPool.isEmpty()
             && this.enemy != null
-            && this.enemy.m_6084_()
+            && this.enemy.isAlive()
             && !IronsCombatNpcEntity.this.canUseMeleeCombatGoal();
       }
 
-      public boolean m_8045_() {
-         this.enemy = IronsCombatNpcEntity.this.m_5448_();
+      public boolean canContinueToUse() {
+         this.enemy = IronsCombatNpcEntity.this.getTarget();
          return !IronsCombatNpcEntity.this.spellPool.isEmpty()
             && this.enemy != null
-            && this.enemy.m_6084_()
+            && this.enemy.isAlive()
             && !IronsCombatNpcEntity.this.canUseMeleeCombatGoal();
       }
 
-      public void m_8037_() {
-         this.enemy = IronsCombatNpcEntity.this.m_5448_();
+      public void tick() {
+         this.enemy = IronsCombatNpcEntity.this.getTarget();
          if (this.enemy != null) {
             IronsCombatNpcEntity.this.faceTargetImmediately(this.enemy);
-            double distanceSqr = IronsCombatNpcEntity.this.m_20280_(this.enemy);
+            double distanceSqr = IronsCombatNpcEntity.this.distanceToSqr(this.enemy);
             if (IronsCombatNpcEntity.this.isCasting()) {
-               IronsCombatNpcEntity.this.m_21573_().m_26573_();
+               IronsCombatNpcEntity.this.getNavigation().stop();
             } else if (IronsCombatNpcEntity.this.repeatSpell != null) {
-               IronsCombatNpcEntity.this.m_21573_().m_26573_();
-            } else if (!(distanceSqr > 1024.0) && IronsCombatNpcEntity.this.m_21574_().m_148306_(this.enemy)) {
+               IronsCombatNpcEntity.this.getNavigation().stop();
+            } else if (!(distanceSqr > 1024.0) && IronsCombatNpcEntity.this.getSensing().hasLineOfSight(this.enemy)) {
                if (distanceSqr < 36.0) {
-                  Vec3 away = DefaultRandomPos.m_148407_(IronsCombatNpcEntity.this, 10, 4, this.enemy.m_20182_());
+                  Vec3 away = DefaultRandomPos.getPosAway(IronsCombatNpcEntity.this, 10, 4, this.enemy.position());
                   if (away != null) {
-                     IronsCombatNpcEntity.this.m_21573_()
-                        .m_26519_(away.f_82479_, away.f_82480_, away.f_82481_, IronsCombatNpcEntity.this.playerSprintNavigationSpeed());
+                     IronsCombatNpcEntity.this.getNavigation()
+                        .moveTo(away.x, away.y, away.z, IronsCombatNpcEntity.this.playerSprintNavigationSpeed());
                   }
                } else {
-                  IronsCombatNpcEntity.this.m_21573_().m_26573_();
+                  IronsCombatNpcEntity.this.getNavigation().stop();
                }
 
                if (IronsCombatNpcEntity.this.globalCastDelay <= 0) {
@@ -1129,11 +1129,11 @@ public class IronsCombatNpcEntity extends CombatNpcEntity implements IMagicEntit
                   if (selection != null) {
                      IronsCombatNpcEntity.this.beginCast(selection.choice(), selection.target());
                   } else if (distanceSqr > 81.0 && IronsCombatNpcEntity.this.hasReadyCloseRangeSpell()) {
-                     IronsCombatNpcEntity.this.m_21573_().m_5624_(this.enemy, IronsCombatNpcEntity.this.playerSprintNavigationSpeed());
+                     IronsCombatNpcEntity.this.getNavigation().moveTo(this.enemy, IronsCombatNpcEntity.this.playerSprintNavigationSpeed());
                   }
                }
             } else {
-               IronsCombatNpcEntity.this.m_21573_().m_5624_(this.enemy, IronsCombatNpcEntity.this.playerSprintNavigationSpeed());
+               IronsCombatNpcEntity.this.getNavigation().moveTo(this.enemy, IronsCombatNpcEntity.this.playerSprintNavigationSpeed());
             }
          }
       }

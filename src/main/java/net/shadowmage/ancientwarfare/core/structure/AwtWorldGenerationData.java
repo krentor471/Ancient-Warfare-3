@@ -17,7 +17,7 @@ public final class AwtWorldGenerationData extends SavedData {
    private final Set<Long> attemptedCandidates = new HashSet<>();
 
    public static AwtWorldGenerationData get(ServerLevel level) {
-      return (AwtWorldGenerationData)level.m_8895_().m_164861_(AwtWorldGenerationData::load, AwtWorldGenerationData::new, "ancientwarfare_awt_worldgen");
+      return (AwtWorldGenerationData)level.getDataStorage().computeIfAbsent(AwtWorldGenerationData::load, AwtWorldGenerationData::new, "ancientwarfare_awt_worldgen");
    }
 
    public List<AwtWorldGenerationData.TownTask> towns() {
@@ -26,13 +26,13 @@ public final class AwtWorldGenerationData extends SavedData {
 
    public void add(AwtWorldGenerationData.TownTask task) {
       this.towns.add(task);
-      this.m_77762_();
+      this.setDirty();
    }
 
    public boolean markCandidateAttempted(int chunkX, int chunkZ) {
       boolean added = this.attemptedCandidates.add(candidateKey(chunkX, chunkZ));
       if (added) {
-         this.m_77762_();
+         this.setDirty();
       }
 
       return added;
@@ -45,7 +45,7 @@ public final class AwtWorldGenerationData extends SavedData {
    public boolean removeFailed() {
       boolean removed = this.towns.removeIf(task -> task.phase == AwtWorldGenerationData.Phase.FAILED);
       if (removed) {
-         this.m_77762_();
+         this.setDirty();
       }
 
       return removed;
@@ -59,52 +59,52 @@ public final class AwtWorldGenerationData extends SavedData {
          .orElse(null);
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
+   public CompoundTag save(CompoundTag tag) {
       ListTag list = new ListTag();
 
       for (AwtWorldGenerationData.TownTask town : this.towns) {
          if (town.phase != AwtWorldGenerationData.Phase.FAILED) {
             CompoundTag value = new CompoundTag();
-            value.m_128359_("Path", town.path);
-            value.m_128359_("Name", town.name);
-            value.m_128405_("X", town.x);
-            value.m_128405_("Y", town.y);
-            value.m_128405_("Z", town.z);
-            value.m_128359_("Phase", town.phase.name());
-            value.m_128405_("Progress", town.progress);
-            value.m_128405_("MinSurface", town.minSurface);
-            value.m_128405_("MaxSurface", town.maxSurface);
-            value.m_128408_("SurfaceSamples", town.surfaceSamples);
+            value.putString("Path", town.path);
+            value.putString("Name", town.name);
+            value.putInt("X", town.x);
+            value.putInt("Y", town.y);
+            value.putInt("Z", town.z);
+            value.putString("Phase", town.phase.name());
+            value.putInt("Progress", town.progress);
+            value.putInt("MinSurface", town.minSurface);
+            value.putInt("MaxSurface", town.maxSurface);
+            value.putIntArray("SurfaceSamples", town.surfaceSamples);
             list.add(value);
          }
       }
 
-      tag.m_128365_("Towns", list);
-      tag.m_128405_("GenerationRuleVersion", 7);
-      tag.m_128388_("AttemptedCandidates", this.attemptedCandidates.stream().mapToLong(Long::longValue).toArray());
+      tag.put("Towns", list);
+      tag.putInt("GenerationRuleVersion", 7);
+      tag.putLongArray("AttemptedCandidates", this.attemptedCandidates.stream().mapToLong(Long::longValue).toArray());
       return tag;
    }
 
    private static AwtWorldGenerationData load(CompoundTag tag) {
       AwtWorldGenerationData data = new AwtWorldGenerationData();
 
-      for (Tag raw : tag.m_128437_("Towns", 10)) {
+      for (Tag raw : tag.getList("Towns", 10)) {
          CompoundTag value = (CompoundTag)raw;
          AwtWorldGenerationData.TownTask town = new AwtWorldGenerationData.TownTask(
-            value.m_128461_("Path"), value.m_128461_("Name"), value.m_128451_("X"), value.m_128451_("Y"), value.m_128451_("Z")
+            value.getString("Path"), value.getString("Name"), value.getInt("X"), value.getInt("Y"), value.getInt("Z")
          );
 
          try {
-            town.phase = AwtWorldGenerationData.Phase.valueOf(value.m_128461_("Phase"));
+            town.phase = AwtWorldGenerationData.Phase.valueOf(value.getString("Phase"));
          } catch (IllegalArgumentException var10) {
             town.phase = AwtWorldGenerationData.Phase.SURVEY;
          }
 
-         town.progress = value.m_128451_("Progress");
-         town.minSurface = value.m_128451_("MinSurface");
-         town.maxSurface = value.m_128451_("MaxSurface");
+         town.progress = value.getInt("Progress");
+         town.minSurface = value.getInt("MinSurface");
+         town.maxSurface = value.getInt("MaxSurface");
 
-         for (int sample : value.m_128465_("SurfaceSamples")) {
+         for (int sample : value.getIntArray("SurfaceSamples")) {
             town.surfaceSamples.add(sample);
          }
 
@@ -119,8 +119,8 @@ public final class AwtWorldGenerationData extends SavedData {
          }
       }
 
-      if (tag.m_128451_("GenerationRuleVersion") == 7) {
-         for (long candidate : tag.m_128467_("AttemptedCandidates")) {
+      if (tag.getInt("GenerationRuleVersion") == 7) {
+         for (long candidate : tag.getLongArray("AttemptedCandidates")) {
             data.attemptedCandidates.add(candidate);
          }
       }

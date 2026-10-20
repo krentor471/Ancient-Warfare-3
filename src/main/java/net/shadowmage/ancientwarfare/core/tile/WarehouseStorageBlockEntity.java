@@ -47,20 +47,20 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
       return this.membership;
    }
 
-   public void m_142339_(Level level) {
-      super.m_142339_(level);
+   public void setLevel(Level level) {
+      super.setLevel(level);
       WarehouseNetwork.register(this);
    }
 
-   public void m_7651_() {
-      WarehouseNetwork.changed(this.f_58857_);
-      super.m_7651_();
+   public void setRemoved() {
+      WarehouseNetwork.changed(this.level);
+      super.setRemoved();
    }
 
-   public void m_6596_() {
-      super.m_6596_();
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         WarehouseControlBlockEntity control = WarehouseNetwork.loadedController(this.f_58857_, this.membership.getControllerPos());
+   public void setChanged() {
+      super.setChanged();
+      if (this.level != null && !this.level.isClientSide) {
+         WarehouseControlBlockEntity control = WarehouseNetwork.loadedController(this.level, this.membership.getControllerPos());
          if (control != null) {
             control.storageChanged(this);
          }
@@ -68,18 +68,18 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
    }
 
    public static int storageSize(BlockState state) {
-      if (state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_STORAGE_LARGE))) {
+      if (state.is(AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_STORAGE_LARGE))) {
          return 54;
       } else {
-         return state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_STORAGE_MEDIUM)) ? 45 : 27;
+         return state.is(AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_STORAGE_MEDIUM)) ? 45 : 27;
       }
    }
 
    public long getCapacity() {
-      if (this.m_58900_().m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_STORAGE_LARGE))) {
+      if (this.getBlockState().is(AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_STORAGE_LARGE))) {
          return 1728L;
       } else {
-         return this.m_58900_().m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_STORAGE_MEDIUM)) ? 1152L : 576L;
+         return this.getBlockState().is(AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_STORAGE_MEDIUM)) ? 1152L : 576L;
       }
    }
 
@@ -104,7 +104,7 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
    }
 
    public long getCountOf(ItemStack stack) {
-      return stack.m_41619_() ? 0L : this.quantities.getOrDefault(new WarehouseItemKey(stack), 0L);
+      return stack.isEmpty() ? 0L : this.quantities.getOrDefault(new WarehouseItemKey(stack), 0L);
    }
 
    public long getQuantity(ItemStack stack) {
@@ -126,7 +126,7 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
       long total = 0L;
 
       for (WarehouseEntry entry : replacement) {
-         if (!entry.stack().m_41619_() && entry.count() > 0L) {
+         if (!entry.stack().isEmpty() && entry.count() > 0L) {
             total = Math.addExact(total, entry.count());
             next.merge(new WarehouseItemKey(entry.stack()), entry.count(), Math::addExact);
          }
@@ -144,7 +144,7 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
 
    public List<WarehouseEntry> takeAllEntries() {
       List<WarehouseEntry> result = this.copyEntries();
-      this.m_6211_();
+      this.clearContent();
       return result;
    }
 
@@ -153,35 +153,35 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
    }
 
    public ItemStack insertStack(ItemStack stack, boolean allowNewKinds) {
-      if (stack.m_41619_()) {
-         return ItemStack.f_41583_;
+      if (stack.isEmpty()) {
+         return ItemStack.EMPTY;
       } else {
          WarehouseItemKey key = new WarehouseItemKey(stack);
          long old = this.quantities.getOrDefault(key, 0L);
          if (!allowNewKinds && old == 0L) {
-            return stack.m_41777_();
+            return stack.copy();
          } else {
             long available = Math.max(0L, this.getCapacity() - this.storedCount);
-            int moved = (int)Math.min((long)stack.m_41613_(), available);
+            int moved = (int)Math.min((long)stack.getCount(), available);
             if (moved <= 0) {
-               return stack.m_41777_();
+               return stack.copy();
             } else {
                this.quantities.put(key, old + (long)moved);
                this.storedCount += (long)moved;
                this.syncChanged(false);
-               return moved == stack.m_41613_() ? ItemStack.f_41583_ : stack.m_255036_(stack.m_41613_() - moved);
+               return moved == stack.getCount() ? ItemStack.EMPTY : stack.copyWithCount(stack.getCount() - moved);
             }
          }
       }
    }
 
    public ItemStack extractMatching(ItemStack filter, int amount) {
-      if (!filter.m_41619_() && amount > 0) {
+      if (!filter.isEmpty() && amount > 0) {
          WarehouseItemKey key = new WarehouseItemKey(filter);
          long old = this.quantities.getOrDefault(key, 0L);
-         int moved = (int)Math.min(old, (long)Math.min(amount, filter.m_41741_()));
+         int moved = (int)Math.min(old, (long)Math.min(amount, filter.getMaxStackSize()));
          if (moved <= 0) {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          } else {
             if (old == (long)moved) {
                this.quantities.remove(key);
@@ -191,15 +191,15 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
 
             this.storedCount -= (long)moved;
             this.syncChanged(false);
-            return filter.m_255036_(moved);
+            return filter.copyWithCount(moved);
          }
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
    public List<ItemStack> getFilters() {
-      return this.filters.stream().<ItemStack>map(ItemStack::m_41777_).toList();
+      return this.filters.stream().<ItemStack>map(ItemStack::copy).toList();
    }
 
    public int getFilterCount() {
@@ -207,18 +207,18 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
    }
 
    public ItemStack getFilter(int index) {
-      return index >= 0 && index < this.filters.size() ? this.filters.get(index).m_41777_() : ItemStack.f_41583_;
+      return index >= 0 && index < this.filters.size() ? this.filters.get(index).copy() : ItemStack.EMPTY;
    }
 
    public boolean matchesFilter(ItemStack stack) {
-      return !stack.m_41619_() && this.filters.stream().anyMatch(filter -> ItemStack.m_150942_(filter, stack));
+      return !stack.isEmpty() && this.filters.stream().anyMatch(filter -> ItemStack.isSameItemSameTags(filter, stack));
    }
 
    public boolean addFilter(ItemStack stack) {
       if (this.filters.size() >= 10) {
          return false;
       } else {
-         this.filters.add(stack.m_41619_() ? ItemStack.f_41583_ : stack.m_255036_(1));
+         this.filters.add(stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
          this.syncChanged(true);
          return true;
       }
@@ -236,7 +236,7 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
 
    public void setFilter(int index, ItemStack stack) {
       if (index >= 0 && index < this.filters.size()) {
-         this.filters.set(index, stack.m_41619_() ? ItemStack.f_41583_ : stack.m_255036_(1));
+         this.filters.set(index, stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
          this.syncChanged(true);
       }
    }
@@ -249,49 +249,49 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
             break;
          }
 
-         this.filters.add(stack.m_41619_() ? ItemStack.f_41583_ : stack.m_255036_(1));
+         this.filters.add(stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
       }
 
       this.syncChanged(true);
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128405_("WarehouseStorageVersion", 2);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.putInt("WarehouseStorageVersion", 2);
       ListTag entries = new ListTag();
       this.quantities.forEach((key, count) -> {
          CompoundTag entry = new CompoundTag();
-         entry.m_128365_("Item", key.stack().m_41739_(new CompoundTag()));
-         entry.m_128356_("Quantity", count);
+         entry.put("Item", key.stack().save(new CompoundTag()));
+         entry.putLong("Quantity", count);
          entries.add(entry);
       });
-      tag.m_128365_("ItemQuantities", entries);
+      tag.put("ItemQuantities", entries);
       this.saveFilters(tag);
       this.membership.save(tag);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
+   public void load(CompoundTag tag) {
+      super.load(tag);
       this.quantities.clear();
       this.storedCount = 0L;
-      if (tag.m_128425_("ItemQuantities", 9)) {
-         ListTag entries = tag.m_128437_("ItemQuantities", 10);
+      if (tag.contains("ItemQuantities", 9)) {
+         ListTag entries = tag.getList("ItemQuantities", 10);
 
          for (int i = 0; i < entries.size(); i++) {
-            CompoundTag entry = entries.m_128728_(i);
-            this.loadQuantity(ItemStack.m_41712_(entry.m_128469_("Item")), entry.m_128454_("Quantity"));
+            CompoundTag entry = entries.getCompound(i);
+            this.loadQuantity(ItemStack.of(entry.getCompound("Item")), entry.getLong("Quantity"));
          }
       } else {
-         ListTag oldItems = tag.m_128437_("Items", 10);
+         ListTag oldItems = tag.getList("Items", 10);
 
          for (int i = 0; i < oldItems.size(); i++) {
-            CompoundTag entry = oldItems.m_128728_(i);
-            ItemStack stack = ItemStack.m_41712_(entry);
-            int count = entry.m_128425_("Count", 1) ? Byte.toUnsignedInt(entry.m_128445_("Count")) : stack.m_41613_();
-            if (stack.m_41619_() && count > 0) {
-               CompoundTag prototype = entry.m_6426_();
-               prototype.m_128344_("Count", (byte)1);
-               stack = ItemStack.m_41712_(prototype);
+            CompoundTag entry = oldItems.getCompound(i);
+            ItemStack stack = ItemStack.of(entry);
+            int count = entry.contains("Count", 1) ? Byte.toUnsignedInt(entry.getByte("Count")) : stack.getCount();
+            if (stack.isEmpty() && count > 0) {
+               CompoundTag prototype = entry.copy();
+               prototype.putByte("Count", (byte)1);
+               stack = ItemStack.of(prototype);
             }
 
             this.loadQuantity(stack, (long)count);
@@ -301,15 +301,15 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
       this.loadFilters(tag);
       this.membership.load(tag);
       this.contentsRevision++;
-      WarehouseNetwork.changed(this.f_58857_);
-      WarehouseControlBlockEntity control = WarehouseNetwork.loadedController(this.f_58857_, this.membership.getControllerPos());
+      WarehouseNetwork.changed(this.level);
+      WarehouseControlBlockEntity control = WarehouseNetwork.loadedController(this.level, this.membership.getControllerPos());
       if (control != null) {
          control.storageChanged(this);
       }
    }
 
    private void loadQuantity(ItemStack stack, long count) {
-      if (!stack.m_41619_() && count > 0L) {
+      if (!stack.isEmpty() && count > 0L) {
          if (count > Long.MAX_VALUE - this.storedCount) {
             throw new IllegalArgumentException("Invalid warehouse quantity total");
          } else {
@@ -323,28 +323,28 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
       ListTag saved = new ListTag();
 
       for (ItemStack filter : this.filters) {
-         saved.add(filter.m_41739_(new CompoundTag()));
+         saved.add(filter.save(new CompoundTag()));
       }
 
-      tag.m_128365_("StorageFilters", saved);
+      tag.put("StorageFilters", saved);
    }
 
    private void loadFilters(CompoundTag tag) {
       this.filters.clear();
-      ListTag saved = tag.m_128437_("StorageFilters", 10);
+      ListTag saved = tag.getList("StorageFilters", 10);
 
       for (int i = 0; i < saved.size() && i < 10; i++) {
-         ItemStack filter = ItemStack.m_41712_(saved.m_128728_(i));
-         this.filters.add(filter.m_41619_() ? ItemStack.f_41583_ : filter.m_255036_(1));
+         ItemStack filter = ItemStack.of(saved.getCompound(i));
+         this.filters.add(filter.isEmpty() ? ItemStack.EMPTY : filter.copyWithCount(1));
       }
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
+   public CompoundTag getUpdateTag() {
       CompoundTag tag = new CompoundTag();
       this.saveFilters(tag);
       this.membership.save(tag);
@@ -356,40 +356,40 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
       this.membership.load(tag);
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 0;
    }
 
-   public boolean m_7983_() {
+   public boolean isEmpty() {
       return this.quantities.isEmpty();
    }
 
-   public ItemStack m_8020_(int slot) {
-      return ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      return ItemStack.f_41583_;
+   public ItemStack removeItem(int slot, int amount) {
+      return ItemStack.EMPTY;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
    }
 
-   public boolean m_7013_(int slot, ItemStack stack) {
+   public boolean canPlaceItem(int slot, ItemStack stack) {
       return false;
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       if (!this.quantities.isEmpty()) {
          this.quantities.clear();
          this.storedCount = 0L;
@@ -397,20 +397,20 @@ public class WarehouseStorageBlockEntity extends BlockEntity implements Containe
       }
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.warehouse_storage");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.warehouse_storage");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory inventory, Player player) {
-      return new WarehouseStorageMenu(containerId, inventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+      return new WarehouseStorageMenu(containerId, inventory, this.worldPosition);
    }
 
    private void syncChanged(boolean syncFilters) {
       this.contentsRevision++;
-      this.m_6596_();
-      if (syncFilters && this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 2);
+      this.setChanged();
+      if (syncFilters && this.level != null && !this.level.isClientSide) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 2);
       }
    }
 }

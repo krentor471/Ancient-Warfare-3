@@ -33,7 +33,7 @@ public class TransportBoatGeoModel extends GeoModel<TransportBoatEntity> {
 
    public void handleAnimations(TransportBoatEntity animatable, long instanceId, AnimationState<TransportBoatEntity> state) {
       super.handleAnimations(animatable, instanceId, state);
-      float wheel = Mth.m_14179_(state.getPartialTick(), animatable.wheelRotationPrev, animatable.wheelRotation);
+      float wheel = Mth.lerp(state.getPartialTick(), animatable.wheelRotationPrev, animatable.wheelRotation);
       CoreGeoBone paddleAxle = this.getAnimationProcessor().getBone("padleAxle");
       if (paddleAxle != null) {
          paddleAxle.setRotX(wheel * (float) (Math.PI / 180.0));

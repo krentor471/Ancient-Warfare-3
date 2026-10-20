@@ -25,7 +25,7 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
 
    @Override
    protected int orderContentHeight() {
-      return 12 + ((RoutingOrderMenu)this.f_97732_).getEntries().size() * 54;
+      return 12 + ((RoutingOrderMenu)this.menu).getEntries().size() * 54;
    }
 
    @Override
@@ -33,9 +33,9 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
       this.drawOrderViewportBackground(graphics);
       this.clampOrderScroll();
       this.beginOrderViewport(graphics);
-      List<RoutingOrderData.RouteEntry> entries = ((RoutingOrderMenu)this.f_97732_).getEntries();
+      List<RoutingOrderData.RouteEntry> entries = ((RoutingOrderMenu)this.menu).getEntries();
       if (entries.isEmpty()) {
-         this.drawFitted(graphics, Component.m_237115_("guistrings.npc.routing_order.empty"), 8, 12, 230);
+         this.drawFitted(graphics, Component.translatable("guistrings.npc.routing_order.empty"), 8, 12, 230);
       }
 
       for (int i = 0; i < entries.size(); i++) {
@@ -48,13 +48,13 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
       this.endOrderViewport(graphics);
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
    }
 
    @Override
    protected void afterContainerRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      if (((RoutingOrderMenu)this.f_97732_).m_142621_().m_41619_() && this.insideOrderViewport((double)mouseX, (double)mouseY)) {
-         List<RoutingOrderData.RouteEntry> entries = ((RoutingOrderMenu)this.f_97732_).getEntries();
+      if (((RoutingOrderMenu)this.menu).getCarried().isEmpty() && this.insideOrderViewport((double)mouseX, (double)mouseY)) {
+         List<RoutingOrderData.RouteEntry> entries = ((RoutingOrderMenu)this.menu).getEntries();
 
          for (int i = 0; i < entries.size(); i++) {
             RoutingOrderData.RouteEntry entry = entries.get(i);
@@ -63,8 +63,8 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
             for (int slot = 0; slot < 12; slot++) {
                if (this.inBounds((double)mouseX, (double)mouseY, 9 + slot * 18, y + 24, 18, 18)) {
                   ItemStack stack = entry.filters().get(slot);
-                  if (!stack.m_41619_()) {
-                     graphics.m_280153_(this.f_96547_, stack, mouseX, mouseY);
+                  if (!stack.isEmpty()) {
+                     graphics.renderTooltip(this.font, stack, mouseX, mouseY);
                   }
 
                   return;
@@ -75,7 +75,7 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
             if (this.inBounds((double)mouseX, (double)mouseY, 8, y, 108, 9)) {
                tooltip = this.blockName(entry);
             } else if (this.inBounds((double)mouseX, (double)mouseY, 120, y, 108, 9)) {
-               tooltip = Component.m_237113_(this.formatPos(entry.pos()));
+               tooltip = Component.literal(this.formatPos(entry.pos()));
             } else if (this.inBounds((double)mouseX, (double)mouseY, 8, y + 10, 55, 12)) {
                tooltip = this.sideLabel(entry);
             } else if (this.inBounds((double)mouseX, (double)mouseY, 65, y + 10, 79, 12)) {
@@ -85,15 +85,15 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
             } else if (this.inBounds((double)mouseX, (double)mouseY, 186, y + 10, 38, 12)) {
                tooltip = this.tagLabel(entry);
             } else if (this.inBounds((double)mouseX, (double)mouseY, 229, y, 12, 9)) {
-               tooltip = Component.m_237115_("guistrings.npc.trade_order.remove");
+               tooltip = Component.translatable("guistrings.npc.trade_order.remove");
             } else if (this.inBounds((double)mouseX, (double)mouseY, 229, y + 15, 12, 12)) {
-               tooltip = Component.m_237115_("guistrings.npc.trade_order.move_up");
+               tooltip = Component.translatable("guistrings.npc.trade_order.move_up");
             } else if (this.inBounds((double)mouseX, (double)mouseY, 229, y + 29, 12, 12)) {
-               tooltip = Component.m_237115_("guistrings.npc.trade_order.move_down");
+               tooltip = Component.translatable("guistrings.npc.trade_order.move_down");
             }
 
             if (tooltip != null) {
-               graphics.m_280557_(this.f_96547_, tooltip, mouseX, mouseY);
+               graphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
                return;
             }
          }
@@ -102,27 +102,27 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
 
    private void drawEntry(GuiGraphics graphics, RoutingOrderData.RouteEntry entry, int index, int y, int mouseX, int mouseY) {
       this.drawFitted(graphics, this.blockName(entry), 8, y, 108);
-      this.drawFitted(graphics, Component.m_237113_(this.formatPos(entry.pos())), 120, y, 108);
+      this.drawFitted(graphics, Component.literal(this.formatPos(entry.pos())), 120, y, 108);
       this.drawButton(
          graphics,
          8,
          y + 10,
          55,
          12,
-         Component.m_237115_("guistrings.inventory.direction." + entry.side().m_122433_()),
+         Component.translatable("guistrings.inventory.direction." + entry.side().getName()),
          RoutingOrderMenu.sideButton(index),
          mouseX,
          mouseY
       );
-      this.drawButton(graphics, 65, y + 10, 79, 12, Component.m_237115_(entry.routeType().translationKey()), RoutingOrderMenu.typeButton(index), mouseX, mouseY);
-      Component damage = Component.m_237115_("guistrings.npc.routing_order.damage_label");
-      Component tag = Component.m_237113_("NBT");
+      this.drawButton(graphics, 65, y + 10, 79, 12, Component.translatable(entry.routeType().translationKey()), RoutingOrderMenu.typeButton(index), mouseX, mouseY);
+      Component damage = Component.translatable("guistrings.npc.routing_order.damage_label");
+      Component tag = Component.literal("NBT");
       if (entry.ignoreDamage()) {
-         damage = damage.m_6881_().m_130944_(new ChatFormatting[]{ChatFormatting.RED, ChatFormatting.STRIKETHROUGH});
+         damage = damage.copy().withStyle(new ChatFormatting[]{ChatFormatting.RED, ChatFormatting.STRIKETHROUGH});
       }
 
       if (entry.ignoreTag()) {
-         tag = tag.m_6881_().m_130944_(new ChatFormatting[]{ChatFormatting.RED, ChatFormatting.STRIKETHROUGH});
+         tag = tag.copy().withStyle(new ChatFormatting[]{ChatFormatting.RED, ChatFormatting.STRIKETHROUGH});
       }
 
       this.drawButton(graphics, 146, y + 10, 38, 12, damage, RoutingOrderMenu.ignoreDamageButton(index), mouseX, mouseY);
@@ -130,63 +130,63 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
 
       for (int slot = 0; slot < 12; slot++) {
          int x = 9 + slot * 18;
-         LegacyGuiStyle.slot(graphics, this.f_97735_, this.f_97736_, x + 1, y + 25);
+         LegacyGuiStyle.slot(graphics, this.leftPos, this.topPos, x + 1, y + 25);
          ItemStack stack = entry.filters().get(slot);
-         if (!stack.m_41619_()) {
-            graphics.m_280203_(stack, this.f_97735_ + x + 1, this.f_97736_ + y + 25);
-            graphics.m_280370_(this.f_96547_, stack, this.f_97735_ + x + 1, this.f_97736_ + y + 25);
+         if (!stack.isEmpty()) {
+            graphics.renderFakeItem(stack, this.leftPos + x + 1, this.topPos + y + 25);
+            graphics.renderItemDecorations(this.font, stack, this.leftPos + x + 1, this.topPos + y + 25);
          }
       }
 
-      this.drawButton(graphics, 229, y, 12, 9, Component.m_237113_("X"), RoutingOrderMenu.removeButton(index), mouseX, mouseY);
-      this.drawButton(graphics, 229, y + 15, 12, 12, Component.m_237113_("^"), RoutingOrderMenu.moveUpButton(index), mouseX, mouseY);
-      this.drawButton(graphics, 229, y + 29, 12, 12, Component.m_237113_("v"), RoutingOrderMenu.moveDownButton(index), mouseX, mouseY);
-      graphics.m_280509_(this.f_97735_ + 3, this.f_97736_ + y + 47, this.f_97735_ + 243, this.f_97736_ + y + 48, -16777216);
+      this.drawButton(graphics, 229, y, 12, 9, Component.literal("X"), RoutingOrderMenu.removeButton(index), mouseX, mouseY);
+      this.drawButton(graphics, 229, y + 15, 12, 12, Component.literal("^"), RoutingOrderMenu.moveUpButton(index), mouseX, mouseY);
+      this.drawButton(graphics, 229, y + 29, 12, 12, Component.literal("v"), RoutingOrderMenu.moveDownButton(index), mouseX, mouseY);
+      graphics.fill(this.leftPos + 3, this.topPos + y + 47, this.leftPos + 243, this.topPos + y + 48, -16777216);
    }
 
    private void drawButton(GuiGraphics graphics, int x, int y, int width, int height, Component label, int id, int mouseX, int mouseY) {
       boolean pointerVisible = this.insideOrderViewport((double)mouseX, (double)mouseY);
       int pointerX = pointerVisible ? mouseX : Integer.MIN_VALUE;
       int pointerY = pointerVisible ? mouseY : Integer.MIN_VALUE;
-      LegacyGuiStyle.button(graphics, this.f_97735_, this.f_97736_, x, y, width, height, pointerX, pointerY);
-      int textWidth = this.f_96547_.m_92852_(label);
+      LegacyGuiStyle.button(graphics, this.leftPos, this.topPos, x, y, width, height, pointerX, pointerY);
+      int textWidth = this.font.width(label);
       float scale = Math.min(1.0F, Math.min((float)(width - 4) / (float)Math.max(1, textWidth), (float)(height - 2) / 9.0F));
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_()
-         .m_252880_(
-            (float)(this.f_97735_ + x) + ((float)width - (float)textWidth * scale) / 2.0F,
-            (float)(this.f_97736_ + y) + ((float)height - 9.0F * scale) / 2.0F,
+      graphics.pose().pushPose();
+      graphics.pose()
+         .translate(
+            (float)(this.leftPos + x) + ((float)width - (float)textWidth * scale) / 2.0F,
+            (float)(this.topPos + y) + ((float)height - 9.0F * scale) / 2.0F,
             0.0F
          );
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, label, 0, 0, this.pressedButton == id ? -96 : -1, false);
-      graphics.m_280168_().m_85849_();
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, label, 0, 0, this.pressedButton == id ? -96 : -1, false);
+      graphics.pose().popPose();
    }
 
    private void drawFitted(GuiGraphics graphics, Component text, int x, int y, int maxWidth) {
-      float scale = Math.min(1.0F, (float)maxWidth / (float)Math.max(1, this.f_96547_.m_92852_(text)));
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_((float)(this.f_97735_ + x), (float)(this.f_97736_ + y), 0.0F);
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, text, 0, 0, -1, false);
-      graphics.m_280168_().m_85849_();
+      float scale = Math.min(1.0F, (float)maxWidth / (float)Math.max(1, this.font.width(text)));
+      graphics.pose().pushPose();
+      graphics.pose().translate((float)(this.leftPos + x), (float)(this.topPos + y), 0.0F);
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, text, 0, 0, -1, false);
+      graphics.pose().popPose();
    }
 
    private Component blockName(RoutingOrderData.RouteEntry entry) {
-      if (this.f_96541_ != null && this.f_96541_.f_91073_ != null && this.f_96541_.f_91073_.m_46805_(entry.pos())) {
-         BlockState state = this.f_96541_.f_91073_.m_8055_(entry.pos());
-         return state.m_60734_().m_49954_();
+      if (this.minecraft != null && this.minecraft.level != null && this.minecraft.level.hasChunkAt(entry.pos())) {
+         BlockState state = this.minecraft.level.getBlockState(entry.pos());
+         return state.getBlock().getName();
       } else {
-         return Component.m_237115_("guistrings.npc.routing_order.unknown_block");
+         return Component.translatable("guistrings.npc.routing_order.unknown_block");
       }
    }
 
    private Component sideLabel(RoutingOrderData.RouteEntry entry) {
-      Component worldSide = Component.m_237115_("guistrings.inventory.direction." + entry.side().m_122433_());
-      if (this.f_96541_ != null && this.f_96541_.f_91073_ != null && this.f_96541_.f_91073_.m_7702_(entry.pos()) instanceof BasicWorksiteBlockEntity worksite) {
-         Component relativeSide = Component.m_237115_(worksite.getRelativeSide(entry.side()).translationKey());
-         Component access = Component.m_237115_(worksite.getSideAccess(worksite.getRelativeSide(entry.side())).translationKey());
-         return worldSide.m_6881_().m_130946_(" / ").m_7220_(relativeSide).m_130946_(" / ").m_7220_(access);
+      Component worldSide = Component.translatable("guistrings.inventory.direction." + entry.side().getName());
+      if (this.minecraft != null && this.minecraft.level != null && this.minecraft.level.getBlockEntity(entry.pos()) instanceof BasicWorksiteBlockEntity worksite) {
+         Component relativeSide = Component.translatable(worksite.getRelativeSide(entry.side()).translationKey());
+         Component access = Component.translatable(worksite.getSideAccess(worksite.getRelativeSide(entry.side())).translationKey());
+         return worldSide.copy().append(" / ").append(relativeSide).append(" / ").append(access);
       } else {
          return worldSide;
       }
@@ -197,19 +197,19 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
          case FILL_COURIER_TO, WITHDRAW_ALL_OF, WITHDRAW_ALL_EXCEPT, WITHDRAW_RATIO, WITHDRAW_EXACT, TAKE_MINIMUM -> true;
          default -> false;
       };
-      return Component.m_237113_(containerToCourier ? "C > NPC: " : "NPC > C: ").m_7220_(Component.m_237115_(entry.routeType().translationKey()));
+      return Component.literal(containerToCourier ? "C > NPC: " : "NPC > C: ").append(Component.translatable(entry.routeType().translationKey()));
    }
 
    private Component damageLabel(RoutingOrderData.RouteEntry entry) {
-      return Component.m_237115_(entry.ignoreDamage() ? "guistrings.npc.routing_order.damage_off" : "guistrings.npc.routing_order.damage_on");
+      return Component.translatable(entry.ignoreDamage() ? "guistrings.npc.routing_order.damage_off" : "guistrings.npc.routing_order.damage_on");
    }
 
    private Component tagLabel(RoutingOrderData.RouteEntry entry) {
-      return Component.m_237115_(entry.ignoreTag() ? "guistrings.npc.routing_order.tag_off" : "guistrings.npc.routing_order.tag_on");
+      return Component.translatable(entry.ignoreTag() ? "guistrings.npc.routing_order.tag_off" : "guistrings.npc.routing_order.tag_on");
    }
 
    private String formatPos(BlockPos pos) {
-      return "X: " + pos.m_123341_() + "  Y: " + pos.m_123342_() + "  Z: " + pos.m_123343_();
+      return "X: " + pos.getX() + "  Y: " + pos.getY() + "  Z: " + pos.getZ();
    }
 
    private int rowY(int index) {
@@ -217,30 +217,30 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
    }
 
    @Override
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
       this.clampOrderScroll();
       if (button == 0 && this.insideOrderViewport(mouseX, mouseY)) {
          this.pressedButton = this.getButtonAt(mouseX, mouseY);
-         if (this.pressedButton >= 0 && this.f_96541_ != null && this.f_96541_.f_91072_ != null) {
-            this.f_96541_.f_91072_.m_105208_(((RoutingOrderMenu)this.f_97732_).f_38840_, this.pressedButton);
+         if (this.pressedButton >= 0 && this.minecraft != null && this.minecraft.gameMode != null) {
+            this.minecraft.gameMode.handleInventoryButtonClick(((RoutingOrderMenu)this.menu).containerId, this.pressedButton);
             return true;
          }
       }
 
-      return super.m_6375_(mouseX, mouseY, button);
+      return super.mouseClicked(mouseX, mouseY, button);
    }
 
    @Override
-   public boolean m_6348_(double mouseX, double mouseY, int button) {
+   public boolean mouseReleased(double mouseX, double mouseY, int button) {
       this.pressedButton = -1;
-      return super.m_6348_(mouseX, mouseY, button);
+      return super.mouseReleased(mouseX, mouseY, button);
    }
 
    private int getButtonAt(double mouseX, double mouseY) {
       if (!this.insideOrderViewport(mouseX, mouseY)) {
          return -1;
       } else {
-         List<RoutingOrderData.RouteEntry> entries = ((RoutingOrderMenu)this.f_97732_).getEntries();
+         List<RoutingOrderData.RouteEntry> entries = ((RoutingOrderMenu)this.menu).getEntries();
 
          for (int i = 0; i < entries.size(); i++) {
             int y = this.rowY(i);
@@ -286,9 +286,9 @@ public class RoutingOrderScreen extends LegacyOrderScreen<RoutingOrderMenu> {
    }
 
    private boolean inBounds(double mouseX, double mouseY, int x, int y, int width, int height) {
-      return mouseX >= (double)(this.f_97735_ + x)
-         && mouseY >= (double)(this.f_97736_ + y)
-         && mouseX < (double)(this.f_97735_ + x + width)
-         && mouseY < (double)(this.f_97736_ + y + height);
+      return mouseX >= (double)(this.leftPos + x)
+         && mouseY >= (double)(this.topPos + y)
+         && mouseX < (double)(this.leftPos + x + width)
+         && mouseY < (double)(this.topPos + y + height);
    }
 }

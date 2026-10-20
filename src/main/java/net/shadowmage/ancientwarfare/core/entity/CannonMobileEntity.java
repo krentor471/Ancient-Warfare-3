@@ -16,12 +16,12 @@ import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegis
 import software.bernie.geckolib.core.object.PlayState;
 
 public class CannonMobileEntity extends CannonTurretStandEntity {
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.cannon_mobile");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.cannon_mobile");
    private static final RawAnimation WHEEL_ROLL = RawAnimation.begin().thenLoop("animation.ancientwarfare.cannon_mobile.wheel_roll");
 
    public CannonMobileEntity(EntityType<? extends CannonMobileEntity> type, Level level) {
       super(type, level);
-      this.m_20242_(false);
+      this.setNoGravity(false);
    }
 
    @Override
@@ -30,9 +30,9 @@ public class CannonMobileEntity extends CannonTurretStandEntity {
    }
 
    @Override
-   public void m_8119_() {
-      this.m_20242_(false);
-      super.m_8119_();
+   public void tick() {
+      this.setNoGravity(false);
+      super.tick();
    }
 
    @Override
@@ -42,7 +42,7 @@ public class CannonMobileEntity extends CannonTurretStandEntity {
    }
 
    private PlayState wheelAnimation(AnimationState<CannonMobileEntity> state) {
-      if (this.m_20184_().m_165925_() > 4.0E-4) {
+      if (this.getDeltaMovement().horizontalDistanceSqr() > 4.0E-4) {
          state.setAnimation(WHEEL_ROLL);
          return PlayState.CONTINUE;
       } else {
@@ -61,10 +61,10 @@ public class CannonMobileEntity extends CannonTurretStandEntity {
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         Vec3 offset = this.getPassengerOffset().m_82524_(-this.m_146908_() * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         Vec3 offset = this.getPassengerOffset().yRot(-this.getYRot() * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -73,7 +73,7 @@ public class CannonMobileEntity extends CannonTurretStandEntity {
       ItemStack stack = new ItemStack(CannonMobileItem.itemForMaterialLevel(this.getMaterialLevel()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("CannonMobileData", tag);
+      stack.getOrCreateTag().put("CannonMobileData", tag);
       return stack;
    }
 }

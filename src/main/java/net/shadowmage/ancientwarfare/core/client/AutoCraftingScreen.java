@@ -17,40 +17,40 @@ public class AutoCraftingScreen extends LegacyContainerScreen<AutoCraftingMenu> 
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
-      this.legacyButton("craft", 125, 44, 36, 12, Component.m_237115_("guistrings.automation.craft"), button -> {
-         if (this.f_96541_.f_91072_ != null) {
-            this.f_96541_.f_91072_.m_105208_(((AutoCraftingMenu)this.f_97732_).f_38840_, 1);
+   protected void init() {
+      super.init();
+      this.legacyButton("craft", 125, 44, 36, 12, Component.translatable("guistrings.automation.craft"), button -> {
+         if (this.minecraft.gameMode != null) {
+            this.minecraft.gameMode.handleInventoryButtonClick(((AutoCraftingMenu)this.menu).containerId, 1);
          }
       });
       this.previousRecipe = this.addLegacyWidget(
-         "previous recipe", new LegacyArrowButton(this.f_97735_ + 122, this.f_97736_ + 26, false, button -> this.clickRecipeButton(1000)), 122, 26, 10, 16
+         "previous recipe", new LegacyArrowButton(this.leftPos + 122, this.topPos + 26, false, button -> this.clickRecipeButton(1000)), 122, 26, 10, 16
       );
       this.nextRecipe = this.addLegacyWidget(
-         "next recipe", new LegacyArrowButton(this.f_97735_ + 152, this.f_97736_ + 26, true, button -> this.clickRecipeButton(1001)), 152, 26, 10, 16
+         "next recipe", new LegacyArrowButton(this.leftPos + 152, this.topPos + 26, true, button -> this.clickRecipeButton(1001)), 152, 26, 10, 16
       );
       this.updateRecipeButtons();
    }
 
    @Override
    protected void renderLegacyBackground(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      graphics.m_280480_(new ItemStack(AWCoreRegistryAccess.item(AWCoreIds.RESEARCH_BOOK)), this.f_97735_ + 8, this.f_97736_ + 8);
+      graphics.renderItem(new ItemStack(AWCoreRegistryAccess.item(AWCoreIds.RESEARCH_BOOK)), this.leftPos + 8, this.topPos + 8);
       this.updateRecipeButtons();
    }
 
    private void clickRecipeButton(int id) {
-      if (this.f_96541_.f_91072_ != null) {
-         this.f_96541_.f_91072_.m_105208_(((AutoCraftingMenu)this.f_97732_).f_38840_, id);
+      if (this.minecraft.gameMode != null) {
+         this.minecraft.gameMode.handleInventoryButtonClick(((AutoCraftingMenu)this.menu).containerId, id);
       }
    }
 
    private void updateRecipeButtons() {
-      boolean visible = ((AutoCraftingMenu)this.f_97732_).hasMultipleRecipes();
-      this.previousRecipe.f_93624_ = this.previousRecipe.f_93623_ = visible;
-      this.nextRecipe.f_93624_ = this.nextRecipe.f_93623_ = visible;
+      boolean visible = ((AutoCraftingMenu)this.menu).hasMultipleRecipes();
+      this.previousRecipe.visible = this.previousRecipe.active = visible;
+      this.nextRecipe.visible = this.nextRecipe.active = visible;
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
    }
 }

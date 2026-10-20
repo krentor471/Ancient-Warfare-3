@@ -33,76 +33,76 @@ import net.shadowmage.ancientwarfare.core.tile.SurvivalStructureBuilderBlockEnti
 import org.jetbrains.annotations.Nullable;
 
 public class SurvivalStructureBuilderBlock extends BaseEntityBlock {
-   public static final DirectionProperty FACING = BlockStateProperties.f_61374_;
+   public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
    public SurvivalStructureBuilderBlock(Properties properties) {
       super(properties);
-      this.m_49959_((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH));
+      this.registerDefaultState((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH));
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return new SurvivalStructureBuilderBlockEntity(pos, state);
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.MODEL;
    }
 
    @Nullable
-   public BlockState m_5573_(BlockPlaceContext context) {
-      return (BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_());
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      return (BlockState)this.defaultBlockState().setValue(FACING, context.getHorizontalDirection());
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{FACING});
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState state, BlockEntityType<T> type) {
-      return level.f_46443_
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+      return level.isClientSide
          ? null
-         : m_152132_(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.STRUCTURE_BUILDER_TICKED), SurvivalStructureBuilderBlockEntity::serverTick);
+         : createTickerHelper(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.STRUCTURE_BUILDER_TICKED), SurvivalStructureBuilderBlockEntity::serverTick);
    }
 
-   public void m_6402_(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-      if (!level.f_46443_ && level.m_7702_(pos) instanceof SurvivalStructureBuilderBlockEntity builder) {
-         builder.configure(stack, (Direction)state.m_61143_(FACING));
+   public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+      if (!level.isClientSide && level.getBlockEntity(pos) instanceof SurvivalStructureBuilderBlockEntity builder) {
+         builder.configure(stack, (Direction)state.getValue(FACING));
       }
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if (!(level.m_7702_(pos) instanceof SurvivalStructureBuilderBlockEntity builder)) {
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if (!(level.getBlockEntity(pos) instanceof SurvivalStructureBuilderBlockEntity builder)) {
          return InteractionResult.PASS;
       } else {
-         ItemStack held = player.m_21120_(hand);
-         boolean workingHammer = held.m_41720_() instanceof HammerItem && HammerModeData.isWorkMode(held);
-         if (!level.f_46443_) {
+         ItemStack held = player.getItemInHand(hand);
+         boolean workingHammer = held.getItem() instanceof HammerItem && HammerModeData.isWorkMode(held);
+         if (!level.isClientSide) {
             if (workingHammer && builder.addPlayerWork()) {
-               held.m_41622_(1, player, entity -> entity.m_21190_(hand));
-               player.m_21011_(hand, true);
+               held.hurtAndBreak(1, player, entity -> entity.broadcastBreakEvent(hand));
+               player.swing(hand, true);
             }
 
-            player.m_5661_(builder.progressMessage(), true);
+            player.displayClientMessage(builder.progressMessage(), true);
          }
 
-         return InteractionResult.m_19078_(level.f_46443_);
+         return InteractionResult.sidedSuccess(level.isClientSide);
       }
    }
 
-   public List<ItemStack> m_49635_(BlockState state, net.minecraft.world.level.storage.loot.LootParams.Builder params) {
-      BlockEntity blockEntity = (BlockEntity)params.m_287159_(LootContextParams.f_81462_);
+   public List<ItemStack> getDrops(BlockState state, net.minecraft.world.level.storage.loot.LootParams.Builder params) {
+      BlockEntity blockEntity = (BlockEntity)params.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
       return blockEntity instanceof SurvivalStructureBuilderBlockEntity builder ? List.of(builder.createProgressStack()) : List.of(new ItemStack(this));
    }
 
-   public void m_5707_(Level level, BlockPos pos, BlockState state, Player player) {
-      if (!level.f_46443_ && player.m_7500_() && level.m_7702_(pos) instanceof SurvivalStructureBuilderBlockEntity builder) {
+   public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+      if (!level.isClientSide && player.isCreative() && level.getBlockEntity(pos) instanceof SurvivalStructureBuilderBlockEntity builder) {
          ItemStack saved = builder.createProgressStack();
-         if (!saved.m_41784_().m_128461_("TemplateName").isBlank()) {
-            level.m_7967_(new ItemEntity(level, (double)pos.m_123341_() + 0.5, (double)pos.m_123342_() + 0.5, (double)pos.m_123343_() + 0.5, saved));
+         if (!saved.getOrCreateTag().getString("TemplateName").isBlank()) {
+            level.addFreshEntity(new ItemEntity(level, (double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, saved));
          }
       }
 
-      super.m_5707_(level, pos, state, player);
+      super.playerWillDestroy(level, pos, state, player);
    }
 }

@@ -34,15 +34,15 @@ import net.shadowmage.ancientwarfare.core.structure.LargeIslandWorldGenerator;
 import net.shadowmage.ancientwarfare.core.tile.GateProxyBlockEntity;
 
 public class GateEntity extends Entity {
-   private static final EntityDataAccessor<BlockPos> MIN_POS = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135038_);
-   private static final EntityDataAccessor<BlockPos> MAX_POS = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135038_);
-   private static final EntityDataAccessor<Integer> FACING = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Float> OPEN_PROGRESS = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Integer> STATUS = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Integer> MATERIAL = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Integer> OPENING_STYLE = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Float> HEALTH = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Integer> HURT_TIME = SynchedEntityData.m_135353_(GateEntity.class, EntityDataSerializers.f_135028_);
+   private static final EntityDataAccessor<BlockPos> MIN_POS = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.BLOCK_POS);
+   private static final EntityDataAccessor<BlockPos> MAX_POS = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.BLOCK_POS);
+   private static final EntityDataAccessor<Integer> FACING = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Float> OPEN_PROGRESS = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Integer> STATUS = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Integer> MATERIAL = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Integer> OPENING_STYLE = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Float> HEALTH = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Integer> HURT_TIME = SynchedEntityData.defineId(GateEntity.class, EntityDataSerializers.INT);
    private static final int CLOSED = 0;
    private static final int OPENING = 1;
    private static final int OPEN = 2;
@@ -69,7 +69,7 @@ public class GateEntity extends Entity {
    }
 
    public boolean canOperate(Player player) {
-      return GateAccessPolicy.canOperate(this.owner, player.m_20148_(), player.m_150110_().f_35937_, player.m_5833_());
+      return GateAccessPolicy.canOperate(this.owner, player.getUUID(), player.getAbilities().instabuild, player.isSpectator());
    }
 
    public ItemStack createPackedItem() {
@@ -80,49 +80,49 @@ public class GateEntity extends Entity {
          default -> this.material() == GateEntity.Material.IRON ? "gate_spawner_iron" : "gate_spawner";
       };
       ItemStack stack = new ItemStack(AWCoreRegistryAccess.item(AWCoreIds.id(id)));
-      stack.m_41784_().m_128350_("GateHealth", this.health());
+      stack.getOrCreateTag().putFloat("GateHealth", this.health());
       return stack;
    }
 
    public void restorePackedHealth(float value) {
       if (Float.isFinite(value)) {
-         this.f_19804_.m_135381_(HEALTH, Math.max(1.0F, Math.min(value, this.maxHealth())));
+         this.entityData.set(HEALTH, Math.max(1.0F, Math.min(value, this.maxHealth())));
       }
    }
 
    public GateEntity(EntityType<?> type, Level level) {
       super(type, level);
-      this.f_19794_ = true;
+      this.noPhysics = true;
    }
 
    public void configure(BlockPos first, BlockPos second, Direction facing) {
       BlockPos min = new BlockPos(
-         Math.min(first.m_123341_(), second.m_123341_()), Math.min(first.m_123342_(), second.m_123342_()), Math.min(first.m_123343_(), second.m_123343_())
+         Math.min(first.getX(), second.getX()), Math.min(first.getY(), second.getY()), Math.min(first.getZ(), second.getZ())
       );
       BlockPos max = new BlockPos(
-         Math.max(first.m_123341_(), second.m_123341_()), Math.max(first.m_123342_(), second.m_123342_()), Math.max(first.m_123343_(), second.m_123343_())
+         Math.max(first.getX(), second.getX()), Math.max(first.getY(), second.getY()), Math.max(first.getZ(), second.getZ())
       );
-      this.f_19804_.m_135381_(MIN_POS, min);
-      this.f_19804_.m_135381_(MAX_POS, max);
-      this.f_19804_.m_135381_(FACING, facing.m_122416_());
-      this.m_6034_((double)(min.m_123341_() + max.m_123341_() + 1) * 0.5, (double)min.m_123342_(), (double)(min.m_123343_() + max.m_123343_() + 1) * 0.5);
+      this.entityData.set(MIN_POS, min);
+      this.entityData.set(MAX_POS, max);
+      this.entityData.set(FACING, facing.get2DDataValue());
+      this.setPos((double)(min.getX() + max.getX() + 1) * 0.5, (double)min.getY(), (double)(min.getZ() + max.getZ() + 1) * 0.5);
    }
 
-   protected void m_8097_() {
-      this.f_19804_.m_135372_(MIN_POS, BlockPos.f_121853_);
-      this.f_19804_.m_135372_(MAX_POS, BlockPos.f_121853_);
-      this.f_19804_.m_135372_(FACING, Direction.NORTH.m_122416_());
-      this.f_19804_.m_135372_(OPEN_PROGRESS, 0.0F);
-      this.f_19804_.m_135372_(STATUS, 0);
-      this.f_19804_.m_135372_(MATERIAL, GateEntity.Material.WOOD.ordinal());
-      this.f_19804_.m_135372_(OPENING_STYLE, GateEntity.OpeningStyle.VERTICAL.ordinal());
-      this.f_19804_.m_135372_(HEALTH, 500.0F);
-      this.f_19804_.m_135372_(HURT_TIME, 0);
+   protected void defineSynchedData() {
+      this.entityData.define(MIN_POS, BlockPos.ZERO);
+      this.entityData.define(MAX_POS, BlockPos.ZERO);
+      this.entityData.define(FACING, Direction.NORTH.get2DDataValue());
+      this.entityData.define(OPEN_PROGRESS, 0.0F);
+      this.entityData.define(STATUS, 0);
+      this.entityData.define(MATERIAL, GateEntity.Material.WOOD.ordinal());
+      this.entityData.define(OPENING_STYLE, GateEntity.OpeningStyle.VERTICAL.ordinal());
+      this.entityData.define(HEALTH, 500.0F);
+      this.entityData.define(HURT_TIME, 0);
    }
 
-   public void m_8119_() {
-      super.m_8119_();
-      if (this.m_9236_() instanceof ServerLevel serverLevel && LargeIslandWorldGenerator.isConstructingAt(serverLevel, this.m_20183_())) {
+   public void tick() {
+      super.tick();
+      if (this.level() instanceof ServerLevel serverLevel && LargeIslandWorldGenerator.isConstructingAt(serverLevel, this.blockPosition())) {
          return;
       }
 
@@ -131,12 +131,12 @@ public class GateEntity extends Entity {
          this.hurtCooldown--;
       }
 
-      if (!this.m_9236_().f_46443_ && this.hurtTime() > 0) {
-         this.f_19804_.m_135381_(HURT_TIME, this.hurtTime() - 1);
+      if (!this.level().isClientSide && this.hurtTime() > 0) {
+         this.entityData.set(HURT_TIME, this.hurtTime() - 1);
       }
 
       this.updateOpenProgress();
-      if (!this.m_9236_().f_46443_) {
+      if (!this.level().isClientSide) {
          boolean proxyOpen = this.status() == 1 || this.status() == 2;
          if (proxyOpen != this.lastProxyOpen) {
             this.setProxyOpen(proxyOpen);
@@ -159,15 +159,15 @@ public class GateEntity extends Entity {
       float maxProgress = this.maxOpenProgress();
       if (status == 1) {
          progress = Math.min(maxProgress, progress + this.moveSpeed());
-         this.f_19804_.m_135381_(OPEN_PROGRESS, progress);
-         if (!this.m_9236_().f_46443_ && progress >= maxProgress) {
-            this.f_19804_.m_135381_(STATUS, 2);
+         this.entityData.set(OPEN_PROGRESS, progress);
+         if (!this.level().isClientSide && progress >= maxProgress) {
+            this.entityData.set(STATUS, 2);
          }
       } else if (status == 3) {
          progress = Math.max(0.0F, progress - this.moveSpeed());
-         this.f_19804_.m_135381_(OPEN_PROGRESS, progress);
-         if (!this.m_9236_().f_46443_ && progress <= 0.0F) {
-            this.f_19804_.m_135381_(STATUS, 0);
+         this.entityData.set(OPEN_PROGRESS, progress);
+         if (!this.level().isClientSide && progress <= 0.0F) {
+            this.entityData.set(STATUS, 0);
          }
       }
    }
@@ -176,18 +176,18 @@ public class GateEntity extends Entity {
       return this.openingStyle() == GateEntity.OpeningStyle.DRAWBRIDGE ? 2.0F : 0.08F;
    }
 
-   public boolean m_5830_() {
+   public boolean isInWall() {
       return false;
    }
 
-   public boolean m_6673_(DamageSource source) {
-      return source.m_276093_(DamageTypes.f_268612_) || source.m_276093_(DamageTypes.f_268613_) || super.m_6673_(source);
+   public boolean isInvulnerableTo(DamageSource source) {
+      return source.is(DamageTypes.IN_WALL) || source.is(DamageTypes.CRAMMING) || super.isInvulnerableTo(source);
    }
 
-   public boolean m_6469_(DamageSource source, float amount) {
-      if (!this.m_6084_() || !Float.isFinite(amount) || amount <= 0.0F || this.m_6673_(source)) {
+   public boolean hurt(DamageSource source, float amount) {
+      if (!this.isAlive() || !Float.isFinite(amount) || amount <= 0.0F || this.isInvulnerableTo(source)) {
          return false;
-      } else if (this.m_9236_().f_46443_) {
+      } else if (this.level().isClientSide) {
          return true;
       } else if (this.hurtCooldown > 0) {
          return false;
@@ -197,11 +197,11 @@ public class GateEntity extends Entity {
          if (appliedDamage <= 0.0F) {
             return false;
          } else {
-            this.f_19804_.m_135381_(HEALTH, Math.max(0.0F, this.health() - appliedDamage));
-            this.f_19804_.m_135381_(HURT_TIME, 10);
-            this.m_5834_();
+            this.entityData.set(HEALTH, Math.max(0.0F, this.health() - appliedDamage));
+            this.entityData.set(HURT_TIME, 10);
+            this.markHurt();
             if (this.health() <= 0.0F) {
-               this.m_146870_();
+               this.discard();
             }
 
             return true;
@@ -209,26 +209,26 @@ public class GateEntity extends Entity {
       }
    }
 
-   public boolean m_6087_() {
+   public boolean isPickable() {
       return true;
    }
 
-   public boolean m_6097_() {
+   public boolean isAttackable() {
       return true;
    }
 
-   protected AABB m_142242_() {
+   protected AABB makeBoundingBox() {
       BlockPos min = this.minPos();
       BlockPos max = this.maxPos();
-      return min.equals(BlockPos.f_121853_) && max.equals(BlockPos.f_121853_)
-         ? super.m_142242_()
+      return min.equals(BlockPos.ZERO) && max.equals(BlockPos.ZERO)
+         ? super.makeBoundingBox()
          : new AABB(
-            (double)min.m_123341_(),
-            (double)min.m_123342_(),
-            (double)min.m_123343_(),
-            (double)max.m_123341_() + 1.0,
-            (double)max.m_123342_() + 1.0,
-            (double)max.m_123343_() + 1.0
+            (double)min.getX(),
+            (double)min.getY(),
+            (double)min.getZ(),
+            (double)max.getX() + 1.0,
+            (double)max.getY() + 1.0,
+            (double)max.getZ() + 1.0
          );
    }
 
@@ -237,13 +237,13 @@ public class GateEntity extends Entity {
          this.setOpen(true);
       } else {
          int status = this.status();
-         this.f_19804_.m_135381_(STATUS, status != 0 && status != 3 ? 3 : 1);
+         this.entityData.set(STATUS, status != 0 && status != 3 ? 3 : 1);
       }
    }
 
    public void refreshRedstonePower() {
-      if (!this.m_9236_().f_46443_) {
-         if (this.m_9236_() instanceof ServerLevel serverLevel && LargeIslandWorldGenerator.isConstructingAt(serverLevel, this.m_20183_())) {
+      if (!this.level().isClientSide) {
+         if (this.level() instanceof ServerLevel serverLevel && LargeIslandWorldGenerator.isConstructingAt(serverLevel, this.blockPosition())) {
             return;
          }
 
@@ -259,11 +259,11 @@ public class GateEntity extends Entity {
       BlockPos min = this.minPos();
       BlockPos max = this.maxPos();
 
-      for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
-         for (int y = min.m_123342_(); y <= max.m_123342_(); y++) {
-            for (int z = min.m_123343_(); z <= max.m_123343_(); z++) {
+      for (int x = min.getX(); x <= max.getX(); x++) {
+         for (int y = min.getY(); y <= max.getY(); y++) {
+            for (int z = min.getZ(); z <= max.getZ(); z++) {
                BlockPos pos = new BlockPos(x, y, z);
-               if (this.m_9236_().m_8055_(pos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY)) && this.m_9236_().m_276867_(pos)) {
+               if (this.level().getBlockState(pos).is(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY)) && this.level().hasNeighborSignal(pos)) {
                   return true;
                }
             }
@@ -277,10 +277,10 @@ public class GateEntity extends Entity {
       int currentStatus = this.status();
       if (!open || currentStatus != 0 && currentStatus != 3) {
          if (!open && (currentStatus == 2 || currentStatus == 1)) {
-            this.f_19804_.m_135381_(STATUS, 3);
+            this.entityData.set(STATUS, 3);
          }
       } else {
-         this.f_19804_.m_135381_(STATUS, 1);
+         this.entityData.set(STATUS, 1);
       }
    }
 
@@ -292,22 +292,22 @@ public class GateEntity extends Entity {
    }
 
    public void setMaterial(GateEntity.Material material) {
-      this.f_19804_.m_135381_(MATERIAL, material.ordinal());
-      this.f_19804_.m_135381_(HEALTH, this.maxHealth());
+      this.entityData.set(MATERIAL, material.ordinal());
+      this.entityData.set(HEALTH, this.maxHealth());
    }
 
    public void setOpeningStyle(GateEntity.OpeningStyle openingStyle) {
-      this.f_19804_.m_135381_(OPENING_STYLE, openingStyle.ordinal());
+      this.entityData.set(OPENING_STYLE, openingStyle.ordinal());
    }
 
    public GateEntity.Material material() {
-      int id = (Integer)this.f_19804_.m_135370_(MATERIAL);
+      int id = (Integer)this.entityData.get(MATERIAL);
       GateEntity.Material[] values = GateEntity.Material.values();
       return id >= 0 && id < values.length ? values[id] : GateEntity.Material.WOOD;
    }
 
    public float health() {
-      return (Float)this.f_19804_.m_135370_(HEALTH);
+      return (Float)this.entityData.get(HEALTH);
    }
 
    public float maxHealth() {
@@ -315,47 +315,47 @@ public class GateEntity extends Entity {
    }
 
    public int hurtTime() {
-      return (Integer)this.f_19804_.m_135370_(HURT_TIME);
+      return (Integer)this.entityData.get(HURT_TIME);
    }
 
    public GateEntity.OpeningStyle openingStyle() {
-      int id = (Integer)this.f_19804_.m_135370_(OPENING_STYLE);
+      int id = (Integer)this.entityData.get(OPENING_STYLE);
       GateEntity.OpeningStyle[] values = GateEntity.OpeningStyle.values();
       return id >= 0 && id < values.length ? values[id] : GateEntity.OpeningStyle.VERTICAL;
    }
 
-   public InteractionResult m_6096_(Player player, InteractionHand hand) {
-      if (!this.m_9236_().f_46443_) {
-         if (!this.m_6084_()) {
+   public InteractionResult interact(Player player, InteractionHand hand) {
+      if (!this.level().isClientSide) {
+         if (!this.isAlive()) {
             return InteractionResult.FAIL;
          }
 
          if (!this.canOperate(player)) {
-            player.m_5661_(Component.m_237115_("message.ancientwarfare.gate.not_owner"), true);
+            player.displayClientMessage(Component.translatable("message.ancientwarfare.gate.not_owner"), true);
             return InteractionResult.FAIL;
          }
 
-         if (player.m_6144_() && player.m_21120_(hand).m_41619_()) {
-            if (!GateAccessPolicy.canPack(this.owner, player.m_20148_(), player.m_150110_().f_35937_, player.m_5833_())) {
-               player.m_5661_(Component.m_237115_("message.ancientwarfare.gate.unowned_pack"), true);
+         if (player.isShiftKeyDown() && player.getItemInHand(hand).isEmpty()) {
+            if (!GateAccessPolicy.canPack(this.owner, player.getUUID(), player.getAbilities().instabuild, player.isSpectator())) {
+               player.displayClientMessage(Component.translatable("message.ancientwarfare.gate.unowned_pack"), true);
                return InteractionResult.FAIL;
             }
 
             ItemStack packed = this.createPackedItem();
-            if (!player.m_36356_(packed)) {
-               player.m_36176_(packed, false);
+            if (!player.addItem(packed)) {
+               player.drop(packed, false);
             }
 
-            this.m_146870_();
-            player.m_5661_(Component.m_237115_("message.ancientwarfare.gate.packed"), true);
+            this.discard();
+            player.displayClientMessage(Component.translatable("message.ancientwarfare.gate.packed"), true);
             return InteractionResult.CONSUME;
          }
 
          this.toggle();
-         player.m_5661_(Component.m_237115_(this.status() == 1 ? "message.ancientwarfare.gate.opening" : "message.ancientwarfare.gate.closing"), true);
+         player.displayClientMessage(Component.translatable(this.status() == 1 ? "message.ancientwarfare.gate.opening" : "message.ancientwarfare.gate.closing"), true);
       }
 
-      return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+      return InteractionResult.sidedSuccess(this.level().isClientSide);
    }
 
    public float openProgress(float partialTick) {
@@ -363,7 +363,7 @@ public class GateEntity extends Entity {
    }
 
    public float openProgress() {
-      return (Float)this.f_19804_.m_135370_(OPEN_PROGRESS);
+      return (Float)this.entityData.get(OPEN_PROGRESS);
    }
 
    public float maxOpenProgress() {
@@ -377,33 +377,33 @@ public class GateEntity extends Entity {
    }
 
    public BlockPos minPos() {
-      return (BlockPos)this.f_19804_.m_135370_(MIN_POS);
+      return (BlockPos)this.entityData.get(MIN_POS);
    }
 
    public BlockPos maxPos() {
-      return (BlockPos)this.f_19804_.m_135370_(MAX_POS);
+      return (BlockPos)this.entityData.get(MAX_POS);
    }
 
    public Direction facing() {
-      return Direction.m_122407_((Integer)this.f_19804_.m_135370_(FACING));
+      return Direction.from2DDataValue((Integer)this.entityData.get(FACING));
    }
 
    public int widthBlocks() {
       BlockPos min = this.minPos();
       BlockPos max = this.maxPos();
-      return Math.max(max.m_123341_() - min.m_123341_() + 1, max.m_123343_() - min.m_123343_() + 1);
+      return Math.max(max.getX() - min.getX() + 1, max.getZ() - min.getZ() + 1);
    }
 
    public int heightBlocks() {
-      return this.maxPos().m_123342_() - this.minPos().m_123342_() + 1;
+      return this.maxPos().getY() - this.minPos().getY() + 1;
    }
 
    public boolean isXAxisGate() {
-      return this.minPos().m_123343_() == this.maxPos().m_123343_();
+      return this.minPos().getZ() == this.maxPos().getZ();
    }
 
    private int status() {
-      return (Integer)this.f_19804_.m_135370_(STATUS);
+      return (Integer)this.entityData.get(STATUS);
    }
 
    boolean isClosedForSiege() {
@@ -411,16 +411,16 @@ public class GateEntity extends Entity {
    }
 
    public void ensureProxyBlocks() {
-      if (this.m_9236_() instanceof ServerLevel) {
+      if (this.level() instanceof ServerLevel) {
          BlockState proxy = (BlockState)AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY)
-            .m_49966_()
-            .m_61124_(GateProxyBlock.OPEN, this.status() == 1 || this.status() == 2);
+            .defaultBlockState()
+            .setValue(GateProxyBlock.OPEN, this.status() == 1 || this.status() == 2);
          this.forEachGatePos(pos -> {
-            BlockState existing = this.m_9236_().m_8055_(pos);
-            if (existing.m_60795_() || existing.m_247087_() || existing.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))) {
-               this.m_9236_().m_7731_(pos, proxy, 3);
-               if (this.m_9236_().m_7702_(pos) instanceof GateProxyBlockEntity blockEntity) {
-                  blockEntity.setGateUuid(this.m_20148_());
+            BlockState existing = this.level().getBlockState(pos);
+            if (existing.isAir() || existing.canBeReplaced() || existing.is(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))) {
+               this.level().setBlock(pos, proxy, 3);
+               if (this.level().getBlockEntity(pos) instanceof GateProxyBlockEntity blockEntity) {
+                  blockEntity.setGateUuid(this.getUUID());
                }
             }
          });
@@ -428,13 +428,13 @@ public class GateEntity extends Entity {
    }
 
    private void setProxyOpen(boolean open) {
-      BlockState proxy = (BlockState)((BlockState)AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY).m_49966_().m_61124_(GateProxyBlock.OPEN, open))
-         .m_61124_(GateProxyBlock.BRIDGE, false);
+      BlockState proxy = (BlockState)((BlockState)AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY).defaultBlockState().setValue(GateProxyBlock.OPEN, open))
+         .setValue(GateProxyBlock.BRIDGE, false);
       this.forEachGatePos(pos -> {
-         if (this.m_9236_().m_8055_(pos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))) {
-            this.m_9236_().m_7731_(pos, proxy, 3);
-            if (this.m_9236_().m_7702_(pos) instanceof GateProxyBlockEntity blockEntity) {
-               blockEntity.setGateUuid(this.m_20148_());
+         if (this.level().getBlockState(pos).is(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))) {
+            this.level().setBlock(pos, proxy, 3);
+            if (this.level().getBlockEntity(pos) instanceof GateProxyBlockEntity blockEntity) {
+               blockEntity.setGateUuid(this.getUUID());
             }
          }
       });
@@ -458,14 +458,14 @@ public class GateEntity extends Entity {
    }
 
    private void ensureOpenBridgeProxyBlocks() {
-      BlockState proxy = (BlockState)((BlockState)AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY).m_49966_().m_61124_(GateProxyBlock.OPEN, false))
-         .m_61124_(GateProxyBlock.BRIDGE, true);
+      BlockState proxy = (BlockState)((BlockState)AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY).defaultBlockState().setValue(GateProxyBlock.OPEN, false))
+         .setValue(GateProxyBlock.BRIDGE, true);
       this.forEachOpenBridgePos(pos -> {
-         BlockState existing = this.m_9236_().m_8055_(pos);
-         if (existing.m_60795_() || existing.m_247087_() || this.isOwnedProxy(pos)) {
-            this.m_9236_().m_7731_(pos, proxy, 3);
-            if (this.m_9236_().m_7702_(pos) instanceof GateProxyBlockEntity blockEntity) {
-               blockEntity.setGateUuid(this.m_20148_());
+         BlockState existing = this.level().getBlockState(pos);
+         if (existing.isAir() || existing.canBeReplaced() || this.isOwnedProxy(pos)) {
+            this.level().setBlock(pos, proxy, 3);
+            if (this.level().getBlockEntity(pos) instanceof GateProxyBlockEntity blockEntity) {
+               blockEntity.setGateUuid(this.getUUID());
             }
          }
       });
@@ -474,37 +474,37 @@ public class GateEntity extends Entity {
    private void removeOpenBridgeProxyBlocks() {
       this.forEachOpenBridgePos(pos -> {
          if (this.isOwnedProxy(pos)) {
-            this.m_9236_().m_7471_(pos, false);
+            this.level().removeBlock(pos, false);
          }
       });
    }
 
    private boolean isOwnedProxy(BlockPos pos) {
-      return this.m_9236_().m_8055_(pos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))
-         && this.m_9236_().m_7702_(pos) instanceof GateProxyBlockEntity blockEntity
-         && blockEntity.isGate(this.m_20148_());
+      return this.level().getBlockState(pos).is(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))
+         && this.level().getBlockEntity(pos) instanceof GateProxyBlockEntity blockEntity
+         && blockEntity.isGate(this.getUUID());
    }
 
-   public void m_142687_(RemovalReason reason) {
-      if (!this.m_9236_().f_46443_ && reason.m_146965_()) {
+   public void remove(RemovalReason reason) {
+      if (!this.level().isClientSide && reason.shouldDestroy()) {
          this.removeOpenBridgeProxyBlocks();
          this.forEachGatePos(pos -> {
             if (this.isOwnedProxy(pos)) {
-               this.m_9236_().m_7471_(pos, false);
+               this.level().removeBlock(pos, false);
             }
          });
       }
 
-      super.m_142687_(reason);
+      super.remove(reason);
    }
 
    private void forEachGatePos(Consumer<BlockPos> consumer) {
       BlockPos min = this.minPos();
       BlockPos max = this.maxPos();
 
-      for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
-         for (int y = min.m_123342_(); y <= max.m_123342_(); y++) {
-            for (int z = min.m_123343_(); z <= max.m_123343_(); z++) {
+      for (int x = min.getX(); x <= max.getX(); x++) {
+         for (int y = min.getY(); y <= max.getY(); y++) {
+            for (int z = min.getZ(); z <= max.getZ(); z++) {
                consumer.accept(new BlockPos(x, y, z));
             }
          }
@@ -518,27 +518,27 @@ public class GateEntity extends Entity {
    private boolean isInsideGatePlane(BlockPos pos) {
       BlockPos min = this.minPos();
       BlockPos max = this.maxPos();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123342_() >= min.m_123342_()
-         && pos.m_123342_() <= max.m_123342_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_();
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getY() >= min.getY()
+         && pos.getY() <= max.getY()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ();
    }
 
    private boolean isInsideOpenBridge(BlockPos pos) {
       BlockPos min = this.minPos();
       BlockPos max = this.maxPos();
-      Direction bridgeDirection = this.facing().m_122424_();
+      Direction bridgeDirection = this.facing().getOpposite();
       int distance = this.isXAxisGate()
-         ? (pos.m_123343_() - min.m_123343_()) * bridgeDirection.m_122431_()
-         : (pos.m_123341_() - min.m_123341_()) * bridgeDirection.m_122429_();
-      if (distance < 1 || distance > this.heightBlocks() || pos.m_123342_() != min.m_123342_()) {
+         ? (pos.getZ() - min.getZ()) * bridgeDirection.getStepZ()
+         : (pos.getX() - min.getX()) * bridgeDirection.getStepX();
+      if (distance < 1 || distance > this.heightBlocks() || pos.getY() != min.getY()) {
          return false;
       } else {
          return this.isXAxisGate()
-            ? pos.m_123341_() >= min.m_123341_() && pos.m_123341_() <= max.m_123341_()
-            : pos.m_123343_() >= min.m_123343_() && pos.m_123343_() <= max.m_123343_();
+            ? pos.getX() >= min.getX() && pos.getX() <= max.getX()
+            : pos.getZ() >= min.getZ() && pos.getZ() <= max.getZ();
       }
    }
 
@@ -546,22 +546,22 @@ public class GateEntity extends Entity {
       if (this.openingStyle() == GateEntity.OpeningStyle.DRAWBRIDGE) {
          BlockPos min = this.minPos();
          BlockPos max = this.maxPos();
-         Direction bridgeDirection = this.facing().m_122424_();
-         int y = min.m_123342_();
+         Direction bridgeDirection = this.facing().getOpposite();
+         int y = min.getY();
 
          for (int distance = 1; distance <= this.heightBlocks(); distance++) {
-            int xOffset = bridgeDirection.m_122429_() * distance;
-            int zOffset = bridgeDirection.m_122431_() * distance;
+            int xOffset = bridgeDirection.getStepX() * distance;
+            int zOffset = bridgeDirection.getStepZ() * distance;
             if (this.isXAxisGate()) {
-               int z = min.m_123343_() + zOffset;
+               int z = min.getZ() + zOffset;
 
-               for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
+               for (int x = min.getX(); x <= max.getX(); x++) {
                   consumer.accept(new BlockPos(x, y, z));
                }
             } else {
-               int x = min.m_123341_() + xOffset;
+               int x = min.getX() + xOffset;
 
-               for (int z = min.m_123343_(); z <= max.m_123343_(); z++) {
+               for (int z = min.getZ(); z <= max.getZ(); z++) {
                   consumer.accept(new BlockPos(x, y, z));
                }
             }
@@ -569,56 +569,56 @@ public class GateEntity extends Entity {
       }
    }
 
-   protected void m_7380_(CompoundTag tag) {
-      tag.m_128365_("Min", NbtUtils.m_129224_(this.minPos()));
-      tag.m_128365_("Max", NbtUtils.m_129224_(this.maxPos()));
-      tag.m_128405_("Facing", (Integer)this.f_19804_.m_135370_(FACING));
-      tag.m_128350_("OpenProgress", this.openProgress());
-      tag.m_128405_("Status", this.status());
-      tag.m_128405_("Material", this.material().ordinal());
-      tag.m_128405_("OpeningStyle", this.openingStyle().ordinal());
-      tag.m_128379_("RedstonePowered", this.redstonePowered);
-      tag.m_128379_("InitialProxyPassComplete", this.initialProxyPassComplete);
-      tag.m_128379_("LastProxyOpen", this.lastProxyOpen);
-      tag.m_128350_("Health", this.health());
+   protected void addAdditionalSaveData(CompoundTag tag) {
+      tag.put("Min", NbtUtils.writeBlockPos(this.minPos()));
+      tag.put("Max", NbtUtils.writeBlockPos(this.maxPos()));
+      tag.putInt("Facing", (Integer)this.entityData.get(FACING));
+      tag.putFloat("OpenProgress", this.openProgress());
+      tag.putInt("Status", this.status());
+      tag.putInt("Material", this.material().ordinal());
+      tag.putInt("OpeningStyle", this.openingStyle().ordinal());
+      tag.putBoolean("RedstonePowered", this.redstonePowered);
+      tag.putBoolean("InitialProxyPassComplete", this.initialProxyPassComplete);
+      tag.putBoolean("LastProxyOpen", this.lastProxyOpen);
+      tag.putFloat("Health", this.health());
       if (this.owner != null) {
-         tag.m_128362_("Owner", this.owner);
+         tag.putUUID("Owner", this.owner);
       }
    }
 
-   protected void m_7378_(CompoundTag tag) {
-      this.f_19804_.m_135381_(MIN_POS, NbtUtils.m_129239_(tag.m_128469_("Min")));
-      this.f_19804_.m_135381_(MAX_POS, NbtUtils.m_129239_(tag.m_128469_("Max")));
-      this.f_19804_.m_135381_(FACING, tag.m_128451_("Facing"));
-      this.f_19804_.m_135381_(OPEN_PROGRESS, tag.m_128457_("OpenProgress"));
-      this.f_19804_.m_135381_(STATUS, tag.m_128451_("Status"));
-      this.f_19804_.m_135381_(MATERIAL, tag.m_128441_("Material") ? tag.m_128451_("Material") : GateEntity.Material.WOOD.ordinal());
-      this.f_19804_.m_135381_(OPENING_STYLE, tag.m_128441_("OpeningStyle") ? tag.m_128451_("OpeningStyle") : GateEntity.OpeningStyle.VERTICAL.ordinal());
-      this.f_19804_.m_135381_(HEALTH, tag.m_128441_("Health") ? Math.min(tag.m_128457_("Health"), this.maxHealth()) : this.maxHealth());
-      this.redstonePowered = tag.m_128471_("RedstonePowered");
-      this.initialProxyPassComplete = tag.m_128471_("InitialProxyPassComplete");
-      this.lastProxyOpen = tag.m_128471_("LastProxyOpen");
-      this.owner = tag.m_128403_("Owner") ? tag.m_128342_("Owner") : null;
+   protected void readAdditionalSaveData(CompoundTag tag) {
+      this.entityData.set(MIN_POS, NbtUtils.readBlockPos(tag.getCompound("Min")));
+      this.entityData.set(MAX_POS, NbtUtils.readBlockPos(tag.getCompound("Max")));
+      this.entityData.set(FACING, tag.getInt("Facing"));
+      this.entityData.set(OPEN_PROGRESS, tag.getFloat("OpenProgress"));
+      this.entityData.set(STATUS, tag.getInt("Status"));
+      this.entityData.set(MATERIAL, tag.contains("Material") ? tag.getInt("Material") : GateEntity.Material.WOOD.ordinal());
+      this.entityData.set(OPENING_STYLE, tag.contains("OpeningStyle") ? tag.getInt("OpeningStyle") : GateEntity.OpeningStyle.VERTICAL.ordinal());
+      this.entityData.set(HEALTH, tag.contains("Health") ? Math.min(tag.getFloat("Health"), this.maxHealth()) : this.maxHealth());
+      this.redstonePowered = tag.getBoolean("RedstonePowered");
+      this.initialProxyPassComplete = tag.getBoolean("InitialProxyPassComplete");
+      this.lastProxyOpen = tag.getBoolean("LastProxyOpen");
+      this.owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
    }
 
-   public Packet<ClientGamePacketListener> m_5654_() {
+   public Packet<ClientGamePacketListener> getAddEntityPacket() {
       return AWCorePlatform.createEntitySpawnPacket(this);
    }
 
-   public boolean m_6783_(double distance) {
+   public boolean shouldRenderAtSqrDistance(double distance) {
       return distance < 4096.0;
    }
 
-   public AABB m_6921_() {
+   public AABB getBoundingBoxForCulling() {
       BlockPos min = this.minPos();
       BlockPos max = this.maxPos();
       return new AABB(
-         (double)min.m_123341_(),
-         (double)min.m_123342_(),
-         (double)min.m_123343_(),
-         (double)max.m_123341_() + 1.0,
-         (double)(max.m_123342_() + this.heightBlocks()) + 2.0,
-         (double)max.m_123343_() + 1.0
+         (double)min.getX(),
+         (double)min.getY(),
+         (double)min.getZ(),
+         (double)max.getX() + 1.0,
+         (double)(max.getY() + this.heightBlocks()) + 2.0,
+         (double)max.getZ() + 1.0
       );
    }
 

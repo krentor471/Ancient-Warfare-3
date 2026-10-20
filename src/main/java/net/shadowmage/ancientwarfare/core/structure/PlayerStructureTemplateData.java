@@ -29,18 +29,18 @@ public final class PlayerStructureTemplateData extends SavedData {
    private final Map<String, PlayerStructureTemplateData.PlayerTemplate> templates = new LinkedHashMap<>();
 
    public static PlayerStructureTemplateData get(ServerLevel level) {
-      return (PlayerStructureTemplateData)level.m_7654_()
-         .m_129783_()
-         .m_8895_()
-         .m_164861_(PlayerStructureTemplateData::load, PlayerStructureTemplateData::new, "ancientwarfare_player_structures");
+      return (PlayerStructureTemplateData)level.getServer()
+         .overworld()
+         .getDataStorage()
+         .computeIfAbsent(PlayerStructureTemplateData::load, PlayerStructureTemplateData::new, "ancientwarfare_player_structures");
    }
 
    public static PlayerStructureTemplateData load(CompoundTag tag) {
       PlayerStructureTemplateData data = new PlayerStructureTemplateData();
-      ListTag list = tag.m_128437_("Templates", 10);
+      ListTag list = tag.getList("Templates", 10);
 
       for (int i = 0; i < list.size(); i++) {
-         PlayerStructureTemplateData.PlayerTemplate template = PlayerStructureTemplateData.PlayerTemplate.load(list.m_128728_(i));
+         PlayerStructureTemplateData.PlayerTemplate template = PlayerStructureTemplateData.PlayerTemplate.load(list.getCompound(i));
          if (!template.name().isBlank()) {
             data.templates.put(template.name(), template);
          }
@@ -49,10 +49,10 @@ public final class PlayerStructureTemplateData extends SavedData {
       return data;
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
+   public CompoundTag save(CompoundTag tag) {
       ListTag list = new ListTag();
       this.templates.values().forEach(template -> list.add(template.save()));
-      tag.m_128365_("Templates", list);
+      tag.put("Templates", list);
       return tag;
    }
 
@@ -70,35 +70,35 @@ public final class PlayerStructureTemplateData extends SavedData {
          return new PlayerStructureTemplateData.CaptureResult(false, "message.ancientwarfare.structure_scan.invalid_name", 0);
       } else {
          BlockPos min = new BlockPos(
-            Math.min(first.m_123341_(), second.m_123341_()), Math.min(first.m_123342_(), second.m_123342_()), Math.min(first.m_123343_(), second.m_123343_())
+            Math.min(first.getX(), second.getX()), Math.min(first.getY(), second.getY()), Math.min(first.getZ(), second.getZ())
          );
          BlockPos max = new BlockPos(
-            Math.max(first.m_123341_(), second.m_123341_()), Math.max(first.m_123342_(), second.m_123342_()), Math.max(first.m_123343_(), second.m_123343_())
+            Math.max(first.getX(), second.getX()), Math.max(first.getY(), second.getY()), Math.max(first.getZ(), second.getZ())
          );
-         int sizeX = max.m_123341_() - min.m_123341_() + 1;
-         int sizeY = max.m_123342_() - min.m_123342_() + 1;
-         int sizeZ = max.m_123343_() - min.m_123343_() + 1;
+         int sizeX = max.getX() - min.getX() + 1;
+         int sizeY = max.getY() - min.getY() + 1;
+         int sizeZ = max.getZ() - min.getZ() + 1;
          long volume = (long)sizeX * (long)sizeY * (long)sizeZ;
          if (sizeX <= 96 && sizeY <= 96 && sizeZ <= 96 && volume <= 884736L) {
             List<PlayerStructureTemplateData.TemplateBlock> blocks = new ArrayList<>((int)volume);
             Map<ResourceLocation, Integer> resources = new LinkedHashMap<>();
 
-            for (BlockPos pos : BlockPos.m_121940_(min, max)) {
-               BlockState state = level.m_8055_(pos);
+            for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
+               BlockState state = level.getBlockState(pos);
                CompoundTag blockEntityTag = null;
-               BlockEntity blockEntity = level.m_7702_(pos);
+               BlockEntity blockEntity = level.getBlockEntity(pos);
                if (blockEntity != null) {
-                  blockEntityTag = blockEntity.m_187480_();
-                  blockEntityTag.m_128473_("x");
-                  blockEntityTag.m_128473_("y");
-                  blockEntityTag.m_128473_("z");
+                  blockEntityTag = blockEntity.saveWithFullMetadata();
+                  blockEntityTag.remove("x");
+                  blockEntityTag.remove("y");
+                  blockEntityTag.remove("z");
                }
 
-               blocks.add(new PlayerStructureTemplateData.TemplateBlock(pos.m_121996_(origin), state, blockEntityTag));
-               if (!state.m_60795_() && state.m_60734_() != Blocks.f_50454_) {
-                  Item item = state.m_60734_().m_5456_();
-                  if (item != Items.f_41852_) {
-                     resources.merge(BuiltInRegistries.f_257033_.m_7981_(item), 1, Integer::sum);
+               blocks.add(new PlayerStructureTemplateData.TemplateBlock(pos.subtract(origin), state, blockEntityTag));
+               if (!state.isAir() && state.getBlock() != Blocks.STRUCTURE_VOID) {
+                  Item item = state.getBlock().asItem();
+                  if (item != Items.AIR) {
+                     resources.merge(BuiltInRegistries.ITEM.getKey(item), 1, Integer::sum);
                   }
                }
             }
@@ -113,7 +113,7 @@ public final class PlayerStructureTemplateData extends SavedData {
                resources.entrySet().stream().map(entry -> new PlayerStructureTemplateData.RequiredItem(entry.getKey(), entry.getValue())).toList()
             );
             this.templates.put(name, template);
-            this.m_77762_();
+            this.setDirty();
             return new PlayerStructureTemplateData.CaptureResult(
                true, replaced ? "message.ancientwarfare.structure_scan.replaced" : "message.ancientwarfare.structure_scan.saved", blocks.size()
             );
@@ -126,7 +126,7 @@ public final class PlayerStructureTemplateData extends SavedData {
    public boolean remove(String requestedName) {
       String name = sanitizeName(requestedName);
       if (!name.isBlank() && this.templates.remove(name) != null) {
-         this.m_77762_();
+         this.setDirty();
          return true;
       } else {
          return false;
@@ -152,78 +152,78 @@ public final class PlayerStructureTemplateData extends SavedData {
    ) {
       CompoundTag save() {
          CompoundTag tag = new CompoundTag();
-         tag.m_128359_("Name", this.name);
-         tag.m_128405_("SizeX", this.sizeX);
-         tag.m_128405_("SizeY", this.sizeY);
-         tag.m_128405_("SizeZ", this.sizeZ);
+         tag.putString("Name", this.name);
+         tag.putInt("SizeX", this.sizeX);
+         tag.putInt("SizeY", this.sizeY);
+         tag.putInt("SizeZ", this.sizeZ);
          ListTag blockList = new ListTag();
          this.blocks.forEach(block -> blockList.add(block.save()));
-         tag.m_128365_("Blocks", blockList);
+         tag.put("Blocks", blockList);
          ListTag resourceList = new ListTag();
          this.resources.forEach(resource -> resourceList.add(resource.save()));
-         tag.m_128365_("Resources", resourceList);
+         tag.put("Resources", resourceList);
          return tag;
       }
 
       static PlayerStructureTemplateData.PlayerTemplate load(CompoundTag tag) {
          List<PlayerStructureTemplateData.TemplateBlock> blocks = new ArrayList<>();
-         ListTag blockList = tag.m_128437_("Blocks", 10);
+         ListTag blockList = tag.getList("Blocks", 10);
 
          for (int i = 0; i < blockList.size(); i++) {
-            blocks.add(PlayerStructureTemplateData.TemplateBlock.load(blockList.m_128728_(i)));
+            blocks.add(PlayerStructureTemplateData.TemplateBlock.load(blockList.getCompound(i)));
          }
 
          List<PlayerStructureTemplateData.RequiredItem> resources = new ArrayList<>();
-         ListTag resourceList = tag.m_128437_("Resources", 10);
+         ListTag resourceList = tag.getList("Resources", 10);
 
          for (int i = 0; i < resourceList.size(); i++) {
-            resources.add(PlayerStructureTemplateData.RequiredItem.load(resourceList.m_128728_(i)));
+            resources.add(PlayerStructureTemplateData.RequiredItem.load(resourceList.getCompound(i)));
          }
 
          return new PlayerStructureTemplateData.PlayerTemplate(
-            tag.m_128461_("Name"), tag.m_128451_("SizeX"), tag.m_128451_("SizeY"), tag.m_128451_("SizeZ"), blocks, resources
+            tag.getString("Name"), tag.getInt("SizeX"), tag.getInt("SizeY"), tag.getInt("SizeZ"), blocks, resources
          );
       }
    }
 
    public static record RequiredItem(ResourceLocation itemId, int count) {
       public ItemStack displayStack() {
-         Item item = (Item)BuiltInRegistries.f_257033_.m_7745_(this.itemId);
-         return item == Items.f_41852_ ? ItemStack.f_41583_ : new ItemStack(item, Math.min(this.count, item.m_41459_()));
+         Item item = (Item)BuiltInRegistries.ITEM.get(this.itemId);
+         return item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item, Math.min(this.count, item.getMaxStackSize()));
       }
 
       CompoundTag save() {
          CompoundTag tag = new CompoundTag();
-         tag.m_128359_("Item", this.itemId.toString());
-         tag.m_128405_("Count", this.count);
+         tag.putString("Item", this.itemId.toString());
+         tag.putInt("Count", this.count);
          return tag;
       }
 
       static PlayerStructureTemplateData.RequiredItem load(CompoundTag tag) {
-         ResourceLocation id = ResourceLocation.m_135820_(tag.m_128461_("Item"));
-         return new PlayerStructureTemplateData.RequiredItem(id == null ? new ResourceLocation("minecraft", "air") : id, Math.max(0, tag.m_128451_("Count")));
+         ResourceLocation id = ResourceLocation.tryParse(tag.getString("Item"));
+         return new PlayerStructureTemplateData.RequiredItem(id == null ? new ResourceLocation("minecraft", "air") : id, Math.max(0, tag.getInt("Count")));
       }
    }
 
    public static record TemplateBlock(BlockPos relativePos, BlockState state, CompoundTag blockEntityTag) {
       CompoundTag save() {
          CompoundTag tag = new CompoundTag();
-         tag.m_128405_("X", this.relativePos.m_123341_());
-         tag.m_128405_("Y", this.relativePos.m_123342_());
-         tag.m_128405_("Z", this.relativePos.m_123343_());
-         BlockState.f_61039_.encodeStart(NbtOps.f_128958_, this.state).result().ifPresent(encoded -> tag.m_128365_("State", encoded));
+         tag.putInt("X", this.relativePos.getX());
+         tag.putInt("Y", this.relativePos.getY());
+         tag.putInt("Z", this.relativePos.getZ());
+         BlockState.CODEC.encodeStart(NbtOps.INSTANCE, this.state).result().ifPresent(encoded -> tag.put("State", encoded));
          if (this.blockEntityTag != null) {
-            tag.m_128365_("BlockEntity", this.blockEntityTag.m_6426_());
+            tag.put("BlockEntity", this.blockEntityTag.copy());
          }
 
          return tag;
       }
 
       static PlayerStructureTemplateData.TemplateBlock load(CompoundTag tag) {
-         DataResult<BlockState> decoded = BlockState.f_61039_.parse(NbtOps.f_128958_, tag.m_128423_("State"));
-         BlockState state = decoded.result().orElse(Blocks.f_50016_.m_49966_());
-         CompoundTag blockEntity = tag.m_128425_("BlockEntity", 10) ? tag.m_128469_("BlockEntity") : null;
-         return new PlayerStructureTemplateData.TemplateBlock(new BlockPos(tag.m_128451_("X"), tag.m_128451_("Y"), tag.m_128451_("Z")), state, blockEntity);
+         DataResult<BlockState> decoded = BlockState.CODEC.parse(NbtOps.INSTANCE, tag.get("State"));
+         BlockState state = decoded.result().orElse(Blocks.AIR.defaultBlockState());
+         CompoundTag blockEntity = tag.contains("BlockEntity", 10) ? tag.getCompound("BlockEntity") : null;
+         return new PlayerStructureTemplateData.TemplateBlock(new BlockPos(tag.getInt("X"), tag.getInt("Y"), tag.getInt("Z")), state, blockEntity);
       }
    }
 }

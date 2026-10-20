@@ -65,11 +65,11 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
 
    public CommandBatonItem(Tier tier) {
-      super(new Properties().m_41487_(1).m_41503_(tier.m_6609_()));
+      super(new Properties().stacksTo(1).durability(tier.getUses()));
       this.tier = tier;
       Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-      builder.put(Attributes.f_22281_, new AttributeModifier(f_41374_, "Weapon modifier", 4.0 + (double)tier.m_6631_(), Operation.ADDITION));
-      builder.put(Attributes.f_22283_, new AttributeModifier(f_41375_, "Weapon modifier", -2.3, Operation.ADDITION));
+      builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Weapon modifier", 4.0 + (double)tier.getAttackDamageBonus(), Operation.ADDITION));
+      builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Weapon modifier", -2.3, Operation.ADDITION));
       this.defaultModifiers = builder.build();
    }
 
@@ -78,25 +78,25 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       return NpcProfessionTool.ToolRole.COMMANDER;
    }
 
-   public int m_6473_() {
-      return this.tier.m_6601_();
+   public int getEnchantmentValue() {
+      return this.tier.getEnchantmentValue();
    }
 
-   public boolean m_6832_(ItemStack stack, ItemStack repairCandidate) {
-      return this.tier.m_6282_().test(repairCandidate) || super.m_6832_(stack, repairCandidate);
+   public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
+      return this.tier.getRepairIngredient().test(repairCandidate) || super.isValidRepairItem(stack, repairCandidate);
    }
 
-   public boolean m_7579_(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-      stack.m_41622_(1, attacker, entity -> entity.m_21166_(EquipmentSlot.MAINHAND));
+   public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+      stack.hurtAndBreak(1, attacker, entity -> entity.broadcastBreakEvent(EquipmentSlot.MAINHAND));
       return true;
    }
 
-   public Multimap<Attribute, AttributeModifier> m_7167_(EquipmentSlot slot) {
-      return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.m_7167_(slot);
+   public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
+      return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.getDefaultAttributeModifiers(slot);
    }
 
-   public InteractionResult m_6880_(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-      if (player.m_9236_().f_46443_) {
+   public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
+      if (player.level().isClientSide) {
          return InteractionResult.SUCCESS;
       } else {
          CommandBatonItem.BatonMode mode = getMode(stack);
@@ -106,8 +106,8 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          }
 
          if (mode == CommandBatonItem.BatonMode.MOUNT && target != player) {
-            int commanded = issueMountCommand((ServerLevel)player.m_9236_(), player, stack, target);
-            player.m_5661_(Component.m_237110_("guistrings.npc.baton.mount_command", new Object[]{commanded}), true);
+            int commanded = issueMountCommand((ServerLevel)player.level(), player, stack, target);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.mount_command", new Object[]{commanded}), true);
             return InteractionResult.SUCCESS;
          } else {
             return InteractionResult.PASS;
@@ -119,19 +119,19 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       if (getMode(stack) == CommandBatonItem.BatonMode.COMBAT_GROUP) {
          toggleCombatGroupSelection(stack, player, npc);
       } else if (getMode(stack) == CommandBatonItem.BatonMode.ATTACK && !npc.canReceiveAttackCommand()) {
-         player.m_5661_(Component.m_237115_("guistrings.npc.baton.attack_selection_invalid"), true);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.attack_selection_invalid"), true);
       } else if (getMode(stack) == CommandBatonItem.BatonMode.DISMOUNT && !isMountedNpc(npc)) {
-         player.m_5661_(Component.m_237115_("guistrings.npc.baton.dismount_invalid"), true);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.dismount_invalid"), true);
       } else {
-         UUID npcId = npc.m_20148_();
+         UUID npcId = npc.getUUID();
          List<UUID> selected = getSelectedNpcs(stack);
          if (selected.remove(npcId)) {
-            player.m_5661_(Component.m_237110_("guistrings.npc.baton.deselected", new Object[]{npc.m_5446_()}), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.deselected", new Object[]{npc.getDisplayName()}), true);
          } else if (selected.size() < 16) {
             selected.add(npcId);
-            player.m_5661_(Component.m_237110_("guistrings.npc.baton.selected", new Object[]{npc.m_5446_()}), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.selected", new Object[]{npc.getDisplayName()}), true);
          } else {
-            player.m_5661_(Component.m_237115_("guistrings.npc.baton.selection_full"), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.selection_full"), true);
          }
 
          setSelectedNpcs(stack, selected);
@@ -140,18 +140,18 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    private static void toggleCombatGroupSelection(ItemStack stack, Player player, PlayerOwnedNpcEntity npc) {
       if (!npc.isCombatGroupEligible()) {
-         player.m_5661_(Component.m_237115_("guistrings.npc.baton.combat_group_invalid"), true);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.combat_group_invalid"), true);
       } else {
-         UUID npcId = npc.m_20148_();
+         UUID npcId = npc.getUUID();
          List<UUID> selected = getCombatGroupNpcs(stack);
          if (selected.remove(npcId)) {
-            player.m_5661_(Component.m_237110_("guistrings.npc.baton.combat_group_removed", new Object[]{npc.m_5446_()}), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.combat_group_removed", new Object[]{npc.getDisplayName()}), true);
             refreshCombatGroupType(stack, player, selected);
          } else if (selected.size() < 16) {
             String selectedType = getCombatGroupType(stack);
             if (selectedType == null || selectedType.isBlank()) {
                selectedType = selected.stream()
-                  .map(id -> player.m_9236_() instanceof ServerLevel level ? level.m_8791_(id) : null)
+                  .map(id -> player.level() instanceof ServerLevel level ? level.getEntity(id) : null)
                   .filter(PlayerOwnedNpcEntity.class::isInstance)
                   .map(PlayerOwnedNpcEntity.class::cast)
                   .map(CommandBatonItem::combatGroupType)
@@ -161,11 +161,11 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
             String npcType = combatGroupType(npc);
             if (selectedType != null && !selectedType.equals(npcType)) {
-               player.m_5661_(
-                  Component.m_237110_(
+               player.displayClientMessage(
+                  Component.translatable(
                      "guistrings.npc.baton.combat_group_type_mismatch",
                      new Object[]{
-                        Component.m_237115_(combatGroupTypeTranslationKey(selectedType)), Component.m_237115_(combatGroupTypeTranslationKey(npcType))
+                        Component.translatable(combatGroupTypeTranslationKey(selectedType)), Component.translatable(combatGroupTypeTranslationKey(npcType))
                      }
                   ),
                   true
@@ -175,9 +175,9 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
             setCombatGroupType(stack, npcType);
             selected.add(npcId);
-            player.m_5661_(Component.m_237110_("guistrings.npc.baton.combat_group_added", new Object[]{npc.m_5446_()}), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.combat_group_added", new Object[]{npc.getDisplayName()}), true);
          } else {
-            player.m_5661_(Component.m_237115_("guistrings.npc.baton.selection_full"), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.selection_full"), true);
          }
 
          setUuidList(stack, "CombatGroupNpcs", selected);
@@ -198,9 +198,9 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
             return "hippocampus_rider";
          } else {
             String subtype = combat.getNpcSubtype();
-            if (NpcEquipmentResolver.isRangedWeapon(combat.m_21205_())) {
-               return combat.m_20159_() ? "mounted_archer" : "archer";
-            } else if (combat.m_20159_()) {
+            if (NpcEquipmentResolver.isRangedWeapon(combat.getMainHandItem())) {
+               return combat.isPassenger() ? "mounted_archer" : "archer";
+            } else if (combat.isPassenger()) {
                return "cavalry";
             } else if ("swordsman".equals(subtype)) {
                return "swordsman";
@@ -223,15 +223,15 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    @Nullable
    private static String getCombatGroupType(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag != null && tag.m_128425_("CombatGroupType", 8) ? tag.m_128461_("CombatGroupType") : null;
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("CombatGroupType", 8) ? tag.getString("CombatGroupType") : null;
    }
 
    private static void setCombatGroupType(ItemStack stack, String type) {
       if (type != null && !type.isBlank()) {
-         stack.m_41784_().m_128359_("CombatGroupType", type);
+         stack.getOrCreateTag().putString("CombatGroupType", type);
       } else {
-         stack.m_41784_().m_128473_("CombatGroupType");
+         stack.getOrCreateTag().remove("CombatGroupType");
       }
    }
 
@@ -241,9 +241,9 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       } else {
          String existingType = getCombatGroupType(stack);
          if (existingType == null || existingType.isBlank()) {
-            if (player.m_9236_() instanceof ServerLevel level) {
+            if (player.level() instanceof ServerLevel level) {
                selected.stream()
-                  .<Entity>map(level::m_8791_)
+                  .<Entity>map(level::getEntity)
                   .filter(PlayerOwnedNpcEntity.class::isInstance)
                   .map(PlayerOwnedNpcEntity.class::cast)
                   .map(CommandBatonItem::combatGroupType)
@@ -254,18 +254,18 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       }
    }
 
-   public InteractionResult m_6225_(UseOnContext context) {
-      Level level = context.m_43725_();
-      Player player = context.m_43723_();
-      if (!level.f_46443_ && player != null) {
-         ItemStack stack = context.m_43722_();
-         if (player.m_6144_()) {
+   public InteractionResult useOn(UseOnContext context) {
+      Level level = context.getLevel();
+      Player player = context.getPlayer();
+      if (!level.isClientSide && player != null) {
+         ItemStack stack = context.getItemInHand();
+         if (player.isShiftKeyDown()) {
             changeMode(stack, player, getMode(stack).next());
             return InteractionResult.SUCCESS;
          } else {
-            BlockPos target = context.m_8083_().m_121945_(context.m_43719_());
-            int commanded = executeBlockCommand((ServerLevel)level, player, context.m_43722_(), target);
-            player.m_5661_(commandMessage(getMode(context.m_43722_()), commanded), true);
+            BlockPos target = context.getClickedPos().relative(context.getClickedFace());
+            int commanded = executeBlockCommand((ServerLevel)level, player, context.getItemInHand(), target);
+            player.displayClientMessage(commandMessage(getMode(context.getItemInHand()), commanded), true);
             return InteractionResult.SUCCESS;
          }
       } else {
@@ -273,43 +273,43 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       }
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.command_baton.select").m_130940_(ChatFormatting.GRAY));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.select").withStyle(ChatFormatting.GRAY));
       tooltip.add(
-         Component.m_237110_("tooltip.ancientwarfare.command_baton.mode", new Object[]{Component.m_237115_(getMode(stack).translationKey)})
-            .m_130940_(ChatFormatting.GRAY)
+         Component.translatable("tooltip.ancientwarfare.command_baton.mode", new Object[]{Component.translatable(getMode(stack).translationKey)})
+            .withStyle(ChatFormatting.GRAY)
       );
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.command_baton.execute").m_130940_(ChatFormatting.DARK_GRAY));
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.command_baton.cycle").m_130940_(ChatFormatting.DARK_GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.execute").withStyle(ChatFormatting.DARK_GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.cycle").withStyle(ChatFormatting.DARK_GRAY));
       int selectedCount = getMode(stack) == CommandBatonItem.BatonMode.COMBAT_GROUP ? getCombatGroupNpcs(stack).size() : getSelectedNpcs(stack).size();
-      tooltip.add(Component.m_237110_("tooltip.ancientwarfare.command_baton.selected", new Object[]{selectedCount}).m_130940_(ChatFormatting.DARK_GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.selected", new Object[]{selectedCount}).withStyle(ChatFormatting.DARK_GRAY));
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
-      ItemStack stack = player.m_21120_(hand);
-      if (level.f_46443_) {
-         return InteractionResultHolder.m_19090_(stack);
-      } else if (player.m_6144_()) {
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+      ItemStack stack = player.getItemInHand(hand);
+      if (level.isClientSide) {
+         return InteractionResultHolder.success(stack);
+      } else if (player.isShiftKeyDown()) {
          changeMode(stack, player, getMode(stack).next());
-         return InteractionResultHolder.m_19090_(stack);
+         return InteractionResultHolder.success(stack);
       } else if (getMode(stack) == CommandBatonItem.BatonMode.CLEAR_COMMAND) {
          int commanded = issueClearCommand((ServerLevel)level, player, stack);
-         player.m_5661_(Component.m_237110_("guistrings.npc.baton.clear_command", new Object[]{commanded}), true);
-         return InteractionResultHolder.m_19090_(stack);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.clear_command", new Object[]{commanded}), true);
+         return InteractionResultHolder.success(stack);
       } else if (getMode(stack) == CommandBatonItem.BatonMode.DISMOUNT) {
-         player.m_5661_(Component.m_237110_("guistrings.npc.baton.dismount_ready", new Object[]{getSelectedNpcs(stack).size()}), true);
-         return InteractionResultHolder.m_19090_(stack);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.dismount_ready", new Object[]{getSelectedNpcs(stack).size()}), true);
+         return InteractionResultHolder.success(stack);
       } else if (getMode(stack) == CommandBatonItem.BatonMode.COMBAT_GROUP) {
-         player.m_5661_(Component.m_237110_("guistrings.npc.baton.combat_group_ready", new Object[]{getCombatGroupNpcs(stack).size()}), true);
-         return InteractionResultHolder.m_19090_(stack);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.combat_group_ready", new Object[]{getCombatGroupNpcs(stack).size()}), true);
+         return InteractionResultHolder.success(stack);
       } else {
          EntityHitResult hit = getLookedAtEntity(level, player, 120.0);
-         if (hit != null && hit.m_82443_() instanceof LivingEntity target && getMode(stack) == CommandBatonItem.BatonMode.MOUNT) {
+         if (hit != null && hit.getEntity() instanceof LivingEntity target && getMode(stack) == CommandBatonItem.BatonMode.MOUNT) {
             int commanded = issueMountCommand((ServerLevel)level, player, stack, target);
-            player.m_5661_(Component.m_237110_("guistrings.npc.baton.mount_command", new Object[]{commanded}), true);
-            return InteractionResultHolder.m_19090_(stack);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.mount_command", new Object[]{commanded}), true);
+            return InteractionResultHolder.success(stack);
          } else {
-            return InteractionResultHolder.m_19098_(stack);
+            return InteractionResultHolder.pass(stack);
          }
       }
    }
@@ -331,7 +331,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       int commanded = 0;
 
       for (UUID uuid : selected) {
-         Entity entity = level.m_8791_(uuid);
+         Entity entity = level.getEntity(uuid);
          if (entity instanceof PlayerOwnedNpcEntity) {
             PlayerOwnedNpcEntity npc = (PlayerOwnedNpcEntity)entity;
             if (npc.hasCommandPermission(player)) {
@@ -352,7 +352,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       int commanded = 0;
 
       for (UUID uuid : selected) {
-         Entity entity = level.m_8791_(uuid);
+         Entity entity = level.getEntity(uuid);
          if (entity instanceof PlayerOwnedNpcEntity) {
             PlayerOwnedNpcEntity npc = (PlayerOwnedNpcEntity)entity;
             if (npc.canReceiveAttackCommand() && npc.hasCommandPermission(player)) {
@@ -372,55 +372,55 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    public static boolean isMountMode(ItemStack stack) {
-      return stack != null && !stack.m_41619_() && stack.m_41720_() instanceof CommandBatonItem && getMode(stack) == CommandBatonItem.BatonMode.MOUNT;
+      return stack != null && !stack.isEmpty() && stack.getItem() instanceof CommandBatonItem && getMode(stack) == CommandBatonItem.BatonMode.MOUNT;
    }
 
    private static int issueMountCommand(ServerLevel level, Player player, ItemStack stack, LivingEntity mount) {
-      if (!(mount instanceof PlayerOwnedNpcEntity) && mount.m_6084_()) {
+      if (!(mount instanceof PlayerOwnedNpcEntity) && mount.isAlive()) {
          List<UUID> selected = getSelectedNpcs(stack);
          AncientWarfareCore.LOG
             .info(
                "Mount command: selected={}, target={}, targetId={}, distance={}",
-               new Object[]{selected.size(), mount.m_6095_().m_204041_().m_205785_().m_135782_(), mount.m_19879_(), player.m_20270_(mount)}
+               new Object[]{selected.size(), mount.getType().builtInRegistryHolder().key().location(), mount.getId(), player.distanceTo(mount)}
             );
          List<UUID> stillValid = new ArrayList<>();
          int commanded = 0;
 
          for (UUID uuid : selected) {
-            Entity entity = level.m_8791_(uuid);
+            Entity entity = level.getEntity(uuid);
             if (entity instanceof PlayerOwnedNpcEntity) {
                PlayerOwnedNpcEntity npc = (PlayerOwnedNpcEntity)entity;
                if (!npc.hasCommandPermission(player)) {
-                  AncientWarfareCore.LOG.info("Mount candidate {} rejected: permission", npc.m_19879_());
+                  AncientWarfareCore.LOG.info("Mount candidate {} rejected: permission", npc.getId());
                } else {
                   stillValid.add(uuid);
                   boolean melee = npc instanceof CombatNpcEntity && "soldier".equals(npc.getNpcSubtype());
                   boolean iceDragon = IceAndFireDragonCompat.isDragon(mount);
                   boolean hippogryph = IceAndFireHippogryphCompat.isHippogryph(mount);
                   boolean hippocampus = IceAndFireHippocampusCompat.isHippocampus(mount);
-                  boolean validDragon = !iceDragon || melee && IceAndFireDragonCompat.canBeMountedBy(mount, player.m_20148_());
-                  boolean ranged = npc.m_21205_().m_41720_() instanceof BowItem || npc.m_21205_().m_41720_() instanceof CrossbowItem;
+                  boolean validDragon = !iceDragon || melee && IceAndFireDragonCompat.canBeMountedBy(mount, player.getUUID());
+                  boolean ranged = npc.getMainHandItem().getItem() instanceof BowItem || npc.getMainHandItem().getItem() instanceof CrossbowItem;
                   boolean validHippogryph = !hippogryph
                      || npc instanceof CombatNpcEntity
                         && ("soldier".equals(npc.getNpcSubtype()) || ranged)
-                        && IceAndFireHippogryphCompat.canBeMountedBy(mount, player.m_20148_());
+                        && IceAndFireHippogryphCompat.canBeMountedBy(mount, player.getUUID());
                   boolean validHippocampus = !hippocampus
                      || npc instanceof CombatNpcEntity
                         && ("soldier".equals(npc.getNpcSubtype()) || ranged)
-                        && IceAndFireHippocampusCompat.canBeMountedBy(mount, player.m_20148_());
-                  boolean alreadyLogicalDragonRider = npc.isLogicalDragonRider() || IceAndFireDragonCompat.isDragon(npc.m_20202_());
+                        && IceAndFireHippocampusCompat.canBeMountedBy(mount, player.getUUID());
+                  boolean alreadyLogicalDragonRider = npc.isLogicalDragonRider() || IceAndFireDragonCompat.isDragon(npc.getVehicle());
                   AncientWarfareCore.LOG
                      .info(
                         "Mount candidate {} subtype={}, iceDragon={}, validDragon={}, alive={}, passenger={}, logical={}, distance={}",
                         new Object[]{
-                           npc.m_19879_(),
+                           npc.getId(),
                            npc.getNpcSubtype(),
                            iceDragon,
                            validDragon,
-                           npc.m_6084_(),
-                           npc.m_20159_(),
+                           npc.isAlive(),
+                           npc.isPassenger(),
                            alreadyLogicalDragonRider,
-                           npc.m_20270_(mount)
+                           npc.distanceTo(mount)
                         }
                      );
                   double mountCommandRange = 16.0;
@@ -428,11 +428,11 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
                      && validDragon
                      && validHippogryph
                      && validHippocampus
-                     && npc.m_6084_()
-                     && (!npc.m_20159_() || alreadyLogicalDragonRider)
-                     && npc.m_20280_(mount) <= mountCommandRange * mountCommandRange) {
+                     && npc.isAlive()
+                     && (!npc.isPassenger() || alreadyLogicalDragonRider)
+                     && npc.distanceToSqr(mount) <= mountCommandRange * mountCommandRange) {
                      prepareMount(mount);
-                     boolean mounted = iceDragon ? DragonRiderController.attach(npc, mount) : npc.m_7998_(mount, true);
+                     boolean mounted = iceDragon ? DragonRiderController.attach(npc, mount) : npc.startRiding(mount, true);
                      if (mounted) {
                         npc.clearCommand();
                         commanded++;
@@ -453,16 +453,16 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    private static void prepareMount(LivingEntity mount) {
       if (mount instanceof Mob mob) {
-         mob.m_21530_();
+         mob.setPersistenceRequired();
       }
 
       if (mount instanceof AbstractHorse horse) {
-         horse.m_30651_(true);
-         horse.m_30649_(100);
-         horse.m_5853_(SoundSource.NEUTRAL);
-         AttributeInstance speed = horse.m_21051_(Attributes.f_22279_);
+         horse.setTamed(true);
+         horse.setTemper(100);
+         horse.equipSaddle(SoundSource.NEUTRAL);
+         AttributeInstance speed = horse.getAttribute(Attributes.MOVEMENT_SPEED);
          if (speed != null) {
-            speed.m_22100_(Math.max(speed.m_22115_(), 0.32));
+            speed.setBaseValue(Math.max(speed.getBaseValue(), 0.32));
          }
       }
    }
@@ -473,7 +473,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       int commanded = 0;
 
       for (UUID uuid : selected) {
-         Entity entity = level.m_8791_(uuid);
+         Entity entity = level.getEntity(uuid);
          if (entity instanceof PlayerOwnedNpcEntity) {
             PlayerOwnedNpcEntity npc = (PlayerOwnedNpcEntity)entity;
             if (npc.hasCommandPermission(player)) {
@@ -494,11 +494,11 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       int commanded = 0;
 
       for (UUID uuid : selected) {
-         Entity entity = level.m_8791_(uuid);
+         Entity entity = level.getEntity(uuid);
          if (entity instanceof PlayerOwnedNpcEntity) {
             PlayerOwnedNpcEntity npc = (PlayerOwnedNpcEntity)entity;
             if (npc.hasCommandPermission(player)) {
-               boolean mounted = npc.isLogicalDragonRider() || npc.m_20159_();
+               boolean mounted = npc.isLogicalDragonRider() || npc.isPassenger();
                if (!mounted) {
                   stillValid.add(uuid);
                } else {
@@ -508,22 +508,22 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
                         break label57;
                      }
 
-                     if (npc instanceof CombatNpcEntity combat && IceAndFireHippogryphCompat.isHippogryph(npc.m_20202_())) {
+                     if (npc instanceof CombatNpcEntity combat && IceAndFireHippogryphCompat.isHippogryph(npc.getVehicle())) {
                         HippogryphRiderController.detach(combat);
                         break label57;
                      }
 
-                     if (npc instanceof CombatNpcEntity combat && IceAndFireHippocampusCompat.isHippocampus(npc.m_20202_())) {
+                     if (npc instanceof CombatNpcEntity combat && IceAndFireHippocampusCompat.isHippocampus(npc.getVehicle())) {
                         HippocampusRiderController.detach(combat);
                         break label57;
                      }
 
-                     if (npc.m_20159_()) {
-                        npc.m_8127_();
+                     if (npc.isPassenger()) {
+                        npc.stopRiding();
                      }
                   }
 
-                  npc.m_6021_((double)target.m_123341_() + 0.5, (double)target.m_123342_() + 1.0, (double)target.m_123343_() + 0.5);
+                  npc.teleportTo((double)target.getX() + 0.5, (double)target.getY() + 1.0, (double)target.getZ() + 0.5);
                   npc.clearCommand();
                   stillValid.add(uuid);
                   commanded++;
@@ -537,25 +537,25 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    private static boolean isMountedNpc(PlayerOwnedNpcEntity npc) {
-      return npc != null && (npc.m_20159_() || npc.isLogicalDragonRider());
+      return npc != null && (npc.isPassenger() || npc.isLogicalDragonRider());
    }
 
    private static Component commandMessage(CommandBatonItem.BatonMode mode, int commanded) {
       return switch (mode) {
-         case CLEAR_COMMAND -> Component.m_237110_("guistrings.npc.baton.clear_command", new Object[]{commanded});
-         case DISMOUNT -> Component.m_237110_("guistrings.npc.baton.dismount_command", new Object[]{commanded});
-         case MOVE -> Component.m_237110_("guistrings.npc.baton.move_command", new Object[]{commanded});
-         case ATTACK -> Component.m_237110_("guistrings.npc.baton.move_attack_command", new Object[]{commanded});
-         case MOUNT -> Component.m_237110_("guistrings.npc.baton.mount_command", new Object[]{commanded});
-         case COMBAT_GROUP -> Component.m_237110_("guistrings.npc.baton.combat_group_ready", new Object[]{commanded});
+         case CLEAR_COMMAND -> Component.translatable("guistrings.npc.baton.clear_command", new Object[]{commanded});
+         case DISMOUNT -> Component.translatable("guistrings.npc.baton.dismount_command", new Object[]{commanded});
+         case MOVE -> Component.translatable("guistrings.npc.baton.move_command", new Object[]{commanded});
+         case ATTACK -> Component.translatable("guistrings.npc.baton.move_attack_command", new Object[]{commanded});
+         case MOUNT -> Component.translatable("guistrings.npc.baton.mount_command", new Object[]{commanded});
+         case COMBAT_GROUP -> Component.translatable("guistrings.npc.baton.combat_group_ready", new Object[]{commanded});
       };
    }
 
    private static EntityHitResult getLookedAtEntity(Level level, Player player, double range) {
-      Vec3 start = player.m_146892_();
-      Vec3 end = start.m_82549_(player.m_20154_().m_82490_(range));
-      AABB box = player.m_20191_().m_82369_(player.m_20154_().m_82490_(range)).m_82400_(1.0);
-      return ProjectileUtil.m_37304_(level, player, start, end, box, entity -> entity instanceof LivingEntity && entity.m_6087_() && entity != player);
+      Vec3 start = player.getEyePosition();
+      Vec3 end = start.add(player.getLookAngle().scale(range));
+      AABB box = player.getBoundingBox().expandTowards(player.getLookAngle().scale(range)).inflate(1.0);
+      return ProjectileUtil.getEntityHitResult(level, player, start, end, box, entity -> entity instanceof LivingEntity && entity.isPickable() && entity != player);
    }
 
    private static List<UUID> getSelectedNpcs(ItemStack stack) {
@@ -567,7 +567,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    public static boolean isCombatGroupMode(ItemStack stack) {
-      return stack != null && !stack.m_41619_() && stack.m_41720_() instanceof CommandBatonItem && getMode(stack) == CommandBatonItem.BatonMode.COMBAT_GROUP;
+      return stack != null && !stack.isEmpty() && stack.getItem() instanceof CommandBatonItem && getMode(stack) == CommandBatonItem.BatonMode.COMBAT_GROUP;
    }
 
    public static boolean containsCombatGroupNpc(ItemStack stack, UUID npcId) {
@@ -575,17 +575,17 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    public static boolean selectsNpc(ItemStack stack, UUID npcId) {
-      return stack != null && !stack.m_41619_() && npcId != null ? getSelectedNpcs(stack).contains(npcId) || getCombatGroupNpcs(stack).contains(npcId) : false;
+      return stack != null && !stack.isEmpty() && npcId != null ? getSelectedNpcs(stack).contains(npcId) || getCombatGroupNpcs(stack).contains(npcId) : false;
    }
 
    private static List<UUID> getUuidList(ItemStack stack, String tagName) {
       List<UUID> selected = new ArrayList<>();
-      CompoundTag tag = stack.m_41783_();
-      if (tag != null && tag.m_128425_(tagName, 9)) {
-         ListTag list = tag.m_128437_(tagName, 11);
+      CompoundTag tag = stack.getTag();
+      if (tag != null && tag.contains(tagName, 9)) {
+         ListTag list = tag.getList(tagName, 11);
 
          for (int i = 0; i < list.size(); i++) {
-            selected.add(NbtUtils.m_129233_(list.get(i)));
+            selected.add(NbtUtils.loadUUID(list.get(i)));
          }
 
          return selected;
@@ -600,26 +600,26 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    private static void setUuidList(ItemStack stack, String tagName, List<UUID> selected) {
       ListTag list = new ListTag();
-      selected.forEach(uuid -> list.add(NbtUtils.m_129226_(uuid)));
-      stack.m_41784_().m_128365_(tagName, list);
+      selected.forEach(uuid -> list.add(NbtUtils.createUUID(uuid)));
+      stack.getOrCreateTag().put(tagName, list);
    }
 
    private static CommandBatonItem.BatonMode getMode(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag != null && tag.m_128441_("Mode") ? CommandBatonItem.BatonMode.byName(tag.m_128461_("Mode")) : CommandBatonItem.BatonMode.MOVE;
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("Mode") ? CommandBatonItem.BatonMode.byName(tag.getString("Mode")) : CommandBatonItem.BatonMode.MOVE;
    }
 
    private static void changeMode(ItemStack stack, Player player, CommandBatonItem.BatonMode mode) {
-      stack.m_41784_().m_128359_("Mode", mode.name);
-      player.m_5661_(Component.m_237110_("guistrings.npc.baton.mode_changed", new Object[]{Component.m_237115_(mode.translationKey)}), true);
+      stack.getOrCreateTag().putString("Mode", mode.name);
+      player.displayClientMessage(Component.translatable("guistrings.npc.baton.mode_changed", new Object[]{Component.translatable(mode.translationKey)}), true);
    }
 
    public static boolean isAttackMode(ItemStack stack) {
-      return stack != null && !stack.m_41619_() && stack.m_41720_() instanceof CommandBatonItem && getMode(stack) == CommandBatonItem.BatonMode.ATTACK;
+      return stack != null && !stack.isEmpty() && stack.getItem() instanceof CommandBatonItem && getMode(stack) == CommandBatonItem.BatonMode.ATTACK;
    }
 
    public static int commandAttack(ServerLevel level, Player player, ItemStack stack, LivingEntity target) {
-      if (isAttackMode(stack) && target != null && target != player && target.m_6084_()) {
+      if (isAttackMode(stack) && target != null && target != player && target.isAlive()) {
          if (target instanceof PlayerOwnedNpcEntity owned && owned.hasCommandPermission(player)) {
             return 0;
          }
@@ -631,12 +631,12 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    public static void clearSelections(ItemStack stack, Player player) {
-      if (stack != null && !stack.m_41619_() && stack.m_41720_() instanceof CommandBatonItem) {
+      if (stack != null && !stack.isEmpty() && stack.getItem() instanceof CommandBatonItem) {
          int cleared = getSelectedNpcs(stack).size() + getCombatGroupNpcs(stack).size();
-         stack.m_41784_().m_128473_("SelectedNpcs");
-         stack.m_41784_().m_128473_("CombatGroupNpcs");
-         stack.m_41784_().m_128473_("CombatGroupType");
-         player.m_5661_(Component.m_237110_("guistrings.npc.baton.selections_cleared", new Object[]{cleared}), true);
+         stack.getOrCreateTag().remove("SelectedNpcs");
+         stack.getOrCreateTag().remove("CombatGroupNpcs");
+         stack.getOrCreateTag().remove("CombatGroupType");
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.selections_cleared", new Object[]{cleared}), true);
       }
    }
 

@@ -23,51 +23,51 @@ public final class LegacyCoffinRenderer implements BlockEntityRenderer<Structure
    private final LegacyCoffinModel stoneModel;
 
    public LegacyCoffinRenderer(Context context) {
-      this.woodenModel = new LegacyCoffinModel(context.m_173582_(LegacyCoffinModel.WOOD_LAYER), true);
-      this.stoneModel = new LegacyCoffinModel(context.m_173582_(LegacyCoffinModel.STONE_LAYER), false);
+      this.woodenModel = new LegacyCoffinModel(context.bakeLayer(LegacyCoffinModel.WOOD_LAYER), true);
+      this.stoneModel = new LegacyCoffinModel(context.bakeLayer(LegacyCoffinModel.STONE_LAYER), false);
    }
 
    public void render(
       StructureContainerBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource buffers, int packedLight, int packedOverlay
    ) {
-      BlockState state = blockEntity.m_58900_();
-      boolean wooden = state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WOODEN_COFFIN));
-      boolean stone = state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.STONE_COFFIN));
+      BlockState state = blockEntity.getBlockState();
+      boolean wooden = state.is(AWCoreRegistryAccess.block(AWCoreIds.WOODEN_COFFIN));
+      boolean stone = state.is(AWCoreRegistryAccess.block(AWCoreIds.STONE_COFFIN));
       if (wooden || stone) {
-         Direction facing = state.m_61138_(StructureContainerBlock.FACING) ? (Direction)state.m_61143_(StructureContainerBlock.FACING) : Direction.NORTH;
+         Direction facing = state.hasProperty(StructureContainerBlock.FACING) ? (Direction)state.getValue(StructureContainerBlock.FACING) : Direction.NORTH;
          float open = blockEntity.getLidProgress(partialTick);
-         VertexConsumer consumer = buffers.m_6299_(RenderType.m_110458_(wooden ? WOOD_TEXTURE : STONE_TEXTURE));
-         poseStack.m_85836_();
+         VertexConsumer consumer = buffers.getBuffer(RenderType.entityCutoutNoCull(wooden ? WOOD_TEXTURE : STONE_TEXTURE));
+         poseStack.pushPose();
          if (wooden) {
-            poseStack.m_85837_(0.5, 2.16, 0.5);
-            poseStack.m_252781_(Axis.f_252436_.m_252977_(yawFor(facing)));
-            poseStack.m_85837_(0.0, 0.0, -0.22);
-            poseStack.m_252781_(Axis.f_252529_.m_252977_(180.0F));
-            poseStack.m_85841_(1.44F, 1.44F, 1.44F);
+            poseStack.translate(0.5, 2.16, 0.5);
+            poseStack.mulPose(Axis.YP.rotationDegrees(yawFor(facing)));
+            poseStack.translate(0.0, 0.0, -0.22);
+            poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
+            poseStack.scale(1.44F, 1.44F, 1.44F);
             this.woodenModel.render(poseStack, consumer, packedLight, packedOverlay, open);
          } else {
-            poseStack.m_85837_(0.0, 1.78, 0.0);
-            poseStack.m_252781_(Axis.f_252436_.m_252977_(yawFor(facing)));
+            poseStack.translate(0.0, 1.78, 0.0);
+            poseStack.mulPose(Axis.YP.rotationDegrees(yawFor(facing)));
             switch (facing) {
                case SOUTH:
-                  poseStack.m_85837_(-1.0, 0.0, -2.0);
+                  poseStack.translate(-1.0, 0.0, -2.0);
                   break;
                case EAST:
-                  poseStack.m_85837_(0.0, 0.0, -2.0);
+                  poseStack.translate(0.0, 0.0, -2.0);
                   break;
                case WEST:
-                  poseStack.m_85837_(-1.0, 0.0, -1.0);
+                  poseStack.translate(-1.0, 0.0, -1.0);
                   break;
                default:
-                  poseStack.m_85837_(0.0, 0.0, -1.0);
+                  poseStack.translate(0.0, 0.0, -1.0);
             }
 
-            poseStack.m_252781_(Axis.f_252529_.m_252977_(180.0F));
-            poseStack.m_85841_(1.184F, 1.184F, 1.184F);
+            poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
+            poseStack.scale(1.184F, 1.184F, 1.184F);
             this.stoneModel.render(poseStack, consumer, packedLight, packedOverlay, open);
          }
 
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
    }
 
@@ -80,7 +80,7 @@ public final class LegacyCoffinRenderer implements BlockEntityRenderer<Structure
       };
    }
 
-   public int m_142163_() {
-      return Mth.m_14167_(64.0F);
+   public int getViewDistance() {
+      return Mth.ceil(64.0F);
    }
 }

@@ -15,7 +15,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 
 public final class IslandChunkWindow {
-   private static final TicketType<BlockPos> TICKET = TicketType.m_9462_("ancientwarfare:island_work", Comparator.comparingLong(BlockPos::m_121878_));
+   private static final TicketType<BlockPos> TICKET = TicketType.create("ancientwarfare:island_work", Comparator.comparingLong(BlockPos::asLong));
    private static final int FULL_TICKET_DISTANCE = 0;
    private final LinkedHashMap<Long, ChunkPos> tickets = new LinkedHashMap<>(16, 0.75F, true);
    private ServerLevel level;
@@ -32,15 +32,15 @@ public final class IslandChunkWindow {
       if (this.level != requestedLevel || !requestedOwner.equals(this.owner)) {
          this.releaseAll();
          this.level = requestedLevel;
-         this.owner = requestedOwner.m_7949_();
+         this.owner = requestedOwner.immutable();
       }
 
       Map<Long, ChunkPos> required = new LinkedHashMap<>();
 
       for (ChunkPos chunk : indispensable) {
          Objects.requireNonNull(chunk, "Indispensable island chunk");
-         required.put(chunk.m_45588_(), chunk);
-         NaturalGenerationContext.markArea(new BlockPos(chunk.m_45604_() - 16, 0, chunk.m_45605_() - 16), chunk.m_45608_() + 16, chunk.m_45609_() + 16);
+         required.put(chunk.toLong(), chunk);
+         NaturalGenerationContext.markArea(new BlockPos(chunk.getMinBlockX() - 16, 0, chunk.getMinBlockZ() - 16), chunk.getMaxBlockX() + 16, chunk.getMaxBlockZ() + 16);
       }
 
       int effectiveLimit = Math.max(Math.max(1, maxSize), required.size());
@@ -59,7 +59,7 @@ public final class IslandChunkWindow {
             this.tickets.put(entry.getKey(), entry.getValue());
 
             try {
-               this.level.m_7726_().addRegionTicket(TICKET, entry.getValue(), 0, this.owner, false);
+               this.level.getChunkSource().addRegionTicket(TICKET, entry.getValue(), 0, this.owner, false);
             } catch (RuntimeException var11) {
                throw new IllegalStateException("Unable to request non-blocking island chunk " + entry.getValue() + " for " + this.owner, var11);
             }
@@ -67,7 +67,7 @@ public final class IslandChunkWindow {
       }
 
       for (ChunkPos chunk : required.values()) {
-         if (this.level.m_7726_().m_7131_(chunk.f_45578_, chunk.f_45579_) == null) {
+         if (this.level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) {
             return false;
          }
       }
@@ -81,7 +81,7 @@ public final class IslandChunkWindow {
       while (this.tickets.size() > targetSize && iterator.hasNext()) {
          Entry<Long, ChunkPos> entry = iterator.next();
          if (!indispensable.contains(entry.getKey())) {
-            this.level.m_7726_().removeRegionTicket(TICKET, entry.getValue(), 0, this.owner, false);
+            this.level.getChunkSource().removeRegionTicket(TICKET, entry.getValue(), 0, this.owner, false);
             iterator.remove();
          }
       }
@@ -91,7 +91,7 @@ public final class IslandChunkWindow {
       if (this.level != null && this.owner != null) {
          for (ChunkPos chunk : this.tickets.values()) {
             try {
-               this.level.m_7726_().removeRegionTicket(TICKET, chunk, 0, this.owner, false);
+               this.level.getChunkSource().removeRegionTicket(TICKET, chunk, 0, this.owner, false);
             } catch (RuntimeException var4) {
                AncientWarfareCore.LOG.warn("Unable to release island chunk {} for {}", new Object[]{chunk, this.owner, var4});
             }

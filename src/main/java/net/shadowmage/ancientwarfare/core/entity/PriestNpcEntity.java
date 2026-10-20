@@ -34,36 +34,36 @@ public class PriestNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 20.0).m_22268_(Attributes.f_22279_, 0.25).m_22268_(Attributes.f_22277_, 24.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.25).add(Attributes.FOLLOW_RANGE, 24.0);
    }
 
-   protected void m_8099_() {
-      this.f_21345_.m_25352_(0, new FloatGoal(this));
-      this.f_21345_.m_25352_(2, new PriestNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
-      this.f_21345_.m_25352_(2, new PriestNpcEntity.ResurrectionGoal(this, 1.0, 4.0));
-      this.f_21345_.m_25352_(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
-      this.f_21345_.m_25352_(7, new RandomLookAroundGoal(this));
+   protected void registerGoals() {
+      this.goalSelector.addGoal(0, new FloatGoal(this));
+      this.goalSelector.addGoal(2, new PriestNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(2, new PriestNpcEntity.ResurrectionGoal(this, 1.0, 4.0));
+      this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+      this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
    }
 
-   protected InteractionResult m_6071_(Player player, InteractionHand hand) {
+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
       if (this.tryAcceptFood(player, hand)) {
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
-      } else if (player.m_21120_(hand).m_41720_() instanceof CommandBatonItem) {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.m_21120_(hand), player, this);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
+            CommandBatonItem.toggleNpcSelection(player.getItemInHand(hand), player, this);
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
             AWCorePlatform.openMenu(
                player,
-               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.m_5446_()),
-               buffer -> buffer.writeInt(this.m_19879_())
+               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.getDisplayName()),
+               buffer -> buffer.writeInt(this.getId())
             );
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
    }
 
@@ -78,8 +78,8 @@ public class PriestNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    @Override
-   public Component m_5677_() {
-      return Component.m_237115_("entity.ancientwarfare.priest");
+   public Component getTypeName() {
+      return Component.translatable("entity.ancientwarfare.priest");
    }
 
    boolean hasActiveResurrectionDeployment() {
@@ -96,45 +96,45 @@ public class PriestNpcEntity extends PlayerOwnedNpcEntity {
          this.priest = priest;
          this.speedModifier = speedModifier;
          this.stopDistanceSq = stopDistance * stopDistance;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.priest.getCurrentCommand() != NpcCommandType.MOVE) {
             return false;
          } else {
             this.target = this.priest.getCommandTarget();
-            return !BlockPos.f_121853_.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
+            return !BlockPos.ZERO.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.priest.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() > this.stopDistanceSq;
       }
 
-      public void m_8037_() {
-         this.priest.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+      public void tick() {
+         this.priest.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
          this.priest
-            .m_21573_()
-            .m_26519_(
-               (double)this.target.m_123341_() + 0.5,
-               (double)this.target.m_123342_(),
-               (double)this.target.m_123343_() + 0.5,
+            .getNavigation()
+            .moveTo(
+               (double)this.target.getX() + 0.5,
+               (double)this.target.getY(),
+               (double)this.target.getZ() + 0.5,
                this.priest.playerWalkNavigationSpeed()
             );
       }
 
-      public void m_8041_() {
+      public void stop() {
          if (this.priest.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
             this.priest.clearCommand();
          }
 
          this.target = null;
-         this.priest.m_21573_().m_26573_();
+         this.priest.getNavigation().stop();
       }
 
       private double distanceToTargetSq() {
-         return this.priest.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+         return this.priest.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
       }
    }
 
@@ -152,18 +152,18 @@ public class PriestNpcEntity extends PlayerOwnedNpcEntity {
          this.priest = priest;
          this.speedModifier = speedModifier;
          this.actionDistanceSq = actionDistance * actionDistance;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.priest.getCurrentCommand() != NpcCommandType.NONE || !this.priest.hasTownHall()) {
             return false;
          } else if (this.entry != null) {
             return true;
-         } else if (this.priest.f_19797_ - this.lastCheckTick < 200) {
+         } else if (this.priest.tickCount - this.lastCheckTick < 200) {
             return false;
          } else {
-            this.lastCheckTick = this.priest.f_19797_;
+            this.lastCheckTick = this.priest.tickCount;
             return this.townHall() != null && this.townHall().claimResurrection().map(claimed -> {
                this.entry = claimed;
                this.priest.resurrectionDeployment = true;
@@ -172,27 +172,27 @@ public class PriestNpcEntity extends PlayerOwnedNpcEntity {
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.entry != null && this.priest.getCurrentCommand() == NpcCommandType.NONE && this.priest.hasTownHall();
       }
 
-      public void m_8037_() {
+      public void tick() {
          TownHallBlockEntity townHall = this.townHall();
          if (townHall != null && this.entry != null) {
             BlockPos pos = this.priest.getTownHallPos();
-            double distanceSq = this.priest.m_20275_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_() + 0.5, (double)pos.m_123343_() + 0.5);
+            double distanceSq = this.priest.distanceToSqr((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5);
             if (distanceSq > this.actionDistanceSq) {
                this.resurrectionTicks = 0;
-               this.priest.m_21563_().m_24946_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_(), (double)pos.m_123343_() + 0.5);
+               this.priest.getLookControl().setLookAt((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5);
                this.priest
-                  .m_21573_()
-                  .m_26519_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_(), (double)pos.m_123343_() + 0.5, this.priest.playerWalkNavigationSpeed());
+                  .getNavigation()
+                  .moveTo((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5, this.priest.playerWalkNavigationSpeed());
             } else {
-               this.priest.m_21573_().m_26573_();
-               this.priest.m_21563_().m_24946_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_(), (double)pos.m_123343_() + 0.5);
+               this.priest.getNavigation().stop();
+               this.priest.getLookControl().setLookAt((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5);
                if (this.resurrectionTicks % 20 == 0) {
-                  this.priest.m_6674_(InteractionHand.MAIN_HAND);
-                  this.priest.m_9236_().m_5594_(null, this.priest.m_20183_(), SoundEvents.f_11887_, SoundSource.NEUTRAL, 0.6F, 1.2F);
+                  this.priest.swing(InteractionHand.MAIN_HAND);
+                  this.priest.level().playSound(null, this.priest.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.NEUTRAL, 0.6F, 1.2F);
                }
 
                if (++this.resurrectionTicks >= 100) {
@@ -200,11 +200,11 @@ public class PriestNpcEntity extends PlayerOwnedNpcEntity {
                }
             }
          } else {
-            this.m_8041_();
+            this.stop();
          }
       }
 
-      public void m_8041_() {
+      public void stop() {
          TownHallBlockEntity townHall = this.townHall();
          if (townHall != null && this.entry != null) {
             townHall.releaseResurrection(this.entry);
@@ -213,20 +213,20 @@ public class PriestNpcEntity extends PlayerOwnedNpcEntity {
          this.entry = null;
          this.resurrectionTicks = 0;
          this.priest.resurrectionDeployment = false;
-         this.priest.m_21573_().m_26573_();
+         this.priest.getNavigation().stop();
       }
 
       private void resurrect(TownHallBlockEntity townHall) {
-         PlayerOwnedNpcEntity restored = NpcSpawnerItem.createNpcFromStack(this.priest.m_9236_(), this.entry.spawnerStack()) instanceof PlayerOwnedNpcEntity ownedNpc
+         PlayerOwnedNpcEntity restored = NpcSpawnerItem.createNpcFromStack(this.priest.level(), this.entry.spawnerStack()) instanceof PlayerOwnedNpcEntity ownedNpc
             ? ownedNpc
             : null;
          boolean spawned = false;
          if (restored != null) {
             restored.setOwner(this.priest.getOwner().orElse(null));
-            restored.m_21153_(Math.max(1.0F, restored.m_21233_() / 2.0F));
-            restored.m_7678_(this.priest.m_20185_(), this.priest.m_20186_(), this.priest.m_20189_(), this.priest.m_146908_(), this.priest.m_146909_());
-            restored.m_20334_(0.0, 0.0, 0.0);
-            spawned = this.priest.m_9236_().m_7967_(restored);
+            restored.setHealth(Math.max(1.0F, restored.getMaxHealth() / 2.0F));
+            restored.moveTo(this.priest.getX(), this.priest.getY(), this.priest.getZ(), this.priest.getYRot(), this.priest.getXRot());
+            restored.setDeltaMovement(0.0, 0.0, 0.0);
+            spawned = this.priest.level().addFreshEntity(restored);
          }
 
          townHall.completeResurrection(this.entry, spawned);
@@ -235,7 +235,7 @@ public class PriestNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private TownHallBlockEntity townHall() {
-         return this.priest.hasTownHall() && this.priest.m_9236_().m_7702_(this.priest.getTownHallPos()) instanceof TownHallBlockEntity townHall
+         return this.priest.hasTownHall() && this.priest.level().getBlockEntity(this.priest.getTownHallPos()) instanceof TownHallBlockEntity townHall
             ? townHall
             : null;
       }

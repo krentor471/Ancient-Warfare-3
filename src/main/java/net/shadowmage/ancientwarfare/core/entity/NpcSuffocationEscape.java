@@ -28,14 +28,14 @@ final class NpcSuffocationEscape {
             return false;
          } else {
             stopMovement(npc, mover);
-            mover.m_6021_(destination.f_82479_, destination.f_82480_, destination.f_82481_);
-            mover.m_20256_(Vec3.f_82478_);
-            mover.f_19789_ = 0.0F;
-            mover.f_19864_ = true;
+            mover.teleportTo(destination.x, destination.y, destination.z);
+            mover.setDeltaMovement(Vec3.ZERO);
+            mover.fallDistance = 0.0F;
+            mover.hurtMarked = true;
             if (mover != npc) {
-               npc.m_20256_(Vec3.f_82478_);
-               npc.f_19789_ = 0.0F;
-               npc.f_19864_ = true;
+               npc.setDeltaMovement(Vec3.ZERO);
+               npc.fallDistance = 0.0F;
+               npc.hurtMarked = true;
             }
 
             return true;
@@ -46,16 +46,16 @@ final class NpcSuffocationEscape {
    }
 
    private static Entity escapeMover(NpcBaseEntity npc) {
-      Entity vehicle = npc.m_20202_();
+      Entity vehicle = npc.getVehicle();
       return (Entity)(vehicle instanceof Mob ? vehicle : npc);
    }
 
    private static boolean isSuffocating(Entity entity) {
-      return entity != null && entity.m_6084_() && entity.m_5830_();
+      return entity != null && entity.isAlive() && entity.isInWall();
    }
 
    private static Vec3 findNearestSafePosition(NpcBaseEntity npc, Entity mover) {
-      BlockPos origin = mover.m_20183_();
+      BlockPos origin = mover.blockPosition();
 
       for (int yOffset : Y_OFFSETS) {
          for (int radius = 0; radius <= 5; radius++) {
@@ -63,7 +63,7 @@ final class NpcSuffocationEscape {
                for (int zOffset = -radius; zOffset <= radius; zOffset++) {
                   if (radius <= 0 || Math.max(Math.abs(xOffset), Math.abs(zOffset)) == radius) {
                      Vec3 candidate = new Vec3(
-                        (double)(origin.m_123341_() + xOffset) + 0.5, (double)(origin.m_123342_() + yOffset), (double)(origin.m_123343_() + zOffset) + 0.5
+                        (double)(origin.getX() + xOffset) + 0.5, (double)(origin.getY() + yOffset), (double)(origin.getZ() + zOffset) + 0.5
                      );
                      if (isSafeDestination(npc, mover, candidate)) {
                         return candidate;
@@ -78,49 +78,49 @@ final class NpcSuffocationEscape {
    }
 
    private static boolean isSafeDestination(NpcBaseEntity npc, Entity mover, Vec3 destination) {
-      AABB currentBox = mover.m_20191_();
-      double moveX = destination.f_82479_ - mover.m_20185_();
-      double moveY = destination.f_82480_ - mover.m_20186_();
-      double moveZ = destination.f_82481_ - mover.m_20189_();
-      AABB candidateBox = currentBox.m_82386_(moveX, moveY, moveZ);
-      Level level = mover.m_9236_();
-      if (!level.m_45756_(mover, candidateBox.m_82406_(1.0E-4))) {
+      AABB currentBox = mover.getBoundingBox();
+      double moveX = destination.x - mover.getX();
+      double moveY = destination.y - mover.getY();
+      double moveZ = destination.z - mover.getZ();
+      AABB candidateBox = currentBox.move(moveX, moveY, moveZ);
+      Level level = mover.level();
+      if (!level.noCollision(mover, candidateBox.deflate(1.0E-4))) {
          return false;
       } else {
          if (mover != npc) {
-            AABB riderBox = npc.m_20191_().m_82386_(moveX, moveY, moveZ);
-            if (!level.m_45756_(npc, riderBox.m_82406_(1.0E-4))) {
+            AABB riderBox = npc.getBoundingBox().move(moveX, moveY, moveZ);
+            if (!level.noCollision(npc, riderBox.deflate(1.0E-4))) {
                return false;
             }
          }
 
-         return !level.m_6857_().m_61935_(candidateBox)
+         return !level.getWorldBorder().isWithinBounds(candidateBox)
             ? false
-            : hasSupport(level, candidateBox.f_82288_ + 1.0E-4, candidateBox.f_82289_, candidateBox.f_82290_ + 1.0E-4)
-               && hasSupport(level, candidateBox.f_82291_ - 1.0E-4, candidateBox.f_82289_, candidateBox.f_82290_ + 1.0E-4)
-               && hasSupport(level, candidateBox.f_82288_ + 1.0E-4, candidateBox.f_82289_, candidateBox.f_82293_ - 1.0E-4)
-               && hasSupport(level, candidateBox.f_82291_ - 1.0E-4, candidateBox.f_82289_, candidateBox.f_82293_ - 1.0E-4);
+            : hasSupport(level, candidateBox.minX + 1.0E-4, candidateBox.minY, candidateBox.minZ + 1.0E-4)
+               && hasSupport(level, candidateBox.maxX - 1.0E-4, candidateBox.minY, candidateBox.minZ + 1.0E-4)
+               && hasSupport(level, candidateBox.minX + 1.0E-4, candidateBox.minY, candidateBox.maxZ - 1.0E-4)
+               && hasSupport(level, candidateBox.maxX - 1.0E-4, candidateBox.minY, candidateBox.maxZ - 1.0E-4);
       }
    }
 
    private static boolean hasSupport(Level level, double x, double footY, double z) {
-      BlockPos supportPos = BlockPos.m_274561_(x, footY - 0.05, z);
-      BlockState state = level.m_8055_(supportPos);
-      VoxelShape shape = state.m_60812_(level, supportPos);
-      if (shape.m_83281_()) {
+      BlockPos supportPos = BlockPos.containing(x, footY - 0.05, z);
+      BlockState state = level.getBlockState(supportPos);
+      VoxelShape shape = state.getCollisionShape(level, supportPos);
+      if (shape.isEmpty()) {
          return false;
       } else {
-         double supportTop = (double)supportPos.m_123342_() + shape.m_83297_(Axis.Y);
+         double supportTop = (double)supportPos.getY() + shape.max(Axis.Y);
          return footY - supportTop >= -1.0E-4 && footY - supportTop <= 0.35;
       }
    }
 
    private static void stopMovement(NpcBaseEntity npc, Entity mover) {
-      npc.m_21573_().m_26573_();
-      npc.m_20256_(Vec3.f_82478_);
+      npc.getNavigation().stop();
+      npc.setDeltaMovement(Vec3.ZERO);
       if (mover instanceof Mob mob) {
-         mob.m_21573_().m_26573_();
-         mob.m_20256_(Vec3.f_82478_);
+         mob.getNavigation().stop();
+         mob.setDeltaMovement(Vec3.ZERO);
       }
    }
 }

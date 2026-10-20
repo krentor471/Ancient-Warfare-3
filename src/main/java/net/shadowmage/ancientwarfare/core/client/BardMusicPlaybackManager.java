@@ -24,9 +24,9 @@ public final class BardMusicPlaybackManager {
    }
 
    public static void clientTick() {
-      Minecraft minecraft = Minecraft.m_91087_();
-      LocalPlayer player = minecraft.f_91074_;
-      if (minecraft.f_91073_ == null || player == null) {
+      Minecraft minecraft = Minecraft.getInstance();
+      LocalPlayer player = minecraft.player;
+      if (minecraft.level == null || player == null) {
          stop();
       } else if (activeBard != null) {
          tickActiveBard();
@@ -44,16 +44,16 @@ public final class BardMusicPlaybackManager {
 
    private static BardNpcEntity nearestPlayableBard(LocalPlayer player) {
       double range = 26.0;
-      AABB search = player.m_20191_().m_82400_(range);
+      AABB search = player.getBoundingBox().inflate(range);
       BardNpcEntity best = null;
       double bestDistance = Double.MAX_VALUE;
 
-      for (Entity entity : player.m_9236_().m_45933_(player, search)) {
+      for (Entity entity : player.level().getEntities(player, search)) {
          if (entity instanceof BardNpcEntity) {
             BardNpcEntity bard = (BardNpcEntity)entity;
             if (!bard.getBardTracks().isEmpty()) {
                double playRange = (double)bard.getBardPlayRange();
-               double distance = player.m_20280_(bard);
+               double distance = player.distanceToSqr(bard);
                if (distance <= playRange * playRange && distance < bestDistance) {
                   best = bard;
                   bestDistance = distance;
@@ -66,7 +66,7 @@ public final class BardMusicPlaybackManager {
    }
 
    private static void tickActiveBard() {
-      if (activeBard != null && activeBard.m_6084_() && withinStopRange(activeBard)) {
+      if (activeBard != null && activeBard.isAlive() && withinStopRange(activeBard)) {
          List<BardTrack> tracks = activeBard.getBardTracks();
          if (tracks.isEmpty()) {
             stop();
@@ -89,8 +89,8 @@ public final class BardMusicPlaybackManager {
    }
 
    private static boolean withinStopRange(BardNpcEntity bard) {
-      Minecraft minecraft = Minecraft.m_91087_();
-      return minecraft.f_91074_ == null ? false : minecraft.f_91074_.m_20280_(bard) <= 9216.0;
+      Minecraft minecraft = Minecraft.getInstance();
+      return minecraft.player == null ? false : minecraft.player.distanceToSqr(bard) <= 9216.0;
    }
 
    private static void play(BardTrack track) {

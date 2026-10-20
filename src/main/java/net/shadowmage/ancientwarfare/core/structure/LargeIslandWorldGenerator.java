@@ -42,16 +42,16 @@ public final class LargeIslandWorldGenerator {
          return false;
       } else {
          AwsWorldGenTemplateRegistry.Template template = AwsWorldGenTemplateRegistry.templateForActivePath(task.path);
-         Direction facing = Direction.m_122407_(task.facing);
-         int sizeX = template != null ? template.rotatedSizeX(facing) : (facing.m_122434_() == Axis.X ? task.planSizeZ : task.planSizeX);
-         int sizeZ = template != null ? template.rotatedSizeZ(facing) : (facing.m_122434_() == Axis.X ? task.planSizeX : task.planSizeZ);
+         Direction facing = Direction.from2DDataValue(task.facing);
+         int sizeX = template != null ? template.rotatedSizeX(facing) : (facing.getAxis() == Axis.X ? task.planSizeZ : task.planSizeX);
+         int sizeZ = template != null ? template.rotatedSizeZ(facing) : (facing.getAxis() == Axis.X ? task.planSizeX : task.planSizeZ);
          int sizeY = template != null ? template.sizeY() : task.planSizeY;
-         return pos.m_123341_() >= task.minX
-            && pos.m_123341_() < task.minX + sizeX
-            && pos.m_123343_() >= task.minZ
-            && pos.m_123343_() < task.minZ + sizeZ
-            && pos.m_123342_() >= task.minY
-            && pos.m_123342_() < task.minY + sizeY;
+         return pos.getX() >= task.minX
+            && pos.getX() < task.minX + sizeX
+            && pos.getZ() >= task.minZ
+            && pos.getZ() < task.minZ + sizeZ
+            && pos.getY() >= task.minY
+            && pos.getY() < task.minY + sizeY;
       }
    }
 
@@ -99,7 +99,7 @@ public final class LargeIslandWorldGenerator {
       LargeIslandWorldGenerationData data = LargeIslandWorldGenerationData.get(level);
       if (data.active() != null && !data.active().lastError.isEmpty()) {
          data.active().lastError = "";
-         data.m_77762_();
+         data.setDirty();
          return true;
       } else {
          return false;
@@ -116,12 +116,12 @@ public final class LargeIslandWorldGenerator {
 
    public static boolean tryQueue(ServerLevel level, int x, int waterY, int z, RandomSource random) {
       LargeIslandWorldGenerationData data = LargeIslandWorldGenerationData.get(level);
-      return data.active() == null && random.m_188503_(8) == 0 ? queueCandidate(level, x, waterY, z, random, null) : false;
+      return data.active() == null && random.nextInt(8) == 0 ? queueCandidate(level, x, waterY, z, random, null) : false;
    }
 
    private static boolean queueCandidate(ServerLevel level, int x, int waterY, int z, RandomSource random, LargeIslandWorldGenerationData.Task previous) {
       NaturalGenerationContext.markChunk(new ChunkPos(x >> 4, z >> 4));
-      Holder<Biome> biome = level.m_204166_(new BlockPos(x, waterY, z));
+      Holder<Biome> biome = level.getBiome(new BlockPos(x, waterY, z));
       List<AwsWorldGenTemplateRegistry.Template> candidates = new ArrayList<>();
 
       for (AwsWorldGenTemplateRegistry.Template template : AwsWorldGenTemplateRegistry.largeAquaticTemplates()) {
@@ -139,17 +139,17 @@ public final class LargeIslandWorldGenerator {
 
          for (int attempt = 0; attempt < 16 && !candidates.isEmpty(); attempt++) {
             AwsWorldGenTemplateRegistry.Template selected = AwsWorldGenerator.removeWeighted(candidates, random, aws);
-            Direction facing = Plane.HORIZONTAL.m_235690_(random);
+            Direction facing = Plane.HORIZONTAL.getRandomDirection(random);
             BlockPos min = selected.minFor(origin, facing);
             String rejection = spatialRejection(level, selected, min, facing, x, z);
             if (rejection == null) {
                LargeIslandWorldGenerationData.Task task = new LargeIslandWorldGenerationData.Task(
-                  selected.path(), selected.name(), min.m_123341_(), min.m_123342_(), min.m_123343_(), facing.m_122416_()
+                  selected.path(), selected.name(), min.getX(), min.getY(), min.getZ(), facing.get2DDataValue()
                );
                task.anchorX = previous == null ? x : previous.anchorX;
                task.anchorY = previous == null ? waterY : previous.anchorY;
                task.anchorZ = previous == null ? z : previous.anchorZ;
-               task.retrySeed = previous == null ? random.m_188505_() : previous.retrySeed;
+               task.retrySeed = previous == null ? random.nextLong() : previous.retrySeed;
                if (task.retrySeed == 0L) {
                   task.retrySeed = 1L;
                }
@@ -180,19 +180,19 @@ public final class LargeIslandWorldGenerator {
    }
 
    private static String spatialRejection(ServerLevel level, AwsWorldGenTemplateRegistry.Template selected, BlockPos min, Direction facing, int x, int z) {
-      if (!selected.fitsBuildHeight(min, level.m_141937_(), level.m_151558_())) {
+      if (!selected.fitsBuildHeight(min, level.getMinBuildHeight(), level.getMaxBuildHeight())) {
          return "build_height";
       } else {
-         int maxX = min.m_123341_() + selected.rotatedSizeX(facing) - 1;
-         int maxZ = min.m_123343_() + selected.rotatedSizeZ(facing) - 1;
+         int maxX = min.getX() + selected.rotatedSizeX(facing) - 1;
+         int maxZ = min.getZ() + selected.rotatedSizeZ(facing) - 1;
 
          for (AwtWorldGenerationData.TownTask town : AwtWorldGenerationData.get(level).towns()) {
             if (town.phase != AwtWorldGenerationData.Phase.FAILED) {
                AwtWorldGenTemplateRegistry.Template townTemplate = AwtWorldGenTemplateRegistry.templateForActivePath(town.path);
                int halfSize = townTemplate == null ? 192 : townTemplate.chunks() * 8;
-               if (min.m_123341_() <= town.x + halfSize + 48
+               if (min.getX() <= town.x + halfSize + 48
                   && maxX >= town.x - halfSize - 48
-                  && min.m_123343_() <= town.z + halfSize + 48
+                  && min.getZ() <= town.z + halfSize + 48
                   && maxZ >= town.z - halfSize - 48) {
                   return "town_overlap";
                }
@@ -205,11 +205,11 @@ public final class LargeIslandWorldGenerator {
             }
 
             if (selected.island() && isReplaceableSmallAquaticAws(entry)) {
-               if (entry.intersects(min.m_123341_(), min.m_123343_(), maxX, maxZ, 0) && !fullyContained(entry, min, maxX, maxZ)) {
+               if (entry.intersects(min.getX(), min.getZ(), maxX, maxZ, 0) && !fullyContained(entry, min, maxX, maxZ)) {
                   return "partial_small_structure_overlap";
                }
             } else {
-               if (entry.intersects(min.m_123341_(), min.m_123343_(), maxX, maxZ, Math.max(32, selected.border()))) {
+               if (entry.intersects(min.getX(), min.getZ(), maxX, maxZ, Math.max(32, selected.border()))) {
                   return "aws_overlap";
                }
 
@@ -240,7 +240,7 @@ public final class LargeIslandWorldGenerator {
          LargeIslandWorldGenerationData.Task task = data.active();
          if (task != null) {
             task.lastError = var4.getClass().getSimpleName() + ": " + var4.getMessage();
-            data.m_77762_();
+            data.setDirty();
             AncientWarfareCore.LOG
                .error(
                   "Paused island {} in {} at layer {}, chunk {}, cell {}; fix the cause and use /awworldgen resume",
@@ -262,19 +262,19 @@ public final class LargeIslandWorldGenerator {
          if (template == null) {
             if (task.lastError.isEmpty()) {
                task.lastError = "Missing island template: " + task.path;
-               data.m_77762_();
+               data.setDirty();
                AncientWarfareCore.LOG.error("Paused island with missing template {}", task.path);
             }
 
             release(level);
          } else if (task.lastError.isEmpty()) {
-            Direction facing = Direction.m_122407_(task.facing);
+            Direction facing = Direction.from2DDataValue(task.facing);
             BlockPos min = new BlockPos(task.minX, task.minY, task.minZ);
-            int maxX = min.m_123341_() + template.rotatedSizeX(facing) - 1;
-            int maxZ = min.m_123343_() + template.rotatedSizeZ(facing) - 1;
-            NaturalGenerationContext.markArea(min.m_7918_(-32, 0, -32), maxX + 32, maxZ + 32);
+            int maxX = min.getX() + template.rotatedSizeX(facing) - 1;
+            int maxZ = min.getZ() + template.rotatedSizeZ(facing) - 1;
+            NaturalGenerationContext.markArea(min.offset(-32, 0, -32), maxX + 32, maxZ + 32);
             AwsTemplatePlacer.ChunkLayout layout = new AwsTemplatePlacer.ChunkLayout(
-               Math.floorDiv(min.m_123341_(), 16), Math.floorDiv(min.m_123343_(), 16), Math.floorDiv(maxX, 16), Math.floorDiv(maxZ, 16)
+               Math.floorDiv(min.getX(), 16), Math.floorDiv(min.getZ(), 16), Math.floorDiv(maxX, 16), Math.floorDiv(maxZ, 16)
             );
             LargeIslandWorldGenerator.Construction construction = CONSTRUCTIONS.get(level);
             if (construction == null || construction.task != task) {
@@ -290,13 +290,13 @@ public final class LargeIslandWorldGenerator {
                      task.modernSurvey = true;
                   }
 
-                  data.m_77762_();
+                  data.setDirty();
                }
 
                if (task.phase == LargeIslandWorldGenerationData.Phase.VALIDATE) {
                   transition(task, LargeIslandWorldGenerationData.Phase.VALIDATE);
                   task.entityCursor = 0;
-                  data.m_77762_();
+                  data.setDirty();
                }
             }
 
@@ -315,7 +315,7 @@ public final class LargeIslandWorldGenerator {
                   transition(task, LargeIslandWorldGenerationData.Phase.CONNECT);
                }
 
-               data.m_77762_();
+               data.setDirty();
                AncientWarfareCore.LOG.info("Migrated legacy chunk-slice island {} to layered construction", task.name);
             }
 
@@ -324,17 +324,17 @@ public final class LargeIslandWorldGenerator {
                   transition(task, LargeIslandWorldGenerationData.Phase.SURVEY);
                   task.surveySamples = task.surveyWaterSamples = task.surveyDepthSamples = 0L;
                   task.modernSurvey = true;
-                  data.m_77762_();
+                  data.setDirty();
                }
 
                if (prepareReplacements(level, construction, template, min, maxX, maxZ, budget)) {
                   if (task.progress < layout.count()) {
                      ChunkPos chunk = layout.chunk(task.progress);
                      if (construction.window.request(level, min, chunk, windowSize)) {
-                        int startX = Math.max(min.m_123341_(), chunk.m_45604_());
-                        int startZ = Math.max(min.m_123343_(), chunk.m_45605_());
-                        int endX = Math.min(maxX, chunk.m_45608_());
-                        int endZ = Math.min(maxZ, chunk.m_45609_());
+                        int startX = Math.max(min.getX(), chunk.getMinBlockX());
+                        int startZ = Math.max(min.getZ(), chunk.getMinBlockZ());
+                        int endX = Math.min(maxX, chunk.getMaxBlockX());
+                        int endZ = Math.min(maxZ, chunk.getMaxBlockZ());
                         int firstX = startX + Math.min(2, endX - startX);
                         int firstZ = startZ + Math.min(2, endZ - startZ);
                         int columns = (endX - firstX) / 4 + 1;
@@ -347,7 +347,7 @@ public final class LargeIslandWorldGenerator {
                            int z = firstZ + task.cellCursor / columns * 4;
                            int result = surveyColumn(level, construction, template, x, z, budget);
                            if (result < 0) {
-                              data.m_77762_();
+                              data.setDirty();
                               return;
                            }
 
@@ -370,7 +370,7 @@ public final class LargeIslandWorldGenerator {
 
                         task.progress++;
                         task.cellCursor = 0;
-                        data.m_77762_();
+                        data.setDirty();
                      }
                   } else if (OceanGenerationPolicy.coverageAcceptable(task.surveyWaterSamples, task.surveySamples)
                      && (
@@ -379,7 +379,7 @@ public final class LargeIslandWorldGenerator {
                            : task.surveyDepthSamples == task.surveyWaterSamples
                      )) {
                      transition(task, LargeIslandWorldGenerationData.Phase.PREPARE);
-                     data.m_77762_();
+                     data.setDirty();
                      AncientWarfareCore.LOG
                         .info(
                            "Accepted island survey for {}: water={}/{}, suitable_depth={}/{}; preparing {} layers",
@@ -413,13 +413,13 @@ public final class LargeIslandWorldGenerator {
                   task.planSizeX = index.sizeX();
                   task.planSizeY = index.sizeY();
                   task.planSizeZ = index.sizeZ();
-                  data.m_77762_();
+                  data.setDirty();
                }
 
                if (construction.plan.prepare(budget)) {
                   if (task.phase == LargeIslandWorldGenerationData.Phase.PREPARE) {
                      transition(task, LargeIslandWorldGenerationData.Phase.VALIDATE);
-                     data.m_77762_();
+                     data.setDirty();
                   }
 
                   if (task.phase == LargeIslandWorldGenerationData.Phase.VALIDATE) {
@@ -435,7 +435,7 @@ public final class LargeIslandWorldGenerator {
                            ) {
                               int resultx = recorded.recordedValidationStep(level, task.cellCursor, budget, construction.window, windowSize);
                               if (resultx < 0) {
-                                 data.m_77762_();
+                                 data.setDirty();
                                  return;
                               }
 
@@ -456,7 +456,7 @@ public final class LargeIslandWorldGenerator {
                      while (task.layer < construction.plan.index().sizeY()) {
                         if (task.progress >= construction.plan.index().chunkCount()) {
                            if (!budget.tryScan()) {
-                              data.m_77762_();
+                              data.setDirty();
                               return;
                            }
 
@@ -464,7 +464,7 @@ public final class LargeIslandWorldGenerator {
                            task.progress = task.cellCursor = 0;
                         } else if (task.cellCursor >= construction.plan.sliceSize(task.layer, task.progress)) {
                            if (!budget.tryScan()) {
-                              data.m_77762_();
+                              data.setDirty();
                               return;
                            }
 
@@ -484,7 +484,7 @@ public final class LargeIslandWorldGenerator {
                                  template.island()
                               );
                            if (resultxx < 0) {
-                              data.m_77762_();
+                              data.setDirty();
                               return;
                            }
 
@@ -505,7 +505,7 @@ public final class LargeIslandWorldGenerator {
                         int resultxxx = construction.plan
                            .validationEntityStep(level, task, budget, construction.window, windowSize, construction.replacements, template.island());
                         if (resultxxx < 0) {
-                           data.m_77762_();
+                           data.setDirty();
                            return;
                         }
 
@@ -517,12 +517,12 @@ public final class LargeIslandWorldGenerator {
 
                      task.entityCursor = 0;
                      transition(task, LargeIslandWorldGenerationData.Phase.CLEANUP);
-                     data.m_77762_();
+                     data.setDirty();
                   }
 
                   if (task.phase == LargeIslandWorldGenerationData.Phase.CLEANUP) {
                      cleanup(level, construction, template, min, facing, budget, windowSize);
-                     data.m_77762_();
+                     data.setDirty();
                   } else {
                      while (budget.available()) {
                         if (task.phase == LargeIslandWorldGenerationData.Phase.ENTITIES) {
@@ -533,7 +533,7 @@ public final class LargeIslandWorldGenerator {
                                  break;
                               }
 
-                              data.m_77762_();
+                              data.setDirty();
                            }
                         } else {
                            if (!advanceCells(level, task, construction.plan, construction.window, budget, windowSize)) {
@@ -555,13 +555,13 @@ public final class LargeIslandWorldGenerator {
                                     .add(
                                        new AwsWorldGenerationData.Entry(
                                           task.path,
-                                          min.m_123341_(),
-                                          min.m_123342_(),
-                                          min.m_123343_(),
+                                          min.getX(),
+                                          min.getY(),
+                                          min.getZ(),
                                           maxX,
-                                          min.m_123342_() + template.sizeY() - 1,
+                                          min.getY() + template.sizeY() - 1,
                                           maxZ,
-                                          facing.m_122416_()
+                                          facing.get2DDataValue()
                                        )
                                     );
                                  AncientWarfareCore.LOG.info("Completed bottom-to-top large island {} at {}", task.name, min);
@@ -572,11 +572,11 @@ public final class LargeIslandWorldGenerator {
                                  throw new IllegalStateException("Unexpected island phase " + task.phase);
                            }
 
-                           data.m_77762_();
+                           data.setDirty();
                         }
                      }
 
-                     data.m_77762_();
+                     data.setDirty();
                   }
                }
             }
@@ -653,7 +653,7 @@ public final class LargeIslandWorldGenerator {
             return -1;
          }
 
-         construction.sampleY = level.m_6924_(Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+         construction.sampleY = level.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
       }
 
       while (construction.sampleWaterY == Integer.MIN_VALUE) {
@@ -662,22 +662,22 @@ public final class LargeIslandWorldGenerator {
          }
 
          int y = construction.sampleY;
-         if (y < level.m_141937_()) {
+         if (y < level.getMinBuildHeight()) {
             return 0;
          }
 
          BlockPos pos = new BlockPos(x, y, z);
-         BlockState state = level.m_8055_(pos);
-         if (level.m_7702_(pos) != null || state.m_155947_()) {
+         BlockState state = level.getBlockState(pos);
+         if (level.getBlockEntity(pos) != null || state.hasBlockEntity()) {
             return 3;
          }
 
-         if (!matchesReplacement(level, construction, pos) && !state.m_60795_()) {
+         if (!matchesReplacement(level, construction, pos) && !state.isAir()) {
             if (!AwsTemplatePlacer.isBasicNaturalTerrain(state) && !AwsTemplatePlacer.isOpenWaterTerrain(state)) {
                return 3;
             }
 
-            if (!level.m_6425_(pos).m_205070_(FluidTags.f_13131_)) {
+            if (!level.getFluidState(pos).is(FluidTags.WATER)) {
                return 0;
             }
 
@@ -687,20 +687,20 @@ public final class LargeIslandWorldGenerator {
             }
 
             construction.sampleWaterY = y;
-            construction.sampleFloorY = level.m_6924_(Types.OCEAN_FLOOR, x, z) - 1;
+            construction.sampleFloorY = level.getHeight(Types.OCEAN_FLOOR, x, z) - 1;
          } else {
             construction.sampleY--;
          }
       }
 
-      while (construction.sampleFloorY >= level.m_141937_()) {
+      while (construction.sampleFloorY >= level.getMinBuildHeight()) {
          if (!budget.tryWork()) {
             return -1;
          }
 
          BlockPos posx = new BlockPos(x, construction.sampleFloorY, z);
-         BlockState statex = level.m_8055_(posx);
-         if (level.m_7702_(posx) != null || statex.m_155947_()) {
+         BlockState statex = level.getBlockState(posx);
+         if (level.getBlockEntity(posx) != null || statex.hasBlockEntity()) {
             return 3;
          }
 
@@ -730,7 +730,7 @@ public final class LargeIslandWorldGenerator {
    }
 
    private static boolean fullyContained(AwsWorldGenerationData.Entry entry, BlockPos min, int maxX, int maxZ) {
-      return entry.minX() >= min.m_123341_() && entry.maxX() <= maxX && entry.minZ() >= min.m_123343_() && entry.maxZ() <= maxZ;
+      return entry.minX() >= min.getX() && entry.maxX() <= maxX && entry.minZ() >= min.getZ() && entry.maxZ() <= maxZ;
    }
 
    private static boolean prepareReplacements(
@@ -755,12 +755,12 @@ public final class LargeIslandWorldGenerator {
             AwsWorldGenerationData.Entry entry = entries.get(construction.replacementSearch++);
             if (template.island()
                && isReplaceableSmallAquaticAws(entry)
-               && entry.intersects(min.m_123341_(), min.m_123343_(), maxX, maxZ, 0)
+               && entry.intersects(min.getX(), min.getZ(), maxX, maxZ, 0)
                && fullyContained(entry, min, maxX, maxZ)) {
                construction.replacements
                   .add(
                      AwsTemplatePlacer.constructionPlan(
-                        entry.template(), new BlockPos(entry.minX(), entry.minY(), entry.minZ()), Direction.m_122407_(entry.facing())
+                        entry.template(), new BlockPos(entry.minX(), entry.minY(), entry.minZ()), Direction.from2DDataValue(entry.facing())
                      )
                   );
             }
@@ -780,12 +780,12 @@ public final class LargeIslandWorldGenerator {
       LargeIslandWorldGenerationData.get(level).setActive(null);
       release(level);
       if (task.retrySeed != 0L && task.retryAttempt + 1 < 3) {
-         RandomSource random = RandomSource.m_216335_(task.retrySeed ^ (long)(task.retryAttempt + 1) * 72188768385693L);
-         int x = task.anchorX + random.m_188503_(129) - 64;
-         int z = task.anchorZ + random.m_188503_(129) - 64;
-         BlockPos spawn = level.m_220360_();
-         long dx = (long)x - (long)spawn.m_123341_();
-         long dz = (long)z - (long)spawn.m_123343_();
+         RandomSource random = RandomSource.create(task.retrySeed ^ (long)(task.retryAttempt + 1) * 72188768385693L);
+         int x = task.anchorX + random.nextInt(129) - 64;
+         int z = task.anchorZ + random.nextInt(129) - 64;
+         BlockPos spawn = level.getSharedSpawnPos();
+         long dx = (long)x - (long)spawn.getX();
+         long dz = (long)z - (long)spawn.getZ();
          int protection = AWCorePlatform.gameplayConfig().awsSpawnProtectionDistance();
          if (dx * dx + dz * dz < (long)protection * (long)protection) {
             x = task.anchorX;
@@ -814,8 +814,8 @@ public final class LargeIslandWorldGenerator {
    ) {
       LargeIslandWorldGenerationData.Task task = construction.task;
       AwsWorldGenerationData data = AwsWorldGenerationData.get(level);
-      int islandMaxX = islandMin.m_123341_() + island.rotatedSizeX(islandFacing) - 1;
-      int islandMaxZ = islandMin.m_123343_() + island.rotatedSizeZ(islandFacing) - 1;
+      int islandMaxX = islandMin.getX() + island.rotatedSizeX(islandFacing) - 1;
+      int islandMaxZ = islandMin.getZ() + island.rotatedSizeZ(islandFacing) - 1;
 
       while (budget.available()) {
          if (construction.cleanupEntry == null) {
@@ -825,13 +825,13 @@ public final class LargeIslandWorldGenerator {
                }
 
                AwsWorldGenerationData.Entry entry = data.entries().get(construction.cleanupSearch);
-               if (entry.intersects(islandMin.m_123341_(), islandMin.m_123343_(), islandMaxX, islandMaxZ, 0)
+               if (entry.intersects(islandMin.getX(), islandMin.getZ(), islandMaxX, islandMaxZ, 0)
                   && island.island()
                   && isReplaceableSmallAquaticAws(entry)
                   && fullyContained(entry, islandMin, islandMaxX, islandMaxZ)) {
                   construction.cleanupEntry = entry;
                   construction.cleanupPlan = AwsTemplatePlacer.constructionPlan(
-                     entry.template(), new BlockPos(entry.minX(), entry.minY(), entry.minZ()), Direction.m_122407_(entry.facing())
+                     entry.template(), new BlockPos(entry.minX(), entry.minY(), entry.minZ()), Direction.from2DDataValue(entry.facing())
                   );
                   break;
                }
@@ -856,7 +856,7 @@ public final class LargeIslandWorldGenerator {
          }
 
          data.entries().remove(entry);
-         data.m_77762_();
+         data.setDirty();
          AncientWarfareCore.LOG.info("Removed small aquatic AWS {} for large island {}", entry.template(), task.name);
          construction.cleanupEntry = null;
          construction.cleanupPlan = null;

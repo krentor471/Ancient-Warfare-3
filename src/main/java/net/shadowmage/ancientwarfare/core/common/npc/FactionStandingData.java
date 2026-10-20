@@ -16,10 +16,10 @@ public final class FactionStandingData extends SavedData {
    private final Map<UUID, Map<String, Integer>> standings = new HashMap<>();
 
    public static FactionStandingData get(ServerLevel level) {
-      MinecraftServer server = level.m_7654_();
-      return (FactionStandingData)server.m_129783_()
-         .m_8895_()
-         .m_164861_(FactionStandingData::load, FactionStandingData::new, "ancientwarfare_faction_standings");
+      MinecraftServer server = level.getServer();
+      return (FactionStandingData)server.overworld()
+         .getDataStorage()
+         .computeIfAbsent(FactionStandingData::load, FactionStandingData::new, "ancientwarfare_faction_standings");
    }
 
    public int getStanding(UUID playerId, String factionName) {
@@ -30,7 +30,7 @@ public final class FactionStandingData extends SavedData {
    public int setStanding(UUID playerId, String factionName, int standing) {
       String faction = normalize(factionName);
       this.standings.computeIfAbsent(playerId, ignored -> new HashMap<>()).put(faction, standing);
-      this.m_77762_();
+      this.setDirty();
       return standing;
    }
 
@@ -45,30 +45,30 @@ public final class FactionStandingData extends SavedData {
       return this.getStanding(playerId, factionName) < 0;
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
+   public CompoundTag save(CompoundTag tag) {
       ListTag players = new ListTag();
       this.standings.forEach((playerId, factionStandings) -> {
          CompoundTag playerTag = new CompoundTag();
-         playerTag.m_128362_("Player", playerId);
+         playerTag.putUUID("Player", playerId);
          CompoundTag values = new CompoundTag();
-         factionStandings.forEach(values::m_128405_);
-         playerTag.m_128365_("Standings", values);
+         factionStandings.forEach(values::putInt);
+         playerTag.put("Standings", values);
          players.add(playerTag);
       });
-      tag.m_128365_("Players", players);
+      tag.put("Players", players);
       return tag;
    }
 
    private static FactionStandingData load(CompoundTag tag) {
       FactionStandingData data = new FactionStandingData();
 
-      for (Tag entry : tag.m_128437_("Players", 10)) {
+      for (Tag entry : tag.getList("Players", 10)) {
          CompoundTag playerTag = (CompoundTag)entry;
-         if (playerTag.m_128403_("Player")) {
+         if (playerTag.hasUUID("Player")) {
             Map<String, Integer> values = new HashMap<>();
-            CompoundTag standingsTag = playerTag.m_128469_("Standings");
-            standingsTag.m_128431_().forEach(faction -> values.put(normalize(faction), standingsTag.m_128451_(faction)));
-            data.standings.put(playerTag.m_128342_("Player"), values);
+            CompoundTag standingsTag = playerTag.getCompound("Standings");
+            standingsTag.getAllKeys().forEach(faction -> values.put(normalize(faction), standingsTag.getInt(faction)));
+            data.standings.put(playerTag.getUUID("Player"), values);
          }
       }
 

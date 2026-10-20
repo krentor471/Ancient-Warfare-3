@@ -38,18 +38,18 @@ final class SiegeEngineerBrain {
    }
 
    Optional<Entity> findNearestWeapon() {
-      AABB searchBox = this.engineer.m_20191_().m_82400_(32.0);
-      return this.engineer.m_9236_().m_6249_(this.engineer, searchBox, entity -> {
+      AABB searchBox = this.engineer.getBoundingBox().inflate(32.0);
+      return this.engineer.level().getEntities(this.engineer, searchBox, entity -> {
          if (entity instanceof SiegeWeaponControl control && control.canBeOperatedBy(this.engineer)) {
             return true;
          }
 
          return false;
-      }).stream().min(Comparator.comparingDouble(this.engineer::m_20280_));
+      }).stream().min(Comparator.comparingDouble(this.engineer::distanceToSqr));
    }
 
    boolean isCloseEnoughToOperate(Entity weaponEntity) {
-      return this.engineer.m_20280_(weaponEntity) <= 9.0;
+      return this.engineer.distanceToSqr(weaponEntity) <= 9.0;
    }
 
    LivingEntity chooseTarget(Predicate<LivingEntity> targetFilter) {
@@ -61,11 +61,11 @@ final class SiegeEngineerBrain {
          boolean validCurrentTarget;
          boolean var10000;
          label35: {
-            currentTarget = this.engineer.m_5448_();
+            currentTarget = this.engineer.getTarget();
             validCurrentTarget = currentTarget != null
-               && currentTarget.m_6084_()
+               && currentTarget.isAlive()
                && currentTarget != this.engineer
-               && !this.engineer.m_7307_(currentTarget)
+               && !this.engineer.isAlliedTo(currentTarget)
                && targetFilter.test(currentTarget)
                && this.canTrackTarget(weapon, currentTarget);
             if (this.engineer instanceof PlayerOwnedNpcEntity owned && owned.getCurrentCommand() == NpcCommandType.ATTACK) {
@@ -82,16 +82,16 @@ final class SiegeEngineerBrain {
          } else if (validCurrentTarget && weapon.canAttackTarget(currentTarget)) {
             return currentTarget;
          } else {
-            AABB searchBox = this.engineer.m_20191_().m_82400_(96.0);
+            AABB searchBox = this.engineer.getBoundingBox().inflate(96.0);
             return this.engineer
-               .m_9236_()
-               .m_6443_(
+               .level()
+               .getEntitiesOfClass(
                   LivingEntity.class,
                   searchBox,
                   target -> target != this.engineer
-                        && !this.engineer.m_7307_(target)
+                        && !this.engineer.isAlliedTo(target)
                         && targetFilter.test(target)
-                        && this.engineer.m_20280_(target) <= 9216.0
+                        && this.engineer.distanceToSqr(target) <= 9216.0
                         && this.canTrackTarget(weapon, target)
                         && (weapon.isMobile() || weapon.canAttackTarget(target))
                )
@@ -99,7 +99,7 @@ final class SiegeEngineerBrain {
                .min(
                   Comparator.<LivingEntity>comparingInt(target -> weapon.canAttackTarget(target) ? 0 : 1)
                      .thenComparingInt(SiegeEngineerBrain::targetPriority)
-                     .thenComparingDouble(this.engineer::m_20280_)
+                     .thenComparingDouble(this.engineer::distanceToSqr)
                )
                .orElse(null);
          }
@@ -111,14 +111,14 @@ final class SiegeEngineerBrain {
          return false;
       } else if (weapon instanceof Entity weaponEntity) {
          double maximumRange = weapon instanceof BatteringRamEntity ? 96.0 : Math.min(96.0, weapon.maximumAttackRange());
-         return weaponEntity.m_20280_(target) <= maximumRange * maximumRange;
+         return weaponEntity.distanceToSqr(target) <= maximumRange * maximumRange;
       } else {
          return true;
       }
    }
 
    private boolean withinSearchDistance(LivingEntity target) {
-      return this.engineer.m_20280_(target) <= 9216.0;
+      return this.engineer.distanceToSqr(target) <= 9216.0;
    }
 
    private static int targetPriority(LivingEntity target) {
@@ -128,7 +128,7 @@ final class SiegeEngineerBrain {
    void tickWeapon(Predicate<LivingEntity> targetFilter, SiegeEngineerBrain.FireDelay fireDelay) {
       SiegeWeaponControl weapon = this.siegeWeapon;
       if (weapon != null && weapon.canBeOperatedBy(this.engineer)) {
-         if (weapon instanceof Entity weaponEntity && this.engineer.m_20202_() != weaponEntity && !weapon.beginOperation(this.engineer)) {
+         if (weapon instanceof Entity weaponEntity && this.engineer.getVehicle() != weaponEntity && !weapon.beginOperation(this.engineer)) {
             this.clearSiegeWeapon();
             return;
          }
@@ -136,12 +136,12 @@ final class SiegeEngineerBrain {
          if (weapon instanceof BatteringRamEntity ram) {
             GateEntity gate = ram.chooseGateTarget(this.engineer, targetFilter);
             if (gate != null) {
-               this.engineer.m_21563_().m_148051_(gate);
+               this.engineer.getLookControl().setLookAt(gate);
                ram.aimAtGate(this.engineer, gate);
                if (fireDelay.value > 0) {
                   fireDelay.value--;
                } else if (ram.fireAtGate(this.engineer, gate)) {
-                  this.engineer.m_6674_(InteractionHand.MAIN_HAND);
+                  this.engineer.swing(InteractionHand.MAIN_HAND);
                   fireDelay.value = 20;
                }
 
@@ -155,10 +155,10 @@ final class SiegeEngineerBrain {
                ramx.stopNpcControl();
             }
          } else {
-            this.engineer.m_21563_().m_148051_(target);
+            this.engineer.getLookControl().setLookAt(target);
             weapon.aimAt(this.engineer, target);
             if (weapon instanceof ChestPushcartEntity cart && weapon.isMobile() && !(weapon instanceof BatteringRamEntity)) {
-               double distance = cart.m_20280_(target);
+               double distance = cart.distanceToSqr(target);
                double min = weapon.minimumAttackRange();
                double max = weapon.maximumAttackRange();
                double advanceUntil = max * 0.85;
@@ -177,7 +177,7 @@ final class SiegeEngineerBrain {
                fireDelay.value--;
             } else {
                if (weapon.fireAt(this.engineer, target)) {
-                  this.engineer.m_6674_(InteractionHand.MAIN_HAND);
+                  this.engineer.swing(InteractionHand.MAIN_HAND);
                   fireDelay.value = weapon instanceof HwachaEntity ? 5 : 20;
                }
             }

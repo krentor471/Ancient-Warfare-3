@@ -41,15 +41,15 @@ public final class AwsWorldGenerator {
    }
 
    private static boolean generateInternalAt(ServerLevel level, ChunkPos chunk, boolean forced) {
-      if (level.m_46472_() != Level.f_46428_) {
+      if (level.dimension() != Level.OVERWORLD) {
          return false;
       } else {
-         long seed = level.m_7328_() ^ (long)chunk.f_45578_ * 341873128712L ^ (long)chunk.f_45579_ * 132897987541L;
-         RandomSource random = RandomSource.m_216335_(seed);
-         if (!forced && !isCandidateChunk(level.m_7328_(), chunk)) {
+         long seed = level.getSeed() ^ (long)chunk.x * 341873128712L ^ (long)chunk.z * 132897987541L;
+         RandomSource random = RandomSource.create(seed);
+         if (!forced && !isCandidateChunk(level.getSeed(), chunk)) {
             return false;
          } else {
-            BlockPos spawn = level.m_220360_();
+            BlockPos spawn = level.getSharedSpawnPos();
             AwsWorldGenerationData data = AwsWorldGenerationData.get(level);
             Map<String, Integer> rejections = new LinkedHashMap<>();
             boolean oceanAttempt = false;
@@ -72,16 +72,16 @@ public final class AwsWorldGenerator {
                   return false;
                }
 
-               int x = siteAttempt == 0 ? chunk.m_45604_() + random.m_188503_(16) : chunk.m_151390_() + random.m_188503_(65) - 32;
-               int z = siteAttempt == 0 ? chunk.m_45605_() + random.m_188503_(16) : chunk.m_151393_() + random.m_188503_(65) - 32;
-               long dx = (long)x - (long)spawn.m_123341_();
-               long dz = (long)z - (long)spawn.m_123343_();
+               int x = siteAttempt == 0 ? chunk.getMinBlockX() + random.nextInt(16) : chunk.getMiddleBlockX() + random.nextInt(65) - 32;
+               int z = siteAttempt == 0 ? chunk.getMinBlockZ() + random.nextInt(16) : chunk.getMiddleBlockZ() + random.nextInt(65) - 32;
+               long dx = (long)x - (long)spawn.getX();
+               long dz = (long)z - (long)spawn.getZ();
                int spawnProtection = AWCorePlatform.gameplayConfig().awsSpawnProtectionDistance();
                if (forced || dx * dx + dz * dz >= (long)spawnProtection * (long)spawnProtection) {
                   int surfaceY = surfaceY(level, x, z);
-                  if (surfaceY > level.m_141937_()) {
-                     Holder<Biome> biome = level.m_204166_(new BlockPos(x, surfaceY, z));
-                     boolean waterSite = level.m_6425_(new BlockPos(x, surfaceY, z)).m_205070_(FluidTags.f_13131_);
+                  if (surfaceY > level.getMinBuildHeight()) {
+                     Holder<Biome> biome = level.getBiome(new BlockPos(x, surfaceY, z));
+                     boolean waterSite = level.getFluidState(new BlockPos(x, surfaceY, z)).is(FluidTags.WATER);
                      oceanAttempt |= waterSite;
                      if (waterSite
                         && !forced
@@ -98,19 +98,19 @@ public final class AwsWorldGenerator {
                         }
                      }
 
-                     facing = Plane.HORIZONTAL.m_235690_(random);
+                     facing = Plane.HORIZONTAL.getRandomDirection(random);
 
                      for (int attempt = 0; attempt < 16 && !candidates.isEmpty(); attempt++) {
                         template = removeWeighted(candidates, random, data);
                         origin = new BlockPos(x, surfaceY + 1, z);
                         min = template.minFor(origin, facing);
-                        maxX = min.m_123341_() + template.rotatedSizeX(facing) - 1;
-                        maxZ = min.m_123343_() + template.rotatedSizeZ(facing) - 1;
-                        String rejection = !template.fitsBuildHeight(min, level.m_141937_(), level.m_151558_())
+                        maxX = min.getX() + template.rotatedSizeX(facing) - 1;
+                        maxZ = min.getZ() + template.rotatedSizeZ(facing) - 1;
+                        String rejection = !template.fitsBuildHeight(min, level.getMinBuildHeight(), level.getMaxBuildHeight())
                            ? "build_height"
                            : placementRejection(level, data, template, min, maxX, maxZ, x, z);
                         if (rejection == null && template.aquatic()) {
-                           NaturalGenerationContext.markArea(min.m_7918_(-16, 0, -16), maxX + 16, maxZ + 16);
+                           NaturalGenerationContext.markArea(min.offset(-16, 0, -16), maxX + 16, maxZ + 16);
                         }
 
                         if (rejection == null
@@ -127,9 +127,9 @@ public final class AwsWorldGenerator {
                            generating = true;
 
                            try {
-                              NaturalGenerationContext.markArea(min.m_7918_(-16, 0, -16), maxX + 16, maxZ + 16);
-                              level.m_46865_(min);
-                              level.m_46865_(new BlockPos(maxX, min.m_123342_(), maxZ));
+                              NaturalGenerationContext.markArea(min.offset(-16, 0, -16), maxX + 16, maxZ + 16);
+                              level.getChunk(min);
+                              level.getChunk(new BlockPos(maxX, min.getY(), maxZ));
                               if (template.ground()) {
                                  levelTerrain(level, template, min, maxX, maxZ, surfaceY);
                               }
@@ -151,7 +151,7 @@ public final class AwsWorldGenerator {
 
             data.add(
                new AwsWorldGenerationData.Entry(
-                  template.path(), min.m_123341_(), min.m_123342_(), min.m_123343_(), maxX, min.m_123342_() + template.sizeY() - 1, maxZ, facing.m_122416_()
+                  template.path(), min.getX(), min.getY(), min.getZ(), maxX, min.getY() + template.sizeY() - 1, maxZ, facing.get2DDataValue()
                )
             );
             AncientWarfareCore.LOG
@@ -163,13 +163,13 @@ public final class AwsWorldGenerator {
 
    public static boolean isCandidateChunk(long worldSeed, ChunkPos chunk) {
       int regionSize = AWCorePlatform.gameplayConfig().awsRegionChunks();
-      int regionX = Math.floorDiv(chunk.f_45578_, regionSize);
-      int regionZ = Math.floorDiv(chunk.f_45579_, regionSize);
+      int regionX = Math.floorDiv(chunk.x, regionSize);
+      int regionZ = Math.floorDiv(chunk.z, regionSize);
       long regionSeed = worldSeed ^ (long)regionX * 341873128712L ^ (long)regionZ * 132897987541L ^ 72188768385693L;
-      RandomSource random = RandomSource.m_216335_(regionSeed);
-      int candidateX = regionX * regionSize + random.m_188503_(regionSize);
-      int candidateZ = regionZ * regionSize + random.m_188503_(regionSize);
-      return chunk.f_45578_ == candidateX && chunk.f_45579_ == candidateZ;
+      RandomSource random = RandomSource.create(regionSeed);
+      int candidateX = regionX * regionSize + random.nextInt(regionSize);
+      int candidateZ = regionZ * regionSize + random.nextInt(regionSize);
+      return chunk.x == candidateX && chunk.z == candidateZ;
    }
 
    static int recentOccurrences(AwsWorldGenerationData data, String path) {
@@ -204,7 +204,7 @@ public final class AwsWorldGenerator {
          total += (long)weights[i];
       }
 
-      long selected = Math.floorMod(random.m_188505_(), Math.max(1L, total));
+      long selected = Math.floorMod(random.nextLong(), Math.max(1L, total));
 
       for (int i = 0; i < candidates.size(); i++) {
          selected -= (long)weights[i];
@@ -223,9 +223,9 @@ public final class AwsWorldGenerator {
          if (town.phase != AwtWorldGenerationData.Phase.FAILED) {
             AwtWorldGenTemplateRegistry.Template townTemplate = AwtWorldGenTemplateRegistry.templateForActivePath(town.path);
             int halfSize = townTemplate == null ? 192 : townTemplate.chunks() * 8;
-            if (min.m_123341_() <= town.x + halfSize + 32
+            if (min.getX() <= town.x + halfSize + 32
                && maxX >= town.x - halfSize - 32
-               && min.m_123343_() <= town.z + halfSize + 32
+               && min.getZ() <= town.z + halfSize + 32
                && maxZ >= town.z - halfSize - 32) {
                return "town_overlap";
             }
@@ -233,7 +233,7 @@ public final class AwsWorldGenerator {
       }
 
       for (AwsWorldGenerationData.Entry entry : data.entries()) {
-         if (entry.intersects(min.m_123341_(), min.m_123343_(), maxX, maxZ, Math.max(4, template.border()))) {
+         if (entry.intersects(min.getX(), min.getZ(), maxX, maxZ, Math.max(4, template.border()))) {
             return "aws_overlap";
          }
 
@@ -265,14 +265,14 @@ public final class AwsWorldGenerator {
       } else {
          int minSurface = Integer.MAX_VALUE;
          int maxSurface = Integer.MIN_VALUE;
-         int step = Math.max(1, Math.min(maxX - min.m_123341_() + 1, maxZ - min.m_123343_() + 1) / 8);
+         int step = Math.max(1, Math.min(maxX - min.getX() + 1, maxZ - min.getZ() + 1) / 8);
 
-         for (int x = min.m_123341_(); x <= maxX; x += step) {
-            for (int z = min.m_123343_(); z <= maxZ; z += step) {
+         for (int x = min.getX(); x <= maxX; x += step) {
+            for (int z = min.getZ(); z <= maxZ; z += step) {
                int surface = surfaceY(level, x, z);
                minSurface = Math.min(minSurface, surface);
                maxSurface = Math.max(maxSurface, surface);
-               if (!level.m_6425_(new BlockPos(x, surface, z)).m_76178_()) {
+               if (!level.getFluidState(new BlockPos(x, surface, z)).isEmpty()) {
                   return false;
                }
             }
@@ -287,27 +287,27 @@ public final class AwsWorldGenerator {
    private static boolean aquaticTerrainAcceptable(
       ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, int maxX, int maxZ, int waterY
    ) {
-      int step = Math.max(2, Math.min(maxX - min.m_123341_() + 1, maxZ - min.m_123343_() + 1) / 8);
+      int step = Math.max(2, Math.min(maxX - min.getX() + 1, maxZ - min.getZ() + 1) / 8);
       int samples = 0;
       int waterSamples = 0;
       int suitableDepthSamples = 0;
 
-      for (int x = min.m_123341_(); x <= maxX; x += step) {
-         for (int z = min.m_123343_(); z <= maxZ; z += step) {
+      for (int x = min.getX(); x <= maxX; x += step) {
+         for (int z = min.getZ(); z <= maxZ; z += step) {
             samples++;
             int localSurface = surfaceY(level, x, z);
             BlockPos localPos = new BlockPos(x, localSurface, z);
-            if (level.m_7702_(localPos) != null
-               || !AwsTemplatePlacer.isOpenWaterTerrain(level.m_8055_(localPos)) && !AwsTemplatePlacer.isBasicNaturalTerrain(level.m_8055_(localPos))) {
+            if (level.getBlockEntity(localPos) != null
+               || !AwsTemplatePlacer.isOpenWaterTerrain(level.getBlockState(localPos)) && !AwsTemplatePlacer.isBasicNaturalTerrain(level.getBlockState(localPos))) {
                return false;
             }
 
-            if (level.m_6425_(new BlockPos(x, localSurface, z)).m_205070_(FluidTags.f_13131_) && Math.abs(localSurface - waterY) <= 1) {
+            if (level.getFluidState(new BlockPos(x, localSurface, z)).is(FluidTags.WATER) && Math.abs(localSurface - waterY) <= 1) {
                waterSamples++;
-               int floor = level.m_6924_(Types.OCEAN_FLOOR, x, z) - 1;
+               int floor = level.getHeight(Types.OCEAN_FLOOR, x, z) - 1;
                int depth = localSurface - floor;
                BlockPos floorPos = new BlockPos(x, floor, z);
-               if (level.m_7702_(floorPos) != null || !AwsTemplatePlacer.isBasicNaturalTerrain(level.m_8055_(floorPos))) {
+               if (level.getBlockEntity(floorPos) != null || !AwsTemplatePlacer.isBasicNaturalTerrain(level.getBlockState(floorPos))) {
                   return false;
                }
 
@@ -325,37 +325,37 @@ public final class AwsWorldGenerator {
    }
 
    private static void levelTerrain(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, int maxX, int maxZ, int targetY) {
-      BlockState top = level.m_8055_(new BlockPos(min.m_123341_(), targetY, min.m_123343_()));
-      if (top.m_60795_() || !top.m_60819_().m_76178_()) {
-         top = Blocks.f_50440_.m_49966_();
+      BlockState top = level.getBlockState(new BlockPos(min.getX(), targetY, min.getZ()));
+      if (top.isAir() || !top.getFluidState().isEmpty()) {
+         top = Blocks.GRASS_BLOCK.defaultBlockState();
       }
 
-      BlockState fill = !top.m_60713_(Blocks.f_49992_) && !top.m_60713_(Blocks.f_49993_) ? Blocks.f_50493_.m_49966_() : top;
-      int clearTop = Math.min(level.m_151558_() - 1, targetY + Math.max(8, template.leveling()));
+      BlockState fill = !top.is(Blocks.SAND) && !top.is(Blocks.RED_SAND) ? Blocks.DIRT.defaultBlockState() : top;
+      int clearTop = Math.min(level.getMaxBuildHeight() - 1, targetY + Math.max(8, template.leveling()));
 
-      for (int x = min.m_123341_(); x <= maxX; x++) {
-         for (int z = min.m_123343_(); z <= maxZ; z++) {
+      for (int x = min.getX(); x <= maxX; x++) {
+         for (int z = min.getZ(); z <= maxZ; z++) {
             int oldSurface = surfaceY(level, x, z);
 
             for (int y = oldSurface; y > targetY && y <= clearTop; y--) {
-               level.m_7731_(new BlockPos(x, y, z), Blocks.f_50016_.m_49966_(), 18);
+               level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 18);
             }
 
             for (int y = Math.min(oldSurface + 1, targetY); y < targetY; y++) {
-               level.m_7731_(new BlockPos(x, y, z), fill, 2);
+               level.setBlock(new BlockPos(x, y, z), fill, 2);
             }
 
-            level.m_7731_(new BlockPos(x, targetY, z), top, 2);
+            level.setBlock(new BlockPos(x, targetY, z), top, 2);
          }
       }
    }
 
    private static boolean aquaticCellsSafe(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, Direction facing) {
       for (long packed : AwsTemplatePlacer.occupiedBlocks(min, template.path(), facing)) {
-         BlockPos pos = BlockPos.m_122022_(packed);
-         BlockState state = level.m_8055_(pos);
-         if (state.m_155947_()
-            || level.m_7702_(pos) != null
+         BlockPos pos = BlockPos.of(packed);
+         BlockState state = level.getBlockState(pos);
+         if (state.hasBlockEntity()
+            || level.getBlockEntity(pos) != null
             || !AwsTemplatePlacer.isOpenWaterTerrain(state) && (!template.island() || !AwsTemplatePlacer.isBasicNaturalTerrain(state))) {
             return false;
          }
@@ -366,6 +366,6 @@ public final class AwsWorldGenerator {
 
    private static int surfaceY(ServerLevel level, int x, int z) {
       NaturalGenerationContext.markChunk(new ChunkPos(x >> 4, z >> 4));
-      return level.m_6924_(Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+      return level.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
    }
 }

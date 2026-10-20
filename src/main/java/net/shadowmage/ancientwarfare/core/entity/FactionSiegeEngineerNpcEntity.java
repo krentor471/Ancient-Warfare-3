@@ -23,22 +23,22 @@ public class FactionSiegeEngineerNpcEntity extends FactionNpcEntity implements S
    }
 
    public static Builder createAttributes() {
-      return m_21552_()
-         .m_22268_(Attributes.f_22276_, 30.0)
-         .m_22268_(Attributes.f_22279_, 0.3)
-         .m_22268_(Attributes.f_22277_, 120.0)
-         .m_22268_(Attributes.f_22281_, 1.0);
+      return createMobAttributes()
+         .add(Attributes.MAX_HEALTH, 30.0)
+         .add(Attributes.MOVEMENT_SPEED, 0.3)
+         .add(Attributes.FOLLOW_RANGE, 120.0)
+         .add(Attributes.ATTACK_DAMAGE, 1.0);
    }
 
-   protected void m_8099_() {
+   protected void registerGoals() {
       this.addSharedGoals();
-      this.f_21345_.m_25352_(2, new FactionSiegeEngineerNpcEntity.OperateSiegeWeaponGoal(this));
-      this.f_21345_.m_25352_(3, new FactionSiegeEngineerNpcEntity.FindSiegeWeaponGoal(this));
+      this.goalSelector.addGoal(2, new FactionSiegeEngineerNpcEntity.OperateSiegeWeaponGoal(this));
+      this.goalSelector.addGoal(3, new FactionSiegeEngineerNpcEntity.FindSiegeWeaponGoal(this));
       this.addFactionCombatTargets(false);
    }
 
    private boolean canAttackSiegeTarget(LivingEntity target) {
-      return NpcTargeting.canHarm(this, target) && (target == this.m_5448_() || this.isHostileTowards(target) || NpcTargeting.isAutomaticHostile(this, target));
+      return NpcTargeting.canHarm(this, target) && (target == this.getTarget() || this.isHostileTowards(target) || NpcTargeting.isAutomaticHostile(this, target));
    }
 
    private static class FindSiegeWeaponGoal extends Goal {
@@ -49,10 +49,10 @@ public class FactionSiegeEngineerNpcEntity extends FactionNpcEntity implements S
 
       private FindSiegeWeaponGoal(FactionSiegeEngineerNpcEntity engineer) {
          this.engineer = engineer;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.engineer.siegeBrain.getSiegeWeapon().isPresent()) {
             return false;
          } else if (this.rescanDelay > 0) {
@@ -68,27 +68,27 @@ public class FactionSiegeEngineerNpcEntity extends FactionNpcEntity implements S
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.targetEntity != null
-            && this.targetEntity.m_6084_()
+            && this.targetEntity.isAlive()
             && this.targetWeapon != null
             && this.targetWeapon.canBeOperatedBy(this.engineer)
             && this.engineer.siegeBrain.getSiegeWeapon().isEmpty();
       }
 
-      public void m_8037_() {
-         this.engineer.m_21563_().m_148051_(this.targetEntity);
+      public void tick() {
+         this.engineer.getLookControl().setLookAt(this.targetEntity);
          if (!this.engineer.siegeBrain.isCloseEnoughToOperate(this.targetEntity)) {
-            this.engineer.m_21573_().m_5624_(this.targetEntity, this.engineer.playerWalkNavigationSpeed());
+            this.engineer.getNavigation().moveTo(this.targetEntity, this.engineer.playerWalkNavigationSpeed());
          } else if (this.targetWeapon.beginOperation(this.engineer)) {
             this.engineer.siegeBrain.setSiegeWeapon(this.targetWeapon);
          }
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.targetEntity = null;
          this.targetWeapon = null;
-         this.engineer.m_21573_().m_26573_();
+         this.engineer.getNavigation().stop();
       }
    }
 
@@ -98,22 +98,22 @@ public class FactionSiegeEngineerNpcEntity extends FactionNpcEntity implements S
 
       private OperateSiegeWeaponGoal(FactionSiegeEngineerNpcEntity engineer) {
          this.engineer = engineer;
-         this.m_7021_(EnumSet.of(Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          return this.engineer.siegeBrain.getSiegeWeapon().isPresent();
       }
 
-      public boolean m_8045_() {
-         return this.m_8036_();
+      public boolean canContinueToUse() {
+         return this.canUse();
       }
 
-      public void m_8037_() {
+      public void tick() {
          this.engineer.siegeBrain.tickWeapon(this.engineer::canAttackSiegeTarget, this.fireDelay);
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.fireDelay.value = 0;
       }
    }

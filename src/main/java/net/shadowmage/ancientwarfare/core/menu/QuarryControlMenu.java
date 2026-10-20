@@ -21,13 +21,13 @@ public class QuarryControlMenu extends AbstractContainerMenu {
    public QuarryControlMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.QUARRY_CONTROL), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      this.quarry = this.level.m_7702_(pos) instanceof QuarryBlockEntity quarryBlockEntity ? quarryBlockEntity : null;
+      this.level = playerInventory.player.level();
+      this.quarry = this.level.getBlockEntity(pos) instanceof QuarryBlockEntity quarryBlockEntity ? quarryBlockEntity : null;
       this.previewOnlyOres = this.quarry != null && this.quarry.onlyMineOres();
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (id == 0 && this.quarry != null && !this.level.f_46443_) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (id == 0 && this.quarry != null && !this.level.isClientSide) {
          this.quarry.toggleOnlyMineOres();
          this.previewOnlyOres = this.quarry.onlyMineOres();
          return true;
@@ -43,14 +43,14 @@ public class QuarryControlMenu extends AbstractContainerMenu {
    }
 
    public boolean onlyMineOres() {
-      return this.level.f_46443_ ? this.previewOnlyOres : this.quarry != null && this.quarry.onlyMineOres();
+      return this.level.isClientSide ? this.previewOnlyOres : this.quarry != null && this.quarry.onlyMineOres();
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.QUARRY));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.QUARRY));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

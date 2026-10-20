@@ -17,12 +17,12 @@ public class ResearchBookMenu extends AbstractContainerMenu {
    }
 
    public ItemStack getResearchBook() {
-      ItemStack mainHand = this.playerInventory.f_35978_.m_21205_();
+      ItemStack mainHand = this.playerInventory.player.getMainHandItem();
       if (AWCoreRegistryAccess.is(mainHand, AWCoreIds.RESEARCH_BOOK)) {
          return mainHand;
       } else {
-         ItemStack offHand = this.playerInventory.f_35978_.m_21206_();
-         return AWCoreRegistryAccess.is(offHand, AWCoreIds.RESEARCH_BOOK) ? offHand : ItemStack.f_41583_;
+         ItemStack offHand = this.playerInventory.player.getOffhandItem();
+         return AWCoreRegistryAccess.is(offHand, AWCoreIds.RESEARCH_BOOK) ? offHand : ItemStack.EMPTY;
       }
    }
 
@@ -31,11 +31,11 @@ public class ResearchBookMenu extends AbstractContainerMenu {
       return name == null ? "" : name;
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 
-   public boolean m_6875_(Player player) {
-      return !this.getResearchBook().m_41619_();
+   public boolean stillValid(Player player) {
+      return !this.getResearchBook().isEmpty();
    }
 }

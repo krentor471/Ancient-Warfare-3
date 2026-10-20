@@ -29,28 +29,28 @@ public class HandCrankedGeneratorRenderer implements BlockEntityRenderer<HandCra
    public void render(
       HandCrankedGeneratorBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay
    ) {
-      if (blockEntity.m_58904_() != null) {
-         BlockState state = blockEntity.m_58900_();
-         Direction facing = state.m_61138_(HandCrankedGeneratorBlock.FACING) ? (Direction)state.m_61143_(HandCrankedGeneratorBlock.FACING) : Direction.NORTH;
+      if (blockEntity.getLevel() != null) {
+         BlockState state = blockEntity.getBlockState();
+         Direction facing = state.hasProperty(HandCrankedGeneratorBlock.FACING) ? (Direction)state.getValue(HandCrankedGeneratorBlock.FACING) : Direction.NORTH;
          TextureAtlasSprite texture = this.sprite();
-         VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110463_());
-         float angle = blockEntity.getCrankActiveTicks() > 0 ? ((float)blockEntity.m_58904_().m_46467_() + partialTick) * 30.0F % 360.0F : 0.0F;
-         poseStack.m_85836_();
-         poseStack.m_85837_(0.5, 0.5, 0.5);
-         poseStack.m_252781_(Axis.f_252436_.m_252977_(this.yawFor(facing)));
-         poseStack.m_85836_();
-         poseStack.m_85837_(0.0, 0.4375, 0.25);
-         poseStack.m_252781_(Axis.f_252436_.m_252977_(angle));
-         poseStack.m_85837_(0.0, -0.4375, -0.25);
+         VertexConsumer consumer = bufferSource.getBuffer(RenderType.cutout());
+         float angle = blockEntity.getCrankActiveTicks() > 0 ? ((float)blockEntity.getLevel().getGameTime() + partialTick) * 30.0F % 360.0F : 0.0F;
+         poseStack.pushPose();
+         poseStack.translate(0.5, 0.5, 0.5);
+         poseStack.mulPose(Axis.YP.rotationDegrees(this.yawFor(facing)));
+         poseStack.pushPose();
+         poseStack.translate(0.0, 0.4375, 0.25);
+         poseStack.mulPose(Axis.YP.rotationDegrees(angle));
+         poseStack.translate(0.0, -0.4375, -0.25);
          this.renderTopWheel(poseStack, consumer, texture, packedLight);
-         poseStack.m_85849_();
-         poseStack.m_85836_();
-         poseStack.m_85837_(0.0, 0.0, -0.453125);
-         poseStack.m_252781_(Axis.f_252403_.m_252977_(-angle));
-         poseStack.m_85837_(0.0, 0.0, 0.453125);
+         poseStack.popPose();
+         poseStack.pushPose();
+         poseStack.translate(0.0, 0.0, -0.453125);
+         poseStack.mulPose(Axis.ZP.rotationDegrees(-angle));
+         poseStack.translate(0.0, 0.0, 0.453125);
          this.renderFrontGear(poseStack, consumer, texture, packedLight);
-         poseStack.m_85849_();
-         poseStack.m_85849_();
+         poseStack.popPose();
+         poseStack.popPose();
       }
    }
 
@@ -112,7 +112,7 @@ public class HandCrankedGeneratorRenderer implements BlockEntityRenderer<HandCra
 
    private TextureAtlasSprite sprite() {
       ResourceLocation texture = new ResourceLocation("ancientwarfare", "block/automation/hand_cranked_generator");
-      return (TextureAtlasSprite)Minecraft.m_91087_().m_91258_(TextureAtlas.f_118259_).apply(texture);
+      return (TextureAtlasSprite)Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(texture);
    }
 
    private void renderCuboid(
@@ -127,7 +127,7 @@ public class HandCrankedGeneratorRenderer implements BlockEntityRenderer<HandCra
       float maxZ,
       int packedLight
    ) {
-      Pose pose = poseStack.m_85850_();
+      Pose pose = poseStack.last();
       int light = packedLight == 0 ? 15728880 : packedLight;
       this.quad(pose, consumer, sprite, ALL_UV, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, 0.0F, 0.0F, 1.0F, light);
       this.quad(pose, consumer, sprite, ALL_UV, maxX, minY, minZ, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, 0.0F, 0.0F, -1.0F, light);
@@ -179,18 +179,18 @@ public class HandCrankedGeneratorRenderer implements BlockEntityRenderer<HandCra
       float normalZ,
       int packedLight
    ) {
-      Matrix4f matrix = pose.m_252922_();
-      Matrix3f normal = pose.m_252943_();
-      consumer.m_252986_(matrix, x, y, z)
-         .m_6122_(255, 255, 255, 255)
-         .m_7421_(sprite.m_118367_((double)u), sprite.m_118393_((double)v))
-         .m_85969_(packedLight)
-         .m_252939_(normal, normalX, normalY, normalZ)
-         .m_5752_();
+      Matrix4f matrix = pose.pose();
+      Matrix3f normal = pose.normal();
+      consumer.vertex(matrix, x, y, z)
+         .color(255, 255, 255, 255)
+         .uv(sprite.getU((double)u), sprite.getV((double)v))
+         .uv2(packedLight)
+         .normal(normal, normalX, normalY, normalZ)
+         .endVertex();
    }
 
-   public int m_142163_() {
-      return Mth.m_14167_(64.0F);
+   public int getViewDistance() {
+      return Mth.ceil(64.0F);
    }
 
    private static record UvRegion(float u0, float v0, float u1, float v1) {

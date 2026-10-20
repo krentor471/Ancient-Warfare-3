@@ -35,14 +35,14 @@ import software.bernie.geckolib.core.object.PlayState;
 
 public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWeaponControl {
    private static final float MAX_TURRET_YAW = 45.0F;
-   protected static final EntityDataAccessor<Float> TURRET_YAW = SynchedEntityData.m_135353_(CatapultMobileEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Integer> FIRE_ANIMATION_TICKS = SynchedEntityData.m_135353_(
-      CatapultMobileEntity.class, EntityDataSerializers.f_135028_
+   protected static final EntityDataAccessor<Float> TURRET_YAW = SynchedEntityData.defineId(CatapultMobileEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Integer> FIRE_ANIMATION_TICKS = SynchedEntityData.defineId(
+      CatapultMobileEntity.class, EntityDataSerializers.INT
    );
-   private static final EntityDataAccessor<Float> VELOCITY_BONUS = SynchedEntityData.m_135353_(CatapultMobileEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Boolean> FIXED_TURRET = SynchedEntityData.m_135353_(CatapultMobileEntity.class, EntityDataSerializers.f_135035_);
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.catapult_mobile");
-   private static final Component FIXED_MENU_TITLE = Component.m_237115_("container.ancientwarfare.catapult_mobile_fixed");
+   private static final EntityDataAccessor<Float> VELOCITY_BONUS = SynchedEntityData.defineId(CatapultMobileEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Boolean> FIXED_TURRET = SynchedEntityData.defineId(CatapultMobileEntity.class, EntityDataSerializers.BOOLEAN);
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.catapult_mobile");
+   private static final Component FIXED_MENU_TITLE = Component.translatable("container.ancientwarfare.catapult_mobile_fixed");
    private static final RawAnimation WHEEL_ROLL = RawAnimation.begin().thenLoop("animation.catapult_wheels_roll");
    private static final RawAnimation FIRE = RawAnimation.begin().thenPlay("animation.catapult_fire2");
    private static final int FIRE_COOLDOWN_TICKS = 60;
@@ -63,20 +63,20 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(TURRET_YAW, 0.0F);
-      this.f_19804_.m_135372_(FIRE_ANIMATION_TICKS, 0);
-      this.f_19804_.m_135372_(VELOCITY_BONUS, 0.0F);
-      this.f_19804_.m_135372_(FIXED_TURRET, false);
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(TURRET_YAW, 0.0F);
+      this.entityData.define(FIRE_ANIMATION_TICKS, 0);
+      this.entityData.define(VELOCITY_BONUS, 0.0F);
+      this.entityData.define(FIXED_TURRET, false);
    }
 
    public float getTurretYaw() {
-      return (Float)this.f_19804_.m_135370_(TURRET_YAW);
+      return (Float)this.entityData.get(TURRET_YAW);
    }
 
    public boolean hasFixedTurret() {
-      return (Boolean)this.f_19804_.m_135370_(FIXED_TURRET);
+      return (Boolean)this.entityData.get(FIXED_TURRET);
    }
 
    public void setFixedTurret(boolean fixedTurret) {
@@ -84,16 +84,16 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    protected void setFixedTurretRaw(boolean fixedTurret) {
-      this.f_19804_.m_135381_(FIXED_TURRET, fixedTurret);
+      this.entityData.set(FIXED_TURRET, fixedTurret);
       if (fixedTurret) {
-         this.f_19804_.m_135381_(TURRET_YAW, 0.0F);
+         this.entityData.set(TURRET_YAW, 0.0F);
       }
 
-      this.m_6210_();
+      this.refreshDimensions();
    }
 
    public void adjustTurret(float yawDelta) {
-      this.f_19804_.m_135381_(TURRET_YAW, this.hasFixedTurret() ? 0.0F : this.clampTurretYaw(this.getTurretYaw() + yawDelta));
+      this.entityData.set(TURRET_YAW, this.hasFixedTurret() ? 0.0F : this.clampTurretYaw(this.getTurretYaw() + yawDelta));
    }
 
    protected float clampTurretYaw(float yaw) {
@@ -101,7 +101,7 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    public float getVelocityBonus() {
-      return (Float)this.f_19804_.m_135370_(VELOCITY_BONUS);
+      return (Float)this.entityData.get(VELOCITY_BONUS);
    }
 
    public int getVelocityBonusPercent() {
@@ -109,15 +109,15 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    public void adjustLaunchVelocity(float bonusDelta) {
-      this.f_19804_.m_135381_(VELOCITY_BONUS, clamp(this.getVelocityBonus() + bonusDelta, 0.0F, 0.3F));
+      this.entityData.set(VELOCITY_BONUS, clamp(this.getVelocityBonus() + bonusDelta, 0.0F, 0.3F));
    }
 
    public int getFireAnimationTicks() {
-      return (Integer)this.f_19804_.m_135370_(FIRE_ANIMATION_TICKS);
+      return (Integer)this.entityData.get(FIRE_ANIMATION_TICKS);
    }
 
    protected float getLaunchYawDegrees() {
-      return this.m_146908_() + this.getTurretYaw();
+      return this.getYRot() + this.getTurretYaw();
    }
 
    private static float clamp(float value, float min, float max) {
@@ -125,14 +125,14 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    @Override
-   public void m_8119_() {
-      super.m_8119_();
+   public void tick() {
+      super.tick();
       if (this.fireCooldown > 0) {
          this.fireCooldown--;
       }
 
       if (this.getFireAnimationTicks() > 0) {
-         this.f_19804_.m_135381_(FIRE_ANIMATION_TICKS, this.getFireAnimationTicks() - 1);
+         this.entityData.set(FIRE_ANIMATION_TICKS, this.getFireAnimationTicks() - 1);
       }
    }
 
@@ -141,26 +141,26 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    private boolean tryFire(float launchSpeed, float inaccuracy, float launchWorldYaw) {
-      if (!this.m_9236_().f_46443_ && this.fireCooldown <= 0) {
+      if (!this.level().isClientSide && this.fireCooldown <= 0) {
          CatapultMobileEntity.AmmoSlot ammoSlot = this.findLoadedAmmo();
          if (ammoSlot == null) {
             return false;
          } else {
-            ItemStack stack = this.m_8020_(ammoSlot.slot());
-            stack.m_41774_(1);
-            this.m_6836_(ammoSlot.slot(), stack);
-            this.m_6596_();
-            LivingEntity shooter = this.m_6688_();
-            CatapultShotEntity shot = new CatapultShotEntity(this.m_9236_(), shooter, ammoSlot.ammoType());
+            ItemStack stack = this.getItem(ammoSlot.slot());
+            stack.shrink(1);
+            this.setItem(ammoSlot.slot(), stack);
+            this.setChanged();
+            LivingEntity shooter = this.getControllingPassenger();
+            CatapultShotEntity shot = new CatapultShotEntity(this.level(), shooter, ammoSlot.ammoType());
             double yaw = Math.toRadians((double)launchWorldYaw);
-            Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw)).m_82541_();
-            Vec3 muzzle = this.m_20182_().m_82549_(forward.m_82490_(this.muzzleForwardOffset())).m_82520_(0.0, this.muzzleHeight(), 0.0);
-            shot.m_7678_(muzzle.f_82479_, muzzle.f_82480_, muzzle.f_82481_, launchWorldYaw, -24.0F);
+            Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw)).normalize();
+            Vec3 muzzle = this.position().add(forward.scale(this.muzzleForwardOffset())).add(0.0, this.muzzleHeight(), 0.0);
+            shot.moveTo(muzzle.x, muzzle.y, muzzle.z, launchWorldYaw, -24.0F);
             shot.setBlockCollisionGraceOrigin(muzzle);
-            shot.m_6686_(forward.f_82479_, 0.55, forward.f_82481_, launchSpeed, inaccuracy);
-            this.m_9236_().m_7967_(shot);
+            shot.shoot(forward.x, 0.55, forward.z, launchSpeed, inaccuracy);
+            this.level().addFreshEntity(shot);
             this.fireCooldown = 60;
-            this.f_19804_.m_135381_(FIRE_ANIMATION_TICKS, 27);
+            this.entityData.set(FIRE_ANIMATION_TICKS, 27);
             return true;
          }
       } else {
@@ -190,9 +190,9 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
       } else {
          float worldYaw = SiegeWeaponNpcControl.worldYawTo(target, this);
          boolean fixedEmplacement = this.isFixedEmplacement();
-         return fixedEmplacement && Math.abs(Mth.m_14177_(worldYaw - this.m_146908_())) > 4.0F
+         return fixedEmplacement && Math.abs(Mth.wrapDegrees(worldYaw - this.getYRot())) > 4.0F
             ? false
-            : this.findLaunchSolution(target, fixedEmplacement ? this.m_146908_() : worldYaw) != null;
+            : this.findLaunchSolution(target, fixedEmplacement ? this.getYRot() : worldYaw) != null;
       }
    }
 
@@ -220,31 +220,31 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    public void aimAt(PathfinderMob engineer, LivingEntity target) {
       float launchWorldYaw = SiegeWeaponNpcControl.worldYawTo(target, this);
       if (this.isFixedEmplacement()) {
-         this.f_19804_.m_135381_(TURRET_YAW, 0.0F);
+         this.entityData.set(TURRET_YAW, 0.0F);
       } else if (!(this instanceof CatapultTurretStandEntity) && !(this instanceof TrebuchetTurretEntity)) {
          SiegeWeaponNpcControl.faceVehicle(this, launchWorldYaw);
-         this.f_19804_.m_135381_(TURRET_YAW, 0.0F);
+         this.entityData.set(TURRET_YAW, 0.0F);
       } else {
-         this.f_19804_.m_135381_(TURRET_YAW, SiegeWeaponNpcControl.localYaw(launchWorldYaw, this));
+         this.entityData.set(TURRET_YAW, SiegeWeaponNpcControl.localYaw(launchWorldYaw, this));
       }
 
       CatapultMobileEntity.LaunchSolution solution = this.findLaunchSolution(target, launchWorldYaw);
       if (solution != null) {
-         this.f_19804_.m_135381_(VELOCITY_BONUS, clamp(solution.speed() / 1.65F - 1.0F, 0.0F, 0.3F));
+         this.entityData.set(VELOCITY_BONUS, clamp(solution.speed() / 1.65F - 1.0F, 0.0F, 0.3F));
       } else {
-         double distance = Math.sqrt(this.m_20280_(target));
-         this.f_19804_.m_135381_(VELOCITY_BONUS, distance > 72.0 ? 0.3F : 0.0F);
+         double distance = Math.sqrt(this.distanceToSqr(target));
+         this.entityData.set(VELOCITY_BONUS, distance > 72.0 ? 0.3F : 0.0F);
       }
    }
 
    private CatapultMobileEntity.LaunchSolution findLaunchSolution(LivingEntity target, float worldYaw) {
-      if (target != null && target.m_6084_()) {
+      if (target != null && target.isAlive()) {
          double yaw = Math.toRadians((double)worldYaw);
-         Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw)).m_82541_();
-         Vec3 muzzle = this.m_20182_().m_82549_(forward.m_82490_(this.muzzleForwardOffset())).m_82520_(0.0, this.muzzleHeight(), 0.0);
-         AABB targetBox = target.m_20191_().m_82400_(0.35);
-         Vec3 toTarget = targetBox.m_82399_().m_82546_(muzzle);
-         double forwardDistance = toTarget.f_82479_ * forward.f_82479_ + toTarget.f_82481_ * forward.f_82481_;
+         Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw)).normalize();
+         Vec3 muzzle = this.position().add(forward.scale(this.muzzleForwardOffset())).add(0.0, this.muzzleHeight(), 0.0);
+         AABB targetBox = target.getBoundingBox().inflate(0.35);
+         Vec3 toTarget = targetBox.getCenter().subtract(muzzle);
+         double forwardDistance = toTarget.x * forward.x + toTarget.z * forward.z;
          if (forwardDistance <= 0.0) {
             return null;
          } else {
@@ -262,13 +262,13 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
                   double verticalSpeed = (double)speed * 0.55 / launchVectorLength;
                   double verticalDistance = verticalSpeed * dragDistance
                      - (double)this.projectileGravity() / 0.010000000000000009 * ((double)flightTicks - dragDistance);
-                  Vec3 current = muzzle.m_82549_(forward.m_82490_(horizontalSpeed * dragDistance)).m_82520_(0.0, verticalDistance, 0.0);
+                  Vec3 current = muzzle.add(forward.scale(horizontalSpeed * dragDistance)).add(0.0, verticalDistance, 0.0);
                   double previousDragDistance = dragDistance - dragPower / 0.99;
                   int previousTicks = flightTicks - 1;
                   double previousVerticalDistance = verticalSpeed * previousDragDistance
                      - (double)this.projectileGravity() / 0.010000000000000009 * ((double)previousTicks - previousDragDistance);
-                  Vec3 previous = muzzle.m_82549_(forward.m_82490_(horizontalSpeed * previousDragDistance)).m_82520_(0.0, previousVerticalDistance, 0.0);
-                  if (!targetBox.m_82371_(previous, current).isEmpty()
+                  Vec3 previous = muzzle.add(forward.scale(horizontalSpeed * previousDragDistance)).add(0.0, previousVerticalDistance, 0.0);
+                  if (!targetBox.clip(previous, current).isEmpty()
                      && this.hasClearLaunchPath(muzzle, forward, horizontalSpeed, verticalSpeed, flightTicks, targetBox)) {
                      return new CatapultMobileEntity.LaunchSolution(speed);
                   }
@@ -284,34 +284,34 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
 
    private boolean hasClearLaunchPath(Vec3 muzzle, Vec3 forward, double horizontalSpeed, double verticalSpeed, int flightTicks, AABB targetBox) {
       Vec3 position = muzzle;
-      Vec3 velocity = forward.m_82490_(horizontalSpeed).m_82520_(0.0, verticalSpeed, 0.0);
+      Vec3 velocity = forward.scale(horizontalSpeed).add(0.0, verticalSpeed, 0.0);
       double graceDistanceSqr = 36.0;
 
       for (int tick = 0; tick < flightTicks; tick++) {
-         Vec3 next = position.m_82549_(velocity);
-         Vec3 targetHit = (Vec3)targetBox.m_82371_(position, next).orElse(null);
+         Vec3 next = position.add(velocity);
+         Vec3 targetHit = (Vec3)targetBox.clip(position, next).orElse(null);
          Vec3 clipStart = position;
-         if (muzzle.m_82557_(position) < graceDistanceSqr) {
-            if (muzzle.m_82557_(next) <= graceDistanceSqr) {
+         if (muzzle.distanceToSqr(position) < graceDistanceSqr) {
+            if (muzzle.distanceToSqr(next) <= graceDistanceSqr) {
                clipStart = next;
             } else {
                clipStart = SiegeWeaponNpcControl.segmentSphereExit(position, next, muzzle, 6.0);
             }
          }
 
-         BlockHitResult blockHit = clipStart.m_82557_(next) <= 1.0E-8
-            ? BlockHitResult.m_82426_(next, Direction.UP, BlockPos.m_274446_(next))
-            : this.m_9236_().m_45547_(new ClipContext(clipStart, next, Block.COLLIDER, Fluid.NONE, this));
+         BlockHitResult blockHit = clipStart.distanceToSqr(next) <= 1.0E-8
+            ? BlockHitResult.miss(next, Direction.UP, BlockPos.containing(next))
+            : this.level().clip(new ClipContext(clipStart, next, Block.COLLIDER, Fluid.NONE, this));
          if (targetHit != null) {
-            return blockHit.m_6662_() == Type.MISS || blockHit.m_82450_().m_82557_(position) >= targetHit.m_82557_(position);
+            return blockHit.getType() == Type.MISS || blockHit.getLocation().distanceToSqr(position) >= targetHit.distanceToSqr(position);
          }
 
-         if (blockHit.m_6662_() != Type.MISS) {
+         if (blockHit.getType() != Type.MISS) {
             return false;
          }
 
          position = next;
-         velocity = velocity.m_82490_(0.99).m_82520_(0.0, (double)(-this.projectileGravity()), 0.0);
+         velocity = velocity.scale(0.99).add(0.0, (double)(-this.projectileGravity()), 0.0);
       }
 
       return false;
@@ -345,8 +345,8 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    private CatapultMobileEntity.AmmoSlot findLoadedAmmo() {
-      for (int i = 0; i < this.m_6643_(); i++) {
-         ItemStack stack = this.m_8020_(i);
+      for (int i = 0; i < this.getContainerSize(); i++) {
+         ItemStack stack = this.getItem(i);
          CatapultAmmoType ammoType = CatapultAmmoItem.ammoType(stack);
          if (ammoType != null && this.canFireAmmo(ammoType)) {
             return new CatapultMobileEntity.AmmoSlot(i, ammoType);
@@ -360,7 +360,7 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
       return ammoType.weight() == 10 || ammoType.weight() == 15;
    }
 
-   public boolean m_7013_(int slot, ItemStack stack) {
+   public boolean canPlaceItem(int slot, ItemStack stack) {
       CatapultAmmoType ammoType = CatapultAmmoItem.ammoType(stack);
       return ammoType == null || this.canFireAmmo(ammoType);
    }
@@ -380,7 +380,7 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    private PlayState wheelAnimation(AnimationState<CatapultMobileEntity> state) {
-      if (this.m_20184_().m_165925_() > 4.0E-4) {
+      if (this.getDeltaMovement().horizontalDistanceSqr() > 4.0E-4) {
          state.setAnimation(WHEEL_ROLL);
          return PlayState.CONTINUE;
       } else {
@@ -415,11 +415,11 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         float riderYaw = this.m_146908_() + (this.hasFixedTurret() ? 0.0F : this.getTurretYaw());
-         Vec3 offset = this.getPassengerOffset().m_82524_(-riderYaw * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         float riderYaw = this.getYRot() + (this.hasFixedTurret() ? 0.0F : this.getTurretYaw());
+         Vec3 offset = this.getPassengerOffset().yRot(-riderYaw * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -428,24 +428,24 @@ public class CatapultMobileEntity extends ChestPushcartEntity implements SiegeWe
       ItemStack stack = new ItemStack(CatapultMobileItem.itemForMaterialLevel(this.getMaterialLevel(), this.hasFixedTurret()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("CatapultMobileData", tag);
+      stack.getOrCreateTag().put("CatapultMobileData", tag);
       return stack;
    }
 
    @Override
    public void loadCartData(CompoundTag tag) {
       super.loadCartData(tag);
-      this.setFixedTurret(tag.m_128471_("FixedTurret"));
-      this.f_19804_.m_135381_(TURRET_YAW, this.hasFixedTurret() ? 0.0F : tag.m_128457_("TurretYaw"));
-      this.f_19804_.m_135381_(VELOCITY_BONUS, clamp(tag.m_128457_("VelocityBonus"), 0.0F, 0.3F));
+      this.setFixedTurret(tag.getBoolean("FixedTurret"));
+      this.entityData.set(TURRET_YAW, this.hasFixedTurret() ? 0.0F : tag.getFloat("TurretYaw"));
+      this.entityData.set(VELOCITY_BONUS, clamp(tag.getFloat("VelocityBonus"), 0.0F, 0.3F));
    }
 
    @Override
    public void saveCartData(CompoundTag tag) {
       super.saveCartData(tag);
-      tag.m_128350_("TurretYaw", this.getTurretYaw());
-      tag.m_128350_("VelocityBonus", this.getVelocityBonus());
-      tag.m_128379_("FixedTurret", this.hasFixedTurret());
+      tag.putFloat("TurretYaw", this.getTurretYaw());
+      tag.putFloat("VelocityBonus", this.getVelocityBonus());
+      tag.putBoolean("FixedTurret", this.hasFixedTurret());
    }
 
    private static record AmmoSlot(int slot, CatapultAmmoType ammoType) {

@@ -30,12 +30,12 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
             if (cell == null
                || cell.state() == null
                || cell.pos() == null
-               || cell.pos().m_123341_() < 0
-               || cell.pos().m_123341_() >= sizeX
-               || cell.pos().m_123342_() < 0
-               || cell.pos().m_123342_() >= sizeY
-               || cell.pos().m_123343_() < 0
-               || cell.pos().m_123343_() >= sizeZ) {
+               || cell.pos().getX() < 0
+               || cell.pos().getX() >= sizeX
+               || cell.pos().getY() < 0
+               || cell.pos().getY() >= sizeY
+               || cell.pos().getZ() < 0
+               || cell.pos().getZ() >= sizeZ) {
                throw new IllegalArgumentException("Invalid drafting preview cell");
             }
          }
@@ -68,12 +68,12 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
 
             for (DraftingPreviewData.Cell cell : source) {
                if (visible(cell)) {
-                  minX = Math.min(minX, cell.pos().m_123341_());
-                  maxX = Math.max(maxX, cell.pos().m_123341_());
-                  minY = Math.min(minY, cell.pos().m_123342_());
-                  maxY = Math.max(maxY, cell.pos().m_123342_());
-                  minZ = Math.min(minZ, cell.pos().m_123343_());
-                  maxZ = Math.max(maxZ, cell.pos().m_123343_());
+                  minX = Math.min(minX, cell.pos().getX());
+                  maxX = Math.max(maxX, cell.pos().getX());
+                  minY = Math.min(minY, cell.pos().getY());
+                  maxY = Math.max(maxY, cell.pos().getY());
+                  minZ = Math.min(minZ, cell.pos().getZ());
+                  maxZ = Math.max(maxZ, cell.pos().getZ());
                }
             }
 
@@ -87,7 +87,7 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
 
                for (DraftingPreviewData.Cell cellx : source) {
                   if (visible(cellx)) {
-                     BlockPos pos = new BlockPos(cellx.pos().m_123341_() - minX, cellx.pos().m_123342_() - minY, cellx.pos().m_123343_() - minZ);
+                     BlockPos pos = new BlockPos(cellx.pos().getX() - minX, cellx.pos().getY() - minY, cellx.pos().getZ() - minZ);
                      occupied.put(positionKey(pos), new DraftingPreviewData.Cell(pos, cellx.state()));
                   }
                }
@@ -109,10 +109,10 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
                      Map<Long, DraftingPreviewData.Cell> buckets = new LinkedHashMap<>();
 
                      for (DraftingPreviewData.Cell cellxxx : surface) {
-                        BlockPos bucket = new BlockPos(cellxxx.pos().m_123341_() / step, cellxxx.pos().m_123342_() / step, cellxxx.pos().m_123343_() / step);
+                        BlockPos bucket = new BlockPos(cellxxx.pos().getX() / step, cellxxx.pos().getY() / step, cellxxx.pos().getZ() / step);
                         long key = positionKey(bucket);
                         DraftingPreviewData.Cell current = buckets.get(key);
-                        if (current == null || cellxxx.pos().m_123342_() > current.pos().m_123342_()) {
+                        if (current == null || cellxxx.pos().getY() > current.pos().getY()) {
                            buckets.put(key, cellxxx);
                         }
                      }
@@ -144,12 +144,12 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
    }
 
    private static boolean visible(DraftingPreviewData.Cell cell) {
-      return cell != null && !cell.state().m_60795_() && !cell.state().m_60713_(Blocks.f_50454_);
+      return cell != null && !cell.state().isAir() && !cell.state().is(Blocks.STRUCTURE_VOID);
    }
 
    private static boolean opaqueCube(BlockState state, Map<BlockState, Boolean> cache) {
       return cache.computeIfAbsent(
-         state, candidate -> candidate.m_60815_() && Block.m_49916_(candidate.m_60768_(EmptyBlockGetter.INSTANCE, BlockPos.f_121853_))
+         state, candidate -> candidate.canOcclude() && Block.isShapeFullBlock(candidate.getOcclusionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO))
       );
    }
 
@@ -160,8 +160,8 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
 
       while (var5 < var4) {
          Direction direction = var3[var5];
-         BlockPos neighbor = pos.m_121945_(direction);
-         if (neighbor.m_123341_() >= 0 && neighbor.m_123342_() >= 0 && neighbor.m_123343_() >= 0) {
+         BlockPos neighbor = pos.relative(direction);
+         if (neighbor.getX() >= 0 && neighbor.getY() >= 0 && neighbor.getZ() >= 0) {
             DraftingPreviewData.Cell cell = occupied.get(positionKey(neighbor));
             if (cell != null && opaqueCube(cell.state(), opaque)) {
                var5++;
@@ -178,7 +178,7 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
    }
 
    private static long positionKey(BlockPos pos) {
-      return (long)pos.m_123341_() << 32 | (long)pos.m_123342_() << 16 | (long)pos.m_123343_();
+      return (long)pos.getX() << 32 | (long)pos.getY() << 16 | (long)pos.getZ();
    }
 
    public int chunkCount() {
@@ -204,13 +204,13 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
          buffer.writeShort(data.sizeY());
          buffer.writeShort(data.sizeZ());
          buffer.writeBoolean(data.simplified());
-         buffer.m_130130_(data.cells().size());
+         buffer.writeVarInt(data.cells().size());
 
          for (DraftingPreviewData.Cell cell : data.cells()) {
-            buffer.writeShort(cell.pos().m_123341_());
-            buffer.writeShort(cell.pos().m_123342_());
-            buffer.writeShort(cell.pos().m_123343_());
-            buffer.m_130130_(Block.f_49791_.m_7447_(cell.state()));
+            buffer.writeShort(cell.pos().getX());
+            buffer.writeShort(cell.pos().getY());
+            buffer.writeShort(cell.pos().getZ());
+            buffer.writeVarInt(Block.BLOCK_STATE_REGISTRY.getId(cell.state()));
          }
       }
    }
@@ -223,14 +223,14 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
          int sizeY = buffer.readUnsignedShort();
          int sizeZ = buffer.readUnsignedShort();
          boolean simplified = buffer.readBoolean();
-         int count = buffer.m_130242_();
+         int count = buffer.readVarInt();
          if (count >= 0 && count <= 1024) {
             List<DraftingPreviewData.Cell> cells = new ArrayList<>(count);
 
             for (int i = 0; i < count; i++) {
                BlockPos pos = new BlockPos(buffer.readUnsignedShort(), buffer.readUnsignedShort(), buffer.readUnsignedShort());
-               int stateId = buffer.m_130242_();
-               BlockState state = stateId < 0 ? null : (BlockState)Block.f_49791_.m_7942_(stateId);
+               int stateId = buffer.readVarInt();
+               BlockState state = stateId < 0 ? null : (BlockState)Block.BLOCK_STATE_REGISTRY.byId(stateId);
                if (state == null) {
                   throw new IllegalArgumentException("Invalid preview block state");
                }
@@ -258,7 +258,7 @@ public record DraftingPreviewData(int sizeX, int sizeY, int sizeZ, List<Drafting
    public static record Cell(BlockPos pos, BlockState state) {
       public Cell(BlockPos pos, BlockState state) {
          if (pos != null && state != null) {
-            pos = pos.m_7949_();
+            pos = pos.immutable();
             this.pos = pos;
             this.state = state;
          } else {

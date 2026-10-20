@@ -16,11 +16,11 @@ public class LitStructureDecorBlock extends Block {
       this.shape = shape;
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return this.shape;
    }
 
-   public VoxelShape m_5939_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-      return this.m_5940_(state, level, pos, context);
+   public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+      return this.getShape(state, level, pos, context);
    }
 }

@@ -31,8 +31,8 @@ public final class AWLootConfig {
          int rolls = (int)Math.floor(exact);
          double fraction = exact - (double)rolls;
          if (fraction > 0.0) {
-            RandomSource random = RandomSource.m_216335_(seed ^ (long)table.hashCode() ^ 5931043124968374604L);
-            if (random.m_188500_() < fraction) {
+            RandomSource random = RandomSource.create(seed ^ (long)table.hashCode() ^ 5931043124968374604L);
+            if (random.nextDouble() < fraction) {
                rolls++;
             }
          }
@@ -93,7 +93,7 @@ public final class AWLootConfig {
    }
 
    private static boolean validTableId(Object value) {
-      if (value instanceof String text && ResourceLocation.m_135820_(text.trim().toLowerCase(Locale.ROOT)) != null) {
+      if (value instanceof String text && ResourceLocation.tryParse(text.trim().toLowerCase(Locale.ROOT)) != null) {
          return true;
       }
 
@@ -105,7 +105,7 @@ public final class AWLootConfig {
          return false;
       } else {
          int separator = text.lastIndexOf(61);
-         if (separator > 0 && ResourceLocation.m_135820_(text.substring(0, separator).trim().toLowerCase(Locale.ROOT)) != null) {
+         if (separator > 0 && ResourceLocation.tryParse(text.substring(0, separator).trim().toLowerCase(Locale.ROOT)) != null) {
             try {
                double multiplier = Double.parseDouble(text.substring(separator + 1).trim());
                return multiplier >= 0.0 && multiplier <= 100.0;

@@ -38,11 +38,11 @@ public final class AwtWorldGenerator {
 
    public static ChunkPos candidateChunk(long seed, ChunkPos observedChunk) {
       int regionChunks = AWCorePlatform.gameplayConfig().awtRegionChunks();
-      int regionX = Math.floorDiv(observedChunk.f_45578_, regionChunks);
-      int regionZ = Math.floorDiv(observedChunk.f_45579_, regionChunks);
-      RandomSource random = RandomSource.m_216335_(seed ^ (long)regionX * 341873128712L ^ (long)regionZ * 132897987541L ^ 2809927653L);
-      int x = regionX * regionChunks + 16 + random.m_188503_(regionChunks - 32);
-      int z = regionZ * regionChunks + 16 + random.m_188503_(regionChunks - 32);
+      int regionX = Math.floorDiv(observedChunk.x, regionChunks);
+      int regionZ = Math.floorDiv(observedChunk.z, regionChunks);
+      RandomSource random = RandomSource.create(seed ^ (long)regionX * 341873128712L ^ (long)regionZ * 132897987541L ^ 2809927653L);
+      int x = regionX * regionChunks + 16 + random.nextInt(regionChunks - 32);
+      int z = regionZ * regionChunks + 16 + random.nextInt(regionChunks - 32);
       return new ChunkPos(x, z);
    }
 
@@ -58,7 +58,7 @@ public final class AwtWorldGenerator {
    }
 
    private static boolean queueInternalAt(ServerLevel level, ChunkPos chunk, boolean forced, String nameFilter) {
-      if (level.m_46472_() != Level.f_46428_) {
+      if (level.dimension() != Level.OVERWORLD) {
          return false;
       } else if (LargeIslandWorldGenerator.active(level)) {
          return false;
@@ -68,21 +68,21 @@ public final class AwtWorldGenerator {
             return false;
          } else {
             if (!forced) {
-               if (data.wasCandidateAttempted(chunk.f_45578_, chunk.f_45579_)) {
+               if (data.wasCandidateAttempted(chunk.x, chunk.z)) {
                   return false;
                }
 
-               data.markCandidateAttempted(chunk.f_45578_, chunk.f_45579_);
-               AncientWarfareCore.LOG.info("Testing natural AWT candidate chunk {}, {}", chunk.f_45578_, chunk.f_45579_);
+               data.markCandidateAttempted(chunk.x, chunk.z);
+               AncientWarfareCore.LOG.info("Testing natural AWT candidate chunk {}, {}", chunk.x, chunk.z);
             } else {
-               level.m_6325_(chunk.f_45578_, chunk.f_45579_);
+               level.getChunk(chunk.x, chunk.z);
             }
 
             String filter = normalize(nameFilter);
             AwtWorldGenerator.TownSite site = findTownSite(level, data, chunk, forced, filter);
             if (site == null) {
                AncientWarfareCore.LOG
-                  .info("Rejected natural AWT candidate chunk {}, {}: no compatible, sufficiently flat site found", chunk.f_45578_, chunk.f_45579_);
+                  .info("Rejected natural AWT candidate chunk {}, {}: no compatible, sufficiently flat site found", chunk.x, chunk.z);
                return false;
             } else {
                int x = site.x();
@@ -111,15 +111,15 @@ public final class AwtWorldGenerator {
    }
 
    private static AwtWorldGenerator.TownSite findTownSite(ServerLevel level, AwtWorldGenerationData data, ChunkPos chunk, boolean forced, String filter) {
-      RandomSource random = RandomSource.m_216335_(level.m_7328_() ^ chunk.m_45588_() ^ 51366271457596L);
+      RandomSource random = RandomSource.create(level.getSeed() ^ chunk.toLong() ^ 51366271457596L);
       int attempts = forced ? 1 : 12;
-      BlockPos spawn = level.m_220360_();
+      BlockPos spawn = level.getSharedSpawnPos();
 
       for (int attempt = 0; attempt < attempts; attempt++) {
-         int x = attempt == 0 ? chunk.m_151390_() : chunk.m_151390_() + random.m_188503_(385) - 192;
-         int z = attempt == 0 ? chunk.m_151393_() : chunk.m_151393_() + random.m_188503_(385) - 192;
+         int x = attempt == 0 ? chunk.getMiddleBlockX() : chunk.getMiddleBlockX() + random.nextInt(385) - 192;
+         int z = attempt == 0 ? chunk.getMiddleBlockZ() : chunk.getMiddleBlockZ() + random.nextInt(385) - 192;
          if (forced
-            || distanceSquared(x, z, spawn.m_123341_(), spawn.m_123343_())
+            || distanceSquared(x, z, spawn.getX(), spawn.getZ())
                >= (long)AWCorePlatform.gameplayConfig().awtSpawnProtectionDistance() * (long)AWCorePlatform.gameplayConfig().awtSpawnProtectionDistance()) {
             boolean nearTown = false;
 
@@ -135,8 +135,8 @@ public final class AwtWorldGenerator {
             if (!nearTown) {
                int y = surface(level, x, z) + 1;
                BlockPos center = new BlockPos(x, y, z);
-               if (level.m_6425_(center.m_7495_()).m_76178_()) {
-                  Holder<Biome> biome = level.m_204166_(center);
+               if (level.getFluidState(center.below()).isEmpty()) {
+                  Holder<Biome> biome = level.getBiome(center);
                   List<AwtWorldGenTemplateRegistry.Template> candidates = new ArrayList<>();
 
                   for (AwtWorldGenTemplateRegistry.Template template : AwtWorldGenTemplateRegistry.templates()) {
@@ -161,7 +161,7 @@ public final class AwtWorldGenerator {
 
    private static AwtWorldGenTemplateRegistry.Template selectWeighted(List<AwtWorldGenTemplateRegistry.Template> candidates, RandomSource random) {
       int totalWeight = candidates.stream().mapToInt(template -> Math.max(1, template.weight())).sum();
-      int roll = random.m_188503_(Math.max(1, totalWeight));
+      int roll = random.nextInt(Math.max(1, totalWeight));
 
       for (AwtWorldGenTemplateRegistry.Template candidate : candidates) {
          roll -= Math.max(1, candidate.weight());
@@ -182,7 +182,7 @@ public final class AwtWorldGenerator {
             int x = centerX - halfSize + Math.round((float)halfSize * 2.0F * (float)gx / 4.0F);
             int z = centerZ - halfSize + Math.round((float)halfSize * 2.0F * (float)gz / 4.0F);
             int y = surface(level, x, z);
-            if (!level.m_6425_(new BlockPos(x, y, z)).m_76178_()) {
+            if (!level.getFluidState(new BlockPos(x, y, z)).isEmpty()) {
                return false;
             }
 
@@ -219,7 +219,7 @@ public final class AwtWorldGenerator {
             plan = plan(task);
          } catch (RuntimeException var6) {
             task.phase = AwtWorldGenerationData.Phase.FAILED;
-            data.m_77762_();
+            data.setDirty();
             AncientWarfareCore.LOG.warn("Unable to rebuild phased AWT plan {}", task.path, var6);
             return;
          }
@@ -261,9 +261,9 @@ public final class AwtWorldGenerator {
       for (int index = task.progress; index < end; index++) {
          int sx = index % samplesPerSide;
          int sz = index / samplesPerSide;
-         int x = plan.min().m_123341_() + Math.min(plan.totalSize() - 1, sx * 8);
-         int z = plan.min().m_123343_() + Math.min(plan.totalSize() - 1, sz * 8);
-         if (!ensureLoaded(level, task, Set.of(ChunkPos.m_45589_(x >> 4, z >> 4)))) {
+         int x = plan.min().getX() + Math.min(plan.totalSize() - 1, sx * 8);
+         int z = plan.min().getZ() + Math.min(plan.totalSize() - 1, sz * 8);
+         if (!ensureLoaded(level, task, Set.of(ChunkPos.asLong(x >> 4, z >> 4)))) {
             break;
          }
 
@@ -301,7 +301,7 @@ public final class AwtWorldGenerator {
          task.surfaceSamples.clear();
       }
 
-      data.m_77762_();
+      data.setDirty();
    }
 
    private static int percentile(List<Integer> sorted, double percentile) {
@@ -321,28 +321,28 @@ public final class AwtWorldGenerator {
       for (int index = task.progress; index < end; index++) {
          int lx = index % plan.totalSize();
          int lz = index / plan.totalSize();
-         int x = plan.min().m_123341_() + lx;
-         int z = plan.min().m_123343_() + lz;
-         if (!ensureLoaded(level, task, Set.of(ChunkPos.m_45589_(x >> 4, z >> 4)))) {
+         int x = plan.min().getX() + lx;
+         int z = plan.min().getZ() + lz;
+         if (!ensureLoaded(level, task, Set.of(ChunkPos.asLong(x >> 4, z >> 4)))) {
             break;
          }
 
          int oldY = surface(level, x, z);
-         int clearTopY = level.m_6924_(Types.WORLD_SURFACE, x, z) - 1;
+         int clearTopY = level.getHeight(Types.WORLD_SURFACE, x, z) - 1;
          BlockState terrain = terrainBelowFluid(level, x, oldY, z);
-         BlockState top = !terrain.m_60713_(Blocks.f_49992_) && !terrain.m_60713_(Blocks.f_49993_) ? Blocks.f_50440_.m_49966_() : terrain;
-         BlockState fill = !top.m_60713_(Blocks.f_49992_) && !top.m_60713_(Blocks.f_49993_) ? Blocks.f_50493_.m_49966_() : top;
+         BlockState top = !terrain.is(Blocks.SAND) && !terrain.is(Blocks.RED_SAND) ? Blocks.GRASS_BLOCK.defaultBlockState() : terrain;
+         BlockState fill = !top.is(Blocks.SAND) && !top.is(Blocks.RED_SAND) ? Blocks.DIRT.defaultBlockState() : top;
 
          for (int y = clearTopY; y > floorY; y--) {
-            level.m_7731_(new BlockPos(x, y, z), Blocks.f_50016_.m_49966_(), 18);
+            level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 18);
          }
 
          for (int y = Math.min(oldY + 1, floorY); y < floorY; y++) {
-            level.m_7731_(new BlockPos(x, y, z), fill, 2);
+            level.setBlock(new BlockPos(x, y, z), fill, 2);
          }
 
          supportFoundationColumn(level, x, floorY - 1, z);
-         level.m_7731_(new BlockPos(x, floorY, z), top, 2);
+         level.setBlock(new BlockPos(x, floorY, z), top, 2);
          task.progress = index + 1;
       }
 
@@ -351,7 +351,7 @@ public final class AwtWorldGenerator {
          task.progress = 0;
       }
 
-      data.m_77762_();
+      data.setDirty();
    }
 
    private static void roads(ServerLevel level, AwtWorldGenerationData data, AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
@@ -359,11 +359,11 @@ public final class AwtWorldGenerator {
 
       for (int index = task.progress; index < end; index++) {
          BlockPos pos = plan.roads().get(index);
-         if (!ensureLoaded(level, task, Set.of(ChunkPos.m_45589_(pos.m_123341_() >> 4, pos.m_123343_() >> 4)))) {
+         if (!ensureLoaded(level, task, Set.of(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4)))) {
             break;
          }
 
-         level.m_7731_(new BlockPos(pos.m_123341_(), task.y - 1, pos.m_123343_()), Blocks.f_49994_.m_49966_(), 2);
+         level.setBlock(new BlockPos(pos.getX(), task.y - 1, pos.getZ()), Blocks.GRAVEL.defaultBlockState(), 2);
          task.progress = index + 1;
       }
 
@@ -372,20 +372,20 @@ public final class AwtWorldGenerator {
          task.progress = 0;
       }
 
-      data.m_77762_();
+      data.setDirty();
    }
 
    private static void supportFoundationColumn(ServerLevel level, int x, int startY, int z) {
-      BlockState support = Blocks.f_50062_.m_49966_();
+      BlockState support = Blocks.SANDSTONE.defaultBlockState();
 
-      for (int y = startY; y >= level.m_141937_(); y--) {
+      for (int y = startY; y >= level.getMinBuildHeight(); y--) {
          BlockPos pos = new BlockPos(x, y, z);
-         BlockState state = level.m_8055_(pos);
-         if (!state.m_60795_() && state.m_60819_().m_76178_()) {
+         BlockState state = level.getBlockState(pos);
+         if (!state.isAir() && state.getFluidState().isEmpty()) {
             break;
          }
 
-         level.m_7731_(pos, support, 2);
+         level.setBlock(pos, support, 2);
       }
    }
 
@@ -412,7 +412,7 @@ public final class AwtWorldGenerator {
          task.progress = 0;
          if (next == AwtWorldGenerationData.Phase.COMPLETE) {
             NaturalGenerationContext.markArea(
-               plan.min().m_7918_(-16, 0, -16), plan.min().m_123341_() + plan.totalSize() + 15, plan.min().m_123343_() + plan.totalSize() + 15
+               plan.min().offset(-16, 0, -16), plan.min().getX() + plan.totalSize() + 15, plan.min().getZ() + plan.totalSize() + 15
             );
             AwsTemplatePlacer.refreshHorizontalConnections(level, plan.occupiedBlocks());
             configureTownFlags(level, plan);
@@ -421,17 +421,17 @@ public final class AwtWorldGenerator {
          }
       }
 
-      data.m_77762_();
+      data.setDirty();
    }
 
    private static void configureTownFlags(ServerLevel level, AwtTownPlacer.TownPlan plan) {
-      BlockPos min = new BlockPos(plan.min().m_123341_(), level.m_141937_(), plan.min().m_123343_());
-      BlockPos max = new BlockPos(plan.min().m_123341_() + plan.totalSize() - 1, level.m_151558_() - 1, plan.min().m_123343_() + plan.totalSize() - 1);
+      BlockPos min = new BlockPos(plan.min().getX(), level.getMinBuildHeight(), plan.min().getZ());
+      BlockPos max = new BlockPos(plan.min().getX() + plan.totalSize() - 1, level.getMaxBuildHeight() - 1, plan.min().getZ() + plan.totalSize() - 1);
 
       for (AwtTownPlacer.PlannedTemplate placement : concat(plan.walls(), plan.buildings())) {
          for (long packed : AwsTemplatePlacer.occupiedBlocks(placement.min(), placement.templatePath(), placement.facing())) {
-            BlockPos pos = BlockPos.m_122022_(packed);
-            if (level.m_7702_(pos) instanceof ProtectionFlagBlockEntity flag) {
+            BlockPos pos = BlockPos.of(packed);
+            if (level.getBlockEntity(pos) instanceof ProtectionFlagBlockEntity flag) {
                flag.configureTerritory(min, max);
             }
          }
@@ -447,24 +447,24 @@ public final class AwtWorldGenerator {
 
    private static int surface(ServerLevel level, int x, int z) {
       NaturalGenerationContext.markChunk(new ChunkPos(x >> 4, z >> 4));
-      return level.m_6924_(Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+      return level.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
    }
 
    private static BlockState terrainBelowFluid(ServerLevel level, int x, int startY, int z) {
-      for (int y = startY; y >= level.m_141937_(); y--) {
-         BlockState state = level.m_8055_(new BlockPos(x, y, z));
-         if (!state.m_60795_() && state.m_60819_().m_76178_()) {
+      for (int y = startY; y >= level.getMinBuildHeight(); y--) {
+         BlockState state = level.getBlockState(new BlockPos(x, y, z));
+         if (!state.isAir() && state.getFluidState().isEmpty()) {
             return state;
          }
       }
 
-      return Blocks.f_50440_.m_49966_();
+      return Blocks.GRASS_BLOCK.defaultBlockState();
    }
 
    private static boolean ensureLoaded(ServerLevel level, AwtWorldGenerationData.TownTask task, Set<Long> chunks) {
       for (long value : chunks) {
          ChunkPos chunk = new ChunkPos(value);
-         NaturalGenerationContext.markArea(new BlockPos(chunk.m_45604_() - 16, 0, chunk.m_45605_() - 16), chunk.m_45608_() + 16, chunk.m_45609_() + 16);
+         NaturalGenerationContext.markArea(new BlockPos(chunk.getMinBlockX() - 16, 0, chunk.getMinBlockZ() - 16), chunk.getMaxBlockX() + 16, chunk.getMaxBlockZ() + 16);
       }
 
       BlockPos owner = new BlockPos(task.x, task.y, task.z);
@@ -482,7 +482,7 @@ public final class AwtWorldGenerator {
 
       for (long valuex : chunks) {
          ChunkPos chunk = new ChunkPos(valuex);
-         if (!level.m_7232_(chunk.f_45578_, chunk.f_45579_)) {
+         if (!level.hasChunk(chunk.x, chunk.z)) {
             return false;
          }
       }

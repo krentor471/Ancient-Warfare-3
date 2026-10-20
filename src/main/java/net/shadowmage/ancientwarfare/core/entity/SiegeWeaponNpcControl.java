@@ -20,8 +20,8 @@ final class SiegeWeaponNpcControl {
    }
 
    static boolean canOperate(ChestPushcartEntity weapon, PathfinderMob engineer) {
-      if (weapon.m_6084_() && engineer.m_6084_()) {
-         Entity passenger = weapon.m_146895_();
+      if (weapon.isAlive() && engineer.isAlive()) {
+         Entity passenger = weapon.getFirstPassenger();
          return passenger == null || passenger == engineer;
       } else {
          return false;
@@ -31,24 +31,24 @@ final class SiegeWeaponNpcControl {
    static boolean beginOperation(ChestPushcartEntity weapon, PathfinderMob engineer) {
       if (!canOperate(weapon, engineer)) {
          return false;
-      } else if (engineer.m_20202_() == weapon) {
+      } else if (engineer.getVehicle() == weapon) {
          return true;
       } else {
-         engineer.m_21573_().m_26573_();
-         return engineer.m_7998_(weapon, true);
+         engineer.getNavigation().stop();
+         return engineer.startRiding(weapon, true);
       }
    }
 
    static void stopOperation(ChestPushcartEntity weapon, PathfinderMob engineer) {
-      if (engineer.m_20202_() == weapon) {
-         engineer.m_8127_();
+      if (engineer.getVehicle() == weapon) {
+         engineer.stopRiding();
       }
    }
 
    static boolean canAttack(ChestPushcartEntity weapon, LivingEntity target, double minimumRange, double maximumRange) {
-      Entity passenger = weapon.m_6688_();
+      Entity passenger = weapon.getControllingPassenger();
       if (passenger instanceof LivingEntity observer && target != null && target != observer && NpcTargeting.canHarm(observer, target)) {
-         double distanceSqr = weapon.m_20280_(target);
+         double distanceSqr = weapon.distanceToSqr(target);
          return distanceSqr >= minimumRange * minimumRange && distanceSqr <= maximumRange * maximumRange;
       }
 
@@ -56,15 +56,15 @@ final class SiegeWeaponNpcControl {
    }
 
    static float worldYawTo(LivingEntity target, Entity weapon) {
-      double x = target.m_20185_() - weapon.m_20185_();
-      double z = target.m_20189_() - weapon.m_20189_();
+      double x = target.getX() - weapon.getX();
+      double z = target.getZ() - weapon.getZ();
       return (float)Math.toDegrees(Math.atan2(-x, z));
    }
 
    static float pitchTo(LivingEntity target, Entity weapon, double muzzleHeight) {
-      double x = target.m_20185_() - weapon.m_20185_();
-      double z = target.m_20189_() - weapon.m_20189_();
-      double y = target.m_20227_(0.5) - (weapon.m_20186_() + muzzleHeight);
+      double x = target.getX() - weapon.getX();
+      double z = target.getZ() - weapon.getZ();
+      double y = target.getY(0.5) - (weapon.getY() + muzzleHeight);
       return (float)Math.toDegrees(Math.atan2(y, Math.sqrt(x * x + z * z)));
    }
 
@@ -74,11 +74,11 @@ final class SiegeWeaponNpcControl {
    }
 
    private static float[] ballisticPitchesTo(LivingEntity target, Entity weapon, double muzzleHeight, double projectileSpeed, double gravity) {
-      double x = target.m_20185_() - weapon.m_20185_();
-      double z = target.m_20189_() - weapon.m_20189_();
+      double x = target.getX() - weapon.getX();
+      double z = target.getZ() - weapon.getZ();
       double distance = Math.sqrt(x * x + z * z);
       if (!(distance < 0.001) && !(projectileSpeed <= 0.001) && !(gravity <= 0.0)) {
-         double height = target.m_20227_(0.5) - (weapon.m_20186_() + muzzleHeight);
+         double height = target.getY(0.5) - (weapon.getY() + muzzleHeight);
          double speedSquared = projectileSpeed * projectileSpeed;
          double discriminant = speedSquared * speedSquared - gravity * (gravity * distance * distance + 2.0 * height * speedSquared);
          if (discriminant < 0.0) {
@@ -134,11 +134,11 @@ final class SiegeWeaponNpcControl {
    }
 
    static float localYaw(float worldYaw, Entity weapon) {
-      return Mth.m_14177_(worldYaw - weapon.m_146908_());
+      return Mth.wrapDegrees(worldYaw - weapon.getYRot());
    }
 
    static boolean isWithinYaw(float desiredLocalYaw, float maximumYaw) {
-      return Math.abs(Mth.m_14177_(desiredLocalYaw)) <= maximumYaw;
+      return Math.abs(Mth.wrapDegrees(desiredLocalYaw)) <= maximumYaw;
    }
 
    static boolean hasClearBallisticPath(
@@ -171,10 +171,10 @@ final class SiegeWeaponNpcControl {
          double yaw = Math.toRadians((double)worldYaw);
          double pitch = Math.toRadians((double)pitchDegrees);
          Vec3 horizontalDirection = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
-         Vec3 horizontal = horizontalDirection.m_82490_(Math.cos(pitch) * speed);
-         Vec3 start = weapon.m_20182_().m_82549_(horizontalDirection.m_82490_(muzzleForwardOffset)).m_82520_(0.0, muzzleHeight, 0.0);
-         double targetDistance = Math.sqrt(weapon.m_20275_(target.m_20185_(), weapon.m_20186_(), target.m_20189_()));
-         double horizontalSpeed = horizontal.m_165924_();
+         Vec3 horizontal = horizontalDirection.scale(Math.cos(pitch) * speed);
+         Vec3 start = weapon.position().add(horizontalDirection.scale(muzzleForwardOffset)).add(0.0, muzzleHeight, 0.0);
+         double targetDistance = Math.sqrt(weapon.distanceToSqr(target.getX(), weapon.getY(), target.getZ()));
+         double horizontalSpeed = horizontal.horizontalDistance();
          if (horizontalSpeed < 0.01) {
             return false;
          } else {
@@ -185,10 +185,10 @@ final class SiegeWeaponNpcControl {
 
             for (int step = 1; step <= steps; step++) {
                double time = flightTime * (double)step / (double)steps;
-               Vec3 current = start.m_82549_(horizontal.m_82490_(time)).m_82520_(0.0, Math.sin(pitch) * speed * time - 0.5 * gravity * time * time, 0.0);
+               Vec3 current = start.add(horizontal.scale(time)).add(0.0, Math.sin(pitch) * speed * time - 0.5 * gravity * time * time, 0.0);
                Vec3 clipStart = previous;
-               if (graceDistanceSqr > 0.0 && previous.m_82557_(start) < graceDistanceSqr) {
-                  if (current.m_82557_(start) <= graceDistanceSqr) {
+               if (graceDistanceSqr > 0.0 && previous.distanceToSqr(start) < graceDistanceSqr) {
+                  if (current.distanceToSqr(start) <= graceDistanceSqr) {
                      previous = current;
                      continue;
                   }
@@ -196,9 +196,9 @@ final class SiegeWeaponNpcControl {
                   clipStart = segmentSphereExit(previous, current, start, blockGraceDistance);
                }
 
-               if (clipStart.m_82557_(current) > 1.0E-8) {
-                  BlockHitResult hit = level.m_45547_(new ClipContext(clipStart, current, Block.COLLIDER, Fluid.NONE, weapon));
-                  if (hit.m_6662_() != Type.MISS) {
+               if (clipStart.distanceToSqr(current) > 1.0E-8) {
+                  BlockHitResult hit = level.clip(new ClipContext(clipStart, current, Block.COLLIDER, Fluid.NONE, weapon));
+                  if (hit.getType() != Type.MISS) {
                      return false;
                   }
                }
@@ -214,37 +214,37 @@ final class SiegeWeaponNpcControl {
    }
 
    static Vec3 segmentSphereExit(Vec3 inside, Vec3 outside, Vec3 center, double radius) {
-      Vec3 direction = outside.m_82546_(inside);
-      Vec3 offset = inside.m_82546_(center);
-      double a = direction.m_82556_();
+      Vec3 direction = outside.subtract(inside);
+      Vec3 offset = inside.subtract(center);
+      double a = direction.lengthSqr();
       if (a < 1.0E-10) {
          return outside;
       } else {
-         double b = 2.0 * offset.m_82526_(direction);
-         double c = offset.m_82556_() - radius * radius;
+         double b = 2.0 * offset.dot(direction);
+         double c = offset.lengthSqr() - radius * radius;
          double discriminant = b * b - 4.0 * a * c;
          if (discriminant < 0.0) {
             return outside;
          } else {
             double t = (-b + Math.sqrt(discriminant)) / (2.0 * a);
-            return inside.m_82549_(direction.m_82490_(Mth.m_14008_(t, 0.0, 1.0)));
+            return inside.add(direction.scale(Mth.clamp(t, 0.0, 1.0)));
          }
       }
    }
 
    static void faceVehicle(Entity weapon, float worldYaw) {
-      weapon.m_146922_(worldYaw);
-      weapon.m_5616_(worldYaw);
-      weapon.m_5618_(worldYaw);
-      weapon.f_19859_ = worldYaw;
+      weapon.setYRot(worldYaw);
+      weapon.setYHeadRot(worldYaw);
+      weapon.setYBodyRot(worldYaw);
+      weapon.yRotO = worldYaw;
    }
 
    static void supplyFactionAmmo(PathfinderMob engineer, ChestPushcartEntity weapon, ItemStack ammo) {
       if (engineer instanceof SiegeAmmoSupplier && !hasMatchingItem(weapon, ammo)) {
-         for (int slot = 0; slot < weapon.m_6643_(); slot++) {
-            if (weapon.m_8020_(slot).m_41619_() && weapon.m_7013_(slot, ammo)) {
-               weapon.m_6836_(slot, ammo.m_41777_());
-               weapon.m_6596_();
+         for (int slot = 0; slot < weapon.getContainerSize(); slot++) {
+            if (weapon.getItem(slot).isEmpty() && weapon.canPlaceItem(slot, ammo)) {
+               weapon.setItem(slot, ammo.copy());
+               weapon.setChanged();
                return;
             }
          }
@@ -252,8 +252,8 @@ final class SiegeWeaponNpcControl {
    }
 
    private static boolean hasMatchingItem(ChestPushcartEntity weapon, ItemStack ammo) {
-      for (int slot = 0; slot < weapon.m_6643_(); slot++) {
-         if (ItemStack.m_150942_(weapon.m_8020_(slot), ammo)) {
+      for (int slot = 0; slot < weapon.getContainerSize(); slot++) {
+         if (ItemStack.isSameItemSameTags(weapon.getItem(slot), ammo)) {
             return true;
          }
       }

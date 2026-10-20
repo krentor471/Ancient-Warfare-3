@@ -31,8 +31,8 @@ public final class AWTargetingConfig {
       if (!(value instanceof String string)) {
          return false;
       } else {
-         ResourceLocation id = ResourceLocation.m_135820_(string.trim().toLowerCase(Locale.ROOT));
-         return id != null && !id.m_135827_().isBlank() && !id.m_135815_().isBlank();
+         ResourceLocation id = ResourceLocation.tryParse(string.trim().toLowerCase(Locale.ROOT));
+         return id != null && !id.getNamespace().isBlank() && !id.getPath().isBlank();
       }
    }
 

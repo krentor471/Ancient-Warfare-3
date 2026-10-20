@@ -15,8 +15,8 @@ public class AnimalFarmControlScreen extends LegacyContainerScreen<AnimalFarmCon
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
+   protected void init() {
+      super.init();
 
       for (int row = 0; row < 8; row++) {
          int y = 20 + row * 14;
@@ -26,45 +26,45 @@ public class AnimalFarmControlScreen extends LegacyContainerScreen<AnimalFarmCon
          this.registerLayoutRect("animal limit " + row, 124, y, 24, 12, true);
       }
 
-      this.legacyButton("previous page", 50, 136, 20, 12, Component.m_237113_("<"), button -> this.clickButton(1000));
-      this.legacyButton("next page", 98, 136, 20, 12, Component.m_237113_(">"), button -> this.clickButton(1001));
+      this.legacyButton("previous page", 50, 136, 20, 12, Component.literal("<"), button -> this.clickButton(1000));
+      this.legacyButton("next page", 98, 136, 20, 12, Component.literal(">"), button -> this.clickButton(1001));
       this.registerLayoutRect("page label", 72, 138, 24, 9, true);
    }
 
    private void addLimitButton(int x, int y, String label, int id) {
-      this.legacyButton("animal adjustment " + id, x, y, 12, 12, Component.m_237113_(label), button -> this.clickButton(id));
+      this.legacyButton("animal adjustment " + id, x, y, 12, 12, Component.literal(label), button -> this.clickButton(id));
    }
 
    private void clickButton(int id) {
-      ((AnimalFarmControlMenu)this.f_97732_).previewButton(id);
-      this.f_96541_.f_91072_.m_105208_(((AnimalFarmControlMenu)this.f_97732_).f_38840_, id);
+      ((AnimalFarmControlMenu)this.menu).previewButton(id);
+      this.minecraft.gameMode.handleInventoryButtonClick(((AnimalFarmControlMenu)this.menu).containerId, id);
    }
 
    @Override
    protected void renderLegacyBackground(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
       for (int row = 0; row < 8; row++) {
-         int y = this.f_97736_ + 20 + row * 14;
-         graphics.m_280509_(this.f_97735_ + 124, y, this.f_97735_ + 148, y + 12, -1644826);
-         graphics.m_280509_(this.f_97735_ + 125, y + 1, this.f_97735_ + 147, y + 11, -16777216);
+         int y = this.topPos + 20 + row * 14;
+         graphics.fill(this.leftPos + 124, y, this.leftPos + 148, y + 12, -1644826);
+         graphics.fill(this.leftPos + 125, y + 1, this.leftPos + 147, y + 11, -16777216);
       }
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      this.drawLabel(graphics, Component.m_237115_("guistrings.automation.animal_limits"), 8, 6, 152);
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      this.drawLabel(graphics, Component.translatable("guistrings.automation.animal_limits"), 8, 6, 152);
 
       for (int row = 0; row < 8; row++) {
-         ResourceLocation animalType = ((AnimalFarmControlMenu)this.f_97732_).getAnimalType(row);
+         ResourceLocation animalType = ((AnimalFarmControlMenu)this.menu).getAnimalType(row);
          if (animalType != null) {
             int y = 20 + row * 14 + 2;
-            this.drawLabel(graphics, Component.m_237115_("entity." + animalType.m_135827_() + "." + animalType.m_135815_()), 8, y, 98);
-            Component limit = Component.m_237113_(Integer.toString(((AnimalFarmControlMenu)this.f_97732_).getAnimalLimit(row)));
+            this.drawLabel(graphics, Component.translatable("entity." + animalType.getNamespace() + "." + animalType.getPath()), 8, y, 98);
+            Component limit = Component.literal(Integer.toString(((AnimalFarmControlMenu)this.menu).getAnimalLimit(row)));
             this.drawCenteredLabel(graphics, limit, 136, y, 20);
          }
       }
 
       this.drawCenteredLabel(
          graphics,
-         Component.m_237113_(((AnimalFarmControlMenu)this.f_97732_).getPage() + 1 + "/" + ((AnimalFarmControlMenu)this.f_97732_).getPageCount()),
+         Component.literal(((AnimalFarmControlMenu)this.menu).getPage() + 1 + "/" + ((AnimalFarmControlMenu)this.menu).getPageCount()),
          84,
          138,
          24
@@ -72,20 +72,20 @@ public class AnimalFarmControlScreen extends LegacyContainerScreen<AnimalFarmCon
    }
 
    private void drawLabel(GuiGraphics graphics, Component label, int x, int y, int width) {
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_((float)x, (float)y, 0.0F);
-      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.f_96547_.m_92852_(label)));
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, label, 0, 0, -1, false);
-      graphics.m_280168_().m_85849_();
+      graphics.pose().pushPose();
+      graphics.pose().translate((float)x, (float)y, 0.0F);
+      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.font.width(label)));
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, label, 0, 0, -1, false);
+      graphics.pose().popPose();
    }
 
    private void drawCenteredLabel(GuiGraphics graphics, Component label, int centerX, int y, int width) {
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_((float)centerX, (float)y, 0.0F);
-      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.f_96547_.m_92852_(label)));
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280653_(this.f_96547_, label, 0, 0, -1);
-      graphics.m_280168_().m_85849_();
+      graphics.pose().pushPose();
+      graphics.pose().translate((float)centerX, (float)y, 0.0F);
+      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.font.width(label)));
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawCenteredString(this.font, label, 0, 0, -1);
+      graphics.pose().popPose();
    }
 }

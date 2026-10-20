@@ -25,50 +25,50 @@ import net.shadowmage.ancientwarfare.core.tile.WindmillBladeBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class WindmillBladeRunningBlock extends BaseEntityBlock {
-   public static final DirectionProperty FACING = HorizontalDirectionalBlock.f_54117_;
-   private static final VoxelShape SHAPE = m_49796_(6.0, 6.0, 6.0, 10.0, 10.0, 10.0);
+   public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+   private static final VoxelShape SHAPE = box(6.0, 6.0, 6.0, 10.0, 10.0, 10.0);
 
    public WindmillBladeRunningBlock(Properties properties) {
       super(properties);
-      this.m_49959_((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH));
+      this.registerDefaultState((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH));
    }
 
    @Nullable
-   public BlockState m_5573_(BlockPlaceContext context) {
-      return (BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_());
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      return (BlockState)this.defaultBlockState().setValue(FACING, context.getHorizontalDirection());
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{FACING});
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return new WindmillBladeBlockEntity(pos, state);
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState state, BlockEntityType<T> type) {
-      return level.f_46443_ && type == AWCoreRegistryAccess.blockEntityType(AWCoreIds.id("windmill_blade"))
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+      return level.isClientSide && type == AWCoreRegistryAccess.blockEntityType(AWCoreIds.id("windmill_blade"))
          ? (tickerLevel, pos, tickerState, blockEntity) -> ((WindmillBladeBlockEntity)blockEntity).clientTick()
          : null;
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.ENTITYBLOCK_ANIMATED;
    }
 
-   public void m_6810_(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-      if (newState.m_60734_() != this
-         && newState.m_60734_() != AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE)
-         && level.m_7702_(pos) instanceof WindmillBladeBlockEntity blade) {
+   public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+      if (newState.getBlock() != this
+         && newState.getBlock() != AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE)
+         && level.getBlockEntity(pos) instanceof WindmillBladeBlockEntity blade) {
          blade.onBroken();
       }
 
-      super.m_6810_(state, level, pos, newState, movedByPiston);
+      super.onRemove(state, level, pos, newState, movedByPiston);
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return SHAPE;
    }
 }

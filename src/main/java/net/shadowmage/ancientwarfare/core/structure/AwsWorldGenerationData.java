@@ -13,7 +13,7 @@ public final class AwsWorldGenerationData extends SavedData {
    private final List<AwsWorldGenerationData.Entry> entries = new ArrayList<>();
 
    public static AwsWorldGenerationData get(ServerLevel level) {
-      return (AwsWorldGenerationData)level.m_8895_().m_164861_(AwsWorldGenerationData::load, AwsWorldGenerationData::new, "ancientwarfare_aws_worldgen");
+      return (AwsWorldGenerationData)level.getDataStorage().computeIfAbsent(AwsWorldGenerationData::load, AwsWorldGenerationData::new, "ancientwarfare_aws_worldgen");
    }
 
    public List<AwsWorldGenerationData.Entry> entries() {
@@ -22,45 +22,45 @@ public final class AwsWorldGenerationData extends SavedData {
 
    public void add(AwsWorldGenerationData.Entry entry) {
       this.entries.add(entry);
-      this.m_77762_();
+      this.setDirty();
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
+   public CompoundTag save(CompoundTag tag) {
       ListTag list = new ListTag();
 
       for (AwsWorldGenerationData.Entry entry : this.entries) {
          CompoundTag value = new CompoundTag();
-         value.m_128359_("Template", entry.template());
-         value.m_128405_("MinX", entry.minX());
-         value.m_128405_("MinY", entry.minY());
-         value.m_128405_("MinZ", entry.minZ());
-         value.m_128405_("MaxX", entry.maxX());
-         value.m_128405_("MaxY", entry.maxY());
-         value.m_128405_("MaxZ", entry.maxZ());
-         value.m_128405_("Facing", entry.facing());
+         value.putString("Template", entry.template());
+         value.putInt("MinX", entry.minX());
+         value.putInt("MinY", entry.minY());
+         value.putInt("MinZ", entry.minZ());
+         value.putInt("MaxX", entry.maxX());
+         value.putInt("MaxY", entry.maxY());
+         value.putInt("MaxZ", entry.maxZ());
+         value.putInt("Facing", entry.facing());
          list.add(value);
       }
 
-      tag.m_128365_("Structures", list);
+      tag.put("Structures", list);
       return tag;
    }
 
    private static AwsWorldGenerationData load(CompoundTag tag) {
       AwsWorldGenerationData data = new AwsWorldGenerationData();
 
-      for (Tag raw : tag.m_128437_("Structures", 10)) {
+      for (Tag raw : tag.getList("Structures", 10)) {
          CompoundTag value = (CompoundTag)raw;
          data.entries
             .add(
                new AwsWorldGenerationData.Entry(
-                  value.m_128461_("Template"),
-                  value.m_128451_("MinX"),
-                  value.m_128451_("MinY"),
-                  value.m_128451_("MinZ"),
-                  value.m_128451_("MaxX"),
-                  value.m_128451_("MaxY"),
-                  value.m_128451_("MaxZ"),
-                  value.m_128441_("Facing") ? value.m_128451_("Facing") : 2
+                  value.getString("Template"),
+                  value.getInt("MinX"),
+                  value.getInt("MinY"),
+                  value.getInt("MinZ"),
+                  value.getInt("MaxX"),
+                  value.getInt("MaxY"),
+                  value.getInt("MaxZ"),
+                  value.contains("Facing") ? value.getInt("Facing") : 2
                )
             );
       }

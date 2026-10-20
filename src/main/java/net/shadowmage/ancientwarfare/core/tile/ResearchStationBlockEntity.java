@@ -31,7 +31,7 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    public static final int BOOK_SLOT = 0;
    public static final int RESOURCE_SLOT_START = 1;
    public static final int SLOT_COUNT = 10;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(10, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(10, ItemStack.EMPTY);
 
    public ResearchStationBlockEntity(BlockPos pos, BlockState state) {
       super(AWCoreRegistryAccess.blockEntityType(AWCoreIds.RESEARCH_STATION), pos, state);
@@ -42,16 +42,16 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    }
 
    private void tickResearch() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
+      if (this.level != null && !this.level.isClientSide) {
          ItemStack book = (ItemStack)this.items.get(0);
-         if (!book.m_41619_() && ResearchBookItem.getResearcherName(book) != null) {
+         if (!book.isEmpty() && ResearchBookItem.getResearcherName(book) != null) {
             if (ResearchBookItem.getCurrentResearch(book) == null) {
                this.startNextQueuedResearch(book);
             }
 
             if (ResearchBookItem.getCurrentResearch(book) != null) {
                ResearchBookItem.addProgress(book, 1);
-               this.m_6596_();
+               this.setChanged();
             }
          }
       }
@@ -62,7 +62,7 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
       ResearchGoal next = nextId == null ? null : ResearchRegistry.get(nextId);
       if (next != null && this.consumeResearchResources(next)) {
          ResearchBookItem.startNextQueuedResearch(book);
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -73,7 +73,7 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
          for (int slot = 1; slot < 10; slot++) {
             ItemStack stack = (ItemStack)this.items.get(slot);
             if (requirement.matches(stack)) {
-               available += stack.m_41613_();
+               available += stack.getCount();
             }
          }
 
@@ -88,40 +88,40 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
          for (int slotx = 1; slotx < 10 && remaining > 0; slotx++) {
             ItemStack stack = (ItemStack)this.items.get(slotx);
             if (requirement.matches(stack)) {
-               int removed = Math.min(remaining, stack.m_41613_());
-               stack.m_41774_(removed);
+               int removed = Math.min(remaining, stack.getCount());
+               stack.shrink(removed);
                remaining -= removed;
-               if (stack.m_41619_()) {
-                  this.items.set(slotx, ItemStack.f_41583_);
+               if (stack.isEmpty()) {
+                  this.items.set(slotx, ItemStack.EMPTY);
                }
             }
          }
       }
 
-      this.m_6596_();
+      this.setChanged();
       return true;
    }
 
    @Override
    public boolean hasWork() {
       ItemStack book = (ItemStack)this.items.get(0);
-      return !book.m_41619_() && ResearchBookItem.getResearcherName(book) != null
+      return !book.isEmpty() && ResearchBookItem.getResearcherName(book) != null
          ? ResearchBookItem.getCurrentResearch(book) != null || ResearchBookItem.peekNextQueuedResearch(book) != null
          : false;
    }
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType())) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType())) {
          ItemStack book = (ItemStack)this.items.get(0);
-         if (!book.m_41619_() && ResearchBookItem.getResearcherName(book) != null) {
+         if (!book.isEmpty() && ResearchBookItem.getResearcherName(book) != null) {
             if (ResearchBookItem.getCurrentResearch(book) == null) {
                this.startNextQueuedResearch(book);
             }
 
             if (ResearchBookItem.getCurrentResearch(book) != null) {
                ResearchBookItem.addProgress(book, Math.max(1, Math.round(worker.getWorkEffectiveness(this.getWorkType()))));
-               this.m_6596_();
+               this.setChanged();
             }
          }
       }
@@ -132,96 +132,96 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
       return NpcWorkType.RESEARCH;
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
       this.updateBookState();
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 10;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
+   public ItemStack removeItem(int slot, int amount) {
       if (this.isValidSlot(slot) && amount > 0) {
-         ItemStack removed = ContainerHelper.m_18969_(this.items, slot, amount);
-         if (!removed.m_41619_()) {
-            this.m_6596_();
+         ItemStack removed = ContainerHelper.removeItem(this.items, slot, amount);
+         if (!removed.isEmpty()) {
+            this.setChanged();
             this.updateBookState();
          }
 
          return removed;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
-   public ItemStack m_8016_(int slot) {
+   public ItemStack removeItemNoUpdate(int slot) {
       if (!this.isValidSlot(slot)) {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       } else {
-         ItemStack stack = ContainerHelper.m_18966_(this.items, slot);
+         ItemStack stack = ContainerHelper.takeItem(this.items, slot);
          this.updateBookState();
          return stack;
       }
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         if (slot == 0 && !stack.m_41619_() && stack.m_41613_() > 1) {
-            stack.m_41764_(1);
+         if (slot == 0 && !stack.isEmpty() && stack.getCount() > 1) {
+            stack.setCount(1);
          }
 
-         this.m_6596_();
+         this.setChanged();
          this.updateBookState();
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
       this.updateBookState();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.research_station");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.research_station");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new ResearchStationMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new ResearchStationMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public NonNullList<ItemStack> getDrops() {
-      NonNullList<ItemStack> drops = NonNullList.m_122779_();
+      NonNullList<ItemStack> drops = NonNullList.create();
 
       for (ItemStack stack : this.items) {
-         if (!stack.m_41619_()) {
-            drops.add(stack.m_41777_());
+         if (!stack.isEmpty()) {
+            drops.add(stack.copy());
          }
       }
 
@@ -233,11 +233,11 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    }
 
    private void updateBookState() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         BlockState state = this.m_58900_();
-         boolean hasBook = !((ItemStack)this.items.get(0)).m_41619_();
-         if (state.m_61138_(ResearchStationBlock.HAS_BOOK) && (Boolean)state.m_61143_(ResearchStationBlock.HAS_BOOK) != hasBook) {
-            this.f_58857_.m_7731_(this.f_58858_, (BlockState)state.m_61124_(ResearchStationBlock.HAS_BOOK, hasBook), 3);
+      if (this.level != null && !this.level.isClientSide) {
+         BlockState state = this.getBlockState();
+         boolean hasBook = !((ItemStack)this.items.get(0)).isEmpty();
+         if (state.hasProperty(ResearchStationBlock.HAS_BOOK) && (Boolean)state.getValue(ResearchStationBlock.HAS_BOOK) != hasBook) {
+            this.level.setBlock(this.worldPosition, (BlockState)state.setValue(ResearchStationBlock.HAS_BOOK, hasBook), 3);
          }
       }
    }

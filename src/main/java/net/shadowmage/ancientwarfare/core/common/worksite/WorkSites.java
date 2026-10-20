@@ -13,7 +13,7 @@ public final class WorkSites {
 
    public static Optional<WorkSite> get(Level level, BlockPos pos) {
       if (level != null && pos != null) {
-         if (level.m_7702_(pos) instanceof WorkSite workSite) {
+         if (level.getBlockEntity(pos) instanceof WorkSite workSite) {
             return Optional.of(workSite);
          } else {
             Optional<WorkSite> compatibilitySite = AWCorePlatform.findCompatibleWorkSite(level, pos);
@@ -25,11 +25,11 @@ public final class WorkSites {
    }
 
    private static Optional<WorkSite> findBoundedWorkSite(Level level, BlockPos target) {
-      BlockPos min = target.m_7918_(-16, -2, -16);
-      BlockPos max = target.m_7918_(16, 2, 16);
+      BlockPos min = target.offset(-16, -2, -16);
+      BlockPos max = target.offset(16, 2, 16);
 
-      for (BlockPos pos : BlockPos.m_121940_(min, max)) {
-         if (level.m_7702_(pos) instanceof BoundedWorkSite boundedWorkSite && boundedWorkSite.containsWorkTarget(target)) {
+      for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
+         if (level.getBlockEntity(pos) instanceof BoundedWorkSite boundedWorkSite && boundedWorkSite.containsWorkTarget(target)) {
             return Optional.of(boundedWorkSite);
          }
       }

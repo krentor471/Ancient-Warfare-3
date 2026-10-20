@@ -39,14 +39,14 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    public static final double PLAYER_WALK_SPEED = 0.1;
    public static final double PLAYER_SPRINT_SPEED = 0.13;
    private double movementSpeedBeforeShield = -1.0;
-   private static final EntityDataAccessor<String> NPC_TYPE = SynchedEntityData.m_135353_(NpcBaseEntity.class, EntityDataSerializers.f_135030_);
-   private static final EntityDataAccessor<String> NPC_SUBTYPE = SynchedEntityData.m_135353_(NpcBaseEntity.class, EntityDataSerializers.f_135030_);
-   private static final EntityDataAccessor<String> SKIN_NAME = SynchedEntityData.m_135353_(NpcBaseEntity.class, EntityDataSerializers.f_135030_);
-   private static final EntityDataAccessor<Boolean> ALEX_MODEL = SynchedEntityData.m_135353_(NpcBaseEntity.class, EntityDataSerializers.f_135035_);
-   private static final EntityDataAccessor<Boolean> SHIELDING = SynchedEntityData.m_135353_(NpcBaseEntity.class, EntityDataSerializers.f_135035_);
-   private static final EntityDataAccessor<Integer> MELEE_ATTACK_ANIMATION = SynchedEntityData.m_135353_(NpcBaseEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Integer> STATUS_ICONS = SynchedEntityData.m_135353_(NpcBaseEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Integer> COMBAT_ATTACK_COUNT = SynchedEntityData.m_135353_(NpcBaseEntity.class, EntityDataSerializers.f_135028_);
+   private static final EntityDataAccessor<String> NPC_TYPE = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.STRING);
+   private static final EntityDataAccessor<String> NPC_SUBTYPE = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.STRING);
+   private static final EntityDataAccessor<String> SKIN_NAME = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.STRING);
+   private static final EntityDataAccessor<Boolean> ALEX_MODEL = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.BOOLEAN);
+   private static final EntityDataAccessor<Boolean> SHIELDING = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.BOOLEAN);
+   private static final EntityDataAccessor<Integer> MELEE_ATTACK_ANIMATION = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Integer> STATUS_ICONS = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Integer> COMBAT_ATTACK_COUNT = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.INT);
    public static final int STATUS_ATTACK = 1;
    public static final int STATUS_UPKEEP = 2;
    public static final int STATUS_UPKEEP_2 = 4;
@@ -73,74 +73,74 @@ public abstract class NpcBaseEntity extends PathfinderMob {
 
    protected NpcBaseEntity(EntityType<? extends NpcBaseEntity> entityType, Level level) {
       super(entityType, level);
-      this.m_21530_();
-      this.m_21573_().m_26575_().m_77351_(true);
-      this.m_21573_().m_26575_().m_77355_(true);
-      this.f_21345_.m_25352_(1, new NpcOpenDoorGoal(this));
+      this.setPersistenceRequired();
+      this.getNavigation().getNodeEvaluator().setCanPassDoors(true);
+      this.getNavigation().getNodeEvaluator().setCanOpenDoors(true);
+      this.goalSelector.addGoal(1, new NpcOpenDoorGoal(this));
    }
 
-   public boolean m_6785_(double distanceToClosestPlayer) {
+   public boolean removeWhenFarAway(double distanceToClosestPlayer) {
       return false;
    }
 
-   public int m_6056_() {
+   public int getMaxFallDistance() {
       return 1;
    }
 
-   public void m_6478_(MoverType moverType, Vec3 movement) {
+   public void move(MoverType moverType, Vec3 movement) {
       if (moverType == MoverType.SELF && !NpcMovementSafety.canMoveSafely(this, movement)) {
-         this.m_21573_().m_26573_();
-         movement = new Vec3(0.0, movement.f_82480_, 0.0);
+         this.getNavigation().stop();
+         movement = new Vec3(0.0, movement.y, 0.0);
       }
 
-      super.m_6478_(moverType, movement);
+      super.move(moverType, movement);
    }
 
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(NPC_TYPE, "worker");
-      this.f_19804_.m_135372_(NPC_SUBTYPE, "miner");
-      this.f_19804_.m_135372_(SKIN_NAME, "");
-      this.f_19804_.m_135372_(ALEX_MODEL, false);
-      this.f_19804_.m_135372_(SHIELDING, false);
-      this.f_19804_.m_135372_(MELEE_ATTACK_ANIMATION, 0);
-      this.f_19804_.m_135372_(STATUS_ICONS, 0);
-      this.f_19804_.m_135372_(COMBAT_ATTACK_COUNT, 0);
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(NPC_TYPE, "worker");
+      this.entityData.define(NPC_SUBTYPE, "miner");
+      this.entityData.define(SKIN_NAME, "");
+      this.entityData.define(ALEX_MODEL, false);
+      this.entityData.define(SHIELDING, false);
+      this.entityData.define(MELEE_ATTACK_ANIMATION, 0);
+      this.entityData.define(STATUS_ICONS, 0);
+      this.entityData.define(COMBAT_ATTACK_COUNT, 0);
    }
 
-   public void m_8119_() {
+   public void tick() {
       this.updateShieldMovementSpeed();
-      if (!this.m_9236_().f_46443_) {
-         if (this.m_20202_() instanceof Mob mount) {
-            mount.m_21530_();
+      if (!this.level().isClientSide) {
+         if (this.getVehicle() instanceof Mob mount) {
+            mount.setPersistenceRequired();
          }
 
          NpcSuffocationEscape.tryEscape(this);
          int meleeAnimation = this.getMeleeAttackAnimationTicks();
          if (meleeAnimation > 0) {
-            this.f_19804_.m_135381_(MELEE_ATTACK_ANIMATION, meleeAnimation - 1);
+            this.entityData.set(MELEE_ATTACK_ANIMATION, meleeAnimation - 1);
          }
       }
 
-      super.m_8119_();
-      if (!this.m_9236_().f_46443_) {
+      super.tick();
+      if (!this.level().isClientSide) {
          NpcWaterEscape.tick(this);
          int flags = this.calculateStatusIconFlags();
          if (flags != this.getStatusIconFlags()) {
-            this.f_19804_.m_135381_(STATUS_ICONS, flags);
+            this.entityData.set(STATUS_ICONS, flags);
          }
       }
    }
 
    private void updateShieldMovementSpeed() {
-      if (!this.m_9236_().f_46443_) {
-         AttributeInstance movement = this.m_21051_(Attributes.f_22279_);
+      if (!this.level().isClientSide) {
+         AttributeInstance movement = this.getAttribute(Attributes.MOVEMENT_SPEED);
          if (movement != null) {
             if (this.isShielding() && this.movementSpeedBeforeShield < 0.0) {
-               this.movementSpeedBeforeShield = movement.m_22115_();
-               movement.m_22100_(this.movementSpeedBeforeShield * 0.5);
+               this.movementSpeedBeforeShield = movement.getBaseValue();
+               movement.setBaseValue(this.movementSpeedBeforeShield * 0.5);
             } else if (!this.isShielding() && this.movementSpeedBeforeShield >= 0.0) {
-               movement.m_22100_(this.movementSpeedBeforeShield);
+               movement.setBaseValue(this.movementSpeedBeforeShield);
                this.movementSpeedBeforeShield = -1.0;
             }
          }
@@ -156,16 +156,16 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    }
 
    public int getStatusIconFlags() {
-      return (Integer)this.f_19804_.m_135370_(STATUS_ICONS);
+      return (Integer)this.entityData.get(STATUS_ICONS);
    }
 
    protected int calculateStatusIconFlags() {
       int flags = 0;
-      if (this.m_5448_() != null) {
+      if (this.getTarget() != null) {
          flags |= 1;
       }
 
-      if (this.m_5803_()) {
+      if (this.isSleeping()) {
          flags |= 4096;
       }
 
@@ -193,7 +193,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
             flags |= 2;
          }
 
-         if (owned.getFoodRemaining() <= 0 && !owned.getUpkeepStack().m_41619_()) {
+         if (owned.getFoodRemaining() <= 0 && !owned.getUpkeepStack().isEmpty()) {
             flags |= 4;
          }
 
@@ -205,7 +205,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
 
             if ("sleeping".equals(state) || "sleeping_no_bed".equals(state)) {
                flags |= 4096;
-               if (owned.hasHome() && !worker.m_5803_()) {
+               if (owned.hasHome() && !worker.isSleeping()) {
                   flags |= 8;
                }
             }
@@ -213,7 +213,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
 
          if (owned instanceof CombatNpcEntity combat
             && command == NpcCommandType.NONE
-            && combat.m_5448_() == null
+            && combat.getTarget() == null
             && AWCoreRegistryAccess.is(combat.getOrdersStack(), AWCoreIds.COMBAT_ORDER)) {
             flags |= 32;
          }
@@ -222,80 +222,80 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       }
    }
 
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
-      tag.m_128359_("NpcType", this.getNpcType());
-      tag.m_128359_("NpcSubtype", this.getNpcSubtype());
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
+      tag.putString("NpcType", this.getNpcType());
+      tag.putString("NpcSubtype", this.getNpcSubtype());
       if (!this.getSkinName().isBlank()) {
-         tag.m_128359_("SkinName", this.getSkinName());
+         tag.putString("SkinName", this.getSkinName());
       }
 
       if (this.isAlexModel()) {
-         tag.m_128379_("AlexModel", true);
+         tag.putBoolean("AlexModel", true);
       }
 
       if (this.getCombatAttackCount() > 0) {
-         tag.m_128405_("CombatAttackCount", this.getCombatAttackCount());
+         tag.putInt("CombatAttackCount", this.getCombatAttackCount());
       }
    }
 
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
-      this.m_21530_();
-      if (tag.m_128441_("NpcType")) {
-         this.setNpcType(tag.m_128461_("NpcType"));
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
+      this.setPersistenceRequired();
+      if (tag.contains("NpcType")) {
+         this.setNpcType(tag.getString("NpcType"));
       }
 
-      if (tag.m_128441_("NpcSubtype")) {
-         this.setNpcSubtype(tag.m_128461_("NpcSubtype"));
+      if (tag.contains("NpcSubtype")) {
+         this.setNpcSubtype(tag.getString("NpcSubtype"));
       }
 
-      if (tag.m_128441_("SkinName")) {
-         this.setSkinName(tag.m_128461_("SkinName"));
+      if (tag.contains("SkinName")) {
+         this.setSkinName(tag.getString("SkinName"));
       }
 
-      this.setAlexModel(tag.m_128471_("AlexModel"));
-      if (tag.m_128441_("CombatAttackCount")) {
-         this.f_19804_.m_135381_(COMBAT_ATTACK_COUNT, Math.max(0, Math.min(100, tag.m_128451_("CombatAttackCount"))));
+      this.setAlexModel(tag.getBoolean("AlexModel"));
+      if (tag.contains("CombatAttackCount")) {
+         this.entityData.set(COMBAT_ATTACK_COUNT, Math.max(0, Math.min(100, tag.getInt("CombatAttackCount"))));
       }
 
       this.applyCombatRankAttributes();
    }
 
    public String getNpcType() {
-      return (String)this.f_19804_.m_135370_(NPC_TYPE);
+      return (String)this.entityData.get(NPC_TYPE);
    }
 
    public void setNpcType(String npcType) {
-      this.f_19804_.m_135381_(NPC_TYPE, npcType != null && !npcType.isBlank() ? npcType : "worker");
+      this.entityData.set(NPC_TYPE, npcType != null && !npcType.isBlank() ? npcType : "worker");
    }
 
    public String getNpcSubtype() {
-      return (String)this.f_19804_.m_135370_(NPC_SUBTYPE);
+      return (String)this.entityData.get(NPC_SUBTYPE);
    }
 
    public void setNpcSubtype(String npcSubtype) {
-      this.f_19804_.m_135381_(NPC_SUBTYPE, npcSubtype != null && !npcSubtype.isBlank() ? npcSubtype : "miner");
+      this.entityData.set(NPC_SUBTYPE, npcSubtype != null && !npcSubtype.isBlank() ? npcSubtype : "miner");
    }
 
    public String getSkinName() {
-      return (String)this.f_19804_.m_135370_(SKIN_NAME);
+      return (String)this.entityData.get(SKIN_NAME);
    }
 
    public void setSkinName(String skinName) {
-      this.f_19804_.m_135381_(SKIN_NAME, skinName == null ? "" : skinName.trim());
+      this.entityData.set(SKIN_NAME, skinName == null ? "" : skinName.trim());
    }
 
    public boolean isAlexModel() {
-      return (Boolean)this.f_19804_.m_135370_(ALEX_MODEL);
+      return (Boolean)this.entityData.get(ALEX_MODEL);
    }
 
    public void setAlexModel(boolean alexModel) {
-      this.f_19804_.m_135381_(ALEX_MODEL, alexModel);
+      this.entityData.set(ALEX_MODEL, alexModel);
    }
 
    public int getCombatAttackCount() {
-      return (Integer)this.f_19804_.m_135370_(COMBAT_ATTACK_COUNT);
+      return (Integer)this.entityData.get(COMBAT_ATTACK_COUNT);
    }
 
    public int getCombatRank() {
@@ -316,10 +316,10 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    }
 
    protected final void recordCombatAttack() {
-      if (!this.m_9236_().f_46443_ && this.supportsCombatPromotion()) {
+      if (!this.level().isClientSide && this.supportsCombatPromotion()) {
          int previousRank = this.getCombatRank();
          int attacks = Math.min(100, this.getCombatAttackCount() + 1);
-         this.f_19804_.m_135381_(COMBAT_ATTACK_COUNT, attacks);
+         this.entityData.set(COMBAT_ATTACK_COUNT, attacks);
          if (this.getCombatRank() != previousRank) {
             this.applyCombatRankAttributes();
          }
@@ -327,105 +327,105 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    }
 
    protected final void applyCombatRankAttributes() {
-      if (!this.m_9236_().f_46443_ && this.supportsCombatPromotion()) {
+      if (!this.level().isClientSide && this.supportsCombatPromotion()) {
          int rank = this.getCombatRank();
-         AttributeInstance health = this.m_21051_(Attributes.f_22276_);
-         AttributeInstance damage = this.m_21051_(Attributes.f_22281_);
+         AttributeInstance health = this.getAttribute(Attributes.MAX_HEALTH);
+         AttributeInstance damage = this.getAttribute(Attributes.ATTACK_DAMAGE);
          if (health != null && damage != null) {
-            float healthRatio = this.m_21233_() > 0.0F ? this.m_21223_() / this.m_21233_() : 1.0F;
-            health.m_22120_(COMBAT_RANK_HEALTH_MODIFIER);
-            damage.m_22120_(COMBAT_RANK_DAMAGE_MODIFIER);
+            float healthRatio = this.getMaxHealth() > 0.0F ? this.getHealth() / this.getMaxHealth() : 1.0F;
+            health.removeModifier(COMBAT_RANK_HEALTH_MODIFIER);
+            damage.removeModifier(COMBAT_RANK_DAMAGE_MODIFIER);
             if (rank > 0) {
                double multiplierBonus = rank == 1 ? 1.0 : 3.0;
-               health.m_22125_(
+               health.addPermanentModifier(
                   new AttributeModifier(COMBAT_RANK_HEALTH_MODIFIER, "Ancient Warfare combat rank health", multiplierBonus, Operation.MULTIPLY_BASE)
                );
-               damage.m_22125_(
+               damage.addPermanentModifier(
                   new AttributeModifier(COMBAT_RANK_DAMAGE_MODIFIER, "Ancient Warfare combat rank damage", multiplierBonus, Operation.MULTIPLY_BASE)
                );
             }
 
-            this.m_21153_(Math.min(this.m_21233_(), Math.max(0.0F, this.m_21233_() * healthRatio)));
+            this.setHealth(Math.min(this.getMaxHealth(), Math.max(0.0F, this.getMaxHealth() * healthRatio)));
          }
       }
    }
 
    protected final Component applyCombatRankName(Component baseName) {
       return (Component)(switch (this.getCombatRank()) {
-         case 1 -> Component.m_237110_("entity.ancientwarfare.combat.rank.elite", new Object[]{baseName});
-         case 2 -> Component.m_237110_("entity.ancientwarfare.combat.rank.ace", new Object[]{baseName});
+         case 1 -> Component.translatable("entity.ancientwarfare.combat.rank.elite", new Object[]{baseName});
+         case 2 -> Component.translatable("entity.ancientwarfare.combat.rank.ace", new Object[]{baseName});
          default -> baseName;
       });
    }
 
    public boolean isShielding() {
-      return (Boolean)this.f_19804_.m_135370_(SHIELDING);
+      return (Boolean)this.entityData.get(SHIELDING);
    }
 
    public void setShielding(boolean shielding) {
       boolean shouldShield = shielding && NpcShielding.hasShield(this);
-      this.f_19804_.m_135381_(SHIELDING, shouldShield);
-      if (!this.m_9236_().f_46443_) {
+      this.entityData.set(SHIELDING, shouldShield);
+      if (!this.level().isClientSide) {
          if (shouldShield) {
-            if (!this.m_6117_() || this.m_7655_() != InteractionHand.OFF_HAND || !NpcShielding.isShield(this.m_21211_())) {
-               this.m_6672_(InteractionHand.OFF_HAND);
+            if (!this.isUsingItem() || this.getUsedItemHand() != InteractionHand.OFF_HAND || !NpcShielding.isShield(this.getUseItem())) {
+               this.startUsingItem(InteractionHand.OFF_HAND);
             }
-         } else if (this.m_6117_() && this.m_7655_() == InteractionHand.OFF_HAND && NpcShielding.isShield(this.m_21211_())) {
-            this.m_5810_();
+         } else if (this.isUsingItem() && this.getUsedItemHand() == InteractionHand.OFF_HAND && NpcShielding.isShield(this.getUseItem())) {
+            this.stopUsingItem();
          }
       }
    }
 
    public int getMeleeAttackAnimationTicks() {
-      return (Integer)this.f_19804_.m_135370_(MELEE_ATTACK_ANIMATION);
+      return (Integer)this.entityData.get(MELEE_ATTACK_ANIMATION);
    }
 
    protected void triggerMeleeAttackAnimation() {
-      if (!this.m_9236_().f_46443_) {
-         this.f_19804_.m_135381_(MELEE_ATTACK_ANIMATION, 12);
+      if (!this.level().isClientSide) {
+         this.entityData.set(MELEE_ATTACK_ANIMATION, 12);
       }
    }
 
-   public boolean m_6469_(DamageSource source, float amount) {
-      LivingEntity responsibleAttacker = source.m_7639_() instanceof LivingEntity livingx
+   public boolean hurt(DamageSource source, float amount) {
+      LivingEntity responsibleAttacker = source.getEntity() instanceof LivingEntity livingx
          ? livingx
-         : (source.m_7640_() instanceof LivingEntity living ? living : null);
-      if (this.isShielding() && source.m_7640_() != null && !bypassesNpcShield(source)) {
-         Entity directAttacker = source.m_7640_();
-         Vec3 sourcePosition = directAttacker.m_20182_();
+         : (source.getDirectEntity() instanceof LivingEntity living ? living : null);
+      if (this.isShielding() && source.getDirectEntity() != null && !bypassesNpcShield(source)) {
+         Entity directAttacker = source.getDirectEntity();
+         Vec3 sourcePosition = directAttacker.position();
          if (NpcShielding.isBlockedFromFront(this, sourcePosition)) {
             if (responsibleAttacker != null) {
-               this.m_6703_(responsibleAttacker);
+               this.setLastHurtByMob(responsibleAttacker);
             }
 
-            Vec3 away = directAttacker.m_20182_().m_82546_(this.m_20182_());
-            Vec3 horizontal = new Vec3(away.f_82479_, 0.0, away.f_82481_);
-            if (horizontal.m_82556_() > 1.0E-4) {
-               horizontal = horizontal.m_82541_();
-               Vec3 current = directAttacker.m_20184_();
+            Vec3 away = directAttacker.position().subtract(this.position());
+            Vec3 horizontal = new Vec3(away.x, 0.0, away.z);
+            if (horizontal.lengthSqr() > 1.0E-4) {
+               horizontal = horizontal.normalize();
+               Vec3 current = directAttacker.getDeltaMovement();
                double rebound = directAttacker instanceof Projectile ? 0.55 : 0.35;
-               directAttacker.m_20334_(horizontal.f_82479_ * rebound, Math.max(current.f_82480_, 0.18), horizontal.f_82481_ * rebound);
-               directAttacker.f_19864_ = true;
+               directAttacker.setDeltaMovement(horizontal.x * rebound, Math.max(current.y, 0.18), horizontal.z * rebound);
+               directAttacker.hurtMarked = true;
             }
 
-            this.m_5496_(SoundEvents.f_12346_, 1.0F, 0.9F + this.f_19796_.m_188501_() * 0.2F);
+            this.playSound(SoundEvents.SHIELD_BLOCK, 1.0F, 0.9F + this.random.nextFloat() * 0.2F);
             return false;
          }
       }
 
-      return super.m_6469_(source, amount);
+      return super.hurt(source, amount);
    }
 
-   public boolean m_21275_(DamageSource source) {
-      return !bypassesNpcShield(source) && super.m_21275_(source);
+   public boolean isDamageSourceBlocked(DamageSource source) {
+      return !bypassesNpcShield(source) && super.isDamageSourceBlocked(source);
    }
 
    private static boolean bypassesNpcShield(DamageSource source) {
-      Entity direct = source.m_7640_();
+      Entity direct = source.getDirectEntity();
       if (direct instanceof BlockGraceSiegeProjectileEntity) {
          return true;
       } else {
-         if (direct instanceof AbstractArrow arrow && arrow.m_36796_() > 0) {
+         if (direct instanceof AbstractArrow arrow && arrow.getPierceLevel() > 0) {
             return true;
          }
 
@@ -433,18 +433,18 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       }
    }
 
-   public boolean m_6779_(LivingEntity target) {
-      return NpcTargeting.canHarm(this, target) && super.m_6779_(target);
+   public boolean canAttack(LivingEntity target) {
+      return NpcTargeting.canHarm(this, target) && super.canAttack(target);
    }
 
-   public void m_6710_(LivingEntity target) {
-      super.m_6710_(target != null && !NpcTargeting.canHarm(this, target) ? null : target);
+   public void setTarget(LivingEntity target) {
+      super.setTarget(target != null && !NpcTargeting.canHarm(this, target) ? null : target);
    }
 
-   public boolean m_7327_(Entity target) {
+   public boolean doHurtTarget(Entity target) {
       if (NpcTargeting.canHarm(this, target) && this.hasMeleeLineOfSight(target)) {
-         boolean hit = super.m_7327_(target);
-         if (hit && this instanceof FactionNpcEntity factionNpc && this.f_19796_.m_188501_() < 0.2F) {
+         boolean hit = super.doHurtTarget(target);
+         if (hit && this instanceof FactionNpcEntity factionNpc && this.random.nextFloat() < 0.2F) {
             NpcVoiceSounds.playFactionAttack(factionNpc);
          }
 
@@ -455,24 +455,24 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    }
 
    public final boolean hasMeleeLineOfSight(Entity target) {
-      if (target != null && target.m_6084_()) {
-         AABB ownBox = this.m_20191_();
-         AABB targetBox = target.m_20191_();
-         if (ownBox.m_82400_(0.05).m_82381_(targetBox)) {
+      if (target != null && target.isAlive()) {
+         AABB ownBox = this.getBoundingBox();
+         AABB targetBox = target.getBoundingBox();
+         if (ownBox.inflate(0.05).intersects(targetBox)) {
             return true;
          } else {
-            Vec3 start = this.m_20299_(1.0F);
-            double centerX = (targetBox.f_82288_ + targetBox.f_82291_) * 0.5;
-            double centerZ = (targetBox.f_82290_ + targetBox.f_82293_) * 0.5;
-            double height = Math.max(0.1, targetBox.f_82292_ - targetBox.f_82289_);
+            Vec3 start = this.getEyePosition(1.0F);
+            double centerX = (targetBox.minX + targetBox.maxX) * 0.5;
+            double centerZ = (targetBox.minZ + targetBox.maxZ) * 0.5;
+            double height = Math.max(0.1, targetBox.maxY - targetBox.minY);
             Vec3[] samples = new Vec3[]{
-               target instanceof LivingEntity living ? living.m_20299_(1.0F) : new Vec3(centerX, targetBox.f_82289_ + height * 0.75, centerZ),
-               new Vec3(centerX, targetBox.f_82289_ + height * 0.5, centerZ),
-               new Vec3(centerX, targetBox.f_82289_ + height * 0.8, centerZ)
+               target instanceof LivingEntity living ? living.getEyePosition(1.0F) : new Vec3(centerX, targetBox.minY + height * 0.75, centerZ),
+               new Vec3(centerX, targetBox.minY + height * 0.5, centerZ),
+               new Vec3(centerX, targetBox.minY + height * 0.8, centerZ)
             };
 
             for (Vec3 end : samples) {
-               if (this.m_9236_().m_45547_(new ClipContext(start, end, Block.COLLIDER, Fluid.NONE, this)).m_6662_() == Type.MISS) {
+               if (this.level().clip(new ClipContext(start, end, Block.COLLIDER, Fluid.NONE, this)).getType() == Type.MISS) {
                   return true;
                }
             }
@@ -484,15 +484,15 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       }
    }
 
-   protected SoundEvent m_7975_(DamageSource source) {
+   protected SoundEvent getHurtSound(DamageSource source) {
       return NpcVoiceSounds.hurt(this);
    }
 
-   protected SoundEvent m_5592_() {
+   protected SoundEvent getDeathSound() {
       return NpcVoiceSounds.death(this);
    }
 
-   public Component m_5677_() {
-      return Component.m_237115_("entity.ancientwarfare." + this.getNpcType() + "." + this.getNpcSubtype());
+   public Component getTypeName() {
+      return Component.translatable("entity.ancientwarfare." + this.getNpcType() + "." + this.getNpcSubtype());
    }
 }

@@ -32,11 +32,11 @@ public final class ForgeFactionEvents {
 
    @SubscribeEvent
    public static void onFactionNpcDeath(LivingDeathEvent event) {
-      if (event.getEntity() instanceof FactionNpcEntity npc && npc.m_9236_() instanceof ServerLevel serverLevel) {
+      if (event.getEntity() instanceof FactionNpcEntity npc && npc.level() instanceof ServerLevel serverLevel) {
          generateConfiguredLoot(npc, serverLevel, event.getSource());
-         if (event.getSource().m_7639_() instanceof Player player) {
+         if (event.getSource().getEntity() instanceof Player player) {
             String faction = npc.getFactionName();
-            FactionStandingData.get(serverLevel).adjustStanding(player.m_20148_(), faction, FactionRegistry.get(faction).killStandingChange());
+            FactionStandingData.get(serverLevel).adjustStanding(player.getUUID(), faction, FactionRegistry.get(faction).killStandingChange());
          }
 
          return;
@@ -46,21 +46,21 @@ public final class ForgeFactionEvents {
    private static void generateConfiguredLoot(FactionNpcEntity npc, ServerLevel level, DamageSource damageSource) {
       FactionNpcRole role = FactionNpcRole.byId(npc.getNpcSubtype()).orElse(FactionNpcRole.SOLDIER);
       ResourceLocation tableId = FactionNpcDefaultsRegistry.lootTable(npc.getFactionName(), role).orElse(null);
-      if (tableId != null && !tableId.equals(ResourceLocation.m_135820_("minecraft:empty"))) {
-         LootTable table = level.m_7654_().m_278653_().m_278676_(tableId);
+      if (tableId != null && !tableId.equals(ResourceLocation.tryParse("minecraft:empty"))) {
+         LootTable table = level.getServer().getLootData().getLootTable(tableId);
          Builder builder = new Builder(level)
-            .m_287286_(LootContextParams.f_81460_, npc.m_20182_())
-            .m_287286_(LootContextParams.f_81455_, npc)
-            .m_287286_(LootContextParams.f_81457_, damageSource);
-         LootParams params = builder.m_287235_(LootContextParamSets.f_81415_);
-         ObjectListIterator var8 = table.m_287195_(params).iterator();
+            .withParameter(LootContextParams.ORIGIN, npc.position())
+            .withParameter(LootContextParams.THIS_ENTITY, npc)
+            .withParameter(LootContextParams.DAMAGE_SOURCE, damageSource);
+         LootParams params = builder.create(LootContextParamSets.ENTITY);
+         ObjectListIterator var8 = table.getRandomItems(params).iterator();
 
          while (var8.hasNext()) {
             ItemStack stack = (ItemStack)var8.next();
-            if (!stack.m_41619_()) {
-               ItemEntity item = new ItemEntity(level, npc.m_20185_(), npc.m_20186_() + 0.2, npc.m_20189_(), stack);
-               item.m_32060_();
-               level.m_7967_(item);
+            if (!stack.isEmpty()) {
+               ItemEntity item = new ItemEntity(level, npc.getX(), npc.getY() + 0.2, npc.getZ(), stack);
+               item.setDefaultPickUpDelay();
+               level.addFreshEntity(item);
             }
          }
       }

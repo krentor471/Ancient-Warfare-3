@@ -17,7 +17,7 @@ public class LegacyCheckbox extends AbstractButton {
       this.onToggle = onToggle;
    }
 
-   public void m_5691_() {
+   public void onPress() {
       this.checked = !this.checked;
       this.onToggle.onToggle(this.checked);
    }
@@ -26,20 +26,20 @@ public class LegacyCheckbox extends AbstractButton {
       this.checked = checked;
    }
 
-   protected void m_87963_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+   protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
       RenderSystem.enableBlend();
-      int stateY = this.f_93623_ ? (this.m_198029_() ? 200 : 160) : 120;
+      int stateY = this.active ? (this.isHoveredOrFocused() ? 200 : 160) : 120;
       LegacyGuiStyle.quarteredTexture(
-         graphics, LegacyGuiStyle.WIDGETS, this.m_252754_(), this.m_252907_(), this.f_93618_, this.f_93619_, this.checked ? 40 : 0, stateY, 40, 40
+         graphics, LegacyGuiStyle.WIDGETS, this.getX(), this.getY(), this.width, this.height, this.checked ? 40 : 0, stateY, 40, 40
       );
-      graphics.m_280614_(
-         Minecraft.m_91087_().f_91062_, this.m_6035_(), this.m_252754_() + this.f_93618_ + 2, this.m_252907_() + Math.max(0, (this.f_93619_ - 8) / 2), -1, true
+      graphics.drawString(
+         Minecraft.getInstance().font, this.getMessage(), this.getX() + this.width + 2, this.getY() + Math.max(0, (this.height - 8) / 2), -1, true
       );
       RenderSystem.disableBlend();
    }
 
-   protected void m_168797_(NarrationElementOutput output) {
-      this.m_168802_(output);
+   protected void updateWidgetNarration(NarrationElementOutput output) {
+      this.defaultButtonNarrationText(output);
    }
 
    @FunctionalInterface

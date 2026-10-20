@@ -30,7 +30,7 @@ public class TradeOrderMenu extends AbstractContainerMenu {
    }
 
    public TradeOrderMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buffer) {
-      this(containerId, playerInventory, (InteractionHand)buffer.m_130066_(InteractionHand.class), buffer.readInt());
+      this(containerId, playerInventory, (InteractionHand)buffer.readEnum(InteractionHand.class), buffer.readInt());
    }
 
    public TradeOrderMenu(int containerId, Inventory playerInventory, InteractionHand hand, int traderEntityId) {
@@ -43,11 +43,11 @@ public class TradeOrderMenu extends AbstractContainerMenu {
 
    public ItemStack getTradeOrderStack() {
       if (this.traderEntityId >= 0) {
-         return this.playerInventory.f_35978_.m_9236_().m_6815_(this.traderEntityId) instanceof TraderNpcEntity trader
+         return this.playerInventory.player.level().getEntity(this.traderEntityId) instanceof TraderNpcEntity trader
             ? trader.getOrdersStack()
-            : ItemStack.f_41583_;
+            : ItemStack.EMPTY;
       } else {
-         return this.playerInventory.f_35978_.m_21120_(this.hand);
+         return this.playerInventory.player.getItemInHand(this.hand);
       }
    }
 
@@ -62,9 +62,9 @@ public class TradeOrderMenu extends AbstractContainerMenu {
    public BlockPos getRouteTarget() {
       return TradeOrderData.getRouteTarget(this.getTradeOrderStack())
          .orElseGet(
-            () -> (this.traderEntityId < 0 ? null : this.playerInventory.f_35978_.m_9236_().m_6815_(this.traderEntityId)) instanceof TraderNpcEntity trader
-                  ? trader.m_20183_()
-                  : this.playerInventory.f_35978_.m_20183_()
+            () -> (this.traderEntityId < 0 ? null : this.playerInventory.player.level().getEntity(this.traderEntityId)) instanceof TraderNpcEntity trader
+                  ? trader.blockPosition()
+                  : this.playerInventory.player.blockPosition()
          );
    }
 
@@ -72,7 +72,7 @@ public class TradeOrderMenu extends AbstractContainerMenu {
       return TradeOrderData.getTrades(this.getTradeOrderStack());
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       ItemStack stack = this.getTradeOrderStack();
       if (!AWCoreRegistryAccess.is(stack, AWCoreIds.TRADE_ORDER)) {
          return false;
@@ -80,10 +80,10 @@ public class TradeOrderMenu extends AbstractContainerMenu {
          return TradeOrderData.addTrade(stack);
       } else if (id >= 1000 && id < 2000) {
          int encoded = id - 1000;
-         return TradeOrderData.setTradeSlot(stack, encoded / 9, false, encoded % 9, this.m_142621_());
+         return TradeOrderData.setTradeSlot(stack, encoded / 9, false, encoded % 9, this.getCarried());
       } else if (id >= 2000) {
          int encoded = id - 2000;
-         return TradeOrderData.setTradeSlot(stack, encoded / 9, true, encoded % 9, this.m_142621_());
+         return TradeOrderData.setTradeSlot(stack, encoded / 9, true, encoded % 9, this.getCarried());
       } else if (id >= 300) {
          return TradeOrderData.moveTradeDown(stack, id - 300);
       } else if (id >= 200) {
@@ -93,24 +93,24 @@ public class TradeOrderMenu extends AbstractContainerMenu {
       }
    }
 
-   public boolean m_6875_(Player player) {
+   public boolean stillValid(Player player) {
       if (this.traderEntityId >= 0) {
-         if (player.m_9236_().m_6815_(this.traderEntityId) instanceof TraderNpcEntity trader
-            && trader.m_6084_()
+         if (player.level().getEntity(this.traderEntityId) instanceof TraderNpcEntity trader
+            && trader.isAlive()
             && trader.hasCommandPermission(player)
-            && trader.m_20280_(player) < 64.0
+            && trader.distanceToSqr(player) < 64.0
             && AWCoreRegistryAccess.is(trader.getOrdersStack(), AWCoreIds.TRADE_ORDER)) {
             return true;
          }
 
          return false;
       } else {
-         return player.m_21120_(this.hand) == this.getTradeOrderStack() && AWCoreRegistryAccess.is(this.getTradeOrderStack(), AWCoreIds.TRADE_ORDER);
+         return player.getItemInHand(this.hand) == this.getTradeOrderStack() && AWCoreRegistryAccess.is(this.getTradeOrderStack(), AWCoreIds.TRADE_ORDER);
       }
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 
    public static int removeButton(int index) {
@@ -136,12 +136,12 @@ public class TradeOrderMenu extends AbstractContainerMenu {
    private void addPlayerInventorySlots(Inventory inventory, int x, int y) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(inventory, col + row * 9 + 9, x + col * 18, y + row * 18));
+            this.addSlot(new Slot(inventory, col + row * 9 + 9, x + col * 18, y + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(inventory, col, x + col * 18, y + 58));
+         this.addSlot(new Slot(inventory, col, x + col * 18, y + 58));
       }
    }
 }

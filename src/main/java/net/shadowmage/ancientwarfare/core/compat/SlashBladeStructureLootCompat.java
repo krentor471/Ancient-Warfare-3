@@ -39,26 +39,26 @@ public final class SlashBladeStructureLootCompat {
    public static void configure(ChestBlockEntity chest, long seed) {
       if (loaded()) {
          CompoundTag data = AWCorePlatform.blockEntityData(chest);
-         data.m_128379_("AWSlashBladeLootPending", true);
-         data.m_128356_("AWSlashBladeLootSeed", seed);
-         chest.m_6596_();
+         data.putBoolean("AWSlashBladeLootPending", true);
+         data.putLong("AWSlashBladeLootSeed", seed);
+         chest.setChanged();
       }
    }
 
    public static boolean hasPendingLoot(ChestBlockEntity chest) {
-      return AWCorePlatform.blockEntityData(chest).m_128471_("AWSlashBladeLootPending");
+      return AWCorePlatform.blockEntityData(chest).getBoolean("AWSlashBladeLootPending");
    }
 
    public static List<ItemStack> consumeChestLoot(ChestBlockEntity chest) {
       CompoundTag data = AWCorePlatform.blockEntityData(chest);
-      if (!data.m_128471_("AWSlashBladeLootPending")) {
+      if (!data.getBoolean("AWSlashBladeLootPending")) {
          return List.of();
       } else {
-         long seed = data.m_128454_("AWSlashBladeLootSeed");
-         data.m_128473_("AWSlashBladeLootPending");
-         data.m_128473_("AWSlashBladeLootSeed");
-         chest.m_6596_();
-         return chest.m_58904_() instanceof ServerLevel serverLevel ? roll(serverLevel, seed) : List.of();
+         long seed = data.getLong("AWSlashBladeLootSeed");
+         data.remove("AWSlashBladeLootPending");
+         data.remove("AWSlashBladeLootSeed");
+         chest.setChanged();
+         return chest.getLevel() instanceof ServerLevel serverLevel ? roll(serverLevel, seed) : List.of();
       }
    }
 
@@ -66,10 +66,10 @@ public final class SlashBladeStructureLootCompat {
       if (!loaded()) {
          return List.of();
       } else {
-         RandomSource random = RandomSource.m_216335_(seed == 0L ? level.f_46441_.m_188505_() : seed);
+         RandomSource random = RandomSource.create(seed == 0L ? level.random.nextLong() : seed);
          Item tiny = item("proudsoul_tiny");
          Item fragment = item("proudsoul");
-         Item rewardItem = random.m_188501_() < 0.7F ? tiny : fragment;
+         Item rewardItem = random.nextFloat() < 0.7F ? tiny : fragment;
          if (rewardItem == null) {
             rewardItem = tiny != null ? tiny : fragment;
          }
@@ -81,8 +81,8 @@ public final class SlashBladeStructureLootCompat {
 
             for (String path : ENCHANTMENTS) {
                ResourceLocation id = new ResourceLocation("minecraft", path);
-               if (BuiltInRegistries.f_256876_.m_7804_(id)) {
-                  available.add((Enchantment)BuiltInRegistries.f_256876_.m_7745_(id));
+               if (BuiltInRegistries.ENCHANTMENT.containsKey(id)) {
+                  available.add((Enchantment)BuiltInRegistries.ENCHANTMENT.get(id));
                }
             }
 
@@ -90,7 +90,7 @@ public final class SlashBladeStructureLootCompat {
                return List.of();
             } else {
                ItemStack reward = new ItemStack(rewardItem);
-               reward.m_41663_(available.get(random.m_188503_(available.size())), 1);
+               reward.enchant(available.get(random.nextInt(available.size())), 1);
                return List.of(reward);
             }
          }
@@ -99,7 +99,7 @@ public final class SlashBladeStructureLootCompat {
 
    private static Item item(String path) {
       ResourceLocation id = new ResourceLocation("slashblade", path);
-      return BuiltInRegistries.f_257033_.m_7804_(id) ? (Item)BuiltInRegistries.f_257033_.m_7745_(id) : null;
+      return BuiltInRegistries.ITEM.containsKey(id) ? (Item)BuiltInRegistries.ITEM.get(id) : null;
    }
 
    private static boolean loaded() {

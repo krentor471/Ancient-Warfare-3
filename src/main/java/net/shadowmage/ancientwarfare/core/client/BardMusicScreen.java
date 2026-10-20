@@ -32,14 +32,14 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
+   protected void init() {
+      super.init();
       this.rebuildFields();
    }
 
    private void rebuildFields() {
-      this.m_169413_();
-      this.m_7522_(null);
+      this.clearWidgets();
+      this.setFocused(null);
       this.fields.clear();
 
       for (int row = 0; row < 2; row++) {
@@ -57,28 +57,28 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
          this.addNumberField(positions.get(4), "outro", track.outroSilenceSeconds, value -> track.outroSilenceSeconds = value);
          this.addNumberField(positions.get(5), "loops", track.loops, value -> track.loops = value);
          this.addButton(
-            BardMusicScreenLayout.remove(row), Component.m_237113_("X"), Component.m_237115_("guistrings.npc.bard.remove_track"), () -> this.removeTrack(index)
+            BardMusicScreenLayout.remove(row), Component.literal("X"), Component.translatable("guistrings.npc.bard.remove_track"), () -> this.removeTrack(index)
          );
          this.addButton(
             BardMusicScreenLayout.fileButton(row),
-            Component.m_237113_("..."),
-            Component.m_237115_("guistrings.npc.bard.select_file"),
+            Component.literal("..."),
+            Component.translatable("guistrings.npc.bard.select_file"),
             () -> this.toggleFiles(index)
          );
       }
 
-      LegacyTexturedButton add = this.addButton(BardMusicScreenLayout.ADD, Component.m_237115_("guistrings.npc.bard.add_track"), null, this::addTrack);
-      add.f_93623_ = this.tracks.size() < 32;
-      this.addButton(BardMusicScreenLayout.SAVE, Component.m_237115_("guistrings.npc.bard.save"), null, this::save);
-      this.addButton(BardMusicScreenLayout.BACK, Component.m_237115_("guistrings.npc.back"), null, this::m_7379_);
+      LegacyTexturedButton add = this.addButton(BardMusicScreenLayout.ADD, Component.translatable("guistrings.npc.bard.add_track"), null, this::addTrack);
+      add.active = this.tracks.size() < 32;
+      this.addButton(BardMusicScreenLayout.SAVE, Component.translatable("guistrings.npc.bard.save"), null, this::save);
+      this.addButton(BardMusicScreenLayout.BACK, Component.translatable("guistrings.npc.back"), null, this::onClose);
    }
 
    private LegacyTexturedButton addButton(BardMusicScreenLayout.Rect rect, Component label, Component tooltip, Runnable action) {
-      LegacyTexturedButton button = (LegacyTexturedButton)this.m_142416_(
-         new LegacyTexturedButton(this.f_97735_ + rect.x(), this.f_97736_ + rect.y(), rect.width(), rect.height(), label, ignored -> action.run())
+      LegacyTexturedButton button = (LegacyTexturedButton)this.addRenderableWidget(
+         new LegacyTexturedButton(this.leftPos + rect.x(), this.topPos + rect.y(), rect.width(), rect.height(), label, ignored -> action.run())
       );
       if (tooltip != null) {
-         button.m_257544_(Tooltip.m_257550_(tooltip));
+         button.setTooltip(Tooltip.create(tooltip));
       }
 
       return button;
@@ -86,27 +86,27 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
 
    private EditBox input(BardMusicScreenLayout.Rect rect, String key, int maxLength, String value) {
       EditBox box = new EditBox(
-         this.f_96547_,
-         this.f_97735_ + rect.x() + 2,
-         this.f_97736_ + rect.y() + 2,
+         this.font,
+         this.leftPos + rect.x() + 2,
+         this.topPos + rect.y() + 2,
          rect.width() - 4,
          rect.height() - 2,
-         Component.m_237115_("guistrings.npc.bard." + key)
+         Component.translatable("guistrings.npc.bard." + key)
       );
-      box.m_94182_(false);
-      box.m_94199_(maxLength);
-      box.m_94144_(value);
-      this.m_142416_(box);
+      box.setBordered(false);
+      box.setMaxLength(maxLength);
+      box.setValue(value);
+      this.addRenderableWidget(box);
       this.fields.add(box);
       return box;
    }
 
    private void addTextField(BardMusicScreenLayout.Rect rect, String key, String value, BardMusicScreen.StringSetter setter) {
-      this.input(rect, key, 128, value).m_94151_(setter::set);
+      this.input(rect, key, 128, value).setResponder(setter::set);
    }
 
    private void addNumberField(BardMusicScreenLayout.Rect rect, String key, int value, BardMusicScreen.IntSetter setter) {
-      this.input(rect, key, 4, Integer.toString(value)).m_94151_(text -> {
+      this.input(rect, key, 4, Integer.toString(value)).setResponder(text -> {
          try {
             setter.set(Integer.parseInt(text));
          } catch (NumberFormatException var3x) {
@@ -114,22 +114,22 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
       });
    }
 
-   public void m_181908_() {
-      super.m_181908_();
-      this.fields.forEach(EditBox::m_94120_);
+   public void containerTick() {
+      super.containerTick();
+      this.fields.forEach(EditBox::tick);
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
    }
 
    @Override
    protected void renderLegacyBackground(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      this.drawFitted(graphics, this.f_96539_, 8, 8, 304, -1);
+      this.drawFitted(graphics, this.title, 8, 8, 304, -1);
       BardMusicScreenLayout.Rect list = BardMusicScreenLayout.LIST;
-      graphics.m_280262_();
-      graphics.m_280588_(this.f_97735_ + list.x(), this.f_97736_ + list.y(), this.f_97735_ + list.x() + list.width(), this.f_97736_ + list.y() + list.height());
+      graphics.flush();
+      graphics.enableScissor(this.leftPos + list.x(), this.topPos + list.y(), this.leftPos + list.x() + list.width(), this.topPos + list.y() + list.height());
       if (this.tracks.isEmpty()) {
-         this.drawFitted(graphics, Component.m_237115_("guistrings.npc.bard.no_tracks"), 12, 88, 288, -1513240);
+         this.drawFitted(graphics, Component.translatable("guistrings.npc.bard.no_tracks"), 12, 88, 288, -1513240);
       }
 
       for (int row = 0; row < 2; row++) {
@@ -139,7 +139,7 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
          }
 
          int y = BardMusicScreenLayout.trackY(row);
-         this.drawFitted(graphics, Component.m_237113_("#" + (index + 1)), 16, y + 4, 160, -1);
+         this.drawFitted(graphics, Component.literal("#" + (index + 1)), 16, y + 4, 160, -1);
          this.drawFieldLabel(graphics, "file", 10, y + 18, 28);
          this.drawFieldLabel(graphics, "name", 10, y + 42, 28);
          this.drawFieldLabel(graphics, "duration", 190, y + 18, 26);
@@ -148,42 +148,42 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
          this.drawFieldLabel(graphics, "loops", 264, y + 4, 40);
 
          for (BardMusicScreenLayout.Rect field : BardMusicScreenLayout.fields(row)) {
-            graphics.m_280509_(
-               this.f_97735_ + field.x(),
-               this.f_97736_ + field.y(),
-               this.f_97735_ + field.x() + field.width(),
-               this.f_97736_ + field.y() + field.height(),
+            graphics.fill(
+               this.leftPos + field.x(),
+               this.topPos + field.y(),
+               this.leftPos + field.x() + field.width(),
+               this.topPos + field.y() + field.height(),
                -1644826
             );
-            graphics.m_280509_(
-               this.f_97735_ + field.x() + 1,
-               this.f_97736_ + field.y() + 1,
-               this.f_97735_ + field.x() + field.width() - 1,
-               this.f_97736_ + field.y() + field.height() - 1,
+            graphics.fill(
+               this.leftPos + field.x() + 1,
+               this.topPos + field.y() + 1,
+               this.leftPos + field.x() + field.width() - 1,
+               this.topPos + field.y() + field.height() - 1,
                -16777216
             );
          }
 
-         graphics.m_280509_(this.f_97735_ + 10, this.f_97736_ + y + 77, this.f_97735_ + 304, this.f_97736_ + y + 78, -14671840);
+         graphics.fill(this.leftPos + 10, this.topPos + y + 77, this.leftPos + 304, this.topPos + y + 78, -14671840);
       }
 
-      graphics.m_280262_();
-      graphics.m_280618_();
+      graphics.flush();
+      graphics.disableScissor();
       this.drawScrollIndicator(graphics, 306, 26, 160, this.tracks.size(), 2, this.scrollOffset);
-      this.drawFitted(graphics, Component.m_237113_(this.tracks.size() + " / 32"), 98, 206, 74, -1513240);
+      this.drawFitted(graphics, Component.literal(this.tracks.size() + " / 32"), 98, 206, 74, -1513240);
    }
 
    private void drawFieldLabel(GuiGraphics graphics, String key, int x, int y, int width) {
-      this.drawFitted(graphics, Component.m_237115_("guistrings.npc.bard." + key), x, y, width, -1);
+      this.drawFitted(graphics, Component.translatable("guistrings.npc.bard." + key), x, y, width, -1);
    }
 
    private void drawFitted(GuiGraphics graphics, Component text, int x, int y, int width, int color) {
-      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.f_96547_.m_92852_(text)));
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_((float)(this.f_97735_ + x), (float)(this.f_97736_ + y), 0.0F);
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, text, 0, 0, color, false);
-      graphics.m_280168_().m_85849_();
+      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.font.width(text)));
+      graphics.pose().pushPose();
+      graphics.pose().translate((float)(this.leftPos + x), (float)(this.topPos + y), 0.0F);
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, text, 0, 0, color, false);
+      graphics.pose().popPose();
    }
 
    @Override
@@ -191,21 +191,21 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
       if (this.expandedFileRow >= 0) {
          BardMusicScreenLayout.Rect popup = this.popup();
          int selected = BardMusicScreenLayout.fileChoice(
-            popup, (double)(mouseX - this.f_97735_), (double)(mouseY - this.f_97736_), this.fileChoices.size(), this.fileScrollOffset
+            popup, (double)(mouseX - this.leftPos), (double)(mouseY - this.topPos), this.fileChoices.size(), this.fileScrollOffset
          );
-         graphics.m_280262_();
-         graphics.m_280168_().m_85836_();
-         graphics.m_280168_().m_252880_(0.0F, 0.0F, 400.0F);
-         LegacyGuiStyle.background(graphics, this.f_97735_ + popup.x(), this.f_97736_ + popup.y(), popup.width(), popup.height());
-         graphics.m_280262_();
-         graphics.m_280588_(
-            this.f_97735_ + popup.x() + 2,
-            this.f_97736_ + popup.y() + 2,
-            this.f_97735_ + popup.x() + popup.width() - 8,
-            this.f_97736_ + popup.y() + popup.height() - 2
+         graphics.flush();
+         graphics.pose().pushPose();
+         graphics.pose().translate(0.0F, 0.0F, 400.0F);
+         LegacyGuiStyle.background(graphics, this.leftPos + popup.x(), this.topPos + popup.y(), popup.width(), popup.height());
+         graphics.flush();
+         graphics.enableScissor(
+            this.leftPos + popup.x() + 2,
+            this.topPos + popup.y() + 2,
+            this.leftPos + popup.x() + popup.width() - 8,
+            this.topPos + popup.y() + popup.height() - 2
          );
          if (this.fileChoices.isEmpty()) {
-            this.drawFitted(graphics, Component.m_237115_("guistrings.npc.bard.no_audio_files"), popup.x() + 4, popup.y() + 3, popup.width() - 14, -1);
+            this.drawFitted(graphics, Component.translatable("guistrings.npc.bard.no_audio_files"), popup.x() + 4, popup.y() + 3, popup.width() - 14, -1);
          }
 
          int end = Math.min(this.fileChoices.size(), this.fileScrollOffset + 6);
@@ -213,20 +213,20 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
          for (int choice = this.fileScrollOffset; choice < end; choice++) {
             int y = popup.y() + 2 + (choice - this.fileScrollOffset) * 12;
             if (choice == selected) {
-               graphics.m_280509_(
-                  this.f_97735_ + popup.x() + 2, this.f_97736_ + y, this.f_97735_ + popup.x() + popup.width() - 8, this.f_97736_ + y + 12, -8355712
+               graphics.fill(
+                  this.leftPos + popup.x() + 2, this.topPos + y, this.leftPos + popup.x() + popup.width() - 8, this.topPos + y + 12, -8355712
                );
             }
 
-            String text = this.f_96547_.m_92834_(this.fileChoices.get(choice), popup.width() - 16);
-            this.drawFitted(graphics, Component.m_237113_(text), popup.x() + 4, y + 2, popup.width() - 16, -1);
+            String text = this.font.plainSubstrByWidth(this.fileChoices.get(choice), popup.width() - 16);
+            this.drawFitted(graphics, Component.literal(text), popup.x() + 4, y + 2, popup.width() - 16, -1);
          }
 
-         graphics.m_280262_();
-         graphics.m_280618_();
+         graphics.flush();
+         graphics.disableScissor();
          this.drawScrollIndicator(graphics, popup.x() + popup.width() - 6, popup.y() + 2, popup.height() - 4, this.fileChoices.size(), 6, this.fileScrollOffset);
-         graphics.m_280262_();
-         graphics.m_280168_().m_85849_();
+         graphics.flush();
+         graphics.pose().popPose();
       }
    }
 
@@ -234,8 +234,8 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
       if (count > visible) {
          int thumb = Math.max(8, height * visible / count);
          int top = y + (height - thumb) * offset / (count - visible);
-         graphics.m_280509_(this.f_97735_ + x, this.f_97736_ + y, this.f_97735_ + x + 4, this.f_97736_ + y + height, -9408400);
-         graphics.m_280509_(this.f_97735_ + x, this.f_97736_ + top, this.f_97735_ + x + 4, this.f_97736_ + top + thumb, -1644826);
+         graphics.fill(this.leftPos + x, this.topPos + y, this.leftPos + x + 4, this.topPos + y + height, -9408400);
+         graphics.fill(this.leftPos + x, this.topPos + top, this.leftPos + x + 4, this.topPos + top + thumb, -1644826);
       }
    }
 
@@ -256,8 +256,8 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
          this.expandedFileRow = index;
          this.fileChoices = List.copyOf(BardMusicLibrary.availableTracks());
          this.fileScrollOffset = 0;
-         this.m_7522_(null);
-         this.fields.forEach(field -> field.m_93692_(false));
+         this.setFocused(null);
+         this.fields.forEach(field -> field.setFocused(false));
       }
    }
 
@@ -293,16 +293,16 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
       this.rebuildFields();
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
       if (this.expandedFileRow >= 0) {
          BardMusicScreenLayout.Rect popup = this.popup();
-         double x = mouseX - (double)this.f_97735_;
-         double y = mouseY - (double)this.f_97736_;
+         double x = mouseX - (double)this.leftPos;
+         double y = mouseY - (double)this.topPos;
          if (popup.contains(x, y)) {
             if (button == 0) {
                int choice = BardMusicScreenLayout.fileChoice(popup, x, y, this.fileChoices.size(), this.fileScrollOffset);
                if (choice >= 0) {
-                  this.f_96541_.m_91106_().m_120367_(SimpleSoundInstance.m_263171_(SoundEvents.f_12490_, 1.0F));
+                  this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                   this.chooseFile(choice);
                }
             }
@@ -313,20 +313,20 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
             return true;
          }
       } else {
-         return super.m_6375_(mouseX, mouseY, button);
+         return super.mouseClicked(mouseX, mouseY, button);
       }
    }
 
-   public boolean m_6050_(double mouseX, double mouseY, double delta) {
+   public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
       if (this.expandedFileRow >= 0) {
-         if (this.popup().contains(mouseX - (double)this.f_97735_, mouseY - (double)this.f_97736_)) {
+         if (this.popup().contains(mouseX - (double)this.leftPos, mouseY - (double)this.topPos)) {
             this.fileScrollOffset = Math.max(
                0, Math.min(BardMusicScreenLayout.maxFileScroll(this.fileChoices.size()), this.fileScrollOffset - (int)Math.signum(delta))
             );
          }
 
          return true;
-      } else if (BardMusicScreenLayout.LIST.contains(mouseX - (double)this.f_97735_, mouseY - (double)this.f_97736_)) {
+      } else if (BardMusicScreenLayout.LIST.contains(mouseX - (double)this.leftPos, mouseY - (double)this.topPos)) {
          int next = Math.max(0, Math.min(Math.max(0, this.tracks.size() - 2), this.scrollOffset - (int)Math.signum(delta)));
          if (next != this.scrollOffset) {
             this.scrollOffset = next;
@@ -335,13 +335,13 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
 
          return true;
       } else {
-         return super.m_6050_(mouseX, mouseY, delta);
+         return super.mouseScrolled(mouseX, mouseY, delta);
       }
    }
 
-   public boolean m_7933_(int keyCode, int scanCode, int modifiers) {
+   public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
       if (this.expandedFileRow < 0) {
-         return super.m_7933_(keyCode, scanCode, modifiers);
+         return super.keyPressed(keyCode, scanCode, modifiers);
       } else {
          if (keyCode == 256) {
             this.closeFiles();
@@ -355,13 +355,13 @@ public class BardMusicScreen extends LegacyContainerScreen<BardMusicMenu> {
       }
    }
 
-   public boolean m_5534_(char codePoint, int modifiers) {
-      return this.expandedFileRow >= 0 || super.m_5534_(codePoint, modifiers);
+   public boolean charTyped(char codePoint, int modifiers) {
+      return this.expandedFileRow >= 0 || super.charTyped(codePoint, modifiers);
    }
 
    private void save() {
-      AWCorePlatform.setBardTracks(((BardMusicMenu)this.f_97732_).getBardEntityId(), this.tracks.stream().map(BardMusicScreen.MutableTrack::toTrack).toList());
-      this.m_7379_();
+      AWCorePlatform.setBardTracks(((BardMusicMenu)this.menu).getBardEntityId(), this.tracks.stream().map(BardMusicScreen.MutableTrack::toTrack).toList());
+      this.onClose();
    }
 
    private static String stripExtension(String name) {

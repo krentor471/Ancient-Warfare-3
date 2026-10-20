@@ -27,24 +27,24 @@ public final class ForgeRestoredAutomationBlockItem extends RestoredAutomationBl
       consumer.accept(
          new IClientItemExtensions() {
             private final BlockEntityWithoutLevelRenderer renderer = new BlockEntityWithoutLevelRenderer(
-               Minecraft.m_91087_().m_167982_(), Minecraft.m_91087_().m_167973_()
+               Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels()
             ) {
-               public void m_108829_(
+               public void renderByItem(
                   ItemStack stack, ItemDisplayContext context, PoseStack poseStack, MultiBufferSource buffers, int packedLight, int packedOverlay
                ) {
-                  BlockState state = ForgeRestoredAutomationBlockItem.this.m_40614_().m_49966_();
-                  if (ForgeRestoredAutomationBlockItem.this.m_40614_() instanceof EntityBlock entityBlock) {
-                     BlockEntity blockEntity = entityBlock.m_142194_(BlockPos.f_121853_, state);
+                  BlockState state = ForgeRestoredAutomationBlockItem.this.getBlock().defaultBlockState();
+                  if (ForgeRestoredAutomationBlockItem.this.getBlock() instanceof EntityBlock entityBlock) {
+                     BlockEntity blockEntity = entityBlock.newBlockEntity(BlockPos.ZERO, state);
                      if (blockEntity != null) {
-                        poseStack.m_85836_();
-                        if (ForgeRestoredAutomationBlockItem.this.m_40614_() instanceof TorqueGeneratorBlock generator
+                        poseStack.pushPose();
+                        if (ForgeRestoredAutomationBlockItem.this.getBlock() instanceof TorqueGeneratorBlock generator
                            && generator.getKind() == TorqueGeneratorKind.WATERWHEEL) {
-                           poseStack.m_85837_(0.225, 0.205, 0.225);
-                           poseStack.m_85841_(0.55F, 0.55F, 0.55F);
+                           poseStack.translate(0.225, 0.205, 0.225);
+                           poseStack.scale(0.55F, 0.55F, 0.55F);
                         }
 
-                        Minecraft.m_91087_().m_167982_().m_112272_(blockEntity, poseStack, buffers, packedLight, packedOverlay);
-                        poseStack.m_85849_();
+                        Minecraft.getInstance().getBlockEntityRenderDispatcher().renderItem(blockEntity, poseStack, buffers, packedLight, packedOverlay);
+                        poseStack.popPose();
                      }
                   }
                }

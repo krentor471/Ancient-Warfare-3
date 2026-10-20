@@ -33,12 +33,12 @@ public class ChestPushcartGeoModel extends GeoModel<ChestPushcartEntity> {
 
    public void handleAnimations(ChestPushcartEntity animatable, long instanceId, AnimationState<ChestPushcartEntity> state) {
       super.handleAnimations(animatable, instanceId, state);
-      float wheel = Mth.m_14179_(state.getPartialTick(), animatable.wheelRotationPrev, animatable.wheelRotation);
+      float wheel = Mth.lerp(state.getPartialTick(), animatable.wheelRotationPrev, animatable.wheelRotation);
       this.setRotX("FRWheelPivot", wheel);
       this.setRotX("FLWheelPivot", wheel);
       this.setRotX("RRWheelPivot", wheel);
       this.setRotX("RLWheelPivot", wheel);
-      float hitch = animatable.m_20184_().m_165925_() > 4.0E-4 ? 0.0F : 25.0F;
+      float hitch = animatable.getDeltaMovement().horizontalDistanceSqr() > 4.0E-4 ? 0.0F : 25.0F;
       float delta = hitch - 25.0F;
       this.setRotX("cartHitchLeft", delta);
       this.setRotX("cartHitchRight", delta);

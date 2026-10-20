@@ -27,9 +27,9 @@ public final class ForgeFollowerCombatEvents {
    @SubscribeEvent
    public static void onPlayerAttack(AttackEntityEvent event) {
       Player player = event.getEntity();
-      if (player.m_9236_() instanceof ServerLevel level
+      if (player.level() instanceof ServerLevel level
          && event.getTarget() instanceof LivingEntity target
-         && !CommandBatonItem.isAttackMode(player.m_21205_())) {
+         && !CommandBatonItem.isAttackMode(player.getMainHandItem())) {
          alertFollowingSoldiers(level, player, target);
          return;
       }
@@ -37,10 +37,10 @@ public final class ForgeFollowerCombatEvents {
 
    @SubscribeEvent
    public static void onPlayerAttacked(LivingAttackEvent event) {
-      if (event.getEntity() instanceof Player player && player.m_9236_() instanceof ServerLevel level) {
-         LivingEntity attacker = event.getSource().m_7639_() instanceof LivingEntity livingx
+      if (event.getEntity() instanceof Player player && player.level() instanceof ServerLevel level) {
+         LivingEntity attacker = event.getSource().getEntity() instanceof LivingEntity livingx
             ? livingx
-            : (event.getSource().m_7640_() instanceof LivingEntity living ? living : null);
+            : (event.getSource().getDirectEntity() instanceof LivingEntity living ? living : null);
          if (attacker != null) {
             alertFollowingSoldiers(level, player, attacker);
          }
@@ -51,18 +51,18 @@ public final class ForgeFollowerCombatEvents {
 
    private static void alertFollowingSoldiers(ServerLevel level, Player player, LivingEntity target) {
       if (isValidTarget(player, target)) {
-         level.m_6443_(CombatNpcEntity.class, player.m_20191_().m_82400_(96.0), soldier -> isFollowing(soldier, player) && canEngage(soldier, target))
+         level.getEntitiesOfClass(CombatNpcEntity.class, player.getBoundingBox().inflate(96.0), soldier -> isFollowing(soldier, player) && canEngage(soldier, target))
             .forEach(soldier -> {
-               soldier.m_6703_(target);
-               soldier.m_6710_(target);
+               soldier.setLastHurtByMob(target);
+               soldier.setTarget(target);
             });
       }
    }
 
    private static boolean isFollowing(PlayerOwnedNpcEntity soldier, Player player) {
-      return soldier.m_6084_()
+      return soldier.isAlive()
          && soldier.getCurrentCommand() == NpcCommandType.FOLLOW
-         && soldier.getFollowTarget().filter(player.m_20148_()::equals).isPresent();
+         && soldier.getFollowTarget().filter(player.getUUID()::equals).isPresent();
    }
 
    private static boolean isValidTarget(Player player, LivingEntity target) {

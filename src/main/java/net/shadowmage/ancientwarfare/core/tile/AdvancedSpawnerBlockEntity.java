@@ -103,7 +103,7 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
                   && spawner.hasRequiredRedstone(serverLevel)
                   && spawner.hasRequiredLight(serverLevel)) {
                   if (spawner.spawnEntities(serverLevel)) {
-                     serverLevel.m_7471_(pos, false);
+                     serverLevel.removeBlock(pos, false);
                   }
                }
             }
@@ -112,31 +112,31 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
    }
 
    public Component statusMessage() {
-      return this.hasConfiguredSpawn ? Component.m_237113_("One-shot spawner: " + this.entityId) : Component.m_237113_("One-shot spawner: no spawn configured");
+      return this.hasConfiguredSpawn ? Component.literal("One-shot spawner: " + this.entityId) : Component.literal("One-shot spawner: no spawn configured");
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("block.ancientwarfare.advanced_spawner");
+   public Component getDisplayName() {
+      return Component.translatable("block.ancientwarfare.advanced_spawner");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory inventory, Player player) {
-      return new AdvancedSpawnerMenu(containerId, inventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+      return new AdvancedSpawnerMenu(containerId, inventory, this.worldPosition);
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
       this.writeSettingsToTag(tag);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
+   public void load(CompoundTag tag) {
+      super.load(tag);
       this.readSettingsFromTag(tag);
    }
 
    private void readSettingsFromTag(CompoundTag tag) {
-      if (tag.m_128425_("spawnerSettings", 10)) {
-         this.spawnerSettings = tag.m_128469_("spawnerSettings").m_6426_();
+      if (tag.contains("spawnerSettings", 10)) {
+         this.spawnerSettings = tag.getCompound("spawnerSettings").copy();
       } else {
          this.spawnerSettings = new CompoundTag();
       }
@@ -145,13 +145,13 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
    }
 
    private void writeSettingsToTag(CompoundTag tag) {
-      if (!this.spawnerSettings.m_128456_()) {
-         tag.m_128365_("spawnerSettings", this.spawnerSettings.m_6426_());
+      if (!this.spawnerSettings.isEmpty()) {
+         tag.put("spawnerSettings", this.spawnerSettings.copy());
       }
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
       this.writeSettingsToTag(tag);
       return tag;
    }
@@ -162,7 +162,7 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
    private void applySettings(CompoundTag settings) {
@@ -175,23 +175,23 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
       this.spawnDelay = this.nonNegativeOrDefault(settings, "spawnDelay", this.spawnDelay);
       this.playerRange = this.nonNegativeOrDefault(settings, "playerRange", this.playerRange);
       this.mobRange = this.nonNegativeOrDefault(settings, "mobRange", this.mobRange);
-      this.spawnRange = Math.max(0, settings.m_128451_("spawnRange"));
+      this.spawnRange = Math.max(0, settings.getInt("spawnRange"));
       this.maxNearby = this.nonNegativeOrDefault(settings, "maxNearbyMonsters", this.maxNearby);
-      this.spawnYOffset = settings.m_128451_("spawnYOffset");
-      this.lightSensitive = settings.m_128471_("lightSensitive");
-      this.redstoneSensitive = settings.m_128471_("redstoneSensitive");
-      this.redstoneMode = !settings.m_128441_("redstoneMode") || settings.m_128471_("redstoneMode");
-      this.transparent = settings.m_128471_("transparent");
-      this.debugMode = settings.m_128471_("debugMode");
+      this.spawnYOffset = settings.getInt("spawnYOffset");
+      this.lightSensitive = settings.getBoolean("lightSensitive");
+      this.redstoneSensitive = settings.getBoolean("redstoneSensitive");
+      this.redstoneMode = !settings.contains("redstoneMode") || settings.getBoolean("redstoneMode");
+      this.transparent = settings.getBoolean("transparent");
+      this.debugMode = settings.getBoolean("debugMode");
       this.readFirstSpawnSettings(settings).ifPresent(first -> {
-         this.entityId = this.normalizeEntityId(first.m_128461_("entityId"));
+         this.entityId = this.normalizeEntityId(first.getString("entityId"));
          this.minToSpawn = Math.max(1, this.nonNegativeOrDefault(first, "minToSpawn", this.minToSpawn));
          this.maxToSpawn = Math.max(this.minToSpawn, this.nonNegativeOrDefault(first, "maxToSpawn", this.maxToSpawn));
-         this.hasConfiguredSpawn = this.entityId != null && BuiltInRegistries.f_256780_.m_7804_(this.entityId);
-         this.entityNbt = first.m_128461_("entityNbt");
-         if (first.m_128425_("customTag", 10)) {
-            this.customEntityTag = first.m_128469_("customTag").m_6426_();
-            this.factionName = this.customEntityTag.m_128461_("factionName");
+         this.hasConfiguredSpawn = this.entityId != null && BuiltInRegistries.ENTITY_TYPE.containsKey(this.entityId);
+         this.entityNbt = first.getString("entityNbt");
+         if (first.contains("customTag", 10)) {
+            this.customEntityTag = first.getCompound("customTag").copy();
+            this.factionName = this.customEntityTag.getString("factionName");
          }
       });
    }
@@ -220,43 +220,43 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
 
    public void applyConfig(AdvancedSpawnerConfig config) {
       CompoundTag settings = new CompoundTag();
-      settings.m_128405_("minDelay", Math.max(0, config.spawnDelay()));
-      settings.m_128405_("maxDelay", Math.max(0, config.spawnDelay()));
-      settings.m_128405_("spawnDelay", Math.max(0, config.spawnDelay()));
-      settings.m_128405_("playerRange", Math.max(0, config.playerRange()));
-      settings.m_128405_("mobRange", Math.max(0, config.mobRange()));
-      settings.m_128405_("spawnRange", 0);
-      settings.m_128405_("maxNearbyMonsters", Math.max(0, config.maxNearby()));
-      settings.m_128405_("spawnYOffset", config.spawnYOffset());
-      settings.m_128379_("lightSensitive", config.lightSensitive());
-      settings.m_128379_("redstoneSensitive", config.redstoneSensitive());
-      settings.m_128379_("redstoneMode", config.redstoneMode());
-      settings.m_128379_("transparent", config.transparent());
-      settings.m_128379_("debugMode", config.debugMode());
+      settings.putInt("minDelay", Math.max(0, config.spawnDelay()));
+      settings.putInt("maxDelay", Math.max(0, config.spawnDelay()));
+      settings.putInt("spawnDelay", Math.max(0, config.spawnDelay()));
+      settings.putInt("playerRange", Math.max(0, config.playerRange()));
+      settings.putInt("mobRange", Math.max(0, config.mobRange()));
+      settings.putInt("spawnRange", 0);
+      settings.putInt("maxNearbyMonsters", Math.max(0, config.maxNearby()));
+      settings.putInt("spawnYOffset", config.spawnYOffset());
+      settings.putBoolean("lightSensitive", config.lightSensitive());
+      settings.putBoolean("redstoneSensitive", config.redstoneSensitive());
+      settings.putBoolean("redstoneMode", config.redstoneMode());
+      settings.putBoolean("transparent", config.transparent());
+      settings.putBoolean("debugMode", config.debugMode());
       CompoundTag entitySettings = new CompoundTag();
-      entitySettings.m_128359_("entityId", config.entityId().trim());
-      entitySettings.m_128359_("entityNbt", config.entityNbt().trim());
-      entitySettings.m_128405_("minToSpawn", Math.max(1, config.minToSpawn()));
-      entitySettings.m_128405_("maxToSpawn", Math.max(Math.max(1, config.minToSpawn()), config.maxToSpawn()));
+      entitySettings.putString("entityId", config.entityId().trim());
+      entitySettings.putString("entityNbt", config.entityNbt().trim());
+      entitySettings.putInt("minToSpawn", Math.max(1, config.minToSpawn()));
+      entitySettings.putInt("maxToSpawn", Math.max(Math.max(1, config.minToSpawn()), config.maxToSpawn()));
       CompoundTag customTag = new CompoundTag();
       if (!config.factionName().isBlank()) {
-         customTag.m_128359_("factionName", config.factionName().trim());
+         customTag.putString("factionName", config.factionName().trim());
       }
 
-      entitySettings.m_128365_("customTag", customTag);
+      entitySettings.put("customTag", customTag);
       ListTag settingsList = new ListTag();
       settingsList.add(entitySettings);
       CompoundTag group = new CompoundTag();
-      group.m_128405_("groupWeight", 1);
-      group.m_128365_("settingsList", settingsList);
+      group.putInt("groupWeight", 1);
+      group.put("settingsList", settingsList);
       ListTag groups = new ListTag();
       groups.add(group);
-      settings.m_128365_("spawnGroups", groups);
+      settings.put("spawnGroups", groups);
       this.spawnerSettings = settings;
       this.applySettings(this.spawnerSettings);
-      this.m_6596_();
-      if (this.f_58857_ instanceof ServerLevel serverLevel) {
-         serverLevel.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+      this.setChanged();
+      if (this.level instanceof ServerLevel serverLevel) {
+         serverLevel.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 
@@ -264,48 +264,48 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
       try {
          int jsonStart = data.indexOf("JSON:");
          String snbt = jsonStart >= 0 ? data.substring(jsonStart + "JSON:".length()) : data;
-         CompoundTag root = TagParser.m_129359_(snbt);
-         if (!root.m_128425_("teData", 10)) {
+         CompoundTag root = TagParser.parseTag(snbt);
+         if (!root.contains("teData", 10)) {
             return;
          }
 
-         CompoundTag tileData = root.m_128469_("teData");
-         if (!tileData.m_128425_("spawnerSettings", 10)) {
+         CompoundTag tileData = root.getCompound("teData");
+         if (!tileData.contains("spawnerSettings", 10)) {
             return;
          }
 
-         this.spawnerSettings = tileData.m_128469_("spawnerSettings").m_6426_();
+         this.spawnerSettings = tileData.getCompound("spawnerSettings").copy();
          this.applySettings(this.spawnerSettings);
-         this.m_6596_();
-         if (this.f_58857_ instanceof ServerLevel serverLevel) {
-            serverLevel.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+         this.setChanged();
+         if (this.level instanceof ServerLevel serverLevel) {
+            serverLevel.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
          }
       } catch (Exception var8) {
-         AncientWarfareCore.LOG.warn("Unable to read legacy advanced spawner data at {}", this.f_58858_, var8);
+         AncientWarfareCore.LOG.warn("Unable to read legacy advanced spawner data at {}", this.worldPosition, var8);
       }
    }
 
    private Optional<CompoundTag> readFirstSpawnSettings(CompoundTag settings) {
-      if (!settings.m_128425_("spawnGroups", 9)) {
+      if (!settings.contains("spawnGroups", 9)) {
          return Optional.empty();
       } else {
-         ListTag groups = settings.m_128437_("spawnGroups", 10);
+         ListTag groups = settings.getList("spawnGroups", 10);
          if (groups.isEmpty()) {
             return Optional.empty();
          } else {
-            CompoundTag group = groups.m_128728_(0);
-            if (!group.m_128425_("settingsList", 9)) {
+            CompoundTag group = groups.getCompound(0);
+            if (!group.contains("settingsList", 9)) {
                return Optional.empty();
             } else {
-               ListTag settingsList = group.m_128437_("settingsList", 10);
-               return settingsList.isEmpty() ? Optional.empty() : Optional.of(settingsList.m_128728_(0));
+               ListTag settingsList = group.getList("settingsList", 10);
+               return settingsList.isEmpty() ? Optional.empty() : Optional.of(settingsList.getCompound(0));
             }
          }
       }
    }
 
    private int nonNegativeOrDefault(CompoundTag tag, String key, int fallback) {
-      return tag.m_128425_(key, 99) ? Math.max(0, tag.m_128451_(key)) : fallback;
+      return tag.contains(key, 99) ? Math.max(0, tag.getInt(key)) : fallback;
    }
 
    private ResourceLocation normalizeEntityId(String rawId) {
@@ -314,12 +314,12 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
          if (mapped != null) {
             return mapped;
          } else {
-            ResourceLocation id = ResourceLocation.m_135820_(rawId);
+            ResourceLocation id = ResourceLocation.tryParse(rawId);
             if (id == null) {
                return null;
             } else {
                ResourceLocation currentId = LegacyIceAndFireStructureCompat.remapEntity(id);
-               return BuiltInRegistries.f_256780_.m_7804_(currentId) ? currentId : this.legacyFallback(id);
+               return BuiltInRegistries.ENTITY_TYPE.containsKey(currentId) ? currentId : this.legacyFallback(id);
             }
          }
       } else {
@@ -328,7 +328,7 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
    }
 
    private ResourceLocation legacyFallback(ResourceLocation oldId) {
-      String path = oldId.m_135815_().toLowerCase(Locale.ROOT);
+      String path = oldId.getPath().toLowerCase(Locale.ROOT);
       if (containsAny(path, "wizard", "spellcaster", "summoner", "beholder", "lich", "necromancer", "illithid")) {
          return vanilla("evoker");
       } else if (containsAny(path, "goblin", "orc", "pirate", "brigand", "trollager", "inquisitor", "barakoana", "barakoaya")) {
@@ -394,20 +394,20 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
    private boolean hasRequiredPlayer(ServerLevel level) {
       double rangeSquared = (double)this.playerRange * (double)this.playerRange;
       boolean allowCreative = AdvancedSpawnerWorldData.get(level).creativePlayersActivateSpawners();
-      return level.m_6907_()
+      return level.players()
          .stream()
          .anyMatch(
-            player -> (allowCreative || !player.m_7500_())
-                  && !player.m_5833_()
-                  && player.m_6084_()
-                  && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5)
+            player -> (allowCreative || !player.isCreative())
+                  && !player.isSpectator()
+                  && player.isAlive()
+                  && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5)
                      <= rangeSquared
          );
    }
 
    private boolean tooManyNearbyMobs(ServerLevel level) {
       return this.maxNearby > 0 && this.mobRange > 0
-         ? level.m_45976_(Mob.class, new AABB(this.f_58858_).m_82400_((double)this.mobRange)).size() >= this.maxNearby
+         ? level.getEntitiesOfClass(Mob.class, new AABB(this.worldPosition).inflate((double)this.mobRange)).size() >= this.maxNearby
          : false;
    }
 
@@ -415,39 +415,39 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
       if (!this.redstoneSensitive) {
          return true;
       } else {
-         boolean powered = level.m_276867_(this.f_58858_);
+         boolean powered = level.hasNeighborSignal(this.worldPosition);
          return this.redstoneMode == powered;
       }
    }
 
    private boolean hasRequiredLight(ServerLevel level) {
-      return !this.lightSensitive || level.m_46803_(this.f_58858_) <= 7;
+      return !this.lightSensitive || level.getMaxLocalRawBrightness(this.worldPosition) <= 7;
    }
 
    private boolean spawnEntities(ServerLevel level) {
-      if (this.entityId != null && BuiltInRegistries.f_256780_.m_7804_(this.entityId)) {
-         EntityType<?> type = (EntityType<?>)BuiltInRegistries.f_256780_.m_7745_(this.entityId);
-         int count = this.minToSpawn + level.f_46441_.m_188503_(Math.max(1, this.maxToSpawn - this.minToSpawn + 1));
+      if (this.entityId != null && BuiltInRegistries.ENTITY_TYPE.containsKey(this.entityId)) {
+         EntityType<?> type = (EntityType<?>)BuiltInRegistries.ENTITY_TYPE.get(this.entityId);
+         int count = this.minToSpawn + level.random.nextInt(Math.max(1, this.maxToSpawn - this.minToSpawn + 1));
          boolean spawnedAny = false;
 
          for (int i = 0; i < count; i++) {
-            Entity entity = type.m_20615_(level);
+            Entity entity = type.create(level);
             if (entity != null) {
                BlockPos spawnPos = this.randomSpawnPos(level);
-               entity.m_7678_(
-                  (double)spawnPos.m_123341_() + 0.5,
-                  (double)spawnPos.m_123342_(),
-                  (double)spawnPos.m_123343_() + 0.5,
-                  level.f_46441_.m_188501_() * 360.0F,
+               entity.moveTo(
+                  (double)spawnPos.getX() + 0.5,
+                  (double)spawnPos.getY(),
+                  (double)spawnPos.getZ() + 0.5,
+                  level.random.nextFloat() * 360.0F,
                   0.0F
                );
                if (entity instanceof Mob mob) {
-                  mob.m_6518_(level, level.m_6436_(spawnPos), MobSpawnType.SPAWNER, null, null);
+                  mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), MobSpawnType.SPAWNER, null, null);
                }
 
                this.applyEntityNbt(entity);
-               entity.m_7678_(
-                  (double)spawnPos.m_123341_() + 0.5, (double)spawnPos.m_123342_(), (double)spawnPos.m_123343_() + 0.5, entity.m_146908_(), entity.m_146909_()
+               entity.moveTo(
+                  (double)spawnPos.getX() + 0.5, (double)spawnPos.getY(), (double)spawnPos.getZ() + 0.5, entity.getYRot(), entity.getXRot()
                );
                if (entity instanceof Mob) {
                   Mob mob = (Mob)entity;
@@ -455,7 +455,7 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
                      if (mob instanceof FactionNpcEntity factionNpc) {
                         factionNpc.setFactionName(this.factionName);
                      } else {
-                        mob.m_20049_("ancientwarfare:faction=" + this.factionName);
+                        mob.addTag("ancientwarfare:faction=" + this.factionName);
                      }
                   }
                }
@@ -474,17 +474,17 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
    private static boolean spawnEntityWithFactionMount(ServerLevel level, Entity entity) {
       if (entity instanceof FactionNpcEntity factionNpc) {
          Mob mount = createFactionMount(level, factionNpc);
-         if (mount == null || !factionNpc.m_7998_(mount, true)) {
-            return level.m_7967_(entity);
-         } else if (level.m_8860_(mount)) {
+         if (mount == null || !factionNpc.startRiding(mount, true)) {
+            return level.addFreshEntity(entity);
+         } else if (level.tryAddFreshEntityWithPassengers(mount)) {
             return true;
          } else {
-            factionNpc.m_8127_();
-            mount.m_146870_();
-            return level.m_7967_(entity);
+            factionNpc.stopRiding();
+            mount.discard();
+            return level.addFreshEntity(entity);
          }
       } else {
-         return level.m_7967_(entity);
+         return level.addFreshEntity(entity);
       }
    }
 
@@ -493,67 +493,67 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
       if (role != FactionNpcRole.CAVALRY && role != FactionNpcRole.MOUNTED_ARCHER) {
          return null;
       } else {
-         Mob mount = (Mob)FactionNpcDefaultsRegistry.mountType(npc.getFactionName(), role).m_20615_(level);
+         Mob mount = (Mob)FactionNpcDefaultsRegistry.mountType(npc.getFactionName(), role).create(level);
          if (mount == null) {
             return null;
          } else {
             if (mount instanceof AbstractHorse horse) {
-               horse.m_30651_(true);
-               horse.m_30649_(100);
-               horse.m_5853_(SoundSource.NEUTRAL);
+               horse.setTamed(true);
+               horse.setTemper(100);
+               horse.equipSaddle(SoundSource.NEUTRAL);
             }
 
-            AttributeInstance speed = mount.m_21051_(Attributes.f_22279_);
+            AttributeInstance speed = mount.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) {
-               speed.m_22100_(Math.max(speed.m_22115_(), 0.32));
+               speed.setBaseValue(Math.max(speed.getBaseValue(), 0.32));
             }
 
-            mount.m_21557_(false);
-            mount.m_21530_();
-            mount.m_20049_("ancientwarfare:faction=" + npc.getFactionName());
-            mount.m_7678_(npc.m_20185_(), npc.m_20186_(), npc.m_20189_(), npc.m_146908_(), 0.0F);
+            mount.setNoAi(false);
+            mount.setPersistenceRequired();
+            mount.addTag("ancientwarfare:faction=" + npc.getFactionName());
+            mount.moveTo(npc.getX(), npc.getY(), npc.getZ(), npc.getYRot(), 0.0F);
             return mount;
          }
       }
    }
 
    private void applyEntityNbt(Entity entity) {
-      if (!this.entityNbt.isBlank() || !this.customEntityTag.m_128456_()) {
+      if (!this.entityNbt.isBlank() || !this.customEntityTag.isEmpty()) {
          try {
             CompoundTag saved = new CompoundTag();
-            entity.m_20240_(saved);
+            entity.saveWithoutId(saved);
             if (!this.entityNbt.isBlank()) {
-               saved.m_128391_(TagParser.m_129359_(this.entityNbt));
+               saved.merge(TagParser.parseTag(this.entityNbt));
             }
 
-            if (!this.customEntityTag.m_128456_()) {
-               saved.m_128391_(this.customEntityTag.m_6426_());
+            if (!this.customEntityTag.isEmpty()) {
+               saved.merge(this.customEntityTag.copy());
             }
 
             normalizeLegacyCustomName(saved);
-            entity.m_20258_(saved);
+            entity.load(saved);
          } catch (Exception var3) {
-            AncientWarfareCore.LOG.warn("Unable to apply legacy entity NBT for {} at {}", new Object[]{this.entityId, this.f_58858_, var3});
+            AncientWarfareCore.LOG.warn("Unable to apply legacy entity NBT for {} at {}", new Object[]{this.entityId, this.worldPosition, var3});
          }
       }
    }
 
    private static void normalizeLegacyCustomName(CompoundTag tag) {
-      if (tag.m_128425_("CustomName", 8)) {
-         String rawName = tag.m_128461_("CustomName");
+      if (tag.contains("CustomName", 8)) {
+         String rawName = tag.getString("CustomName");
          if (!rawName.isBlank() && !rawName.trim().startsWith("{") && !rawName.trim().startsWith("[")) {
-            tag.m_128359_("CustomName", Serializer.m_130703_(Component.m_237113_(rawName)));
+            tag.putString("CustomName", Serializer.toJson(Component.literal(rawName)));
          }
       }
    }
 
    private BlockPos randomSpawnPos(ServerLevel level) {
       if (this.spawnRange <= 0) {
-         return this.f_58858_.m_7918_(0, this.spawnYOffset, 0);
+         return this.worldPosition.offset(0, this.spawnYOffset, 0);
       } else {
-         int x = level.f_46441_.m_188503_(this.spawnRange * 2 + 1) - this.spawnRange;
-         int z = level.f_46441_.m_188503_(this.spawnRange * 2 + 1) - this.spawnRange;
-         return this.f_58858_.m_7918_(x, this.spawnYOffset, z);
+         int x = level.random.nextInt(this.spawnRange * 2 + 1) - this.spawnRange;
+         int z = level.random.nextInt(this.spawnRange * 2 + 1) - this.spawnRange;
+         return this.worldPosition.offset(x, this.spawnYOffset, z);
       }
    }
 

@@ -53,7 +53,7 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
    private static final String ONLY_MINE_ORES_TAG = "OnlyMineOres";
    private static final int WORK_COST = 100;
    private static final int WORKER_ENERGY_PER_VISIT = 1600;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(50, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(50, ItemStack.EMPTY);
    private BlockPos boundsMin;
    private BlockPos boundsMax;
    private BlockPos current;
@@ -89,7 +89,7 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
 
    @Override
    public boolean hasWork() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
+      if (this.level != null && !this.level.isClientSide) {
          if (this.finished) {
             this.resetCurrent();
          }
@@ -102,12 +102,12 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
          this.storedEnergy = Math.min(
             this.getMaxEnergy(), this.storedEnergy + Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())))
          );
          this.processStoredEnergy();
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -135,20 +135,20 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
 
    private boolean processNextAction() {
       Optional<BlockPos> target = this.findNextMineTarget();
-      if (!target.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!target.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          BlockPos var6 = target.get();
-         BlockState state = this.f_58857_.m_8055_(var6);
+         BlockState state = this.level.getBlockState(var6);
          ArrayList drops = new ArrayList(
-            Block.m_49874_(state, serverLevel, var6, this.f_58857_.m_7702_(var6), null, WorksiteUpgradeHelper.fortuneTool(Items.f_42390_, this, 45, 5))
+            Block.getDrops(state, serverLevel, var6, this.level.getBlockEntity(var6), null, WorksiteUpgradeHelper.fortuneTool(Items.DIAMOND_PICKAXE, this, 45, 5))
          );
          if (!this.canInsertAll(drops)) {
             this.finished = false;
             return false;
          } else {
-            this.f_58857_.m_7731_(var6, Blocks.f_50016_.m_49966_(), 3);
+            this.level.setBlock(var6, Blocks.AIR.defaultBlockState(), 3);
             this.insertOrDrop(var6, drops);
             this.current = this.nextPosition(var6);
-            this.m_6596_();
+            this.setChanged();
             return true;
          }
       } else {
@@ -158,7 +158,7 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
    }
 
    private Optional<BlockPos> findNextMineTarget() {
-      if (this.f_58857_ != null && !this.finished) {
+      if (this.level != null && !this.finished) {
          for (BlockPos cursor = this.normalizeCurrent(); cursor != null; cursor = this.nextPosition(cursor)) {
             if (this.isMineable(cursor)) {
                return Optional.of(cursor);
@@ -172,8 +172,8 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
    }
 
    private boolean isMineable(BlockPos pos) {
-      BlockState state = this.f_58857_.m_8055_(pos);
-      return !state.m_60795_() && !state.m_60713_(Blocks.f_50752_) && state.m_60819_().m_76178_() && (!this.onlyMineOres || AWCorePlatform.isOre(state));
+      BlockState state = this.level.getBlockState(pos);
+      return !state.isAir() && !state.is(Blocks.BEDROCK) && state.getFluidState().isEmpty() && (!this.onlyMineOres || AWCorePlatform.isOre(state));
    }
 
    public boolean onlyMineOres() {
@@ -190,12 +190,12 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
    private BlockPos nextPosition(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      if (pos.m_123341_() < max.m_123341_()) {
-         return pos.m_122029_();
-      } else if (pos.m_123343_() < max.m_123343_()) {
-         return new BlockPos(min.m_123341_(), pos.m_123342_(), pos.m_123343_() + 1);
+      if (pos.getX() < max.getX()) {
+         return pos.east();
+      } else if (pos.getZ() < max.getZ()) {
+         return new BlockPos(min.getX(), pos.getY(), pos.getZ() + 1);
       } else {
-         return pos.m_123342_() > this.f_58857_.m_141937_() ? new BlockPos(min.m_123341_(), pos.m_123342_() - 1, min.m_123343_()) : null;
+         return pos.getY() > this.level.getMinBuildHeight() ? new BlockPos(min.getX(), pos.getY() - 1, min.getZ()) : null;
       }
    }
 
@@ -203,12 +203,12 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
       if (this.current == null
-         || this.current.m_123341_() < min.m_123341_()
-         || this.current.m_123341_() > max.m_123341_()
-         || this.current.m_123343_() < min.m_123343_()
-         || this.current.m_123343_() > max.m_123343_()
-         || this.current.m_123342_() > max.m_123342_()
-         || this.current.m_123342_() < this.f_58857_.m_141937_()) {
+         || this.current.getX() < min.getX()
+         || this.current.getX() > max.getX()
+         || this.current.getZ() < min.getZ()
+         || this.current.getZ() > max.getZ()
+         || this.current.getY() > max.getY()
+         || this.current.getY() < this.level.getMinBuildHeight()) {
          this.resetCurrent();
       }
 
@@ -218,20 +218,20 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
    private void resetCurrent() {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      this.current = new BlockPos(min.m_123341_(), max.m_123342_(), min.m_123343_());
+      this.current = new BlockPos(min.getX(), max.getY(), min.getZ());
       this.finished = false;
    }
 
    private boolean canInsertAll(List<ItemStack> drops) {
-      NonNullList<ItemStack> simulated = NonNullList.m_122780_(45, ItemStack.f_41583_);
+      NonNullList<ItemStack> simulated = NonNullList.withSize(45, ItemStack.EMPTY);
 
       for (int slot = 0; slot < 45; slot++) {
-         simulated.set(slot, ((ItemStack)this.items.get(0 + slot)).m_41777_());
+         simulated.set(slot, ((ItemStack)this.items.get(0 + slot)).copy());
       }
 
       for (ItemStack drop : drops) {
-         ItemStack remaining = this.insertIntoList(drop.m_41777_(), simulated);
-         if (!remaining.m_41619_()) {
+         ItemStack remaining = this.insertIntoList(drop.copy(), simulated);
+         if (!remaining.isEmpty()) {
             return false;
          }
       }
@@ -240,15 +240,15 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
    }
 
    private ItemStack insertIntoList(ItemStack stack, NonNullList<ItemStack> target) {
-      for (int slot = 0; slot < target.size() && !stack.m_41619_(); slot++) {
+      for (int slot = 0; slot < target.size() && !stack.isEmpty(); slot++) {
          ItemStack existing = (ItemStack)target.get(slot);
-         if (existing.m_41619_()) {
-            target.set(slot, stack.m_41777_());
-            stack.m_41764_(0);
-         } else if (ItemStack.m_150942_(existing, stack) && existing.m_41613_() < existing.m_41741_()) {
-            int moved = Math.min(stack.m_41613_(), existing.m_41741_() - existing.m_41613_());
-            existing.m_41769_(moved);
-            stack.m_41774_(moved);
+         if (existing.isEmpty()) {
+            target.set(slot, stack.copy());
+            stack.setCount(0);
+         } else if (ItemStack.isSameItemSameTags(existing, stack) && existing.getCount() < existing.getMaxStackSize()) {
+            int moved = Math.min(stack.getCount(), existing.getMaxStackSize() - existing.getCount());
+            existing.grow(moved);
+            stack.shrink(moved);
          }
       }
 
@@ -257,40 +257,40 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
 
    private void insertOrDrop(BlockPos pos, List<ItemStack> drops) {
       for (ItemStack drop : drops) {
-         if (!drop.m_41619_()) {
+         if (!drop.isEmpty()) {
             ItemStack remaining = this.insertStack(drop);
-            if (!remaining.m_41619_()) {
-               Block.m_49840_(this.f_58857_, pos, remaining);
+            if (!remaining.isEmpty()) {
+               Block.popResource(this.level, pos, remaining);
             }
          }
       }
    }
 
    private ItemStack insertStack(ItemStack stack) {
-      return this.insertIntoRange(stack.m_41777_(), 0, 45);
+      return this.insertIntoRange(stack.copy(), 0, 45);
    }
 
    private ItemStack insertIntoRange(ItemStack stack, int start, int count) {
-      for (int slot = start; slot < start + count && !stack.m_41619_(); slot++) {
+      for (int slot = start; slot < start + count && !stack.isEmpty(); slot++) {
          ItemStack existing = (ItemStack)this.items.get(slot);
-         if (existing.m_41619_()) {
-            this.items.set(slot, stack.m_41777_());
-            stack.m_41764_(0);
-         } else if (ItemStack.m_150942_(existing, stack) && existing.m_41613_() < existing.m_41741_()) {
-            int moved = Math.min(stack.m_41613_(), existing.m_41741_() - existing.m_41613_());
-            existing.m_41769_(moved);
-            stack.m_41774_(moved);
+         if (existing.isEmpty()) {
+            this.items.set(slot, stack.copy());
+            stack.setCount(0);
+         } else if (ItemStack.isSameItemSameTags(existing, stack) && existing.getCount() < existing.getMaxStackSize()) {
+            int moved = Math.min(stack.getCount(), existing.getMaxStackSize() - existing.getCount());
+            existing.grow(moved);
+            stack.shrink(moved);
          }
       }
 
-      this.m_6596_();
+      this.setChanged();
       return stack;
    }
 
    @Override
    public BlockPos getBoundsMin() {
       if (this.boundsMin == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMin;
@@ -299,7 +299,7 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
    @Override
    public BlockPos getBoundsMax() {
       if (this.boundsMax == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMax;
@@ -311,13 +311,13 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
 
    public void adjustBounds(int minXDelta, int maxXDelta, int minZDelta, int maxZDelta) {
       WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjust(
-         this.f_58858_, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
+         this.worldPosition, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
       );
       if (adjusted != null) {
          BlockPos min = adjusted.min();
          BlockPos max = adjusted.max();
-         this.boundsMin = new BlockPos(min.m_123341_(), this.f_58857_ == null ? min.m_123342_() : this.f_58857_.m_141937_(), min.m_123343_());
-         this.boundsMax = new BlockPos(max.m_123341_(), this.f_58858_.m_123342_() - 1, max.m_123343_());
+         this.boundsMin = new BlockPos(min.getX(), this.level == null ? min.getY() : this.level.getMinBuildHeight(), min.getZ());
+         this.boundsMax = new BlockPos(max.getX(), this.worldPosition.getY() - 1, max.getZ());
          this.resetCurrent();
          this.saveAndSyncWorksiteState();
       }
@@ -327,69 +327,69 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
    public boolean containsWorkTarget(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_()
-         && pos.m_123342_() >= min.m_123342_()
-         && pos.m_123342_() <= max.m_123342_();
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ()
+         && pos.getY() >= min.getY()
+         && pos.getY() <= max.getY();
    }
 
    private void resetDefaultBounds(BlockPos pos, BlockState state) {
-      Direction facing = state.m_61138_(AutomationWorksiteBlock.FACING)
-         ? ((Direction)state.m_61143_(AutomationWorksiteBlock.FACING)).m_122424_()
+      Direction facing = state.hasProperty(AutomationWorksiteBlock.FACING)
+         ? ((Direction)state.getValue(AutomationWorksiteBlock.FACING)).getOpposite()
          : Direction.SOUTH;
-      BlockPos near = pos.m_121945_(facing);
-      BlockPos far = pos.m_5484_(facing, 5);
-      int minY = this.f_58857_ == null ? pos.m_123342_() - 1 : this.f_58857_.m_141937_();
-      int maxY = pos.m_123342_() - 1;
-      if (facing.m_122434_() == Axis.Z) {
-         this.boundsMin = new BlockPos(pos.m_123341_() - 2, minY, Math.min(near.m_123343_(), far.m_123343_()));
-         this.boundsMax = new BlockPos(pos.m_123341_() + 2, maxY, Math.max(near.m_123343_(), far.m_123343_()));
+      BlockPos near = pos.relative(facing);
+      BlockPos far = pos.relative(facing, 5);
+      int minY = this.level == null ? pos.getY() - 1 : this.level.getMinBuildHeight();
+      int maxY = pos.getY() - 1;
+      if (facing.getAxis() == Axis.Z) {
+         this.boundsMin = new BlockPos(pos.getX() - 2, minY, Math.min(near.getZ(), far.getZ()));
+         this.boundsMax = new BlockPos(pos.getX() + 2, maxY, Math.max(near.getZ(), far.getZ()));
       } else {
-         this.boundsMin = new BlockPos(Math.min(near.m_123341_(), far.m_123341_()), minY, pos.m_123343_() - 2);
-         this.boundsMax = new BlockPos(Math.max(near.m_123341_(), far.m_123341_()), maxY, pos.m_123343_() + 2);
+         this.boundsMin = new BlockPos(Math.min(near.getX(), far.getX()), minY, pos.getZ() - 2);
+         this.boundsMax = new BlockPos(Math.max(near.getX(), far.getX()), maxY, pos.getZ() + 2);
       }
    }
 
    @Override
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128356_("Current", this.normalizeCurrent().m_121878_());
-      tag.m_128379_("Finished", this.finished);
-      tag.m_128379_("OnlyMineOres", this.onlyMineOres);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putLong("Current", this.normalizeCurrent().asLong());
+      tag.putBoolean("Finished", this.finished);
+      tag.putBoolean("OnlyMineOres", this.onlyMineOres);
    }
 
    @Override
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      if (tag.m_128441_("BoundsMin")) {
-         this.boundsMin = BlockPos.m_122022_(tag.m_128454_("BoundsMin"));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      if (tag.contains("BoundsMin")) {
+         this.boundsMin = BlockPos.of(tag.getLong("BoundsMin"));
       }
 
-      if (tag.m_128441_("BoundsMax")) {
-         this.boundsMax = BlockPos.m_122022_(tag.m_128454_("BoundsMax"));
+      if (tag.contains("BoundsMax")) {
+         this.boundsMax = BlockPos.of(tag.getLong("BoundsMax"));
       }
 
-      if (tag.m_128441_("Current")) {
-         this.current = BlockPos.m_122022_(tag.m_128454_("Current"));
+      if (tag.contains("Current")) {
+         this.current = BlockPos.of(tag.getLong("Current"));
       }
 
-      this.finished = tag.m_128471_("Finished");
-      this.onlyMineOres = tag.m_128471_("OnlyMineOres");
+      this.finished = tag.getBoolean("Finished");
+      this.onlyMineOres = tag.getBoolean("OnlyMineOres");
       this.normalizeLoadedBounds();
    }
 
    private void normalizeLoadedBounds() {
-      if (this.f_58857_ == null || !this.f_58857_.f_46443_) {
+      if (this.level == null || !this.level.isClientSide) {
          if (this.boundsMin != null && this.boundsMax != null && !WorksiteBoundsGeometry.hasValidSize(this.boundsMin, this.boundsMax, this.getMaxBoundsWidth())
             )
           {
-            this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+            this.resetDefaultBounds(this.worldPosition, this.getBlockState());
             this.resetCurrent();
          }
       }
@@ -397,82 +397,82 @@ public class QuarryBlockEntity extends BasicWorksiteBlockEntity implements Conta
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128379_("OnlyMineOres", this.onlyMineOres);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putBoolean("OnlyMineOres", this.onlyMineOres);
       return tag;
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 50;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return this.isValidSlot(slot) ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return this.isValidSlot(slot) ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         this.m_6596_();
+         this.setChanged();
          if (slot >= 45 && slot < 50) {
             this.refreshChunkLoading();
          }
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_(this.getDescriptionId());
+   public Component getDisplayName() {
+      return Component.translatable(this.getDescriptionId());
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new QuarryMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new QuarryMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createBoundsMenu(int containerId, Inventory playerInventory) {
-      return new QuarryBoundsMenu(containerId, playerInventory, this.f_58858_);
+      return new QuarryBoundsMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createControlMenu(int containerId, Inventory playerInventory) {
-      return new QuarryControlMenu(containerId, playerInventory, this.f_58858_);
+      return new QuarryControlMenu(containerId, playerInventory, this.worldPosition);
    }
 
    @Override

@@ -14,47 +14,47 @@ import net.minecraft.world.phys.Vec3;
 import net.shadowmage.ancientwarfare.core.item.BallistaBoatItem;
 
 public class BallistaBoatEntity extends BallistaMobileEntity {
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.ballista_boat");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.ballista_boat");
    private static final double MUZZLE_FORWARD_OFFSET = 1.4375;
    private static final double MUZZLE_HEIGHT = 1.675;
 
    public BallistaBoatEntity(EntityType<? extends BallistaBoatEntity> type, Level level) {
       super(type, level);
-      this.m_20242_(true);
+      this.setNoGravity(true);
    }
 
    @Override
    protected void updateVehicleMotion() {
-      boolean inWater = this.m_20069_() || this.m_9236_().m_6425_(this.m_20183_()).m_205070_(FluidTags.f_13131_);
-      LivingEntity rider = this.m_6688_();
+      boolean inWater = this.isInWater() || this.level().getFluidState(this.blockPosition()).is(FluidTags.WATER);
+      LivingEntity rider = this.getControllingPassenger();
       double yMotion = inWater ? 0.0 : -0.04;
-      if (this.m_20160_() && rider != null && inWater) {
+      if (this.isVehicle() && rider != null && inWater) {
          if (Math.abs(this.inputTurn) > 1.0E-4F) {
-            this.m_146922_(this.m_146908_() - this.inputTurn * 3.0F);
-            this.m_5616_(this.m_146908_());
-            this.m_5618_(this.m_146908_());
+            this.setYRot(this.getYRot() - this.inputTurn * 3.0F);
+            this.setYHeadRot(this.getYRot());
+            this.setYBodyRot(this.getYRot());
          }
 
-         this.f_19859_ = this.m_146908_();
+         this.yRotO = this.getYRot();
          if (Math.abs(this.inputForward) > 1.0E-4F) {
             double speed = this.inputForward > 0.0F ? 0.14 : 0.06;
-            double yaw = Math.toRadians((double)this.m_146908_());
+            double yaw = Math.toRadians((double)this.getYRot());
             double motion = (double)this.inputForward * speed;
-            this.m_20334_(-Math.sin(yaw) * motion, yMotion, Math.cos(yaw) * motion);
-            this.f_19812_ = true;
+            this.setDeltaMovement(-Math.sin(yaw) * motion, yMotion, Math.cos(yaw) * motion);
+            this.hasImpulse = true;
          } else {
-            this.m_20256_(this.m_20184_().m_82542_(0.72, 0.0, 0.72));
+            this.setDeltaMovement(this.getDeltaMovement().multiply(0.72, 0.0, 0.72));
          }
       } else {
-         this.m_20256_(this.m_20184_().m_82542_(0.8, 1.0, 0.8).m_82520_(0.0, yMotion, 0.0));
+         this.setDeltaMovement(this.getDeltaMovement().multiply(0.8, 1.0, 0.8).add(0.0, yMotion, 0.0));
       }
 
-      double startX = this.m_20185_();
-      double startZ = this.m_20189_();
-      this.m_6478_(MoverType.SELF, this.m_20184_());
-      this.m_20256_(this.m_20184_().m_82542_(inWater ? 0.92 : 0.7, inWater ? 0.0 : 0.8, inWater ? 0.92 : 0.7));
-      double yaw = Math.toRadians((double)this.m_146908_());
-      double forwardDistance = (this.m_20185_() - startX) * -Math.sin(yaw) + (this.m_20189_() - startZ) * Math.cos(yaw);
+      double startX = this.getX();
+      double startZ = this.getZ();
+      this.move(MoverType.SELF, this.getDeltaMovement());
+      this.setDeltaMovement(this.getDeltaMovement().multiply(inWater ? 0.92 : 0.7, inWater ? 0.0 : 0.8, inWater ? 0.92 : 0.7));
+      double yaw = Math.toRadians((double)this.getYRot());
+      double forwardDistance = (this.getX() - startX) * -Math.sin(yaw) + (this.getZ() - startZ) * Math.cos(yaw);
       this.wheelRotation += (float)(forwardDistance * 110.0);
    }
 
@@ -79,10 +79,10 @@ public class BallistaBoatEntity extends BallistaMobileEntity {
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         Vec3 offset = this.getPassengerOffset().m_82524_(-this.m_146908_() * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         Vec3 offset = this.getPassengerOffset().yRot(-this.getYRot() * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -91,7 +91,7 @@ public class BallistaBoatEntity extends BallistaMobileEntity {
       ItemStack stack = new ItemStack(BallistaBoatItem.itemForMaterialLevel(this.getMaterialLevel()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("BallistaBoatData", tag);
+      stack.getOrCreateTag().put("BallistaBoatData", tag);
       return stack;
    }
 }

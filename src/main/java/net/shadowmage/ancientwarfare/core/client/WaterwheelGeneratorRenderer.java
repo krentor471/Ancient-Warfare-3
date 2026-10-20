@@ -30,35 +30,35 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
    public void render(
       TorqueGeneratorBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay
    ) {
-      if (blockEntity.m_58904_() != null && blockEntity.m_58900_().m_60734_() instanceof TorqueGeneratorBlock block) {
+      if (blockEntity.getLevel() != null && blockEntity.getBlockState().getBlock() instanceof TorqueGeneratorBlock block) {
          TorqueGeneratorKind kind = block.getKind();
          if (kind == TorqueGeneratorKind.WATERWHEEL || kind == TorqueGeneratorKind.WINDMILL) {
             TextureAtlasSprite texture = this.sprite();
-            VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110463_());
-            Direction facing = (Direction)blockEntity.m_58900_().m_61143_(TorqueGeneratorBlock.FACING);
+            VertexConsumer consumer = bufferSource.getBuffer(RenderType.cutout());
+            Direction facing = (Direction)blockEntity.getBlockState().getValue(TorqueGeneratorBlock.FACING);
             if (kind == TorqueGeneratorKind.WINDMILL) {
                this.renderWindmill(blockEntity, consumer, poseStack, facing, packedLight, partialTick);
             } else {
                float angle = blockEntity.hasValidWaterwheelStructureForRender()
-                  ? ((float)blockEntity.m_58904_().m_46467_() + partialTick) * 5.0F % 360.0F
+                  ? ((float)blockEntity.getLevel().getGameTime() + partialTick) * 5.0F % 360.0F
                   : 0.0F;
-               poseStack.m_85836_();
-               poseStack.m_85837_(0.5, 0.5, 0.5);
-               poseStack.m_252781_(Axis.f_252436_.m_252977_(this.yawFor(facing)));
+               poseStack.pushPose();
+               poseStack.translate(0.5, 0.5, 0.5);
+               poseStack.mulPose(Axis.YP.rotationDegrees(this.yawFor(facing)));
                this.renderBase(consumer, poseStack, texture, packedLight);
-               poseStack.m_85836_();
-               poseStack.m_252781_(Axis.f_252403_.m_252977_(angle));
+               poseStack.pushPose();
+               poseStack.mulPose(Axis.ZP.rotationDegrees(angle));
                this.renderAxle(consumer, poseStack, texture, packedLight);
-               poseStack.m_85836_();
-               poseStack.m_85837_(0.0, 0.0, -0.82);
+               poseStack.pushPose();
+               poseStack.translate(0.0, 0.0, -0.82);
                this.renderWheel(consumer, poseStack, texture, packedLight);
-               poseStack.m_85849_();
-               poseStack.m_85836_();
-               poseStack.m_85837_(0.0, 0.0, 0.34);
+               poseStack.popPose();
+               poseStack.pushPose();
+               poseStack.translate(0.0, 0.0, 0.34);
                this.renderGear(consumer, poseStack, texture, packedLight);
-               poseStack.m_85849_();
-               poseStack.m_85849_();
-               poseStack.m_85849_();
+               poseStack.popPose();
+               poseStack.popPose();
+               poseStack.popPose();
             }
          }
       }
@@ -71,21 +71,21 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
       TextureAtlasSprite bladeTexture = this.windmillBladeSprite();
       int bladeCount = blockEntity.countWindmillBladesForRender();
       boolean valid = bladeCount >= 8;
-      float angle = valid ? ((float)blockEntity.m_58904_().m_46467_() + partialTick) * 7.5F % 360.0F : 0.0F;
-      float bladeScale = Mth.m_184631_((float)bladeCount, 8.0F, 48.0F, 0.72F, 1.42F);
-      poseStack.m_85836_();
-      poseStack.m_85837_(0.5, 0.5, 0.5);
-      poseStack.m_252781_(Axis.f_252436_.m_252977_(this.yawFor(facing)));
+      float angle = valid ? ((float)blockEntity.getLevel().getGameTime() + partialTick) * 7.5F % 360.0F : 0.0F;
+      float bladeScale = Mth.clampedMap((float)bladeCount, 8.0F, 48.0F, 0.72F, 1.42F);
+      poseStack.pushPose();
+      poseStack.translate(0.5, 0.5, 0.5);
+      poseStack.mulPose(Axis.YP.rotationDegrees(this.yawFor(facing)));
       this.renderWindmillBlock(consumer, poseStack, frameTexture, packedLight);
       if (valid) {
-         poseStack.m_85836_();
-         poseStack.m_85837_(0.0, 0.0, -0.58);
-         poseStack.m_252781_(Axis.f_252403_.m_252977_(angle));
+         poseStack.pushPose();
+         poseStack.translate(0.0, 0.0, -0.58);
+         poseStack.mulPose(Axis.ZP.rotationDegrees(angle));
          this.renderWindmillRotor(consumer, poseStack, frameTexture, bladeTexture, packedLight, bladeScale);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
 
-      poseStack.m_85849_();
+      poseStack.popPose();
    }
 
    private void renderWindmillBlock(VertexConsumer consumer, PoseStack poseStack, TextureAtlasSprite texture, int packedLight) {
@@ -117,11 +117,11 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
       this.renderCuboid(poseStack, consumer, frameTexture, -0.12F, -0.12F, -0.08F, 0.12F, 0.12F, 0.08F, packedLight);
 
       for (int i = 0; i < 4; i++) {
-         poseStack.m_85836_();
-         poseStack.m_252781_(Axis.f_252403_.m_252977_((float)i * 90.0F));
+         poseStack.pushPose();
+         poseStack.mulPose(Axis.ZP.rotationDegrees((float)i * 90.0F));
          this.renderCuboid(poseStack, consumer, frameTexture, -0.04F, 0.08F, -0.035F, 0.04F, 1.55F * bladeScale, 0.035F, packedLight);
          this.renderCuboid(poseStack, consumer, bladeTexture, 0.06F, 0.36F * bladeScale, -0.025F, 0.38F, 1.48F * bladeScale, 0.025F, packedLight);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
    }
 
@@ -141,12 +141,12 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
       float originZ,
       int packedLight
    ) {
-      poseStack.m_85836_();
-      poseStack.m_252880_(originX, originY, originZ);
-      poseStack.m_252781_(Axis.f_252403_.m_252977_(angle));
-      poseStack.m_252880_(-originX, -originY, -originZ);
+      poseStack.pushPose();
+      poseStack.translate(originX, originY, originZ);
+      poseStack.mulPose(Axis.ZP.rotationDegrees(angle));
+      poseStack.translate(-originX, -originY, -originZ);
       this.renderCuboid(poseStack, consumer, texture, minX, minY, minZ, maxX, maxY, maxZ, packedLight);
-      poseStack.m_85849_();
+      poseStack.popPose();
    }
 
    private void renderBase(VertexConsumer consumer, PoseStack poseStack, TextureAtlasSprite texture, int packedLight) {
@@ -167,11 +167,11 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
       this.renderCuboid(poseStack, consumer, texture, -0.08F, -0.08F, -0.1F, 0.08F, 0.08F, 0.1F, packedLight);
 
       for (int i = 0; i < 8; i++) {
-         poseStack.m_85836_();
-         poseStack.m_252781_(Axis.f_252403_.m_252977_((float)i * 45.0F));
+         poseStack.pushPose();
+         poseStack.mulPose(Axis.ZP.rotationDegrees((float)i * 45.0F));
          this.renderCuboid(poseStack, consumer, texture, -0.045F, 0.08F, -0.08F, 0.045F, 0.95F, 0.08F, packedLight);
          this.renderCuboid(poseStack, consumer, texture, -0.24F, 0.82F, -0.11F, 0.24F, 1.04F, 0.11F, packedLight);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
 
       this.renderRing(consumer, poseStack, texture, 0.82F, packedLight);
@@ -184,20 +184,20 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
       this.renderRing(consumer, poseStack, texture, 0.48F, packedLight);
 
       for (int i = 0; i < 12; i++) {
-         poseStack.m_85836_();
-         poseStack.m_252781_(Axis.f_252403_.m_252977_((float)i * 30.0F));
+         poseStack.pushPose();
+         poseStack.mulPose(Axis.ZP.rotationDegrees((float)i * 30.0F));
          this.renderCuboid(poseStack, consumer, texture, -0.07F, 0.45F, -0.1F, 0.07F, 0.62F, 0.1F, packedLight);
          this.renderCuboid(poseStack, consumer, texture, -0.035F, 0.11F, -0.065F, 0.035F, 0.43F, 0.065F, packedLight);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
    }
 
    private void renderRing(VertexConsumer consumer, PoseStack poseStack, TextureAtlasSprite texture, float radius, int packedLight) {
       for (int i = 0; i < 16; i++) {
-         poseStack.m_85836_();
-         poseStack.m_252781_(Axis.f_252403_.m_252977_((float)i * 22.5F));
+         poseStack.pushPose();
+         poseStack.mulPose(Axis.ZP.rotationDegrees((float)i * 22.5F));
          this.renderCuboid(poseStack, consumer, texture, -0.11F, radius - 0.035F, -0.09F, 0.11F, radius + 0.035F, 0.09F, packedLight);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
    }
 
@@ -212,17 +212,17 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
 
    private TextureAtlasSprite sprite() {
       ResourceLocation texture = new ResourceLocation("ancientwarfare", "block/automation/waterwheel_generator");
-      return (TextureAtlasSprite)Minecraft.m_91087_().m_91258_(TextureAtlas.f_118259_).apply(texture);
+      return (TextureAtlasSprite)Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(texture);
    }
 
    private TextureAtlasSprite windmillGeneratorSprite() {
       ResourceLocation texture = new ResourceLocation("ancientwarfare", "block/automation/windmill_generator");
-      return (TextureAtlasSprite)Minecraft.m_91087_().m_91258_(TextureAtlas.f_118259_).apply(texture);
+      return (TextureAtlasSprite)Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(texture);
    }
 
    private TextureAtlasSprite windmillBladeSprite() {
       ResourceLocation texture = new ResourceLocation("ancientwarfare", "block/automation/windmill_blade");
-      return (TextureAtlasSprite)Minecraft.m_91087_().m_91258_(TextureAtlas.f_118259_).apply(texture);
+      return (TextureAtlasSprite)Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(texture);
    }
 
    private void renderCuboid(
@@ -237,7 +237,7 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
       float maxZ,
       int packedLight
    ) {
-      Pose pose = poseStack.m_85850_();
+      Pose pose = poseStack.last();
       int light = packedLight == 0 ? 15728880 : packedLight;
       this.quad(pose, consumer, sprite, WOOD_UV, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, 0.0F, 0.0F, 1.0F, light);
       this.quad(pose, consumer, sprite, WOOD_UV, maxX, minY, minZ, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, 0.0F, 0.0F, -1.0F, light);
@@ -289,18 +289,18 @@ public class WaterwheelGeneratorRenderer implements BlockEntityRenderer<TorqueGe
       float normalZ,
       int packedLight
    ) {
-      Matrix4f matrix = pose.m_252922_();
-      Matrix3f normal = pose.m_252943_();
-      consumer.m_252986_(matrix, x, y, z)
-         .m_6122_(255, 255, 255, 255)
-         .m_7421_(sprite.m_118367_((double)u), sprite.m_118393_((double)v))
-         .m_85969_(packedLight)
-         .m_252939_(normal, normalX, normalY, normalZ)
-         .m_5752_();
+      Matrix4f matrix = pose.pose();
+      Matrix3f normal = pose.normal();
+      consumer.vertex(matrix, x, y, z)
+         .color(255, 255, 255, 255)
+         .uv(sprite.getU((double)u), sprite.getV((double)v))
+         .uv2(packedLight)
+         .normal(normal, normalX, normalY, normalZ)
+         .endVertex();
    }
 
-   public int m_142163_() {
-      return Mth.m_14167_(96.0F);
+   public int getViewDistance() {
+      return Mth.ceil(96.0F);
    }
 
    private static record UvRegion(float u0, float v0, float u1, float v1) {

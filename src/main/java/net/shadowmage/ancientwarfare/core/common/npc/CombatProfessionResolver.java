@@ -35,10 +35,10 @@ public final class CombatProfessionResolver {
 
    private static boolean isSlashBlade(ItemStack stack) {
       return stack != null
-         && !stack.m_41619_()
+         && !stack.isEmpty()
          && AWCorePlatform.isModLoaded("slashblade")
          && CombatProfessionResolver.SlashBladeItemClassHolder.TYPE != null
-         && CombatProfessionResolver.SlashBladeItemClassHolder.TYPE.isInstance(stack.m_41720_());
+         && CombatProfessionResolver.SlashBladeItemClassHolder.TYPE.isInstance(stack.getItem());
    }
 
    private static boolean isCommandBaton(ItemStack stack) {
@@ -46,7 +46,7 @@ public final class CombatProfessionResolver {
    }
 
    private static boolean isMedicTool(ItemStack stack) {
-      return stack != null && stack.m_150930_(Items.f_42410_);
+      return stack != null && stack.is(Items.APPLE);
    }
 
    private static boolean isEngineerTool(ItemStack stack) {
@@ -54,7 +54,7 @@ public final class CombatProfessionResolver {
    }
 
    private static boolean hasToolRole(ItemStack stack, NpcProfessionTool.ToolRole role) {
-      return stack != null && stack.m_41720_() instanceof NpcProfessionTool tool && tool.npcToolRole() == role;
+      return stack != null && stack.getItem() instanceof NpcProfessionTool tool && tool.npcToolRole() == role;
    }
 
    public static enum Profession {

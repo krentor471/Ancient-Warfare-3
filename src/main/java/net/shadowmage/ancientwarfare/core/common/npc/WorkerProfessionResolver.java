@@ -18,13 +18,13 @@ public final class WorkerProfessionResolver {
    }
 
    public static WorkerProfessionResolver.Profession professionFor(ItemStack stack) {
-      if (stack == null || stack.m_41619_()) {
+      if (stack == null || stack.isEmpty()) {
          return WorkerProfessionResolver.Profession.NONE;
-      } else if (stack.m_41720_() instanceof PickaxeItem) {
+      } else if (stack.getItem() instanceof PickaxeItem) {
          return WorkerProfessionResolver.Profession.MINER;
-      } else if (stack.m_41720_() instanceof HoeItem) {
+      } else if (stack.getItem() instanceof HoeItem) {
          return WorkerProfessionResolver.Profession.FARMER;
-      } else if (stack.m_41720_() instanceof AxeItem) {
+      } else if (stack.getItem() instanceof AxeItem) {
          return WorkerProfessionResolver.Profession.LUMBERJACK;
       } else if (hasToolRole(stack, NpcProfessionTool.ToolRole.RESEARCHER)) {
          return WorkerProfessionResolver.Profession.RESEARCHER;
@@ -36,7 +36,7 @@ public final class WorkerProfessionResolver {
    }
 
    private static boolean hasToolRole(ItemStack stack, NpcProfessionTool.ToolRole role) {
-      if (stack.m_41720_() instanceof NpcProfessionTool tool && tool.npcToolRole() == role) {
+      if (stack.getItem() instanceof NpcProfessionTool tool && tool.npcToolRole() == role) {
          return true;
       }
 

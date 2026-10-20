@@ -25,97 +25,97 @@ public class EngineeringStationBlockEntity extends BlockEntity implements Contai
    public static final int CRAFT_SLOT_START = 1;
    public static final int STORAGE_SLOT_START = 10;
    public static final int SLOT_COUNT = 28;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(28, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(28, ItemStack.EMPTY);
    private ResourceLocation selectedRecipeId;
 
    public EngineeringStationBlockEntity(BlockPos pos, BlockState state) {
       super(AWCoreRegistryAccess.blockEntityType(AWCoreIds.ENGINEERING_STATION), pos, state);
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
       if (this.selectedRecipeId != null) {
-         tag.m_128359_("SelectedRecipe", this.selectedRecipeId.toString());
+         tag.putString("SelectedRecipe", this.selectedRecipeId.toString());
       }
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      this.selectedRecipeId = tag.m_128441_("SelectedRecipe") ? ResourceLocation.m_135820_(tag.m_128461_("SelectedRecipe")) : null;
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      this.selectedRecipeId = tag.contains("SelectedRecipe") ? ResourceLocation.tryParse(tag.getString("SelectedRecipe")) : null;
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 28;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
+   public ItemStack removeItem(int slot, int amount) {
       if (this.isValidSlot(slot) && amount > 0) {
-         ItemStack removed = ContainerHelper.m_18969_(this.items, slot, amount);
-         if (!removed.m_41619_()) {
-            this.m_6596_();
+         ItemStack removed = ContainerHelper.removeItem(this.items, slot, amount);
+         if (!removed.isEmpty()) {
+            this.setChanged();
          }
 
          return removed;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
-   public ItemStack m_8016_(int slot) {
-      return this.isValidSlot(slot) ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return this.isValidSlot(slot) ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         if (slot == 0 && !stack.m_41619_() && stack.m_41613_() > 1) {
-            stack.m_41764_(1);
+         if (slot == 0 && !stack.isEmpty() && stack.getCount() > 1) {
+            stack.setCount(1);
          }
 
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.engineering_station");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.engineering_station");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new EngineeringStationMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new EngineeringStationMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public NonNullList<ItemStack> getDrops() {
-      NonNullList<ItemStack> drops = NonNullList.m_122779_();
+      NonNullList<ItemStack> drops = NonNullList.create();
 
       for (ItemStack stack : this.items) {
-         if (!stack.m_41619_()) {
-            drops.add(stack.m_41777_());
+         if (!stack.isEmpty()) {
+            drops.add(stack.copy());
          }
       }
 
@@ -134,6 +134,6 @@ public class EngineeringStationBlockEntity extends BlockEntity implements Contai
    @Override
    public void setSelectedRecipeId(ResourceLocation recipeId) {
       this.selectedRecipeId = recipeId;
-      this.m_6596_();
+      this.setChanged();
    }
 }

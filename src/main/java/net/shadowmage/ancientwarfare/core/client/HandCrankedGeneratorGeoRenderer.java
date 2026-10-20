@@ -11,8 +11,8 @@ public class HandCrankedGeneratorGeoRenderer extends GeoBlockRenderer<HandCranke
    }
 
    protected Direction getFacing(HandCrankedGeneratorBlockEntity animatable) {
-      return animatable.m_58900_().m_61138_(HandCrankedGeneratorBlock.FACING)
-         ? (Direction)animatable.m_58900_().m_61143_(HandCrankedGeneratorBlock.FACING)
+      return animatable.getBlockState().hasProperty(HandCrankedGeneratorBlock.FACING)
+         ? (Direction)animatable.getBlockState().getValue(HandCrankedGeneratorBlock.FACING)
          : Direction.NORTH;
    }
 }

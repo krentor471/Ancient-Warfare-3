@@ -34,7 +34,7 @@ import net.shadowmage.ancientwarfare.core.tile.StructureContainerBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class StructureContainerBlock extends BaseEntityBlock {
-   public static final DirectionProperty FACING = HorizontalDirectionalBlock.f_54117_;
+   public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
    private final BiFunction<BlockPos, BlockState, BlockEntity> blockEntityFactory;
    private final VoxelShape shape;
 
@@ -42,54 +42,54 @@ public class StructureContainerBlock extends BaseEntityBlock {
       super(properties);
       this.shape = shape;
       this.blockEntityFactory = blockEntityFactory;
-      this.m_49959_((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH));
+      this.registerDefaultState((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH));
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return this.blockEntityFactory.apply(pos, state);
    }
 
    @Nullable
-   public BlockState m_5573_(BlockPlaceContext context) {
-      return (BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_().m_122424_());
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      return (BlockState)this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{FACING});
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if (!level.f_46443_ && level.m_7702_(pos) instanceof MenuProvider provider) {
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if (!level.isClientSide && level.getBlockEntity(pos) instanceof MenuProvider provider) {
          AWCorePlatform.openBlockMenu(player, provider, pos);
       }
 
-      return InteractionResult.m_19078_(level.f_46443_);
+      return InteractionResult.sidedSuccess(level.isClientSide);
    }
 
-   public void m_6810_(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-      if (!state.m_60713_(newState.m_60734_()) && level.m_7702_(pos) instanceof Container container) {
+   public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+      if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof Container container) {
          if (container instanceof StructureContainerBlockEntity structureContainer) {
             structureContainer.unpackLootForDestruction();
-            Containers.m_19002_(level, pos, container);
+            Containers.dropContents(level, pos, container);
          } else {
-            Containers.m_19002_(level, pos, container);
+            Containers.dropContents(level, pos, container);
          }
       }
 
-      super.m_6810_(state, level, pos, newState, movedByPiston);
+      super.onRemove(state, level, pos, newState, movedByPiston);
    }
 
-   public RenderShape m_7514_(BlockState state) {
-      return !state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WOODEN_COFFIN)) && !state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.STONE_COFFIN))
+   public RenderShape getRenderShape(BlockState state) {
+      return !state.is(AWCoreRegistryAccess.block(AWCoreIds.WOODEN_COFFIN)) && !state.is(AWCoreRegistryAccess.block(AWCoreIds.STONE_COFFIN))
          ? RenderShape.MODEL
          : RenderShape.INVISIBLE;
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState state, BlockEntityType<T> type) {
-      return level.f_46443_
-            && (state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WOODEN_COFFIN)) || state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.STONE_COFFIN)))
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+      return level.isClientSide
+            && (state.is(AWCoreRegistryAccess.block(AWCoreIds.WOODEN_COFFIN)) || state.is(AWCoreRegistryAccess.block(AWCoreIds.STONE_COFFIN)))
          ? (tickerLevel, pos, tickerState, blockEntity) -> {
             if (blockEntity instanceof StructureContainerBlockEntity container) {
                container.clientTickLid();
@@ -98,7 +98,7 @@ public class StructureContainerBlock extends BaseEntityBlock {
          : null;
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return this.shape;
    }
 }

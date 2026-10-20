@@ -14,36 +14,36 @@ public class StructureContainerScreen extends AbstractContainerScreen<StructureC
 
    public StructureContainerScreen(StructureContainerMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title);
-      this.f_97726_ = 176;
-      this.f_97727_ = 128 + menu.getContainerRows() * 18;
-      this.f_97728_ = 8;
-      this.f_97729_ = 6;
-      this.f_97731_ = 20 + menu.getContainerRows() * 18;
+      this.imageWidth = 176;
+      this.imageHeight = 128 + menu.getContainerRows() * 18;
+      this.titleLabelX = 8;
+      this.titleLabelY = 6;
+      this.inventoryLabelY = 20 + menu.getContainerRows() * 18;
    }
 
-   protected void m_7286_(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      graphics.m_280509_(this.f_97735_, this.f_97736_, this.f_97735_ + this.f_97726_, this.f_97736_ + this.f_97727_, -3750202);
-      graphics.m_280218_(BACKGROUND, this.f_97735_, this.f_97736_, 0, 0, this.f_97726_, Math.min(this.f_97727_, 256));
-      this.drawSlotGrid(graphics, 8, 18, 9, ((StructureContainerMenu)this.f_97732_).getContainerRows());
-      this.drawSlotGrid(graphics, 8, 32 + ((StructureContainerMenu)this.f_97732_).getContainerRows() * 18, 9, 3);
-      this.drawSlotGrid(graphics, 8, 90 + ((StructureContainerMenu)this.f_97732_).getContainerRows() * 18, 9, 1);
+   protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+      graphics.fill(this.leftPos, this.topPos, this.leftPos + this.imageWidth, this.topPos + this.imageHeight, -3750202);
+      graphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, this.imageWidth, Math.min(this.imageHeight, 256));
+      this.drawSlotGrid(graphics, 8, 18, 9, ((StructureContainerMenu)this.menu).getContainerRows());
+      this.drawSlotGrid(graphics, 8, 32 + ((StructureContainerMenu)this.menu).getContainerRows() * 18, 9, 3);
+      this.drawSlotGrid(graphics, 8, 90 + ((StructureContainerMenu)this.menu).getContainerRows() * 18, 9, 1);
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      graphics.m_280614_(this.f_96547_, this.f_96539_, 8, 8, 16777215, false);
-      graphics.m_280614_(this.f_96547_, this.f_169604_, 8, this.f_97731_, 16777215, false);
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      graphics.drawString(this.font, this.title, 8, 8, 16777215, false);
+      graphics.drawString(this.font, this.playerInventoryTitle, 8, this.inventoryLabelY, 16777215, false);
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
-      this.m_280072_(graphics, mouseX, mouseY);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
+      super.render(graphics, mouseX, mouseY, partialTick);
+      this.renderTooltip(graphics, mouseX, mouseY);
    }
 
    private void drawSlotGrid(GuiGraphics graphics, int x, int y, int columns, int rows) {
       for (int row = 0; row < rows; row++) {
          for (int col = 0; col < columns; col++) {
-            graphics.m_280218_(WIDGETS, this.f_97735_ + x + col * 18 - 1, this.f_97736_ + y + row * 18 - 1, 152, 120, 18, 18);
+            graphics.blit(WIDGETS, this.leftPos + x + col * 18 - 1, this.topPos + y + row * 18 - 1, 152, 120, 18, 18);
          }
       }
    }

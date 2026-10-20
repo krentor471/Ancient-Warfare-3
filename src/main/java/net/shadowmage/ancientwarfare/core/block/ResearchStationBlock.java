@@ -34,70 +34,70 @@ import net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class ResearchStationBlock extends BaseEntityBlock {
-   public static final DirectionProperty FACING = HorizontalDirectionalBlock.f_54117_;
-   public static final BooleanProperty HAS_BOOK = BooleanProperty.m_61465_("has_book");
-   private static final VoxelShape TABLE_SHAPE = Shapes.m_83124_(
-      m_49796_(0.0, 13.0, 0.0, 16.0, 16.0, 16.0),
+   public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+   public static final BooleanProperty HAS_BOOK = BooleanProperty.create("has_book");
+   private static final VoxelShape TABLE_SHAPE = Shapes.or(
+      box(0.0, 13.0, 0.0, 16.0, 16.0, 16.0),
       new VoxelShape[]{
-         m_49796_(1.0, 0.0, 1.0, 4.0, 13.0, 4.0),
-         m_49796_(12.0, 0.0, 1.0, 15.0, 13.0, 4.0),
-         m_49796_(1.0, 0.0, 12.0, 4.0, 13.0, 15.0),
-         m_49796_(12.0, 0.0, 12.0, 15.0, 13.0, 15.0),
-         m_49796_(1.0, 8.0, 1.0, 15.0, 13.0, 15.0)
+         box(1.0, 0.0, 1.0, 4.0, 13.0, 4.0),
+         box(12.0, 0.0, 1.0, 15.0, 13.0, 4.0),
+         box(1.0, 0.0, 12.0, 4.0, 13.0, 15.0),
+         box(12.0, 0.0, 12.0, 15.0, 13.0, 15.0),
+         box(1.0, 8.0, 1.0, 15.0, 13.0, 15.0)
       }
    );
 
    public ResearchStationBlock(Properties properties) {
       super(properties);
-      this.m_49959_((BlockState)((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH)).m_61124_(HAS_BOOK, false));
+      this.registerDefaultState((BlockState)((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH)).setValue(HAS_BOOK, false));
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return new ResearchStationBlockEntity(pos, state);
    }
 
    @Nullable
-   public BlockState m_5573_(BlockPlaceContext context) {
-      return (BlockState)((BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_().m_122424_())).m_61124_(HAS_BOOK, false);
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      return (BlockState)((BlockState)this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite())).setValue(HAS_BOOK, false);
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING, HAS_BOOK});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{FACING, HAS_BOOK});
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if (!level.f_46443_ && level.m_7702_(pos) instanceof ResearchStationBlockEntity researchStation) {
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if (!level.isClientSide && level.getBlockEntity(pos) instanceof ResearchStationBlockEntity researchStation) {
          AWCorePlatform.openBlockMenu(player, researchStation, pos);
       }
 
-      return InteractionResult.m_19078_(level.f_46443_);
+      return InteractionResult.sidedSuccess(level.isClientSide);
    }
 
-   public void m_6810_(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-      if (!state.m_60713_(newState.m_60734_()) && level.m_7702_(pos) instanceof ResearchStationBlockEntity researchStation) {
+   public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+      if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof ResearchStationBlockEntity researchStation) {
          for (ItemStack stack : researchStation.getDrops()) {
-            Containers.m_18992_(level, (double)pos.m_123341_(), (double)pos.m_123342_(), (double)pos.m_123343_(), stack);
+            Containers.dropItemStack(level, (double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), stack);
          }
       }
 
-      super.m_6810_(state, level, pos, newState, movedByPiston);
+      super.onRemove(state, level, pos, newState, movedByPiston);
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState state, BlockEntityType<T> type) {
-      return level.f_46443_ ? null : m_152132_(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.RESEARCH_STATION), ResearchStationBlockEntity::serverTick);
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+      return level.isClientSide ? null : createTickerHelper(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.RESEARCH_STATION), ResearchStationBlockEntity::serverTick);
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.MODEL;
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return TABLE_SHAPE;
    }
 
-   public int m_7753_(BlockState state, BlockGetter level, BlockPos pos) {
+   public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
       return 0;
    }
 }

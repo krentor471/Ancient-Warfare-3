@@ -24,13 +24,13 @@ public class UpkeepOrderMenu extends AbstractContainerMenu {
 
    public UpkeepOrderMenu(int containerId, Inventory playerInventory, InteractionHand hand) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.UPKEEP_ORDER_MENU), containerId);
-      this.player = playerInventory.f_35978_;
+      this.player = playerInventory.player;
       this.hand = hand;
       this.addPlayerInventorySlots(playerInventory, 47, 156);
    }
 
    public ItemStack getUpkeepOrderStack() {
-      return this.player.m_21120_(this.hand);
+      return this.player.getItemInHand(this.hand);
    }
 
    public Optional<UpkeepOrderData.UpkeepEntry> getEntry() {
@@ -41,7 +41,7 @@ public class UpkeepOrderMenu extends AbstractContainerMenu {
       return UpkeepOrderData.getFoodTarget(this.getUpkeepOrderStack());
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       ItemStack stack = this.getUpkeepOrderStack();
       if (!AWCoreRegistryAccess.is(stack, AWCoreIds.UPKEEP_ORDER)) {
          return false;
@@ -64,30 +64,30 @@ public class UpkeepOrderMenu extends AbstractContainerMenu {
          UpkeepOrderData.changeFoodCount(stack, -1);
          return true;
       } else if (id == 6) {
-         UpkeepOrderData.setFoodTarget(stack, this.m_142621_());
+         UpkeepOrderData.setFoodTarget(stack, this.getCarried());
          return true;
       } else {
          return false;
       }
    }
 
-   public boolean m_6875_(Player player) {
-      return AWCoreRegistryAccess.is(player.m_21120_(this.hand), AWCoreIds.UPKEEP_ORDER);
+   public boolean stillValid(Player player) {
+      return AWCoreRegistryAccess.is(player.getItemInHand(this.hand), AWCoreIds.UPKEEP_ORDER);
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 
    private void addPlayerInventorySlots(Inventory inventory, int x, int y) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(inventory, col + row * 9 + 9, x + col * 18, y + row * 18));
+            this.addSlot(new Slot(inventory, col + row * 9 + 9, x + col * 18, y + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(inventory, col, x + col * 18, y + 58));
+         this.addSlot(new Slot(inventory, col, x + col * 18, y + 58));
       }
    }
 }

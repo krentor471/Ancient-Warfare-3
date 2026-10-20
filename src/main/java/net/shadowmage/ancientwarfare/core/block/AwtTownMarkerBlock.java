@@ -17,13 +17,13 @@ public class AwtTownMarkerBlock extends Block {
       super(properties);
    }
 
-   public void m_6402_(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-      super.m_6402_(level, pos, state, placer, stack);
-      if (!level.f_46443_) {
+   public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+      super.setPlacedBy(level, pos, state, placer, stack);
+      if (!level.isClientSide) {
          String template = AwtTownBlockItem.template(stack);
-         Direction facing = placer == null ? Direction.NORTH : placer.m_6350_();
+         Direction facing = placer == null ? Direction.NORTH : placer.getDirection();
          if (!AwtTownPlacer.place(level, pos, template, facing)) {
-            level.m_7471_(pos, false);
+            level.removeBlock(pos, false);
          }
       }
    }

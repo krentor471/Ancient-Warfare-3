@@ -14,7 +14,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class GiantTrebuchetGeoRenderer extends GeoEntityRenderer<GiantTrebuchetEntity> {
    public GiantTrebuchetGeoRenderer(Context context) {
       super(context, new GiantTrebuchetGeoModel());
-      this.f_114477_ = 2.0F;
+      this.shadowRadius = 2.0F;
    }
 
    public void preRender(
@@ -32,13 +32,13 @@ public class GiantTrebuchetGeoRenderer extends GeoEntityRenderer<GiantTrebuchetE
       float blue,
       float alpha
    ) {
-      poseStack.m_85841_(2.5F, 2.5F, 2.5F);
-      poseStack.m_85837_(0.0, -1.45, 0.0);
+      poseStack.scale(2.5F, 2.5F, 2.5F);
+      poseStack.translate(0.0, -1.45, 0.0);
       super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
    }
 
    protected void applyRotations(GiantTrebuchetEntity animatable, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTick) {
-      poseStack.m_252781_(Axis.f_252436_.m_252977_(180.0F - Mth.m_14179_(partialTick, animatable.f_19859_, animatable.m_146908_())));
+      poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - Mth.lerp(partialTick, animatable.yRotO, animatable.getYRot())));
    }
 
    public Color getRenderColor(GiantTrebuchetEntity animatable, float partialTick, int packedLight) {

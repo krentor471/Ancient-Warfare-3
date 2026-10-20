@@ -25,15 +25,15 @@ public class AnimalFarmControlMenu extends AbstractContainerMenu {
    public AnimalFarmControlMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.ANIMAL_FARM_CONTROL), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      this.animalFarm = this.level.m_7702_(pos) instanceof AnimalFarmBlockEntity farm ? farm : null;
+      this.level = playerInventory.player.level();
+      this.animalFarm = this.level.getBlockEntity(pos) instanceof AnimalFarmBlockEntity farm ? farm : null;
 
       for (int i = 0; i < this.previewLimits.length; i++) {
          this.previewLimits[i] = this.animalFarm == null ? 0 : this.animalFarm.getAnimalLimit(AnimalFarmBlockEntity.SUPPORTED_ANIMAL_TYPES[i]);
       }
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       if (id == 1000) {
          this.page = Math.max(0, this.page - 1);
          return true;
@@ -46,13 +46,13 @@ public class AnimalFarmControlMenu extends AbstractContainerMenu {
          int index = this.page * 8 + visibleRow;
          if (visibleRow >= 0 && visibleRow < 8 && index >= 0 && index < this.previewLimits.length) {
             int delta = action == 0 ? -1 : 1;
-            if (this.level.f_46443_) {
+            if (this.level.isClientSide) {
                this.previewLimits[index] = Math.max(0, this.previewLimits[index] + delta);
                return true;
             } else if (this.animalFarm != null) {
                this.animalFarm.adjustAnimalLimit(AnimalFarmBlockEntity.SUPPORTED_ANIMAL_TYPES[index], delta);
                this.previewLimits[index] = this.animalFarm.getAnimalLimit(AnimalFarmBlockEntity.SUPPORTED_ANIMAL_TYPES[index]);
-               this.m_38946_();
+               this.broadcastChanges();
                return true;
             } else {
                return false;
@@ -64,7 +64,7 @@ public class AnimalFarmControlMenu extends AbstractContainerMenu {
    }
 
    public void previewButton(int id) {
-      this.m_6366_(null, id);
+      this.clickMenuButton(null, id);
    }
 
    public int getPage() {
@@ -85,11 +85,11 @@ public class AnimalFarmControlMenu extends AbstractContainerMenu {
       return index >= 0 && index < this.previewLimits.length ? this.previewLimits[index] : 0;
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.ANIMAL_FARM));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.ANIMAL_FARM));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

@@ -24,12 +24,12 @@ public class VehicleArmorItem extends Item {
 
    @Nullable
    public static VehicleArmorItem.Type fromStack(ItemStack stack) {
-      return stack.m_41720_() instanceof VehicleArmorItem armor ? armor.type() : null;
+      return stack.getItem() instanceof VehicleArmorItem armor ? armor.type() : null;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_("item.ancientwarfare.vehicle_armor_tooltip").m_130940_(ChatFormatting.GRAY));
-      tooltip.add(Component.m_237115_("item.ancientwarfare." + this.type.id() + ".tooltip").m_130940_(ChatFormatting.DARK_GRAY));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("item.ancientwarfare.vehicle_armor_tooltip").withStyle(ChatFormatting.GRAY));
+      tooltip.add(Component.translatable("item.ancientwarfare." + this.type.id() + ".tooltip").withStyle(ChatFormatting.DARK_GRAY));
    }
 
    public static enum Type {

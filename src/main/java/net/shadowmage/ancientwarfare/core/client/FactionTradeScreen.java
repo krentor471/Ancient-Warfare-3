@@ -40,28 +40,28 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
 
    public FactionTradeScreen(FactionTradeMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title);
-      this.f_97726_ = 256;
-      this.f_97727_ = 240;
-      this.f_97728_ = 10000;
-      this.f_97729_ = 10000;
-      this.f_97730_ = 10000;
-      this.f_97731_ = 10000;
+      this.imageWidth = 256;
+      this.imageHeight = 240;
+      this.titleLabelX = 10000;
+      this.titleLabelY = 10000;
+      this.inventoryLabelX = 10000;
+      this.inventoryLabelY = 10000;
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
-      this.m_280072_(graphics, mouseX, mouseY);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
+      super.render(graphics, mouseX, mouseY, partialTick);
+      this.renderTooltip(graphics, mouseX, mouseY);
       ItemStack hovered = this.hoveredTradeStack((double)mouseX, (double)mouseY);
-      if (!hovered.m_41619_()) {
-         graphics.m_280153_(this.f_96547_, hovered, mouseX, mouseY);
+      if (!hovered.isEmpty()) {
+         graphics.renderTooltip(this.font, hovered, mouseX, mouseY);
       }
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
    }
 
-   protected void m_7286_(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+   protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
       RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
       this.drawQuarteredTexture(graphics, BACKGROUND, 0, 0, 256, 240, 0, 0, 256, 240);
       this.drawQuarteredTexture(graphics, BACKGROUND, 0, 0, 256, 148, 0, 0, 256, 240);
@@ -71,11 +71,11 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
    }
 
    private void drawTrades(GuiGraphics graphics, int mouseX, int mouseY) {
-      List<FactionTradeListRegistry.FactionTradeEntry> trades = ((FactionTradeMenu)this.f_97732_).getTrades();
+      List<FactionTradeListRegistry.FactionTradeEntry> trades = ((FactionTradeMenu)this.menu).getTrades();
       this.scrollPixels = Math.min(this.scrollPixels, this.maxScrollPixels(trades.size()));
-      graphics.m_280588_(this.f_97735_, this.f_97736_ + 0, this.f_97735_ + 244, this.f_97736_ + 148);
+      graphics.enableScissor(this.leftPos, this.topPos + 0, this.leftPos + 244, this.topPos + 148);
       if (trades.isEmpty()) {
-         graphics.m_280614_(this.f_96547_, Component.m_237115_("guistrings.npc.trade.no_trades"), this.f_97735_ + 8, this.f_97736_ + 8, -4276546, false);
+         graphics.drawString(this.font, Component.translatable("guistrings.npc.trade.no_trades"), this.leftPos + 8, this.topPos + 8, -4276546, false);
       }
 
       for (int index = 0; index < trades.size(); index++) {
@@ -89,15 +89,15 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
          }
       }
 
-      graphics.m_280618_();
+      graphics.disableScissor();
    }
 
    private void drawTrade(GuiGraphics graphics, FactionTradeListRegistry.FactionTradeEntry trade, int index, int y, int mouseX, int mouseY) {
       this.drawStackGrid(graphics, 8, y, trade.inputs());
       this.drawStackGrid(graphics, 71, y, trade.outputs());
-      graphics.m_280056_(this.f_96547_, ">", this.f_97735_ + 63, this.f_97736_ + y + 20, -1, false);
-      boolean canTrade = ((FactionTradeMenu)this.f_97732_).canTrade(index);
-      Component state = Component.m_237115_(canTrade ? "guistrings.npc.trade.available" : "guistrings.npc.trade.unavailable");
+      graphics.drawString(this.font, ">", this.leftPos + 63, this.topPos + y + 20, -1, false);
+      boolean canTrade = ((FactionTradeMenu)this.menu).canTrade(index);
+      Component state = Component.translatable(canTrade ? "guistrings.npc.trade.available" : "guistrings.npc.trade.unavailable");
       this.drawFitted(graphics, state, 133, y, 70, canTrade ? -2559808 : -20312);
       this.drawButton(
          graphics,
@@ -105,13 +105,13 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
          y + 17,
          70,
          20,
-         Component.m_237115_("guistrings.npc.trade.trade"),
+         Component.translatable("guistrings.npc.trade.trade"),
          true,
          this.pressedButton == FactionTradeMenu.tradeButton(index),
          mouseX,
          mouseY
       );
-      graphics.m_280656_(this.f_97735_, this.f_97735_ + 256 - 1, this.f_97736_ + y + 55, -16777216);
+      graphics.hLine(this.leftPos, this.leftPos + 256 - 1, this.topPos + y + 55, -16777216);
    }
 
    private void drawStackGrid(GuiGraphics graphics, int x, int y, List<ItemStack> stacks) {
@@ -119,10 +119,10 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
          int slotX = x + slot % 3 * 18;
          int slotY = y + slot / 3 * 18;
          this.drawSlot(graphics, slotX, slotY);
-         if (slot < stacks.size() && !stacks.get(slot).m_41619_()) {
+         if (slot < stacks.size() && !stacks.get(slot).isEmpty()) {
             ItemStack stack = stacks.get(slot);
-            graphics.m_280203_(stack, this.f_97735_ + slotX, this.f_97736_ + slotY);
-            graphics.m_280370_(this.f_96547_, stack, this.f_97735_ + slotX, this.f_97736_ + slotY);
+            graphics.renderFakeItem(stack, this.leftPos + slotX, this.topPos + slotY);
+            graphics.renderItemDecorations(this.font, stack, this.leftPos + slotX, this.topPos + slotY);
          }
       }
    }
@@ -140,13 +140,13 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
    }
 
    private void drawSlot(GuiGraphics graphics, int x, int y) {
-      graphics.m_280163_(BUTTONS, this.f_97735_ + x - 1, this.f_97736_ + y - 1, 152.0F, 120.0F, 18, 18, 256, 256);
+      graphics.blit(BUTTONS, this.leftPos + x - 1, this.topPos + y - 1, 152.0F, 120.0F, 18, 18, 256, 256);
    }
 
    private void drawScrollbar(GuiGraphics graphics) {
       this.drawQuarteredTexture(graphics, BUTTONS, 244, 0, 12, 148, 80, 120, 40, 128);
-      int max = this.maxScrollPixels(((FactionTradeMenu)this.f_97732_).getTrades().size());
-      int thumbHeight = this.thumbHeight(((FactionTradeMenu)this.f_97732_).getTrades().size());
+      int max = this.maxScrollPixels(((FactionTradeMenu)this.menu).getTrades().size());
+      int thumbHeight = this.thumbHeight(((FactionTradeMenu)this.menu).getTrades().size());
       int thumbY = 1;
       if (max > 0) {
          thumbY += (int)Math.round((double)(146 - thumbHeight) * (double)this.scrollPixels / (double)max);
@@ -156,7 +156,7 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
    }
 
    private void drawButton(GuiGraphics graphics, int x, int y, int width, int height, Component label, boolean enabled, boolean pressed, int mouseX, int mouseY) {
-      boolean hovered = enabled && inBounds((double)mouseX, (double)mouseY, this.f_97735_ + x, this.f_97736_ + y, width, height);
+      boolean hovered = enabled && inBounds((double)mouseX, (double)mouseY, this.leftPos + x, this.topPos + y, width, height);
       int textureY = enabled && !pressed ? (hovered ? 80 : 40) : 0;
       this.drawQuarteredTexture(graphics, BUTTONS, x, y, width, height, 0, textureY, 256, 40);
       this.drawCenteredFitted(graphics, label, x, y, width, height, hovered ? -6250497 : -1);
@@ -173,14 +173,14 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
       int sourceRight = sourceWidth - sourceLeft;
       int sourceTop = sourceHeight / 2;
       int sourceBottom = sourceHeight - sourceTop;
-      graphics.m_280411_(texture, this.f_97735_ + x, this.f_97736_ + y, leftWidth, topHeight, (float)u, (float)v, sourceLeft, sourceTop, 256, 256);
-      graphics.m_280411_(
-         texture, this.f_97735_ + x + leftWidth, this.f_97736_ + y, rightWidth, topHeight, (float)(u + sourceLeft), (float)v, sourceRight, sourceTop, 256, 256
+      graphics.blit(texture, this.leftPos + x, this.topPos + y, leftWidth, topHeight, (float)u, (float)v, sourceLeft, sourceTop, 256, 256);
+      graphics.blit(
+         texture, this.leftPos + x + leftWidth, this.topPos + y, rightWidth, topHeight, (float)(u + sourceLeft), (float)v, sourceRight, sourceTop, 256, 256
       );
-      graphics.m_280411_(
+      graphics.blit(
          texture,
-         this.f_97735_ + x,
-         this.f_97736_ + y + topHeight,
+         this.leftPos + x,
+         this.topPos + y + topHeight,
          leftWidth,
          bottomHeight,
          (float)u,
@@ -190,10 +190,10 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
          256,
          256
       );
-      graphics.m_280411_(
+      graphics.blit(
          texture,
-         this.f_97735_ + x + leftWidth,
-         this.f_97736_ + y + topHeight,
+         this.leftPos + x + leftWidth,
+         this.topPos + y + topHeight,
          rightWidth,
          bottomHeight,
          (float)(u + sourceLeft),
@@ -206,34 +206,34 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
    }
 
    private void drawCenteredFitted(GuiGraphics graphics, Component text, int x, int y, int width, int height, int color) {
-      int textWidth = this.f_96547_.m_92852_(text);
+      int textWidth = this.font.width(text);
       float scale = textWidth <= width - 4 ? 1.0F : (float)(width - 4) / (float)textWidth;
       int scaledWidth = Math.round((float)textWidth * scale);
       int scaledHeight = Math.round(9.0F * scale);
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_()
-         .m_252880_((float)(this.f_97735_ + x) + (float)(width - scaledWidth) / 2.0F, (float)(this.f_97736_ + y) + (float)(height - scaledHeight) / 2.0F, 0.0F);
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, text, 0, 0, color, false);
-      graphics.m_280168_().m_85849_();
+      graphics.pose().pushPose();
+      graphics.pose()
+         .translate((float)(this.leftPos + x) + (float)(width - scaledWidth) / 2.0F, (float)(this.topPos + y) + (float)(height - scaledHeight) / 2.0F, 0.0F);
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, text, 0, 0, color, false);
+      graphics.pose().popPose();
    }
 
    private void drawFitted(GuiGraphics graphics, Component text, int x, int y, int maxWidth, int color) {
-      int textWidth = this.f_96547_.m_92852_(text);
+      int textWidth = this.font.width(text);
       if (textWidth <= maxWidth) {
-         graphics.m_280614_(this.f_96547_, text, this.f_97735_ + x, this.f_97736_ + y, color, false);
+         graphics.drawString(this.font, text, this.leftPos + x, this.topPos + y, color, false);
       } else {
          float scale = (float)maxWidth / (float)textWidth;
-         graphics.m_280168_().m_85836_();
-         graphics.m_280168_().m_252880_((float)(this.f_97735_ + x), (float)(this.f_97736_ + y), 0.0F);
-         graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-         graphics.m_280614_(this.f_96547_, text, 0, 0, color, false);
-         graphics.m_280168_().m_85849_();
+         graphics.pose().pushPose();
+         graphics.pose().translate((float)(this.leftPos + x), (float)(this.topPos + y), 0.0F);
+         graphics.pose().scale(scale, scale, 1.0F);
+         graphics.drawString(this.font, text, 0, 0, color, false);
+         graphics.pose().popPose();
       }
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
-      if (button == 0 && inBounds(mouseX, mouseY, this.f_97735_ + 244, this.f_97736_ + 0, 12, 148)) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
+      if (button == 0 && inBounds(mouseX, mouseY, this.leftPos + 244, this.topPos + 0, 12, 148)) {
          this.draggingScrollbar = true;
          this.updateScrollFromMouse(mouseY);
          return true;
@@ -241,43 +241,43 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
          if (button == 0) {
             this.pressedButton = this.getButtonAt(mouseX, mouseY);
             if (this.pressedButton >= 0) {
-               this.f_96541_.f_91072_.m_105208_(((FactionTradeMenu)this.f_97732_).f_38840_, this.pressedButton);
+               this.minecraft.gameMode.handleInventoryButtonClick(((FactionTradeMenu)this.menu).containerId, this.pressedButton);
                return true;
             }
          }
 
-         return super.m_6375_(mouseX, mouseY, button);
+         return super.mouseClicked(mouseX, mouseY, button);
       }
    }
 
-   public boolean m_6050_(double mouseX, double mouseY, double delta) {
-      if (inBounds(mouseX, mouseY, this.f_97735_, this.f_97736_ + 0, 256, 148)) {
+   public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+      if (inBounds(mouseX, mouseY, this.leftPos, this.topPos + 0, 256, 148)) {
          this.scrollPixels = Math.max(
-            0, Math.min(this.maxScrollPixels(((FactionTradeMenu)this.f_97732_).getTrades().size()), this.scrollPixels - (int)Math.signum(delta) * 18)
+            0, Math.min(this.maxScrollPixels(((FactionTradeMenu)this.menu).getTrades().size()), this.scrollPixels - (int)Math.signum(delta) * 18)
          );
          return true;
       } else {
-         return super.m_6050_(mouseX, mouseY, delta);
+         return super.mouseScrolled(mouseX, mouseY, delta);
       }
    }
 
-   public boolean m_7979_(double mouseX, double mouseY, int button, double dragX, double dragY) {
+   public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
       if (this.draggingScrollbar) {
          this.updateScrollFromMouse(mouseY);
          return true;
       } else {
-         return super.m_7979_(mouseX, mouseY, button, dragX, dragY);
+         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
       }
    }
 
-   public boolean m_6348_(double mouseX, double mouseY, int button) {
+   public boolean mouseReleased(double mouseX, double mouseY, int button) {
       this.pressedButton = -1;
       this.draggingScrollbar = false;
-      return super.m_6348_(mouseX, mouseY, button);
+      return super.mouseReleased(mouseX, mouseY, button);
    }
 
    private int getButtonAt(double mouseX, double mouseY) {
-      List<FactionTradeListRegistry.FactionTradeEntry> trades = ((FactionTradeMenu)this.f_97732_).getTrades();
+      List<FactionTradeListRegistry.FactionTradeEntry> trades = ((FactionTradeMenu)this.menu).getTrades();
 
       for (int index = 0; index < trades.size(); index++) {
          int y = 8 + index * 59 - this.scrollPixels;
@@ -285,7 +285,7 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
             break;
          }
 
-         if (y + 59 > 0 && inBounds(mouseX, mouseY, this.f_97735_ + 133, this.f_97736_ + y + 17, 70, 20)) {
+         if (y + 59 > 0 && inBounds(mouseX, mouseY, this.leftPos + 133, this.topPos + y + 17, 70, 20)) {
             return FactionTradeMenu.tradeButton(index);
          }
       }
@@ -294,10 +294,10 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
    }
 
    private ItemStack hoveredTradeStack(double mouseX, double mouseY) {
-      if (!inBounds(mouseX, mouseY, this.f_97735_, this.f_97736_ + 0, 244, 148)) {
-         return ItemStack.f_41583_;
+      if (!inBounds(mouseX, mouseY, this.leftPos, this.topPos + 0, 244, 148)) {
+         return ItemStack.EMPTY;
       } else {
-         List<FactionTradeListRegistry.FactionTradeEntry> trades = ((FactionTradeMenu)this.f_97732_).getTrades();
+         List<FactionTradeListRegistry.FactionTradeEntry> trades = ((FactionTradeMenu)this.menu).getTrades();
 
          for (int index = 0; index < trades.size(); index++) {
             int y = 8 + index * 59 - this.scrollPixels;
@@ -307,18 +307,18 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
 
             if (y + 59 > 0) {
                ItemStack stack = this.stackAt(mouseX, mouseY, 8, y, trades.get(index).inputs());
-               if (!stack.m_41619_()) {
+               if (!stack.isEmpty()) {
                   return stack;
                }
 
                stack = this.stackAt(mouseX, mouseY, 71, y, trades.get(index).outputs());
-               if (!stack.m_41619_()) {
+               if (!stack.isEmpty()) {
                   return stack;
                }
             }
          }
 
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
@@ -326,22 +326,22 @@ public class FactionTradeScreen extends AbstractContainerScreen<FactionTradeMenu
       for (int slot = 0; slot < Math.min(9, stacks.size()); slot++) {
          int slotX = x + slot % 3 * 18;
          int slotY = y + slot / 3 * 18;
-         if (inBounds(mouseX, mouseY, this.f_97735_ + slotX - 1, this.f_97736_ + slotY - 1, 18, 18)) {
+         if (inBounds(mouseX, mouseY, this.leftPos + slotX - 1, this.topPos + slotY - 1, 18, 18)) {
             return stacks.get(slot);
          }
       }
 
-      return ItemStack.f_41583_;
+      return ItemStack.EMPTY;
    }
 
    private void updateScrollFromMouse(double mouseY) {
-      int max = this.maxScrollPixels(((FactionTradeMenu)this.f_97732_).getTrades().size());
-      int thumbHeight = this.thumbHeight(((FactionTradeMenu)this.f_97732_).getTrades().size());
+      int max = this.maxScrollPixels(((FactionTradeMenu)this.menu).getTrades().size());
+      int thumbHeight = this.thumbHeight(((FactionTradeMenu)this.menu).getTrades().size());
       if (max <= 0) {
          this.scrollPixels = 0;
       } else {
          int travel = 146 - thumbHeight;
-         double local = Math.max(0.0, Math.min((double)travel, mouseY - (double)(this.f_97736_ + 0 + 1) - (double)thumbHeight / 2.0));
+         double local = Math.max(0.0, Math.min((double)travel, mouseY - (double)(this.topPos + 0 + 1) - (double)thumbHeight / 2.0));
          this.scrollPixels = (int)Math.round(local / (double)travel * (double)max);
       }
    }

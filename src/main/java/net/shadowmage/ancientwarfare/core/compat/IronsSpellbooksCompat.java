@@ -44,7 +44,7 @@ public final class IronsSpellbooksCompat {
    }
 
    public static boolean isSpellContainer(ItemStack stack) {
-      if (isLoaded() && stack != null && !stack.m_41619_()) {
+      if (isLoaded() && stack != null && !stack.isEmpty()) {
          try {
             return Boolean.TRUE.equals(invoke("isSpellContainer", new Class[]{ItemStack.class}, stack));
          } catch (LinkageError | ReflectiveOperationException var2) {

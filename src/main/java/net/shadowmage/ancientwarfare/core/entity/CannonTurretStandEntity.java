@@ -28,8 +28,8 @@ import software.bernie.geckolib.core.object.PlayState;
 
 public class CannonTurretStandEntity extends ChestPushcartEntity implements SiegeWeaponControl {
    public static final int STORAGE_SLOT_COUNT = 27;
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.cannon_turret_stand");
-   private static final Component FIXED_MENU_TITLE = Component.m_237115_("container.ancientwarfare.cannon_stand_fixed");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.cannon_turret_stand");
+   private static final Component FIXED_MENU_TITLE = Component.translatable("container.ancientwarfare.cannon_stand_fixed");
    private static final float MIN_PITCH = -12.0F;
    private static final float MAX_PITCH = 27.0F;
    private static final float YAW_SPEED = 2.0F;
@@ -40,31 +40,31 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
    private static final int FIRE_ANIMATION_LENGTH_TICKS = 12;
    private static final byte FIRE_ANIMATION_EVENT = 61;
    private static final RawAnimation FIRE = RawAnimation.begin().thenPlay("animation.ancientwarfare.cannon_turret_stand.fire_recoil");
-   private static final EntityDataAccessor<Float> TURRET_PITCH = SynchedEntityData.m_135353_(CannonTurretStandEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Float> TURRET_YAW = SynchedEntityData.m_135353_(CannonTurretStandEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Integer> FIRE_ANIMATION_TICKS = SynchedEntityData.m_135353_(
-      CannonTurretStandEntity.class, EntityDataSerializers.f_135028_
+   private static final EntityDataAccessor<Float> TURRET_PITCH = SynchedEntityData.defineId(CannonTurretStandEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Float> TURRET_YAW = SynchedEntityData.defineId(CannonTurretStandEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Integer> FIRE_ANIMATION_TICKS = SynchedEntityData.defineId(
+      CannonTurretStandEntity.class, EntityDataSerializers.INT
    );
-   private static final EntityDataAccessor<Boolean> FIXED_TURRET = SynchedEntityData.m_135353_(CannonTurretStandEntity.class, EntityDataSerializers.f_135035_);
+   private static final EntityDataAccessor<Boolean> FIXED_TURRET = SynchedEntityData.defineId(CannonTurretStandEntity.class, EntityDataSerializers.BOOLEAN);
    private int fireCooldown;
    private int previousFireAnimationTicks;
 
    public CannonTurretStandEntity(EntityType<? extends CannonTurretStandEntity> type, Level level) {
       super(type, level);
-      this.m_20242_(true);
+      this.setNoGravity(true);
    }
 
    @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(TURRET_PITCH, 0.0F);
-      this.f_19804_.m_135372_(TURRET_YAW, 0.0F);
-      this.f_19804_.m_135372_(FIRE_ANIMATION_TICKS, 0);
-      this.f_19804_.m_135372_(FIXED_TURRET, false);
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(TURRET_PITCH, 0.0F);
+      this.entityData.define(TURRET_YAW, 0.0F);
+      this.entityData.define(FIRE_ANIMATION_TICKS, 0);
+      this.entityData.define(FIXED_TURRET, false);
    }
 
    @Override
-   public int m_6643_() {
+   public int getContainerSize() {
       return 27;
    }
 
@@ -79,60 +79,60 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
    }
 
    public float getTurretPitch() {
-      return (Float)this.f_19804_.m_135370_(TURRET_PITCH);
+      return (Float)this.entityData.get(TURRET_PITCH);
    }
 
    public float getTurretYaw() {
-      return (Float)this.f_19804_.m_135370_(TURRET_YAW);
+      return (Float)this.entityData.get(TURRET_YAW);
    }
 
    public int getFireAnimationTicks() {
-      return (Integer)this.f_19804_.m_135370_(FIRE_ANIMATION_TICKS);
+      return (Integer)this.entityData.get(FIRE_ANIMATION_TICKS);
    }
 
    public boolean hasFixedTurret() {
-      return (Boolean)this.f_19804_.m_135370_(FIXED_TURRET);
+      return (Boolean)this.entityData.get(FIXED_TURRET);
    }
 
    public void setFixedTurret(boolean fixedTurret) {
-      this.f_19804_.m_135381_(FIXED_TURRET, fixedTurret);
+      this.entityData.set(FIXED_TURRET, fixedTurret);
       if (fixedTurret) {
-         this.f_19804_.m_135381_(TURRET_YAW, 0.0F);
+         this.entityData.set(TURRET_YAW, 0.0F);
       }
    }
 
    public void applyStandInput(float pitchInput, float yawInput) {
       if (Math.abs(pitchInput) > 1.0E-4F) {
-         this.f_19804_.m_135381_(TURRET_PITCH, clamp(this.getTurretPitch() + pitchInput * 1.0F, -12.0F, 27.0F));
+         this.entityData.set(TURRET_PITCH, clamp(this.getTurretPitch() + pitchInput * 1.0F, -12.0F, 27.0F));
       }
 
       if (!this.hasFixedTurret() && Math.abs(yawInput) > 1.0E-4F) {
-         this.f_19804_.m_135381_(TURRET_YAW, wrapDegrees(this.getTurretYaw() + yawInput * 2.0F));
+         this.entityData.set(TURRET_YAW, wrapDegrees(this.getTurretYaw() + yawInput * 2.0F));
       }
    }
 
    @Override
-   public void m_8119_() {
+   public void tick() {
       if (!this.isMobileCannon()) {
-         this.m_20242_(true);
-         this.m_20256_(Vec3.f_82478_);
+         this.setNoGravity(true);
+         this.setDeltaMovement(Vec3.ZERO);
       }
 
-      double fixedX = this.m_20185_();
-      double fixedY = this.m_20186_();
-      double fixedZ = this.m_20189_();
-      super.m_8119_();
+      double fixedX = this.getX();
+      double fixedY = this.getY();
+      double fixedZ = this.getZ();
+      super.tick();
       if (this.fireCooldown > 0) {
          this.fireCooldown--;
       }
 
       if (this.getFireAnimationTicks() > 0) {
-         this.f_19804_.m_135381_(FIRE_ANIMATION_TICKS, this.getFireAnimationTicks() - 1);
+         this.entityData.set(FIRE_ANIMATION_TICKS, this.getFireAnimationTicks() - 1);
       }
 
       if (!this.isMobileCannon()) {
-         this.m_20256_(Vec3.f_82478_);
-         this.m_7678_(fixedX, fixedY, fixedZ, this.m_146908_(), this.m_146909_());
+         this.setDeltaMovement(Vec3.ZERO);
+         this.moveTo(fixedX, fixedY, fixedZ, this.getYRot(), this.getXRot());
       }
    }
 
@@ -141,19 +141,19 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
    }
 
    public boolean tryFire() {
-      if (!this.m_9236_().f_46443_ && this.fireCooldown <= 0) {
+      if (!this.level().isClientSide && this.fireCooldown <= 0) {
          CannonTurretStandEntity.AmmoSlot ammoSlot = this.findLoadedAmmo();
          if (ammoSlot == null) {
             return false;
          } else {
-            ItemStack stack = this.m_8020_(ammoSlot.slot());
-            stack.m_41774_(1);
-            this.m_6836_(ammoSlot.slot(), stack);
-            this.m_6596_();
+            ItemStack stack = this.getItem(ammoSlot.slot());
+            stack.shrink(1);
+            this.setItem(ammoSlot.slot(), stack);
+            this.setChanged();
             this.fireAmmo(ammoSlot.ammoType());
             this.fireCooldown = 50;
-            this.f_19804_.m_135381_(FIRE_ANIMATION_TICKS, 12);
-            this.m_9236_().m_7605_(this, (byte)61);
+            this.entityData.set(FIRE_ANIMATION_TICKS, 12);
+            this.level().broadcastEntityEvent(this, (byte)61);
             return true;
          }
       } else {
@@ -161,12 +161,12 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
       }
    }
 
-   public void m_7822_(byte eventId) {
+   public void handleEntityEvent(byte eventId) {
       if (eventId == 61) {
-         this.f_19804_.m_135381_(FIRE_ANIMATION_TICKS, 12);
+         this.entityData.set(FIRE_ANIMATION_TICKS, 12);
          this.previousFireAnimationTicks = 0;
       } else {
-         super.m_7822_(eventId);
+         super.handleEntityEvent(eventId);
       }
    }
 
@@ -191,18 +191,18 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
          return false;
       } else {
          float worldYaw = SiegeWeaponNpcControl.worldYawTo(target, this);
-         if (this.hasFixedTurret() && !this.isMobileCannon() && Math.abs(Mth.m_14177_(worldYaw - this.m_146908_())) > 4.0F) {
+         if (this.hasFixedTurret() && !this.isMobileCannon() && Math.abs(Mth.wrapDegrees(worldYaw - this.getYRot())) > 4.0F) {
             return false;
          } else {
             float pitch = SiegeWeaponNpcControl.clearBallisticPitch(
-               this.m_9236_(),
+               this.level(),
                this,
                target,
                this.muzzleHeight(),
                this.muzzleDistance(),
                (double)this.projectileSpeed(),
                (double)this.projectileGravity(),
-               this.hasFixedTurret() && !this.isMobileCannon() ? this.m_146908_() : worldYaw,
+               this.hasFixedTurret() && !this.isMobileCannon() ? this.getYRot() : worldYaw,
                -12.0F,
                27.0F,
                6.0
@@ -231,18 +231,18 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
    public void aimAt(PathfinderMob engineer, LivingEntity target) {
       float worldYaw = SiegeWeaponNpcControl.worldYawTo(target, this);
       if (this.isMobileCannon()) {
-         float nextYaw = Mth.m_14148_(this.m_146908_(), worldYaw, 3.0F);
+         float nextYaw = Mth.approachDegrees(this.getYRot(), worldYaw, 3.0F);
          SiegeWeaponNpcControl.faceVehicle(this, nextYaw);
-         this.f_19804_.m_135381_(TURRET_YAW, 0.0F);
+         this.entityData.set(TURRET_YAW, 0.0F);
       } else if (this.hasFixedTurret()) {
-         this.f_19804_.m_135381_(TURRET_YAW, 0.0F);
+         this.entityData.set(TURRET_YAW, 0.0F);
       } else {
          float targetYaw = SiegeWeaponNpcControl.localYaw(worldYaw, this);
-         this.f_19804_.m_135381_(TURRET_YAW, wrapDegrees(Mth.m_14148_(this.getTurretYaw(), targetYaw, 3.0F)));
+         this.entityData.set(TURRET_YAW, wrapDegrees(Mth.approachDegrees(this.getTurretYaw(), targetYaw, 3.0F)));
       }
 
       float clearPitch = SiegeWeaponNpcControl.clearBallisticPitch(
-         this.m_9236_(),
+         this.level(),
          this,
          target,
          this.muzzleHeight(),
@@ -261,7 +261,7 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
             27.0F
          )
          : clearPitch;
-      this.f_19804_.m_135381_(TURRET_PITCH, Mth.m_14121_(this.getTurretPitch(), targetPitch, 1.5F));
+      this.entityData.set(TURRET_PITCH, Mth.approach(this.getTurretPitch(), targetPitch, 1.5F));
    }
 
    @Override
@@ -273,10 +273,10 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
    private boolean isAimedAt(LivingEntity target) {
       float worldYaw = SiegeWeaponNpcControl.worldYawTo(target, this);
       float yawError = !this.hasFixedTurret() && !this.isMobileCannon()
-         ? Math.abs(Mth.m_14177_(SiegeWeaponNpcControl.localYaw(worldYaw, this) - this.getTurretYaw()))
-         : Math.abs(Mth.m_14177_(worldYaw - this.m_146908_()));
+         ? Math.abs(Mth.wrapDegrees(SiegeWeaponNpcControl.localYaw(worldYaw, this) - this.getTurretYaw()))
+         : Math.abs(Mth.wrapDegrees(worldYaw - this.getYRot()));
       float targetPitch = SiegeWeaponNpcControl.clearBallisticPitch(
-         this.m_9236_(),
+         this.level(),
          this,
          target,
          this.muzzleHeight(),
@@ -306,20 +306,20 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
    }
 
    private void fireAmmo(CannonAmmoType ammoType) {
-      LivingEntity shooter = this.m_6688_();
-      double yaw = Math.toRadians((double)(this.m_146908_() + this.getTurretYaw()));
+      LivingEntity shooter = this.getControllingPassenger();
+      double yaw = Math.toRadians((double)(this.getYRot() + this.getTurretYaw()));
       double pitch = Math.toRadians((double)this.getTurretPitch());
       double cosPitch = Math.cos(pitch);
-      Vec3 direction = new Vec3(-Math.sin(yaw) * cosPitch, Math.sin(pitch), Math.cos(yaw) * cosPitch).m_82541_();
-      Vec3 muzzle = this.m_20182_().m_82549_(direction.m_82490_(this.muzzleDistance())).m_82520_(0.0, this.muzzleHeight(), 0.0);
+      Vec3 direction = new Vec3(-Math.sin(yaw) * cosPitch, Math.sin(pitch), Math.cos(yaw) * cosPitch).normalize();
+      Vec3 muzzle = this.position().add(direction.scale(this.muzzleDistance())).add(0.0, this.muzzleHeight(), 0.0);
       if (ammoType.pelletsOnLaunch()) {
          this.spawnPellets(shooter, ammoType, muzzle, direction);
       } else {
-         CannonShotEntity shot = new CannonShotEntity(this.m_9236_(), shooter, ammoType, false);
-         shot.m_7678_(muzzle.f_82479_, muzzle.f_82480_, muzzle.f_82481_, this.m_146908_() + this.getTurretYaw(), this.getTurretPitch());
+         CannonShotEntity shot = new CannonShotEntity(this.level(), shooter, ammoType, false);
+         shot.moveTo(muzzle.x, muzzle.y, muzzle.z, this.getYRot() + this.getTurretYaw(), this.getTurretPitch());
          shot.setBlockCollisionGraceOrigin(muzzle);
-         shot.m_6686_(direction.f_82479_, direction.f_82480_, direction.f_82481_, 3.8F, 0.18F);
-         this.m_9236_().m_7967_(shot);
+         shot.shoot(direction.x, direction.y, direction.z, 3.8F, 0.18F);
+         this.level().addFreshEntity(shot);
       }
    }
 
@@ -327,21 +327,21 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
       int count = Math.min(32, Math.max(1, ammoType.pelletCount()));
 
       for (int i = 0; i < count; i++) {
-         Vec3 spread = direction.m_82520_(
-               (this.f_19796_.m_188500_() - 0.5) * 0.28, (this.f_19796_.m_188500_() - 0.5) * 0.18, (this.f_19796_.m_188500_() - 0.5) * 0.28
+         Vec3 spread = direction.add(
+               (this.random.nextDouble() - 0.5) * 0.28, (this.random.nextDouble() - 0.5) * 0.18, (this.random.nextDouble() - 0.5) * 0.28
             )
-            .m_82541_();
-         CannonShotEntity pellet = new CannonShotEntity(this.m_9236_(), shooter, ammoType, true);
-         pellet.m_7678_(muzzle.f_82479_, muzzle.f_82480_, muzzle.f_82481_, this.m_146908_() + this.getTurretYaw(), this.getTurretPitch());
+            .normalize();
+         CannonShotEntity pellet = new CannonShotEntity(this.level(), shooter, ammoType, true);
+         pellet.moveTo(muzzle.x, muzzle.y, muzzle.z, this.getYRot() + this.getTurretYaw(), this.getTurretPitch());
          pellet.setBlockCollisionGraceOrigin(muzzle);
-         pellet.m_6686_(spread.f_82479_, spread.f_82480_, spread.f_82481_, 3.2F, 0.35F);
-         this.m_9236_().m_7967_(pellet);
+         pellet.shoot(spread.x, spread.y, spread.z, 3.2F, 0.35F);
+         this.level().addFreshEntity(pellet);
       }
    }
 
    private CannonTurretStandEntity.AmmoSlot findLoadedAmmo() {
-      for (int i = 0; i < this.m_6643_(); i++) {
-         ItemStack stack = this.m_8020_(i);
+      for (int i = 0; i < this.getContainerSize(); i++) {
+         ItemStack stack = this.getItem(i);
          CannonAmmoType ammoType = CannonAmmoItem.ammoType(stack);
          if (ammoType != null) {
             return new CannonTurretStandEntity.AmmoSlot(i, ammoType);
@@ -351,7 +351,7 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
       return null;
    }
 
-   public boolean m_7013_(int slot, ItemStack stack) {
+   public boolean canPlaceItem(int slot, ItemStack stack) {
       return CannonAmmoItem.ammoType(stack) != null;
    }
 
@@ -387,10 +387,10 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         Vec3 offset = this.getPassengerOffset().m_82524_(-(this.m_146908_() + this.getTurretYaw()) * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         Vec3 offset = this.getPassengerOffset().yRot(-(this.getYRot() + this.getTurretYaw()) * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -399,24 +399,24 @@ public class CannonTurretStandEntity extends ChestPushcartEntity implements Sieg
       ItemStack stack = new ItemStack(CannonTurretStandItem.itemForMaterialLevel(this.getMaterialLevel(), this.hasFixedTurret()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("CannonTurretStandData", tag);
+      stack.getOrCreateTag().put("CannonTurretStandData", tag);
       return stack;
    }
 
    @Override
    public void loadCartData(CompoundTag tag) {
       super.loadCartData(tag);
-      this.f_19804_.m_135381_(TURRET_PITCH, clamp(tag.m_128457_("TurretPitch"), -12.0F, 27.0F));
-      this.setFixedTurret(tag.m_128471_("FixedTurret"));
-      this.f_19804_.m_135381_(TURRET_YAW, this.hasFixedTurret() ? 0.0F : wrapDegrees(tag.m_128457_("TurretYaw")));
+      this.entityData.set(TURRET_PITCH, clamp(tag.getFloat("TurretPitch"), -12.0F, 27.0F));
+      this.setFixedTurret(tag.getBoolean("FixedTurret"));
+      this.entityData.set(TURRET_YAW, this.hasFixedTurret() ? 0.0F : wrapDegrees(tag.getFloat("TurretYaw")));
    }
 
    @Override
    public void saveCartData(CompoundTag tag) {
       super.saveCartData(tag);
-      tag.m_128350_("TurretPitch", this.getTurretPitch());
-      tag.m_128350_("TurretYaw", this.getTurretYaw());
-      tag.m_128379_("FixedTurret", this.hasFixedTurret());
+      tag.putFloat("TurretPitch", this.getTurretPitch());
+      tag.putFloat("TurretYaw", this.getTurretYaw());
+      tag.putBoolean("FixedTurret", this.hasFixedTurret());
    }
 
    private static float clamp(float value, float min, float max) {

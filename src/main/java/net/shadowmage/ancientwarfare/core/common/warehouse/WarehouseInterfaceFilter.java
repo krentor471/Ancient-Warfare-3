@@ -6,7 +6,7 @@ import net.minecraft.world.item.ItemStack;
 public class WarehouseInterfaceFilter {
    private static final String ITEM_TAG = "Item";
    private static final String QUANTITY_TAG = "Quantity";
-   private ItemStack item = ItemStack.f_41583_;
+   private ItemStack item = ItemStack.EMPTY;
    private int quantity;
 
    public ItemStack item() {
@@ -18,7 +18,7 @@ public class WarehouseInterfaceFilter {
    }
 
    public void set(ItemStack stack, int quantity) {
-      this.item = stack.m_41619_() ? ItemStack.f_41583_ : stack.m_255036_(1);
+      this.item = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
       this.quantity = Math.max(0, quantity);
    }
 
@@ -27,24 +27,24 @@ public class WarehouseInterfaceFilter {
    }
 
    public boolean matches(ItemStack stack) {
-      return !this.item.m_41619_() && !stack.m_41619_() && ItemStack.m_150942_(this.item, stack);
+      return !this.item.isEmpty() && !stack.isEmpty() && ItemStack.isSameItemSameTags(this.item, stack);
    }
 
    public CompoundTag save() {
       CompoundTag tag = new CompoundTag();
-      tag.m_128405_("Quantity", this.quantity);
-      if (!this.item.m_41619_()) {
-         tag.m_128365_("Item", this.item.m_41739_(new CompoundTag()));
+      tag.putInt("Quantity", this.quantity);
+      if (!this.item.isEmpty()) {
+         tag.put("Item", this.item.save(new CompoundTag()));
       }
 
       return tag;
    }
 
    public void load(CompoundTag tag) {
-      this.quantity = Math.max(0, tag.m_128451_("Quantity"));
-      this.item = tag.m_128441_("Item") ? ItemStack.m_41712_(tag.m_128469_("Item")) : ItemStack.f_41583_;
-      if (!this.item.m_41619_()) {
-         this.item.m_41764_(1);
+      this.quantity = Math.max(0, tag.getInt("Quantity"));
+      this.item = tag.contains("Item") ? ItemStack.of(tag.getCompound("Item")) : ItemStack.EMPTY;
+      if (!this.item.isEmpty()) {
+         this.item.setCount(1);
       }
    }
 }

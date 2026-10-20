@@ -91,7 +91,7 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
       entityId("wolf"),
       entityId("axolotl")
    };
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(38, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(38, ItemStack.EMPTY);
    private final Map<ResourceLocation, Integer> animalLimits = new HashMap<>();
    private BlockPos boundsMin;
    private BlockPos boundsMax;
@@ -114,7 +114,7 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
 
    @Override
    public boolean hasWork() {
-      return this.f_58857_ != null && !this.f_58857_.f_46443_
+      return this.level != null && !this.level.isClientSide
          ? this.findShearTarget().isPresent()
             || this.findMilkTarget().isPresent()
             || this.findCullTarget().isPresent()
@@ -125,12 +125,12 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType())) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType())) {
          this.storedEnergy = Math.min(
             this.getMaxEnergy(), this.storedEnergy + Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())))
          );
          this.processStoredEnergy();
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -162,10 +162,10 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
 
    private boolean tryShear() {
       Optional<Sheep> target = this.findShearTarget();
-      Optional<Integer> shearsSlot = this.findToolSlot(stack -> stack.m_150930_(Items.f_42574_));
+      Optional<Integer> shearsSlot = this.findToolSlot(stack -> stack.is(Items.SHEARS));
       if (!target.isEmpty() && !shearsSlot.isEmpty()) {
-         target.get().m_5851_(SoundSource.BLOCKS);
-         this.m_6596_();
+         target.get().shear(SoundSource.BLOCKS);
+         this.setChanged();
          return true;
       } else {
          return false;
@@ -174,11 +174,11 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
 
    private boolean tryMilk() {
       Optional<Cow> target = this.findMilkTarget();
-      Optional<Integer> bucketSlot = this.findToolSlot(stack -> stack.m_150930_(Items.f_42446_));
+      Optional<Integer> bucketSlot = this.findToolSlot(stack -> stack.is(Items.BUCKET));
       if (!target.isEmpty() && !bucketSlot.isEmpty()) {
-         ((ItemStack)this.items.get(bucketSlot.get())).m_41774_(1);
-         this.insertOrDrop(target.get().m_20183_(), new ItemStack(Items.f_42455_));
-         this.m_6596_();
+         ((ItemStack)this.items.get(bucketSlot.get())).shrink(1);
+         this.insertOrDrop(target.get().blockPosition(), new ItemStack(Items.MILK_BUCKET));
+         this.setChanged();
          return true;
       } else {
          return false;
@@ -187,13 +187,13 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
 
    private boolean tryBreed() {
       Optional<AnimalFarmBlockEntity.BreedPair> pair = this.findBreedPair();
-      if (!pair.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!pair.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          AnimalFarmBlockEntity.BreedPair target = pair.get();
-         target.first.m_27595_(null);
-         target.second.m_27595_(null);
-         target.first.m_27563_(serverLevel, target.second);
-         ((ItemStack)this.items.get(target.foodSlot)).m_41774_(2);
-         this.m_6596_();
+         target.first.setInLove(null);
+         target.second.setInLove(null);
+         target.first.spawnChildFromBreeding(serverLevel, target.second);
+         ((ItemStack)this.items.get(target.foodSlot)).shrink(2);
+         this.setChanged();
          return true;
       } else {
          return false;
@@ -206,13 +206,13 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
          return false;
       } else {
          ItemEntity item = target.get();
-         ItemStack stack = item.m_32055_().m_41777_();
+         ItemStack stack = item.getItem().copy();
          this.applyCullLootingBonus(stack);
          ItemStack remaining = this.insertStack(stack);
-         if (remaining.m_41619_()) {
-            item.m_146870_();
+         if (remaining.isEmpty()) {
+            item.discard();
          } else {
-            item.m_32045_(remaining);
+            item.setItem(remaining);
          }
 
          return true;
@@ -221,10 +221,10 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
 
    private boolean tryCull() {
       Optional<Animal> target = this.findCullTarget();
-      if (!target.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!target.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          Animal var4 = target.get();
          this.cullLootingPickups = Math.max(this.cullLootingPickups, 4);
-         var4.m_6469_(serverLevel.m_269111_().m_269264_(), var4.m_21233_() + 1.0F);
+         var4.hurt(serverLevel.damageSources().generic(), var4.getMaxHealth() + 1.0F);
          return true;
       } else {
          return false;
@@ -238,13 +238,13 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
             int bonus = 0;
 
             for (int i = 0; i < looting; i++) {
-               if (this.f_58857_.f_46441_.m_188501_() < 0.5F) {
+               if (this.level.random.nextFloat() < 0.5F) {
                   bonus++;
                }
             }
 
             if (bonus > 0) {
-               stack.m_41769_(bonus);
+               stack.grow(bonus);
             }
 
             this.cullLootingPickups--;
@@ -253,19 +253,19 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
    }
 
    private Optional<Sheep> findShearTarget() {
-      return this.findToolSlot(stack -> stack.m_150930_(Items.f_42574_)).isEmpty()
+      return this.findToolSlot(stack -> stack.is(Items.SHEARS)).isEmpty()
          ? Optional.empty()
-         : this.f_58857_.m_6443_(Sheep.class, this.workAabb(), Sheep::m_6220_).stream().findFirst();
+         : this.level.getEntitiesOfClass(Sheep.class, this.workAabb(), Sheep::readyForShearing).stream().findFirst();
    }
 
    private Optional<Cow> findMilkTarget() {
-      return this.findToolSlot(stack -> stack.m_150930_(Items.f_42446_)).isEmpty()
+      return this.findToolSlot(stack -> stack.is(Items.BUCKET)).isEmpty()
          ? Optional.empty()
-         : this.f_58857_.m_6443_(Cow.class, this.workAabb(), cow -> cow.m_6084_() && !cow.m_6162_()).stream().findFirst();
+         : this.level.getEntitiesOfClass(Cow.class, this.workAabb(), cow -> cow.isAlive() && !cow.isBaby()).stream().findFirst();
    }
 
    private Optional<AnimalFarmBlockEntity.BreedPair> findBreedPair() {
-      List<Animal> animals = this.f_58857_.m_6443_(Animal.class, this.workAabb(), animal -> animal.m_6084_() && animal.m_5957_());
+      List<Animal> animals = this.level.getEntitiesOfClass(Animal.class, this.workAabb(), animal -> animal.isAlive() && animal.canFallInLove());
 
       for (int firstIndex = 0; firstIndex < animals.size(); firstIndex++) {
          Animal first = animals.get(firstIndex);
@@ -285,26 +285,26 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
    }
 
    private boolean canBreedTogether(Animal first, Animal second) {
-      return first != second && first.m_6095_() == second.m_6095_() && first.m_5957_() && second.m_5957_();
+      return first != second && first.getType() == second.getType() && first.canFallInLove() && second.canFallInLove();
    }
 
    private Optional<ItemEntity> findPickup() {
-      return this.f_58857_.m_6443_(ItemEntity.class, this.workAabb(), item -> item.m_6084_() && this.isAnimalDrop(item.m_32055_())).stream().findFirst();
+      return this.level.getEntitiesOfClass(ItemEntity.class, this.workAabb(), item -> item.isAlive() && this.isAnimalDrop(item.getItem())).stream().findFirst();
    }
 
    private Optional<Animal> findCullTarget() {
       for (ResourceLocation animalType : SUPPORTED_ANIMAL_TYPES) {
-         if (BuiltInRegistries.f_256780_.m_7804_(animalType)) {
-            EntityType<?> entityType = (EntityType<?>)BuiltInRegistries.f_256780_.m_7745_(animalType);
-            List<Animal> adults = this.f_58857_
-               .m_142425_(
-                  EntityTypeTest.m_156916_(Animal.class),
+         if (BuiltInRegistries.ENTITY_TYPE.containsKey(animalType)) {
+            EntityType<?> entityType = (EntityType<?>)BuiltInRegistries.ENTITY_TYPE.get(animalType);
+            List<Animal> adults = this.level
+               .getEntities(
+                  EntityTypeTest.forClass(Animal.class),
                   this.workAabb(),
-                  animalx -> animalx.m_6095_() == entityType && animalx.m_6084_() && !animalx.m_6162_()
+                  animalx -> animalx.getType() == entityType && animalx.isAlive() && !animalx.isBaby()
                );
             if (adults.size() > this.getAnimalLimit(animalType)) {
                for (Animal animal : adults) {
-                  if (!animal.m_27593_()) {
+                  if (!animal.isInLove()) {
                      return Optional.of(animal);
                   }
                }
@@ -318,7 +318,7 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
    private Optional<Integer> findFoodSlot(Animal first, Animal second) {
       for (int slot = 27; slot < 30; slot++) {
          ItemStack stack = (ItemStack)this.items.get(slot);
-         if (stack.m_41613_() >= 2 && first.m_6898_(stack) && second.m_6898_(stack)) {
+         if (stack.getCount() >= 2 && first.isFood(stack) && second.isFood(stack)) {
             return Optional.of(slot);
          }
       }
@@ -329,7 +329,7 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
    private Optional<Integer> findToolSlot(AnimalFarmBlockEntity.StackPredicate predicate) {
       for (int slot = 30; slot < 33; slot++) {
          ItemStack stack = (ItemStack)this.items.get(slot);
-         if (!stack.m_41619_() && predicate.test(stack)) {
+         if (!stack.isEmpty() && predicate.test(stack)) {
             return Optional.of(slot);
          }
       }
@@ -341,53 +341,53 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
       return new AABB(
-         (double)min.m_123341_(),
-         (double)min.m_123342_(),
-         (double)min.m_123343_(),
-         (double)max.m_123341_() + 1.0,
-         (double)max.m_123342_() + 3.0,
-         (double)max.m_123343_() + 1.0
+         (double)min.getX(),
+         (double)min.getY(),
+         (double)min.getZ(),
+         (double)max.getX() + 1.0,
+         (double)max.getY() + 3.0,
+         (double)max.getZ() + 1.0
       );
    }
 
    public boolean isFoodItem(ItemStack stack) {
-      return !stack.m_41619_()
+      return !stack.isEmpty()
          && (
-            this.f_58857_ != null && this.f_58857_.m_6443_(Animal.class, this.workAabb(), animal -> animal.m_6898_(stack)).size() > 0
-               || stack.m_204117_(ItemTags.f_13149_)
-               || stack.m_150930_(Items.f_42405_)
-               || stack.m_150930_(Items.f_42404_)
-               || stack.m_150930_(Items.f_42578_)
-               || stack.m_150930_(Items.f_42577_)
-               || stack.m_150930_(Items.f_271133_)
-               || stack.m_150930_(Items.f_42619_)
-               || stack.m_150930_(Items.f_42677_)
-               || stack.m_150930_(Items.f_42620_)
-               || stack.m_150930_(Items.f_42732_)
-               || stack.m_150930_(Items.f_42733_)
-               || stack.m_150930_(Items.f_42410_)
-               || stack.m_150930_(Items.f_42436_)
-               || stack.m_150930_(Items.f_42437_)
-               || stack.m_150930_(Items.f_41939_)
-               || stack.m_150930_(Items.f_42129_)
-               || stack.m_150930_(Items.f_41867_)
-               || stack.m_150930_(Items.f_41911_)
-               || stack.m_150930_(Items.f_41982_)
-               || stack.m_150930_(Items.f_42780_)
-               || stack.m_150930_(Items.f_151079_)
-               || stack.m_150930_(Items.f_42518_)
-               || stack.m_150930_(Items.f_42526_)
-               || stack.m_150930_(Items.f_42527_)
-               || stack.m_150930_(Items.f_42528_)
-               || stack.m_150930_(Items.f_42459_)
-               || stack.m_150930_(Items.f_41954_)
-               || stack.m_150930_(Items.f_41955_)
-               || stack.m_150930_(Items.f_42583_)
+            this.level != null && this.level.getEntitiesOfClass(Animal.class, this.workAabb(), animal -> animal.isFood(stack)).size() > 0
+               || stack.is(ItemTags.FLOWERS)
+               || stack.is(Items.WHEAT)
+               || stack.is(Items.WHEAT_SEEDS)
+               || stack.is(Items.MELON_SEEDS)
+               || stack.is(Items.PUMPKIN_SEEDS)
+               || stack.is(Items.TORCHFLOWER_SEEDS)
+               || stack.is(Items.CARROT)
+               || stack.is(Items.GOLDEN_CARROT)
+               || stack.is(Items.POTATO)
+               || stack.is(Items.BEETROOT)
+               || stack.is(Items.BEETROOT_SEEDS)
+               || stack.is(Items.APPLE)
+               || stack.is(Items.GOLDEN_APPLE)
+               || stack.is(Items.ENCHANTED_GOLDEN_APPLE)
+               || stack.is(Items.DANDELION)
+               || stack.is(Items.HAY_BLOCK)
+               || stack.is(Items.SEAGRASS)
+               || stack.is(Items.BAMBOO)
+               || stack.is(Items.CACTUS)
+               || stack.is(Items.SWEET_BERRIES)
+               || stack.is(Items.GLOW_BERRIES)
+               || stack.is(Items.SLIME_BALL)
+               || stack.is(Items.COD)
+               || stack.is(Items.SALMON)
+               || stack.is(Items.TROPICAL_FISH)
+               || stack.is(Items.TROPICAL_FISH_BUCKET)
+               || stack.is(Items.CRIMSON_FUNGUS)
+               || stack.is(Items.WARPED_FUNGUS)
+               || stack.is(Items.ROTTEN_FLESH)
          );
    }
 
    public boolean isToolItem(ItemStack stack) {
-      return stack.m_150930_(Items.f_42446_) || stack.m_150930_(Items.f_42574_);
+      return stack.is(Items.BUCKET) || stack.is(Items.SHEARS);
    }
 
    public int getAnimalLimit(ResourceLocation animalType) {
@@ -400,73 +400,73 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
 
    public void setAnimalLimit(ResourceLocation animalType, int limit) {
       this.animalLimits.put(animalType, Math.max(0, limit));
-      this.m_6596_();
-      if (this.f_58857_ != null) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+      this.setChanged();
+      if (this.level != null) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 
    private boolean isAnimalDrop(ItemStack stack) {
-      return stack.m_150930_(Items.f_42521_)
-         || stack.m_150930_(Items.f_42402_)
-         || stack.m_150930_(Items.f_42454_)
-         || stack.m_150930_(Items.f_42579_)
-         || stack.m_150930_(Items.f_42485_)
-         || stack.m_150930_(Items.f_42581_)
-         || stack.m_150930_(Items.f_42658_)
-         || stack.m_150930_(Items.f_42697_)
-         || stack.m_150930_(Items.f_42649_)
-         || stack.m_150930_(Items.f_42648_)
-         || stack.m_150930_(Items.f_41870_)
-         || stack.m_150930_(Items.f_41871_)
-         || stack.m_150930_(Items.f_41872_)
-         || stack.m_150930_(Items.f_41873_)
-         || stack.m_150930_(Items.f_41874_)
-         || stack.m_150930_(Items.f_41875_)
-         || stack.m_150930_(Items.f_41876_)
-         || stack.m_150930_(Items.f_41877_)
-         || stack.m_150930_(Items.f_41878_)
-         || stack.m_150930_(Items.f_41932_)
-         || stack.m_150930_(Items.f_41933_)
-         || stack.m_150930_(Items.f_41934_)
-         || stack.m_150930_(Items.f_41935_)
-         || stack.m_150930_(Items.f_41936_)
-         || stack.m_150930_(Items.f_41937_)
-         || stack.m_150930_(Items.f_41938_);
+      return stack.is(Items.EGG)
+         || stack.is(Items.FEATHER)
+         || stack.is(Items.LEATHER)
+         || stack.is(Items.BEEF)
+         || stack.is(Items.PORKCHOP)
+         || stack.is(Items.CHICKEN)
+         || stack.is(Items.MUTTON)
+         || stack.is(Items.RABBIT)
+         || stack.is(Items.RABBIT_HIDE)
+         || stack.is(Items.RABBIT_FOOT)
+         || stack.is(Items.WHITE_WOOL)
+         || stack.is(Items.ORANGE_WOOL)
+         || stack.is(Items.MAGENTA_WOOL)
+         || stack.is(Items.LIGHT_BLUE_WOOL)
+         || stack.is(Items.YELLOW_WOOL)
+         || stack.is(Items.LIME_WOOL)
+         || stack.is(Items.PINK_WOOL)
+         || stack.is(Items.GRAY_WOOL)
+         || stack.is(Items.LIGHT_GRAY_WOOL)
+         || stack.is(Items.CYAN_WOOL)
+         || stack.is(Items.PURPLE_WOOL)
+         || stack.is(Items.BLUE_WOOL)
+         || stack.is(Items.BROWN_WOOL)
+         || stack.is(Items.GREEN_WOOL)
+         || stack.is(Items.RED_WOOL)
+         || stack.is(Items.BLACK_WOOL);
    }
 
    private void insertOrDrop(BlockPos pos, ItemStack stack) {
       ItemStack remaining = this.insertStack(stack);
-      if (!remaining.m_41619_()) {
-         Block.m_49840_(this.f_58857_, pos, remaining);
+      if (!remaining.isEmpty()) {
+         Block.popResource(this.level, pos, remaining);
       }
    }
 
    private ItemStack insertStack(ItemStack stack) {
-      return this.insertIntoRange(stack.m_41777_(), 0, 27);
+      return this.insertIntoRange(stack.copy(), 0, 27);
    }
 
    private ItemStack insertIntoRange(ItemStack stack, int start, int count) {
-      for (int slot = start; slot < start + count && !stack.m_41619_(); slot++) {
+      for (int slot = start; slot < start + count && !stack.isEmpty(); slot++) {
          ItemStack existing = (ItemStack)this.items.get(slot);
-         if (existing.m_41619_()) {
-            this.items.set(slot, stack.m_41777_());
-            stack.m_41764_(0);
-         } else if (ItemStack.m_150942_(existing, stack) && existing.m_41613_() < existing.m_41741_()) {
-            int moved = Math.min(stack.m_41613_(), existing.m_41741_() - existing.m_41613_());
-            existing.m_41769_(moved);
-            stack.m_41774_(moved);
+         if (existing.isEmpty()) {
+            this.items.set(slot, stack.copy());
+            stack.setCount(0);
+         } else if (ItemStack.isSameItemSameTags(existing, stack) && existing.getCount() < existing.getMaxStackSize()) {
+            int moved = Math.min(stack.getCount(), existing.getMaxStackSize() - existing.getCount());
+            existing.grow(moved);
+            stack.shrink(moved);
          }
       }
 
-      this.m_6596_();
+      this.setChanged();
       return stack;
    }
 
    @Override
    public BlockPos getBoundsMin() {
       if (this.boundsMin == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMin;
@@ -475,7 +475,7 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
    @Override
    public BlockPos getBoundsMax() {
       if (this.boundsMax == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMax;
@@ -487,7 +487,7 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
 
    public void adjustBounds(int minXDelta, int maxXDelta, int minZDelta, int maxZDelta) {
       WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjust(
-         this.f_58858_, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
+         this.worldPosition, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
       );
       if (adjusted != null) {
          this.boundsMin = adjusted.min();
@@ -500,58 +500,58 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
    public boolean containsWorkTarget(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_()
-         && pos.m_123342_() >= min.m_123342_()
-         && pos.m_123342_() <= min.m_123342_() + 3;
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ()
+         && pos.getY() >= min.getY()
+         && pos.getY() <= min.getY() + 3;
    }
 
    private void resetDefaultBounds(BlockPos pos, BlockState state) {
-      Direction facing = state.m_61138_(AutomationWorksiteBlock.FACING)
-         ? ((Direction)state.m_61143_(AutomationWorksiteBlock.FACING)).m_122424_()
+      Direction facing = state.hasProperty(AutomationWorksiteBlock.FACING)
+         ? ((Direction)state.getValue(AutomationWorksiteBlock.FACING)).getOpposite()
          : Direction.SOUTH;
-      BlockPos near = pos.m_121945_(facing);
-      BlockPos far = pos.m_5484_(facing, 5);
-      if (facing.m_122434_() == Axis.Z) {
-         this.boundsMin = new BlockPos(pos.m_123341_() - 2, pos.m_123342_(), Math.min(near.m_123343_(), far.m_123343_()));
-         this.boundsMax = new BlockPos(pos.m_123341_() + 2, pos.m_123342_(), Math.max(near.m_123343_(), far.m_123343_()));
+      BlockPos near = pos.relative(facing);
+      BlockPos far = pos.relative(facing, 5);
+      if (facing.getAxis() == Axis.Z) {
+         this.boundsMin = new BlockPos(pos.getX() - 2, pos.getY(), Math.min(near.getZ(), far.getZ()));
+         this.boundsMax = new BlockPos(pos.getX() + 2, pos.getY(), Math.max(near.getZ(), far.getZ()));
       } else {
-         this.boundsMin = new BlockPos(Math.min(near.m_123341_(), far.m_123341_()), pos.m_123342_(), pos.m_123343_() - 2);
-         this.boundsMax = new BlockPos(Math.max(near.m_123341_(), far.m_123341_()), pos.m_123342_(), pos.m_123343_() + 2);
+         this.boundsMin = new BlockPos(Math.min(near.getX(), far.getX()), pos.getY(), pos.getZ() - 2);
+         this.boundsMax = new BlockPos(Math.max(near.getX(), far.getX()), pos.getY(), pos.getZ() + 2);
       }
    }
 
    @Override
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
       CompoundTag limitsTag = new CompoundTag();
-      this.animalLimits.forEach((animalType, limit) -> limitsTag.m_128405_(animalType.toString(), Math.max(0, limit)));
-      tag.m_128365_("AnimalLimits", limitsTag);
+      this.animalLimits.forEach((animalType, limit) -> limitsTag.putInt(animalType.toString(), Math.max(0, limit)));
+      tag.put("AnimalLimits", limitsTag);
    }
 
    @Override
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      if (tag.m_128441_("BoundsMin")) {
-         this.boundsMin = BlockPos.m_122022_(tag.m_128454_("BoundsMin"));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      if (tag.contains("BoundsMin")) {
+         this.boundsMin = BlockPos.of(tag.getLong("BoundsMin"));
       }
 
-      if (tag.m_128441_("BoundsMax")) {
-         this.boundsMax = BlockPos.m_122022_(tag.m_128454_("BoundsMax"));
+      if (tag.contains("BoundsMax")) {
+         this.boundsMax = BlockPos.of(tag.getLong("BoundsMax"));
       }
 
       this.animalLimits.clear();
-      if (tag.m_128441_("AnimalLimits")) {
-         CompoundTag limitsTag = tag.m_128469_("AnimalLimits");
+      if (tag.contains("AnimalLimits")) {
+         CompoundTag limitsTag = tag.getCompound("AnimalLimits");
 
-         for (String key : limitsTag.m_128431_()) {
-            this.animalLimits.put(new ResourceLocation(key), Math.max(0, limitsTag.m_128451_(key)));
+         for (String key : limitsTag.getAllKeys()) {
+            this.animalLimits.put(new ResourceLocation(key), Math.max(0, limitsTag.getInt(key)));
          }
       }
 
@@ -559,95 +559,95 @@ public class AnimalFarmBlockEntity extends BasicWorksiteBlockEntity implements C
    }
 
    private void normalizeLoadedBounds() {
-      if (this.f_58857_ == null || !this.f_58857_.f_46443_) {
+      if (this.level == null || !this.level.isClientSide) {
          if (this.boundsMin != null && this.boundsMax != null && !WorksiteBoundsGeometry.hasValidSize(this.boundsMin, this.boundsMax, this.getMaxBoundsWidth())
             )
           {
-            this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+            this.resetDefaultBounds(this.worldPosition, this.getBlockState());
          }
       }
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
       CompoundTag limitsTag = new CompoundTag();
-      this.animalLimits.forEach((animalType, limit) -> limitsTag.m_128405_(animalType.toString(), Math.max(0, limit)));
-      tag.m_128365_("AnimalLimits", limitsTag);
+      this.animalLimits.forEach((animalType, limit) -> limitsTag.putInt(animalType.toString(), Math.max(0, limit)));
+      tag.put("AnimalLimits", limitsTag);
       return tag;
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 38;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return this.isValidSlot(slot) ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return this.isValidSlot(slot) ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         this.m_6596_();
+         this.setChanged();
          if (slot >= 33 && slot < 38) {
             this.refreshChunkLoading();
          }
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_(this.getDescriptionId());
+   public Component getDisplayName() {
+      return Component.translatable(this.getDescriptionId());
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new AnimalFarmMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new AnimalFarmMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createBoundsMenu(int containerId, Inventory playerInventory) {
-      return new AnimalFarmBoundsMenu(containerId, playerInventory, this.f_58858_);
+      return new AnimalFarmBoundsMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createControlMenu(int containerId, Inventory playerInventory) {
-      return new AnimalFarmControlMenu(containerId, playerInventory, this.f_58858_);
+      return new AnimalFarmControlMenu(containerId, playerInventory, this.worldPosition);
    }
 
    @Override

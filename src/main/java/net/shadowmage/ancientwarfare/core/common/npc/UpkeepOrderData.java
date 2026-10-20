@@ -28,13 +28,13 @@ public final class UpkeepOrderData {
 
    public static Optional<UpkeepOrderData.UpkeepEntry> getEntry(ItemStack stack) {
       CompoundTag orders = getOrdersTag(stack);
-      return orders != null && orders.m_128441_("upkeepPosition")
+      return orders != null && orders.contains("upkeepPosition")
          ? Optional.of(
             new UpkeepOrderData.UpkeepEntry(
-               BlockPos.m_122022_(orders.m_128454_("upkeepPosition")),
-               orders.m_128461_("dim"),
-               direction(orders.m_128451_("side")),
-               clampAmount(orders.m_128451_("upkeepAmount"))
+               BlockPos.of(orders.getLong("upkeepPosition")),
+               orders.getString("dim"),
+               direction(orders.getInt("side")),
+               clampAmount(orders.getInt("upkeepAmount"))
             )
          )
          : Optional.empty();
@@ -42,7 +42,7 @@ public final class UpkeepOrderData {
 
    public static boolean setTarget(ItemStack stack, Level level, BlockPos pos, Direction side) {
       if (AWCoreRegistryAccess.is(stack, AWCoreIds.UPKEEP_ORDER) && level != null && pos != null) {
-         BlockEntity blockEntity = level.m_7702_(pos);
+         BlockEntity blockEntity = level.getBlockEntity(pos);
          if (blockEntity == null) {
             return false;
          } else {
@@ -50,8 +50,8 @@ public final class UpkeepOrderData {
             setEntry(
                stack,
                new UpkeepOrderData.UpkeepEntry(
-                  pos.m_7949_(),
-                  level.m_46472_().m_135782_().toString(),
+                  pos.immutable(),
+                  level.dimension().location().toString(),
                   side == null ? Direction.DOWN : side,
                   previous == null ? 6000 : previous.upkeepAmount()
                )
@@ -64,42 +64,42 @@ public final class UpkeepOrderData {
    }
 
    public static void clear(ItemStack stack) {
-      if (stack.m_41782_()) {
-         stack.m_41784_().m_128473_("orders");
+      if (stack.hasTag()) {
+         stack.getOrCreateTag().remove("orders");
       }
    }
 
    public static ItemStack getFoodTarget(ItemStack stack) {
       CompoundTag orders = getOrdersTag(stack);
-      if (orders != null && orders.m_128425_("foodItem", 10)) {
-         ItemStack result = ItemStack.m_41712_(orders.m_128469_("foodItem"));
-         result.m_41764_(Math.max(1, Math.min(64, orders.m_128451_("foodCount"))));
+      if (orders != null && orders.contains("foodItem", 10)) {
+         ItemStack result = ItemStack.of(orders.getCompound("foodItem"));
+         result.setCount(Math.max(1, Math.min(64, orders.getInt("foodCount"))));
          return result;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
    public static void setFoodTarget(ItemStack stack, ItemStack food) {
       CompoundTag orders = getOrdersTag(stack);
       if (orders != null) {
-         if (food != null && !food.m_41619_()) {
-            ItemStack one = food.m_41777_();
-            one.m_41764_(1);
-            orders.m_128365_("foodItem", one.m_41739_(new CompoundTag()));
-            orders.m_128405_("foodCount", Math.max(1, Math.min(64, food.m_41613_())));
+         if (food != null && !food.isEmpty()) {
+            ItemStack one = food.copy();
+            one.setCount(1);
+            orders.put("foodItem", one.save(new CompoundTag()));
+            orders.putInt("foodCount", Math.max(1, Math.min(64, food.getCount())));
          } else {
-            orders.m_128473_("foodItem");
-            orders.m_128473_("foodCount");
+            orders.remove("foodItem");
+            orders.remove("foodCount");
          }
       }
    }
 
    public static void changeFoodCount(ItemStack stack, int delta) {
       CompoundTag orders = getOrdersTag(stack);
-      if (orders != null && orders.m_128425_("foodItem", 10)) {
-         int count = Math.max(1, Math.min(64, orders.m_128451_("foodCount") + delta));
-         orders.m_128405_("foodCount", count);
+      if (orders != null && orders.contains("foodItem", 10)) {
+         int count = Math.max(1, Math.min(64, orders.getInt("foodCount") + delta));
+         orders.putInt("foodCount", count);
       }
    }
 
@@ -130,24 +130,24 @@ public final class UpkeepOrderData {
 
    private static void setEntry(ItemStack stack, UpkeepOrderData.UpkeepEntry entry) {
       CompoundTag orders = new CompoundTag();
-      orders.m_128356_("upkeepPosition", entry.pos().m_121878_());
-      orders.m_128359_("dim", entry.dimension());
-      orders.m_128405_("side", entry.side().ordinal());
-      orders.m_128405_("upkeepAmount", clampAmount(entry.upkeepAmount()));
+      orders.putLong("upkeepPosition", entry.pos().asLong());
+      orders.putString("dim", entry.dimension());
+      orders.putInt("side", entry.side().ordinal());
+      orders.putInt("upkeepAmount", clampAmount(entry.upkeepAmount()));
       ItemStack food = getFoodTarget(stack);
-      if (!food.m_41619_()) {
-         ItemStack one = food.m_41777_();
-         one.m_41764_(1);
-         orders.m_128365_("foodItem", one.m_41739_(new CompoundTag()));
-         orders.m_128405_("foodCount", food.m_41613_());
+      if (!food.isEmpty()) {
+         ItemStack one = food.copy();
+         one.setCount(1);
+         orders.put("foodItem", one.save(new CompoundTag()));
+         orders.putInt("foodCount", food.getCount());
       }
 
-      stack.m_41784_().m_128365_("orders", orders);
+      stack.getOrCreateTag().put("orders", orders);
    }
 
    private static CompoundTag getOrdersTag(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag != null && tag.m_128425_("orders", 10) ? tag.m_128469_("orders") : null;
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("orders", 10) ? tag.getCompound("orders") : null;
    }
 
    private static Direction direction(int ordinal) {

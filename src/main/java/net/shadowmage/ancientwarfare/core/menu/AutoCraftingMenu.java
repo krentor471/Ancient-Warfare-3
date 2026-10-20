@@ -46,70 +46,70 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
    private final AutoCraftingBlockEntity station;
    private final Container container;
    private final ResultContainer resultSlots = new ResultContainer();
-   private final DataSlot matchingRecipeCount = DataSlot.m_39401_();
+   private final DataSlot matchingRecipeCount = DataSlot.standalone();
 
    public AutoCraftingMenu(int id, Inventory inventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.AUTO_CRAFTING), id);
       this.pos = pos;
-      this.level = inventory.f_35978_.m_9236_();
-      this.station = this.level.m_7702_(pos) instanceof AutoCraftingBlockEntity auto ? auto : null;
+      this.level = inventory.player.level();
+      this.station = this.level.getBlockEntity(pos) instanceof AutoCraftingBlockEntity auto ? auto : null;
       this.container = (Container)(this.station == null ? new SimpleContainer(37) : this.station);
-      this.m_38897_(new Slot(this.resultSlots, 0, 134, 26) {
-         public boolean m_5857_(ItemStack stack) {
+      this.addSlot(new Slot(this.resultSlots, 0, 134, 26) {
+         public boolean mayPlace(ItemStack stack) {
             return false;
          }
 
-         public boolean m_8010_(Player player) {
+         public boolean mayPickup(Player player) {
             return false;
          }
       });
-      this.m_38897_(new Slot(this.container, 0, 8, 26) {
-         public boolean m_5857_(ItemStack stack) {
-            return stack.m_41720_() instanceof ResearchBookItem;
+      this.addSlot(new Slot(this.container, 0, 8, 26) {
+         public boolean mayPlace(ItemStack stack) {
+            return stack.getItem() instanceof ResearchBookItem;
          }
       });
 
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 3; col++) {
-            this.m_38897_(new Slot(this.container, 1 + row * 3 + col, 62 + col * 18, 8 + row * 18));
+            this.addSlot(new Slot(this.container, 1 + row * 3 + col, 62 + col * 18, 8 + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(this.container, 28 + col, 8 + col * 18, 66));
+         this.addSlot(new Slot(this.container, 28 + col, 8 + col * 18, 66));
       }
 
       for (int row = 0; row < 2; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(this.container, 10 + row * 9 + col, 8 + col * 18, 84 + row * 18));
+            this.addSlot(new Slot(this.container, 10 + row * 9 + col, 8 + col * 18, 84 + row * 18));
          }
       }
 
       this.addPlayerInventory(inventory);
-      this.m_38895_(this.matchingRecipeCount);
-      this.m_6199_(this.container);
+      this.addDataSlot(this.matchingRecipeCount);
+      this.slotsChanged(this.container);
    }
 
-   public void m_6199_(Container changedContainer) {
-      if (!this.level.f_46443_) {
+   public void slotsChanged(Container changedContainer) {
+      if (!this.level.isClientSide) {
          CraftingContainer crafting = template(this.container);
          List<Recipe<CraftingContainer>> recipes = matchingRecipes(this.level, this.container, crafting);
          Recipe<CraftingContainer> selected = this.normalizeSelection(recipes);
-         this.matchingRecipeCount.m_6422_(recipes.size());
-         this.resultSlots.m_6836_(0, CraftingRecipeSelection.result(selected, crafting, this.level));
-         this.m_38946_();
+         this.matchingRecipeCount.set(recipes.size());
+         this.resultSlots.setItem(0, CraftingRecipeSelection.result(selected, crafting, this.level));
+         this.broadcastChanges();
       }
    }
 
    private void addPlayerInventory(Inventory inventory) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(inventory, col + row * 9 + 9, 8 + col * 18, 132 + row * 18));
+            this.addSlot(new Slot(inventory, col + row * 9 + 9, 8 + col * 18, 132 + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(inventory, col, 8 + col * 18, 190));
+         this.addSlot(new Slot(inventory, col, 8 + col * 18, 190));
       }
    }
 
@@ -126,60 +126,60 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
    }
 
    public boolean hasMultipleRecipes() {
-      return this.matchingRecipeCount.m_6501_() > 1;
+      return this.matchingRecipeCount.get() > 1;
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.AUTO_CRAFTING));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.AUTO_CRAFTING));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      if (index >= 0 && index < this.f_38839_.size()) {
-         Slot source = (Slot)this.f_38839_.get(index);
-         if (!source.m_6657_()) {
-            return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      if (index >= 0 && index < this.slots.size()) {
+         Slot source = (Slot)this.slots.get(index);
+         if (!source.hasItem()) {
+            return ItemStack.EMPTY;
          } else {
-            ItemStack original = source.m_7993_().m_41777_();
-            ItemStack moving = source.m_7993_();
+            ItemStack original = source.getItem().copy();
+            ItemStack moving = source.getItem();
             int storageStart = 11;
             int outputStart = storageStart + 18;
             int playerStart = outputStart + 9;
             int playerEnd = playerStart + 36;
             boolean moved;
             if (index < 2) {
-               moved = this.m_38903_(moving, playerStart, playerEnd, false);
+               moved = this.moveItemStackTo(moving, playerStart, playerEnd, false);
             } else if (index < storageStart) {
-               moved = this.m_38903_(moving, storageStart, outputStart, false);
+               moved = this.moveItemStackTo(moving, storageStart, outputStart, false);
             } else if (index < outputStart) {
-               moved = this.m_38903_(moving, playerStart, playerEnd, false);
+               moved = this.moveItemStackTo(moving, playerStart, playerEnd, false);
             } else if (index < playerStart) {
-               moved = this.m_38903_(moving, playerStart, playerEnd, false);
+               moved = this.moveItemStackTo(moving, playerStart, playerEnd, false);
             } else {
-               moved = moving.m_41720_() instanceof ResearchBookItem
-                  ? this.m_38903_(moving, 1, 2, false)
-                  : this.m_38903_(moving, storageStart, outputStart, false);
+               moved = moving.getItem() instanceof ResearchBookItem
+                  ? this.moveItemStackTo(moving, 1, 2, false)
+                  : this.moveItemStackTo(moving, storageStart, outputStart, false);
             }
 
             if (!moved) {
-               return ItemStack.f_41583_;
+               return ItemStack.EMPTY;
             } else {
-               if (moving.m_41619_()) {
-                  source.m_5852_(ItemStack.f_41583_);
+               if (moving.isEmpty()) {
+                  source.set(ItemStack.EMPTY);
                } else {
-                  source.m_6654_();
+                  source.setChanged();
                }
 
-               source.m_142406_(player, moving);
+               source.onTake(player, moving);
                return original;
             }
          }
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (this.level.f_46443_ || this.station == null) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (this.level.isClientSide || this.station == null) {
          return false;
       } else if (id != 1000 && id != 1001) {
          return id == 1 && this.station.craftOnce();
@@ -190,22 +190,22 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
             return false;
          } else {
             this.station.setSelectedRecipeId(CraftingRecipeSelection.cycle(recipes, this.station.getSelectedRecipeId(), id == 1000 ? -1 : 1));
-            this.m_6199_(this.container);
+            this.slotsChanged(this.container);
             return true;
          }
       }
    }
 
    public boolean transferEngineeringRecipe(Player player, ResourceLocation recipeId) {
-      if (!this.level.f_46443_ && recipeId != null && this.station != null) {
+      if (!this.level.isClientSide && recipeId != null && this.station != null) {
          boolean transferred = this.level
-            .m_7465_()
-            .m_44043_(recipeId)
-            .filter(recipe -> recipe.m_6671_() == AWCoreRegistryAccess.recipeType(AWCoreIds.id("engineering")))
-            .map(recipe -> EngineeringRecipeTransfer.fill(this.container, 1, 0, player.m_150109_(), (EngineeringRecipe)recipe, new int[]{10}, new int[]{18}))
+            .getRecipeManager()
+            .byKey(recipeId)
+            .filter(recipe -> recipe.getType() == AWCoreRegistryAccess.recipeType(AWCoreIds.id("engineering")))
+            .map(recipe -> EngineeringRecipeTransfer.fill(this.container, 1, 0, player.getInventory(), (EngineeringRecipe)recipe, new int[]{10}, new int[]{18}))
             .orElse(false);
          if (transferred) {
-            this.m_6199_(this.container);
+            this.slotsChanged(this.container);
          }
 
          return transferred;
@@ -218,7 +218,7 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
       if (level != null && station != null) {
          CraftingContainer template = template(station);
          ItemStack result = result(level, station, template);
-         return !result.m_41619_() && hasResources(station, template) && hasOutputSpace(station, result);
+         return !result.isEmpty() && hasResources(station, template) && hasOutputSpace(station, result);
       } else {
          return false;
       }
@@ -237,24 +237,24 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
 
          ItemStack result = result(level, station, template);
          insertOutput(station, result);
-         station.m_6596_();
+         station.setChanged();
          return true;
       }
    }
 
    private static CraftingContainer template(Container container) {
       CraftingContainer crafting = new TransientCraftingContainer(new AbstractContainerMenu(null, -1) {
-         public ItemStack m_7648_(Player player, int index) {
-            return ItemStack.f_41583_;
+         public ItemStack quickMoveStack(Player player, int index) {
+            return ItemStack.EMPTY;
          }
 
-         public boolean m_6875_(Player player) {
+         public boolean stillValid(Player player) {
             return true;
          }
       }, 3, 3);
 
       for (int i = 0; i < 9; i++) {
-         crafting.m_6836_(i, container.m_8020_(1 + i));
+         crafting.setItem(i, container.getItem(1 + i));
       }
 
       return crafting;
@@ -265,8 +265,8 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
    }
 
    private static List<Recipe<CraftingContainer>> matchingRecipes(Level level, Container container, CraftingContainer crafting) {
-      ItemStack book = container.m_8020_(0);
-      Set<String> completed = book.m_41619_() ? Set.of() : ResearchBookItem.getCompletedResearch(book);
+      ItemStack book = container.getItem(0);
+      Set<String> completed = book.isEmpty() ? Set.of() : ResearchBookItem.getCompletedResearch(book);
       return CraftingRecipeSelection.matching(level, crafting, completed);
    }
 
@@ -275,7 +275,7 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
       List<Recipe<CraftingContainer>> recipes = matchingRecipes(level, container, crafting);
       Recipe<CraftingContainer> selected = CraftingRecipeSelection.select(recipes, selectedId);
       if (container instanceof AutoCraftingBlockEntity stationx) {
-         ResourceLocation normalized = selected == null ? null : selected.m_6423_();
+         ResourceLocation normalized = selected == null ? null : selected.getId();
          if (!Objects.equals(normalized, selectedId)) {
             stationx.setSelectedRecipeId(normalized);
          }
@@ -286,8 +286,8 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
 
    private Recipe<CraftingContainer> normalizeSelection(List<Recipe<CraftingContainer>> recipes) {
       Recipe<CraftingContainer> selected = CraftingRecipeSelection.select(recipes, this.station == null ? null : this.station.getSelectedRecipeId());
-      if (this.station != null && !Objects.equals(this.station.getSelectedRecipeId(), selected == null ? null : selected.m_6423_())) {
-         this.station.setSelectedRecipeId(selected == null ? null : selected.m_6423_());
+      if (this.station != null && !Objects.equals(this.station.getSelectedRecipeId(), selected == null ? null : selected.getId())) {
+         this.station.setSelectedRecipeId(selected == null ? null : selected.getId());
       }
 
       return selected;
@@ -298,9 +298,9 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
          int count = 0;
 
          for (int i = 0; i < 18; i++) {
-            ItemStack stack = container.m_8020_(10 + i);
-            if (!stack.m_41619_() && ItemStack.m_150942_(stack, entry.getKey().stack)) {
-               count += stack.m_41613_();
+            ItemStack stack = container.getItem(10 + i);
+            if (!stack.isEmpty() && ItemStack.isSameItemSameTags(stack, entry.getKey().stack)) {
+               count += stack.getCount();
             }
          }
 
@@ -313,18 +313,18 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
    }
 
    private static boolean hasOutputSpace(Container container, ItemStack result) {
-      int remaining = result.m_41613_();
+      int remaining = result.getCount();
 
       for (int i = 0; i < 9; i++) {
-         ItemStack stack = container.m_8020_(28 + i);
-         if (!stack.m_41619_() && ItemStack.m_150942_(stack, result)) {
-            remaining -= Math.max(0, stack.m_41741_() - stack.m_41613_());
+         ItemStack stack = container.getItem(28 + i);
+         if (!stack.isEmpty() && ItemStack.isSameItemSameTags(stack, result)) {
+            remaining -= Math.max(0, stack.getMaxStackSize() - stack.getCount());
          }
       }
 
       for (int ix = 0; ix < 9 && remaining > 0; ix++) {
-         if (container.m_8020_(28 + ix).m_41619_()) {
-            remaining -= result.m_41741_();
+         if (container.getItem(28 + ix).isEmpty()) {
+            remaining -= result.getMaxStackSize();
          }
       }
 
@@ -333,30 +333,30 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
 
    private static void removeResources(Container container, ItemStack template, int count) {
       for (int i = 0; i < 18 && count > 0; i++) {
-         ItemStack stack = container.m_8020_(10 + i);
-         if (!stack.m_41619_() && ItemStack.m_150942_(stack, template)) {
-            int moved = Math.min(count, stack.m_41613_());
-            stack.m_41774_(moved);
+         ItemStack stack = container.getItem(10 + i);
+         if (!stack.isEmpty() && ItemStack.isSameItemSameTags(stack, template)) {
+            int moved = Math.min(count, stack.getCount());
+            stack.shrink(moved);
             count -= moved;
          }
       }
    }
 
    private static void insertOutput(Container container, ItemStack result) {
-      for (int i = 0; i < 9 && !result.m_41619_(); i++) {
-         ItemStack stack = container.m_8020_(28 + i);
-         if (!stack.m_41619_() && ItemStack.m_150942_(stack, result)) {
-            int moved = Math.min(result.m_41613_(), stack.m_41741_() - stack.m_41613_());
-            stack.m_41769_(moved);
-            result.m_41774_(moved);
+      for (int i = 0; i < 9 && !result.isEmpty(); i++) {
+         ItemStack stack = container.getItem(28 + i);
+         if (!stack.isEmpty() && ItemStack.isSameItemSameTags(stack, result)) {
+            int moved = Math.min(result.getCount(), stack.getMaxStackSize() - stack.getCount());
+            stack.grow(moved);
+            result.shrink(moved);
          }
       }
 
-      for (int ix = 0; ix < 9 && !result.m_41619_(); ix++) {
-         if (container.m_8020_(28 + ix).m_41619_()) {
-            int moved = Math.min(result.m_41613_(), result.m_41741_());
-            container.m_6836_(28 + ix, result.m_255036_(moved));
-            result.m_41774_(moved);
+      for (int ix = 0; ix < 9 && !result.isEmpty(); ix++) {
+         if (container.getItem(28 + ix).isEmpty()) {
+            int moved = Math.min(result.getCount(), result.getMaxStackSize());
+            container.setItem(28 + ix, result.copyWithCount(moved));
+            result.shrink(moved);
          }
       }
    }
@@ -365,9 +365,9 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
       Map<AutoCraftingMenu.StackKey, Integer> values = new LinkedHashMap<>();
 
       for (int i = 0; i < 9; i++) {
-         ItemStack stack = template.m_8020_(i);
-         if (!stack.m_41619_()) {
-            values.merge(new AutoCraftingMenu.StackKey(stack.m_255036_(1)), stack.m_41613_(), Integer::sum);
+         ItemStack stack = template.getItem(i);
+         if (!stack.isEmpty()) {
+            values.merge(new AutoCraftingMenu.StackKey(stack.copyWithCount(1)), stack.getCount(), Integer::sum);
          }
       }
 
@@ -378,7 +378,7 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
       ItemStack[] values = new ItemStack[9];
 
       for (int i = 0; i < 9; i++) {
-         values[i] = crafting.m_8020_(i);
+         values[i] = crafting.getItem(i);
       }
 
       return values;
@@ -387,7 +387,7 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
    private static record StackKey(ItemStack stack) {
       @Override
       public boolean equals(Object o) {
-         if (o instanceof AutoCraftingMenu.StackKey other && ItemStack.m_150942_(this.stack, other.stack)) {
+         if (o instanceof AutoCraftingMenu.StackKey other && ItemStack.isSameItemSameTags(this.stack, other.stack)) {
             return true;
          }
 
@@ -396,7 +396,7 @@ public class AutoCraftingMenu extends AbstractContainerMenu {
 
       @Override
       public int hashCode() {
-         return this.stack.m_41720_().hashCode() * 31 + (this.stack.m_41783_() == null ? 0 : this.stack.m_41783_().hashCode());
+         return this.stack.getItem().hashCode() * 31 + (this.stack.getTag() == null ? 0 : this.stack.getTag().hashCode());
       }
    }
 }

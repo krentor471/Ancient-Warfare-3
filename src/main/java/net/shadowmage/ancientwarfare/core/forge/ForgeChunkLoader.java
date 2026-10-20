@@ -9,6 +9,6 @@ import net.shadowmage.ancientwarfare.core.common.platform.PlatformChunkLoader;
 public class ForgeChunkLoader implements PlatformChunkLoader {
    @Override
    public boolean setForced(ServerLevel level, BlockPos owner, ChunkPos chunk, boolean forced, boolean ticking) {
-      return ForgeChunkManager.forceChunk(level, "ancientwarfare", owner, chunk.f_45578_, chunk.f_45579_, forced, ticking);
+      return ForgeChunkManager.forceChunk(level, "ancientwarfare", owner, chunk.x, chunk.z, forced, ticking);
    }
 }

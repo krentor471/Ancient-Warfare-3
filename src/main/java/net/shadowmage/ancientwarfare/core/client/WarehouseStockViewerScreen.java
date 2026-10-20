@@ -23,12 +23,12 @@ public class WarehouseStockViewerScreen extends LegacyContainerScreen<WarehouseS
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
+   protected void init() {
+      super.init();
       this.equalityButtons.clear();
-      this.registerLayoutRect("stock list", 0, 0, this.f_97726_, 86, false);
-      this.binding = this.legacyButton("controller binding", this.f_97726_ - 28, 74, 20, 10, Component.m_237113_(">"), button -> this.clickButton(31));
-      if (((WarehouseStockViewerMenu)this.f_97732_).isLinker()) {
+      this.registerLayoutRect("stock list", 0, 0, this.imageWidth, 86, false);
+      this.binding = this.legacyButton("controller binding", this.imageWidth - 28, 74, 20, 10, Component.literal(">"), button -> this.clickButton(31));
+      if (((WarehouseStockViewerMenu)this.menu).isLinker()) {
          this.matchButton = this.legacyButton("match mode", 8, 74, 100, 10, this.matchLabel(), button -> this.clickButton(30));
       }
 
@@ -36,10 +36,10 @@ public class WarehouseStockViewerScreen extends LegacyContainerScreen<WarehouseS
          int index = row;
          int y = 10 + row * 16;
          LegacyTexturedButton clear = this.legacyButton(
-            "clear filter " + row, this.f_97726_ - 28, y, 12, 12, Component.m_237113_("-"), button -> this.setFilter(index, ItemStack.f_41583_)
+            "clear filter " + row, this.imageWidth - 28, y, 12, 12, Component.literal("-"), button -> this.setFilter(index, ItemStack.EMPTY)
          );
-         clear.m_257544_(Tooltip.m_257550_(Component.m_237115_("guistrings.warehouse.remove_filter")));
-         if (((WarehouseStockViewerMenu)this.f_97732_).isLinker()) {
+         clear.setTooltip(Tooltip.create(Component.translatable("guistrings.warehouse.remove_filter")));
+         if (((WarehouseStockViewerMenu)this.menu).isLinker()) {
             this.equalityButtons
                .add(
                   this.legacyButton(
@@ -48,168 +48,168 @@ public class WarehouseStockViewerScreen extends LegacyContainerScreen<WarehouseS
                      y,
                      16,
                      12,
-                     Component.m_237113_(((WarehouseStockViewerMenu)this.f_97732_).getEquality(index)),
+                     Component.literal(((WarehouseStockViewerMenu)this.menu).getEquality(index)),
                      button -> this.clickButton(20 + index)
                   )
                );
-            this.legacyButton("decrease " + row, 157, y, 12, 12, Component.m_237113_("-"), button -> this.clickButton(100 + index * 2));
-            this.legacyButton("increase " + row, 205, y, 12, 12, Component.m_237113_("+"), button -> this.clickButton(100 + index * 2 + 1));
+            this.legacyButton("decrease " + row, 157, y, 12, 12, Component.literal("-"), button -> this.clickButton(100 + index * 2));
+            this.legacyButton("increase " + row, 205, y, 12, 12, Component.literal("+"), button -> this.clickButton(100 + index * 2 + 1));
          }
       }
    }
 
    private Component matchLabel() {
-      return Component.m_237115_("guistrings.warehouse.match." + (((WarehouseStockViewerMenu)this.f_97732_).requiresAll() ? "all" : "any"));
+      return Component.translatable("guistrings.warehouse.match." + (((WarehouseStockViewerMenu)this.menu).requiresAll() ? "all" : "any"));
    }
 
    private void clickButton(int id) {
-      ((WarehouseStockViewerMenu)this.f_97732_).previewButton(id);
-      if (this.f_96541_.f_91072_ != null) {
-         this.f_96541_.f_91072_.m_105208_(((WarehouseStockViewerMenu)this.f_97732_).f_38840_, id);
+      ((WarehouseStockViewerMenu)this.menu).previewButton(id);
+      if (this.minecraft.gameMode != null) {
+         this.minecraft.gameMode.handleInventoryButtonClick(((WarehouseStockViewerMenu)this.menu).containerId, id);
       }
    }
 
    private void setFilter(int index, ItemStack filter) {
-      ((WarehouseStockViewerMenu)this.f_97732_).previewFilterItem(index, filter);
-      AWCorePlatform.setWarehouseStockFilter(((WarehouseStockViewerMenu)this.f_97732_).getPos(), index, filter);
+      ((WarehouseStockViewerMenu)this.menu).previewFilterItem(index, filter);
+      AWCorePlatform.setWarehouseStockFilter(((WarehouseStockViewerMenu)this.menu).getPos(), index, filter);
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
       int index = this.filterAt(mouseX, mouseY);
       if (index >= 0 && (button == 0 || button == 1)) {
-         ItemStack filter = button == 1 ? ItemStack.f_41583_ : ((WarehouseStockViewerMenu)this.f_97732_).m_142621_().m_41777_();
-         if (!filter.m_41619_()) {
-            filter.m_41764_(1);
+         ItemStack filter = button == 1 ? ItemStack.EMPTY : ((WarehouseStockViewerMenu)this.menu).getCarried().copy();
+         if (!filter.isEmpty()) {
+            filter.setCount(1);
          }
 
          this.setFilter(index, filter);
          return true;
       } else {
-         return super.m_6375_(mouseX, mouseY, button);
+         return super.mouseClicked(mouseX, mouseY, button);
       }
    }
 
    private int filterAt(double mouseX, double mouseY) {
-      int x = (int)mouseX - this.f_97735_;
-      int y = (int)mouseY - this.f_97736_;
+      int x = (int)mouseX - this.leftPos;
+      int y = (int)mouseY - this.topPos;
       return x >= 8 && x < 26 && y >= 8 && y < 72 ? (y - 8) / 16 : -1;
    }
 
    @Override
    protected void renderLegacyBackground(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      LegacyGuiStyle.background(graphics, this.f_97735_, this.f_97736_, this.f_97726_, 86);
+      LegacyGuiStyle.background(graphics, this.leftPos, this.topPos, this.imageWidth, 86);
 
       for (int row = 0; row < 4; row++) {
-         LegacyGuiStyle.slot(graphics, this.f_97735_, this.f_97736_, 8, 8 + row * 16);
+         LegacyGuiStyle.slot(graphics, this.leftPos, this.topPos, 8, 8 + row * 16);
       }
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
       for (int row = 0; row < 4; row++) {
          int y = 8 + row * 16;
-         ItemStack stack = ((WarehouseStockViewerMenu)this.f_97732_).getFilterItem(row);
-         if (!stack.m_41619_()) {
-            graphics.m_280480_(stack, 8, y);
+         ItemStack stack = ((WarehouseStockViewerMenu)this.menu).getFilterItem(row);
+         if (!stack.isEmpty()) {
+            graphics.renderItem(stack, 8, y);
          }
 
-         String name = stack.m_41619_() ? Component.m_237115_("guistrings.warehouse.empty_filter").getString() : stack.m_41786_().getString();
-         graphics.m_280056_(this.f_96547_, this.truncate(name, ((WarehouseStockViewerMenu)this.f_97732_).isLinker() ? 72 : 73), 28, y + 4, -1, false);
+         String name = stack.isEmpty() ? Component.translatable("guistrings.warehouse.empty_filter").getString() : stack.getHoverName().getString();
+         graphics.drawString(this.font, this.truncate(name, ((WarehouseStockViewerMenu)this.menu).isLinker() ? 72 : 73), 28, y + 4, -1, false);
          this.drawCount(
             graphics,
-            ((WarehouseStockViewerMenu)this.f_97732_).getQuantity(row),
-            ((WarehouseStockViewerMenu)this.f_97732_).isLinker() ? 136 : 148,
+            ((WarehouseStockViewerMenu)this.menu).getQuantity(row),
+            ((WarehouseStockViewerMenu)this.menu).isLinker() ? 136 : 148,
             y + 4,
-            ((WarehouseStockViewerMenu)this.f_97732_).isLinker() ? 32 : 40
+            ((WarehouseStockViewerMenu)this.menu).isLinker() ? 32 : 40
          );
-         if (((WarehouseStockViewerMenu)this.f_97732_).isLinker()) {
-            this.drawCount(graphics, (long)((WarehouseStockViewerMenu)this.f_97732_).getTarget(row), 202, y + 4, 30);
+         if (((WarehouseStockViewerMenu)this.menu).isLinker()) {
+            this.drawCount(graphics, (long)((WarehouseStockViewerMenu)this.menu).getTarget(row), 202, y + 4, 30);
          }
       }
 
-      int start = ((WarehouseStockViewerMenu)this.f_97732_).isLinker() ? 112 : 8;
-      int width = this.f_97726_ - 32 - start;
-      Component state = Component.m_237115_("guistrings.warehouse.connection." + ((WarehouseStockViewerMenu)this.f_97732_).getConnectionStatus());
-      graphics.m_280056_(
-         this.f_96547_,
+      int start = ((WarehouseStockViewerMenu)this.menu).isLinker() ? 112 : 8;
+      int width = this.imageWidth - 32 - start;
+      Component state = Component.translatable("guistrings.warehouse.connection." + ((WarehouseStockViewerMenu)this.menu).getConnectionStatus());
+      graphics.drawString(
+         this.font,
          this.truncate(state.getString(), width),
          start,
          75,
-         ((WarehouseStockViewerMenu)this.f_97732_).getConnectionStatus() == 1 ? -12566464 : -5215488,
+         ((WarehouseStockViewerMenu)this.menu).getConnectionStatus() == 1 ? -12566464 : -5215488,
          false
       );
    }
 
    private String truncate(String text, int width) {
-      return this.f_96547_.m_92895_(text) <= width ? text : this.f_96547_.m_92834_(text, Math.max(0, width - this.f_96547_.m_92895_("..."))) + "...";
+      return this.font.width(text) <= width ? text : this.font.plainSubstrByWidth(text, Math.max(0, width - this.font.width("..."))) + "...";
    }
 
    private void drawCount(GuiGraphics graphics, long count, int right, int y, int width) {
       String text = formatCount(count);
-      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.f_96547_.m_92895_(text)));
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_((float)right - (float)this.f_96547_.m_92895_(text) * scale, (float)y, 0.0F);
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280056_(this.f_96547_, text, 0, 0, -1, false);
-      graphics.m_280168_().m_85849_();
+      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.font.width(text)));
+      graphics.pose().pushPose();
+      graphics.pose().translate((float)right - (float)this.font.width(text) * scale, (float)y, 0.0F);
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, text, 0, 0, -1, false);
+      graphics.pose().popPose();
    }
 
    @Override
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      ((WarehouseStockViewerMenu)this.f_97732_).refreshClientFilters();
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      ((WarehouseStockViewerMenu)this.menu).refreshClientFilters();
       if (this.matchButton != null) {
-         this.matchButton.m_93666_(this.matchLabel());
+         this.matchButton.setMessage(this.matchLabel());
       }
 
       this.binding
-         .m_257544_(
-            Tooltip.m_257550_(
-               Component.m_237115_("guistrings.warehouse.change_controller")
-                  .m_130946_("\n")
-                  .m_7220_(Component.m_237115_("guistrings.warehouse.connection." + ((WarehouseStockViewerMenu)this.f_97732_).getConnectionStatus()))
+         .setTooltip(
+            Tooltip.create(
+               Component.translatable("guistrings.warehouse.change_controller")
+                  .append("\n")
+                  .append(Component.translatable("guistrings.warehouse.connection." + ((WarehouseStockViewerMenu)this.menu).getConnectionStatus()))
             )
          );
 
       for (int i = 0; i < this.equalityButtons.size(); i++) {
-         this.equalityButtons.get(i).m_93666_(Component.m_237113_(((WarehouseStockViewerMenu)this.f_97732_).getEquality(i)));
+         this.equalityButtons.get(i).setMessage(Component.literal(((WarehouseStockViewerMenu)this.menu).getEquality(i)));
       }
 
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
-      int x = mouseX - this.f_97735_;
-      int y = mouseY - this.f_97736_;
+      super.render(graphics, mouseX, mouseY, partialTick);
+      int x = mouseX - this.leftPos;
+      int y = mouseY - this.topPos;
       if (y >= 8 && y < 72) {
          int row = (y - 8) / 16;
-         ItemStack item = ((WarehouseStockViewerMenu)this.f_97732_).getFilterItem(row);
-         if (x >= 8 && x < 102 && !item.m_41619_()) {
-            graphics.m_280153_(this.f_96547_, item, mouseX, mouseY);
-         } else if (x >= 102 && x < (((WarehouseStockViewerMenu)this.f_97732_).isLinker() ? 138 : 150)) {
-            graphics.m_280557_(
-               this.f_96547_,
-               Component.m_237110_("guistrings.warehouse.item_count", new Object[]{((WarehouseStockViewerMenu)this.f_97732_).getQuantity(row)}),
+         ItemStack item = ((WarehouseStockViewerMenu)this.menu).getFilterItem(row);
+         if (x >= 8 && x < 102 && !item.isEmpty()) {
+            graphics.renderTooltip(this.font, item, mouseX, mouseY);
+         } else if (x >= 102 && x < (((WarehouseStockViewerMenu)this.menu).isLinker() ? 138 : 150)) {
+            graphics.renderTooltip(
+               this.font,
+               Component.translatable("guistrings.warehouse.item_count", new Object[]{((WarehouseStockViewerMenu)this.menu).getQuantity(row)}),
                mouseX,
                mouseY
             );
-         } else if (((WarehouseStockViewerMenu)this.f_97732_).isLinker() && x >= 170 && x < 204) {
-            graphics.m_280557_(this.f_96547_, Component.m_237113_(Integer.toString(((WarehouseStockViewerMenu)this.f_97732_).getTarget(row))), mouseX, mouseY);
+         } else if (((WarehouseStockViewerMenu)this.menu).isLinker() && x >= 170 && x < 204) {
+            graphics.renderTooltip(this.font, Component.literal(Integer.toString(((WarehouseStockViewerMenu)this.menu).getTarget(row))), mouseX, mouseY);
          }
       }
 
-      if (y >= 74 && y < 84 && x >= (((WarehouseStockViewerMenu)this.f_97732_).isLinker() ? 112 : 8) && x < this.f_97726_ - 30) {
+      if (y >= 74 && y < 84 && x >= (((WarehouseStockViewerMenu)this.menu).isLinker() ? 112 : 8) && x < this.imageWidth - 30) {
          List<Component> lines = new ArrayList<>();
-         lines.add(Component.m_237115_("guistrings.warehouse.connection." + ((WarehouseStockViewerMenu)this.f_97732_).getConnectionStatus()));
-         if (((WarehouseStockViewerMenu)this.f_97732_).getControllerPos() != null) {
+         lines.add(Component.translatable("guistrings.warehouse.connection." + ((WarehouseStockViewerMenu)this.menu).getConnectionStatus()));
+         if (((WarehouseStockViewerMenu)this.menu).getControllerPos() != null) {
             lines.add(
-               Component.m_237110_(
+               Component.translatable(
                   "guistrings.warehouse.controller_position",
                   new Object[]{
-                     ((WarehouseStockViewerMenu)this.f_97732_).getControllerPos().m_123341_(),
-                     ((WarehouseStockViewerMenu)this.f_97732_).getControllerPos().m_123342_(),
-                     ((WarehouseStockViewerMenu)this.f_97732_).getControllerPos().m_123343_()
+                     ((WarehouseStockViewerMenu)this.menu).getControllerPos().getX(),
+                     ((WarehouseStockViewerMenu)this.menu).getControllerPos().getY(),
+                     ((WarehouseStockViewerMenu)this.menu).getControllerPos().getZ()
                   }
                )
             );
          }
 
-         graphics.m_280677_(this.f_96547_, lines, Optional.empty(), mouseX, mouseY);
+         graphics.renderTooltip(this.font, lines, Optional.empty(), mouseX, mouseY);
       }
    }
 

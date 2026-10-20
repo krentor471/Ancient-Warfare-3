@@ -78,7 +78,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private static final int TREE_HARVEST_HEIGHT = 32;
    private static final int MAX_HARVEST_PLAN_BLOCKS = 16384;
    private static final long TREE_PLAN_REFRESH_INTERVAL = 40L;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(38, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(38, ItemStack.EMPTY);
    private BlockPos boundsMin;
    private BlockPos boundsMax;
    private byte[] targetMap = createFilledTargetMap();
@@ -108,7 +108,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    @Override
    public boolean hasWork() {
-      return this.f_58857_ != null && !this.f_58857_.f_46443_
+      return this.level != null && !this.level.isClientSide
          ? this.findPickup().isPresent()
             || this.findShearTarget().isPresent()
             || this.findLeafTarget().isPresent()
@@ -120,12 +120,12 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType())) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType())) {
          this.storedEnergy = Math.min(
             this.getMaxEnergy(), this.storedEnergy + Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())))
          );
          this.processStoredEnergy();
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -137,7 +137,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    @Override
    protected void onStoredEnergyTick() {
       this.processStoredEnergy();
-      this.m_6596_();
+      this.setChanged();
    }
 
    private void processStoredEnergy() {
@@ -168,15 +168,15 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          return false;
       } else {
          ItemEntity item = target.get();
-         int originalCount = item.m_32055_().m_41613_();
-         ItemStack remaining = this.insertStack(item.m_32055_());
-         if (remaining.m_41613_() == originalCount) {
+         int originalCount = item.getItem().getCount();
+         ItemStack remaining = this.insertStack(item.getItem());
+         if (remaining.getCount() == originalCount) {
             return false;
          } else {
-            if (remaining.m_41619_()) {
-               item.m_146870_();
+            if (remaining.isEmpty()) {
+               item.discard();
             } else {
-               item.m_32045_(remaining);
+               item.setItem(remaining);
             }
 
             return true;
@@ -187,19 +187,19 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private boolean tryShearLeaf() {
       Optional<BlockPos> target = this.findShearTarget();
       Optional<Integer> shearsSlot = this.findShearsSlot();
-      if (!target.isEmpty() && !shearsSlot.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!target.isEmpty() && !shearsSlot.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          BlockPos var8 = target.get();
-         BlockState state = this.f_58857_.m_8055_(var8);
-         List<ItemStack> inventory = this.inventoryAfterDrops(List.of(new ItemStack(state.m_60734_().m_5456_())));
-         if (inventory != null && this.f_58857_.m_7731_(var8, Blocks.f_50016_.m_49966_(), 18)) {
+         BlockState state = this.level.getBlockState(var8);
+         List<ItemStack> inventory = this.inventoryAfterDrops(List.of(new ItemStack(state.getBlock().asItem())));
+         if (inventory != null && this.level.setBlock(var8, Blocks.AIR.defaultBlockState(), 18)) {
             this.commitHarvestInventory(inventory);
             this.forgetHarvestTarget(var8);
             ItemStack shears = (ItemStack)this.items.get(shearsSlot.get());
-            if (shears.m_220157_(1, serverLevel.f_46441_, null)) {
-               shears.m_41774_(1);
+            if (shears.hurt(1, serverLevel.random, null)) {
+               shears.shrink(1);
             }
 
-            this.m_6596_();
+            this.setChanged();
             return true;
          } else {
             return false;
@@ -224,22 +224,22 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private boolean harvestBlock(BlockPos pos) {
-      if (!(this.f_58857_ instanceof ServerLevel serverLevel)) {
+      if (!(this.level instanceof ServerLevel serverLevel)) {
          return false;
       } else {
-         BlockState var6 = this.f_58857_.m_8055_(pos);
+         BlockState var6 = this.level.getBlockState(pos);
          TreeFarmBlockEntity.HarvestDrops cached = this.pendingHarvestDrops.get(pos);
-         if (cached == null || cached.block != var6.m_60734_()) {
+         if (cached == null || cached.block != var6.getBlock()) {
             cached = new TreeFarmBlockEntity.HarvestDrops(
-               var6.m_60734_(),
-               Block.m_49874_(var6, serverLevel, pos, this.f_58857_.m_7702_(pos), null, WorksiteUpgradeHelper.fortuneTool(Items.f_42391_, this, 33, 5))
+               var6.getBlock(),
+               Block.getDrops(var6, serverLevel, pos, this.level.getBlockEntity(pos), null, WorksiteUpgradeHelper.fortuneTool(Items.DIAMOND_AXE, this, 33, 5))
             );
             this.pendingHarvestDrops.put(pos, cached);
          }
 
          List<ItemStack> inventory = this.inventoryAfterDrops(cached.drops);
-         if (inventory != null && this.f_58857_.m_7731_(pos, Blocks.f_50016_.m_49966_(), 18)) {
-            this.f_58857_.m_46796_(2001, pos, Block.m_49956_(var6));
+         if (inventory != null && this.level.setBlock(pos, Blocks.AIR.defaultBlockState(), 18)) {
+            this.level.levelEvent(2001, pos, Block.getId(var6));
             this.commitHarvestInventory(inventory);
             this.forgetHarvestTarget(pos);
             return true;
@@ -255,9 +255,9 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          return false;
       } else {
          TreeFarmBlockEntity.PlantingTarget plantingTarget = target.get();
-         this.f_58857_.m_7731_(plantingTarget.pos(), plantingTarget.state(), 3);
-         ((ItemStack)this.items.get(plantingTarget.slot())).m_41774_(1);
-         this.m_6596_();
+         this.level.setBlock(plantingTarget.pos(), plantingTarget.state(), 3);
+         ((ItemStack)this.items.get(plantingTarget.slot())).shrink(1);
+         this.setChanged();
          return true;
       }
    }
@@ -265,17 +265,17 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private boolean tryFertilize() {
       Optional<BlockPos> target = this.findFertilizeTarget();
       Optional<Integer> boneMealSlot = this.findBoneMealSlot();
-      if (!target.isEmpty() && !boneMealSlot.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!target.isEmpty() && !boneMealSlot.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          BlockPos var8 = target.get();
-         BlockState state = this.f_58857_.m_8055_(var8);
-         if (state.m_60734_() instanceof BonemealableBlock bonemealable
-            && bonemealable.m_7370_(this.f_58857_, var8, state, false)
-            && bonemealable.m_214167_(this.f_58857_, this.f_58857_.f_46441_, var8, state)) {
-            bonemealable.m_214148_(serverLevel, this.f_58857_.f_46441_, var8, state);
+         BlockState state = this.level.getBlockState(var8);
+         if (state.getBlock() instanceof BonemealableBlock bonemealable
+            && bonemealable.isValidBonemealTarget(this.level, var8, state, false)
+            && bonemealable.isBonemealSuccess(this.level, this.level.random, var8, state)) {
+            bonemealable.performBonemeal(serverLevel, this.level.random, var8, state);
             this.treePlanDirty = true;
-            ((ItemStack)this.items.get(boneMealSlot.get())).m_41774_(1);
-            this.f_58857_.m_46796_(2005, var8, 0);
-            this.m_6596_();
+            ((ItemStack)this.items.get(boneMealSlot.get())).shrink(1);
+            this.level.levelEvent(2005, var8, 0);
+            this.setChanged();
             return true;
          }
 
@@ -286,8 +286,8 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private Optional<ItemEntity> findPickup() {
-      return this.f_58857_
-         .m_6443_(ItemEntity.class, this.workAabb(), item -> item.m_6084_() && this.isTreeDrop(item.m_32055_()) && this.canInsertAny(item.m_32055_()))
+      return this.level
+         .getEntitiesOfClass(ItemEntity.class, this.workAabb(), item -> item.isAlive() && this.isTreeDrop(item.getItem()) && this.canInsertAny(item.getItem()))
          .stream()
          .findFirst();
    }
@@ -320,7 +320,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
                for (int slot = 27; slot < 30; slot++) {
                   ItemStack stack = (ItemStack)this.items.get(slot);
                   BlockState sapling = this.blockStateForPlantable(stack);
-                  if (!stack.m_41619_() && sapling != null && this.canPlant(target.get(), sapling)) {
+                  if (!stack.isEmpty() && sapling != null && this.canPlant(target.get(), sapling)) {
                      return Optional.of(new TreeFarmBlockEntity.PlantingTarget(target.get(), slot, sapling));
                   }
                }
@@ -336,14 +336,14 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          ? Optional.empty()
          : this.scanGroundTargetsFromCursor()
             .stream()
-            .flatMap(pos -> (Stream<? extends BlockPos>)List.of(pos, pos.m_7494_()).stream())
+            .flatMap(pos -> (Stream<? extends BlockPos>)List.of(pos, pos.above()).stream())
             .filter(this::canFertilize)
             .findFirst();
    }
 
    private boolean canFertilize(BlockPos pos) {
-      BlockState state = this.f_58857_.m_8055_(pos);
-      if (state.m_60734_() instanceof BonemealableBlock bonemealable && bonemealable.m_7370_(this.f_58857_, pos, state, false)) {
+      BlockState state = this.level.getBlockState(pos);
+      if (state.getBlock() instanceof BonemealableBlock bonemealable && bonemealable.isValidBonemealTarget(this.level, pos, state, false)) {
          return true;
       }
 
@@ -351,8 +351,8 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private TreeFarmBlockEntity.TreeTargets findTreeTargets() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         long gameTime = this.f_58857_.m_46467_();
+      if (this.level != null && !this.level.isClientSide) {
+         long gameTime = this.level.getGameTime();
          if (this.treePlanDirty || gameTime >= this.treePlanRefreshAt || this.refreshWhenExhausted && !this.hasPendingTreeTargets()) {
             this.rebuildTreeTargets(gameTime);
          }
@@ -371,9 +371,9 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          BlockPos min = this.getBoundsMin();
          BlockPos max = this.getBoundsMax();
 
-         for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
-            for (int z = min.m_123343_(); z <= max.m_123343_(); z++) {
-               BlockPos pos = new BlockPos(x, min.m_123342_(), z);
+         for (int x = min.getX(); x <= max.getX(); x++) {
+            for (int z = min.getZ(); z <= max.getZ(); z++) {
+               BlockPos pos = new BlockPos(x, min.getY(), z);
                if (this.isTarget(pos)) {
                   targets.add(pos);
                }
@@ -404,7 +404,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
       for (BlockPos ground : this.scanGroundTargetsFromCursor()) {
          for (int y = 0; y <= 16; y++) {
-            targets.add(ground.m_6630_(y));
+            targets.add(ground.above(y));
          }
       }
 
@@ -418,9 +418,9 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       List<BlockPos> specialLogs = new ArrayList<>();
 
       for (BlockPos pos : scan) {
-         if (this.f_58857_.m_46805_(pos)) {
-            BlockState state = this.f_58857_.m_8055_(pos);
-            if (state.m_60713_(Blocks.f_50182_)) {
+         if (this.level.hasChunkAt(pos)) {
+            BlockState state = this.level.getBlockState(pos);
+            if (state.is(Blocks.MUSHROOM_STEM)) {
                specialLogs.add(pos);
             } else if (this.isLogLike(state)) {
                logPositions.add(pos);
@@ -437,13 +437,13 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       List<BlockPos> seeds = new ArrayList<>();
 
       for (BlockPos posx : scan) {
-         if (logPositions.contains(posx) && (posx.m_123342_() <= this.getBoundsMin().m_123342_() + 1 || this.isRememberedBlock(posx))) {
+         if (logPositions.contains(posx) && (posx.getY() <= this.getBoundsMin().getY() + 1 || this.isRememberedBlock(posx))) {
             seeds.add(posx);
          }
       }
 
       for (BlockPos posxx : this.treeTargets.logs) {
-         if (this.isRememberedBlock(posxx) && this.isLogLike(this.f_58857_.m_8055_(posxx))) {
+         if (this.isRememberedBlock(posxx) && this.isLogLike(this.level.getBlockState(posxx))) {
             seeds.add(posxx);
          }
       }
@@ -460,8 +460,8 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
                for (BlockPos neighbour : this.neighbours(current)) {
                   if (this.isTargetPosition(neighbour)
-                     && this.f_58857_.m_46805_(neighbour)
-                     && this.isLogLike(this.f_58857_.m_8055_(neighbour))
+                     && this.level.hasChunkAt(neighbour)
+                     && this.isLogLike(this.level.getBlockState(neighbour))
                      && !this.isOutsideTreeTrunk(neighbour)
                      && visited.add(neighbour)) {
                      queue.add(neighbour);
@@ -474,7 +474,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
                   log -> this.neighbours(log)
                         .stream()
                         .anyMatch(
-                           posxxx -> this.isTargetPosition(posxxx) && this.f_58857_.m_46805_(posxxx) && this.isNaturalLeaf(this.f_58857_.m_8055_(posxxx))
+                           posxxx -> this.isTargetPosition(posxxx) && this.level.hasChunkAt(posxxx) && this.isNaturalLeaf(this.level.getBlockState(posxxx))
                         )
                );
             boolean fungus = component.stream()
@@ -482,7 +482,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
                   log -> this.neighbours(log)
                         .stream()
                         .anyMatch(
-                           posxxx -> this.isTargetPosition(posxxx) && this.f_58857_.m_46805_(posxxx) && this.isSpecialLeaf(this.f_58857_.m_8055_(posxxx))
+                           posxxx -> this.isTargetPosition(posxxx) && this.level.hasChunkAt(posxxx) && this.isSpecialLeaf(this.level.getBlockState(posxxx))
                         )
                );
             boolean rememberedTree = component.stream().anyMatch(this::isRememberedBlock);
@@ -500,13 +500,13 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       Set<BlockPos> queuedLeaves = new HashSet<>();
 
       for (BlockPos posxxx : oldLogs) {
-         if (this.isRememberedBlock(posxxx) && this.isHarvestLogLike(this.f_58857_.m_8055_(posxxx)) && queuedLogs.add(posxxx)) {
+         if (this.isRememberedBlock(posxxx) && this.isHarvestLogLike(this.level.getBlockState(posxxx)) && queuedLogs.add(posxxx)) {
             logs.add(posxxx);
          }
       }
 
       for (BlockPos posxxxx : oldLeaves) {
-         if (this.isRememberedBlock(posxxxx) && this.isHarvestLeafLike(this.f_58857_.m_8055_(posxxxx)) && queuedLeaves.add(posxxxx)) {
+         if (this.isRememberedBlock(posxxxx) && this.isHarvestLeafLike(this.level.getBlockState(posxxxx)) && queuedLeaves.add(posxxxx)) {
             leaves.add(posxxxx);
          }
       }
@@ -540,11 +540,11 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       this.plannedBlocks.clear();
 
       for (BlockPos posxxxxxxxxx : logs) {
-         this.plannedBlocks.put(posxxxxxxxxx, this.f_58857_.m_8055_(posxxxxxxxxx).m_60734_());
+         this.plannedBlocks.put(posxxxxxxxxx, this.level.getBlockState(posxxxxxxxxx).getBlock());
       }
 
       for (BlockPos posxxxxxxxxx : leaves) {
-         this.plannedBlocks.put(posxxxxxxxxx, this.f_58857_.m_8055_(posxxxxxxxxx).m_60734_());
+         this.plannedBlocks.put(posxxxxxxxxx, this.level.getBlockState(posxxxxxxxxx).getBlock());
       }
 
       this.pendingHarvestDrops.entrySet().removeIf(entry -> this.plannedBlocks.get(entry.getKey()) != entry.getValue().block);
@@ -552,7 +552,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       this.refreshWhenExhausted = !logs.isEmpty() || !leaves.isEmpty();
       this.treePlanDirty = false;
       this.treePlanRefreshAt = gameTime + 40L;
-      this.m_6596_();
+      this.setChanged();
    }
 
    private boolean hasPendingTreeTargets() {
@@ -563,7 +563,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private Optional<BlockPos> firstValidTarget(Queue<BlockPos> targets, Predicate<BlockState> predicate) {
       while (!targets.isEmpty()) {
          BlockPos pos = targets.peek();
-         if (this.isRememberedBlock(pos) && predicate.test(this.f_58857_.m_8055_(pos))) {
+         if (this.isRememberedBlock(pos) && predicate.test(this.level.getBlockState(pos))) {
             return Optional.of(pos);
          }
 
@@ -578,38 +578,38 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private boolean isTargetPosition(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_() - 8
-         && pos.m_123341_() <= max.m_123341_() + 8
-         && pos.m_123343_() >= min.m_123343_() - 8
-         && pos.m_123343_() <= max.m_123343_() + 8
-         && pos.m_123342_() >= min.m_123342_()
-         && pos.m_123342_() <= min.m_123342_() + 32;
+      return pos.getX() >= min.getX() - 8
+         && pos.getX() <= max.getX() + 8
+         && pos.getZ() >= min.getZ() - 8
+         && pos.getZ() <= max.getZ() + 8
+         && pos.getY() >= min.getY()
+         && pos.getY() <= min.getY() + 32;
    }
 
    private boolean isInsideSelectedColumn(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_()
-         && this.isTarget(new BlockPos(pos.m_123341_(), min.m_123342_(), pos.m_123343_()));
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ()
+         && this.isTarget(new BlockPos(pos.getX(), min.getY(), pos.getZ()));
    }
 
    private boolean isOutsideTreeTrunk(BlockPos pos) {
       if (this.isInsideSelectedColumn(pos)) {
          return false;
       } else {
-         for (int y = pos.m_123342_(); y >= this.getBoundsMin().m_123342_(); y--) {
-            BlockPos below = new BlockPos(pos.m_123341_(), y, pos.m_123343_());
-            if (!this.f_58857_.m_46805_(below)) {
+         for (int y = pos.getY(); y >= this.getBoundsMin().getY(); y--) {
+            BlockPos below = new BlockPos(pos.getX(), y, pos.getZ());
+            if (!this.level.hasChunkAt(below)) {
                return false;
             }
 
-            BlockState state = this.f_58857_.m_8055_(below);
+            BlockState state = this.level.getBlockState(below);
             if (!this.isLogLike(state)) {
-               return y == this.getBoundsMin().m_123342_()
-                  && (state.m_204336_(BlockTags.f_144274_) || state.m_60713_(Blocks.f_50699_) || state.m_60713_(Blocks.f_50690_));
+               return y == this.getBoundsMin().getY()
+                  && (state.is(BlockTags.DIRT) || state.is(Blocks.CRIMSON_NYLIUM) || state.is(Blocks.WARPED_NYLIUM));
             }
          }
 
@@ -618,7 +618,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private boolean isRememberedBlock(BlockPos pos) {
-      return this.isTargetPosition(pos) && this.f_58857_.m_46805_(pos) && this.plannedBlocks.get(pos) == this.f_58857_.m_8055_(pos).m_60734_();
+      return this.isTargetPosition(pos) && this.level.hasChunkAt(pos) && this.plannedBlocks.get(pos) == this.level.getBlockState(pos).getBlock();
    }
 
    private List<BlockPos> neighbours(BlockPos pos) {
@@ -628,7 +628,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          for (int y = -1; y <= 1; y++) {
             for (int z = -1; z <= 1; z++) {
                if (x != 0 || y != 0 || z != 0) {
-                  result.add(pos.m_7918_(x, y, z));
+                  result.add(pos.offset(x, y, z));
                }
             }
          }
@@ -665,10 +665,10 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private boolean isCrownTarget(BlockPos pos, Set<BlockPos> logs) {
-      return this.isTargetPosition(pos) && this.f_58857_.m_46805_(pos) && this.isHarvestLeafLike(this.f_58857_.m_8055_(pos))
+      return this.isTargetPosition(pos) && this.level.hasChunkAt(pos) && this.isHarvestLeafLike(this.level.getBlockState(pos))
          ? this.neighbours(pos)
             .stream()
-            .noneMatch(neighbour -> !logs.contains(neighbour) && this.f_58857_.m_46805_(neighbour) && this.isLogLike(this.f_58857_.m_8055_(neighbour)))
+            .noneMatch(neighbour -> !logs.contains(neighbour) && this.level.hasChunkAt(neighbour) && this.isLogLike(this.level.getBlockState(neighbour)))
          : false;
    }
 
@@ -689,15 +689,15 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private boolean isNaturalLeaf(BlockState state) {
-      return state.m_204336_(BlockTags.f_13035_) && (!state.m_61138_(LeavesBlock.f_54419_) || !(Boolean)state.m_61143_(LeavesBlock.f_54419_));
+      return state.is(BlockTags.LEAVES) && (!state.hasProperty(LeavesBlock.PERSISTENT) || !(Boolean)state.getValue(LeavesBlock.PERSISTENT));
    }
 
    private boolean isSpecialLeaf(BlockState state) {
-      return state.m_60713_(Blocks.f_50451_)
-         || state.m_60713_(Blocks.f_50692_)
-         || state.m_60713_(Blocks.f_50701_)
-         || state.m_60713_(Blocks.f_50180_)
-         || state.m_60713_(Blocks.f_50181_);
+      return state.is(Blocks.NETHER_WART_BLOCK)
+         || state.is(Blocks.WARPED_WART_BLOCK)
+         || state.is(Blocks.SHROOMLIGHT)
+         || state.is(Blocks.BROWN_MUSHROOM_BLOCK)
+         || state.is(Blocks.RED_MUSHROOM_BLOCK);
    }
 
    private boolean isHarvestLeafLike(BlockState state) {
@@ -709,21 +709,21 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private Optional<BlockPos> plantPos(BlockPos workPos) {
-      if (this.f_58857_.m_8055_(workPos).m_247087_()) {
+      if (this.level.getBlockState(workPos).canBeReplaced()) {
          return Optional.of(workPos);
       } else {
-         return this.f_58857_.m_8055_(workPos.m_7494_()).m_247087_() ? Optional.of(workPos.m_7494_()) : Optional.empty();
+         return this.level.getBlockState(workPos.above()).canBeReplaced() ? Optional.of(workPos.above()) : Optional.empty();
       }
    }
 
    private boolean canPlant(BlockPos pos, BlockState sapling) {
-      return this.f_58857_.m_8055_(pos).m_247087_() && sapling.m_60710_(this.f_58857_, pos);
+      return this.level.getBlockState(pos).canBeReplaced() && sapling.canSurvive(this.level, pos);
    }
 
    @Nullable
    private BlockState blockStateForPlantable(ItemStack stack) {
-      if (stack.m_41720_() instanceof BlockItem blockItem) {
-         BlockState var4 = blockItem.m_40614_().m_49966_();
+      if (stack.getItem() instanceof BlockItem blockItem) {
+         BlockState var4 = blockItem.getBlock().defaultBlockState();
          return this.isPlantableBlock(var4) ? var4 : null;
       } else {
          return null;
@@ -735,7 +735,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    public boolean isMiscItem(ItemStack stack) {
-      return stack.m_150930_(Items.f_42499_) || stack.m_150930_(Items.f_42574_);
+      return stack.is(Items.BONE_MEAL) || stack.is(Items.SHEARS);
    }
 
    private boolean hasPlantable() {
@@ -750,7 +750,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    private Optional<Integer> findBoneMealSlot() {
       for (int slot = 30; slot < 33; slot++) {
-         if (((ItemStack)this.items.get(slot)).m_150930_(Items.f_42499_)) {
+         if (((ItemStack)this.items.get(slot)).is(Items.BONE_MEAL)) {
             return Optional.of(slot);
          }
       }
@@ -760,7 +760,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    private Optional<Integer> findShearsSlot() {
       for (int slot = 30; slot < 33; slot++) {
-         if (((ItemStack)this.items.get(slot)).m_150930_(Items.f_42574_)) {
+         if (((ItemStack)this.items.get(slot)).is(Items.SHEARS)) {
             return Optional.of(slot);
          }
       }
@@ -769,9 +769,9 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private boolean isTreeDrop(ItemStack stack) {
-      if (stack.m_41619_()) {
+      if (stack.isEmpty()) {
          return false;
-      } else if (!stack.m_150930_(Items.f_42410_) && !stack.m_150930_(Items.f_42398_)) {
+      } else if (!stack.is(Items.APPLE) && !stack.is(Items.STICK)) {
          BlockState state = this.blockStateForItem(stack);
          return state != null && (this.isPlantableBlock(state) || this.isLogLike(state) || this.isLeafLike(state) || this.isChorusLike(state));
       } else {
@@ -781,48 +781,48 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    @Nullable
    private BlockState blockStateForItem(ItemStack stack) {
-      return stack.m_41720_() instanceof BlockItem blockItem ? blockItem.m_40614_().m_49966_() : null;
+      return stack.getItem() instanceof BlockItem blockItem ? blockItem.getBlock().defaultBlockState() : null;
    }
 
    private boolean isPlantableBlock(BlockState state) {
-      return state.m_204336_(BlockTags.f_13104_)
-         || state.m_60713_(Blocks.f_220831_)
-         || state.m_60713_(Blocks.f_50072_)
-         || state.m_60713_(Blocks.f_50073_)
-         || state.m_60713_(Blocks.f_50700_)
-         || state.m_60713_(Blocks.f_50691_)
-         || state.m_60713_(Blocks.f_152541_)
-         || state.m_60713_(Blocks.f_152542_)
-         || state.m_60713_(Blocks.f_50491_);
+      return state.is(BlockTags.SAPLINGS)
+         || state.is(Blocks.MANGROVE_PROPAGULE)
+         || state.is(Blocks.BROWN_MUSHROOM)
+         || state.is(Blocks.RED_MUSHROOM)
+         || state.is(Blocks.CRIMSON_FUNGUS)
+         || state.is(Blocks.WARPED_FUNGUS)
+         || state.is(Blocks.AZALEA)
+         || state.is(Blocks.FLOWERING_AZALEA)
+         || state.is(Blocks.CHORUS_FLOWER);
    }
 
    private boolean isLogLike(BlockState state) {
-      return state.m_204336_(BlockTags.f_13106_) || state.m_60713_(Blocks.f_50182_);
+      return state.is(BlockTags.LOGS) || state.is(Blocks.MUSHROOM_STEM);
    }
 
    private boolean isLeafLike(BlockState state) {
-      return state.m_204336_(BlockTags.f_13035_)
-         || state.m_60713_(Blocks.f_50451_)
-         || state.m_60713_(Blocks.f_50692_)
-         || state.m_60713_(Blocks.f_50701_)
-         || state.m_60713_(Blocks.f_50180_)
-         || state.m_60713_(Blocks.f_50181_);
+      return state.is(BlockTags.LEAVES)
+         || state.is(Blocks.NETHER_WART_BLOCK)
+         || state.is(Blocks.WARPED_WART_BLOCK)
+         || state.is(Blocks.SHROOMLIGHT)
+         || state.is(Blocks.BROWN_MUSHROOM_BLOCK)
+         || state.is(Blocks.RED_MUSHROOM_BLOCK);
    }
 
    private boolean isChorusLike(BlockState state) {
-      return state.m_60713_(Blocks.f_50490_) || state.m_60713_(Blocks.f_50491_);
+      return state.is(Blocks.CHORUS_PLANT) || state.is(Blocks.CHORUS_FLOWER);
    }
 
    private AABB workAabb() {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
       return new AABB(
-         (double)(min.m_123341_() - 8),
-         (double)min.m_123342_(),
-         (double)(min.m_123343_() - 8),
-         (double)(max.m_123341_() + 8) + 1.0,
-         (double)(min.m_123342_() + 32) + 1.0,
-         (double)(max.m_123343_() + 8) + 1.0
+         (double)(min.getX() - 8),
+         (double)min.getY(),
+         (double)(min.getZ() - 8),
+         (double)(max.getX() + 8) + 1.0,
+         (double)(min.getY() + 32) + 1.0,
+         (double)(max.getZ() + 8) + 1.0
       );
    }
 
@@ -831,12 +831,12 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       List<ItemStack> inventory = new ArrayList<>(38);
 
       for (ItemStack item : this.items) {
-         inventory.add(item.m_41777_());
+         inventory.add(item.copy());
       }
 
       for (ItemStack drop : drops) {
          ItemStack remaining = this.insertStackInto(inventory, drop);
-         if (!remaining.m_41619_()) {
+         if (!remaining.isEmpty()) {
             return null;
          }
       }
@@ -849,30 +849,30 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          this.items.set(slot, inventory.get(slot));
       }
 
-      this.m_6596_();
+      this.setChanged();
    }
 
    private boolean canInsertAny(ItemStack stack) {
       List<ItemStack> inventory = new ArrayList<>(38);
 
       for (ItemStack item : this.items) {
-         inventory.add(item.m_41777_());
+         inventory.add(item.copy());
       }
 
-      return this.insertStackInto(inventory, stack).m_41613_() < stack.m_41613_();
+      return this.insertStackInto(inventory, stack).getCount() < stack.getCount();
    }
 
    private ItemStack insertStack(ItemStack stack) {
       ItemStack remaining = this.insertStackInto(this.items, stack);
-      if (remaining.m_41613_() < stack.m_41613_()) {
-         this.m_6596_();
+      if (remaining.getCount() < stack.getCount()) {
+         this.setChanged();
       }
 
       return remaining;
    }
 
    private ItemStack insertStackInto(List<ItemStack> inventory, ItemStack stack) {
-      ItemStack remaining = stack.m_41777_();
+      ItemStack remaining = stack.copy();
       if (this.isPlantable(remaining)) {
          remaining = this.insertIntoRange(inventory, remaining, 27, 3);
       }
@@ -882,19 +882,19 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    private ItemStack insertIntoRange(List<ItemStack> inventory, ItemStack stack, int start, int count) {
       for (int pass = 0; pass < 2; pass++) {
-         for (int slot = start; slot < start + count && !stack.m_41619_(); slot++) {
+         for (int slot = start; slot < start + count && !stack.isEmpty(); slot++) {
             ItemStack existing = inventory.get(slot);
-            int limit = Math.min(stack.m_41741_(), this.m_6893_());
-            if (pass == 0 && !existing.m_41619_() && ItemStack.m_150942_(existing, stack)) {
-               int moved = Math.min(stack.m_41613_(), Math.max(0, limit - existing.m_41613_()));
-               existing.m_41769_(moved);
-               stack.m_41774_(moved);
-            } else if (pass == 1 && existing.m_41619_()) {
-               int moved = Math.min(stack.m_41613_(), limit);
-               ItemStack placed = stack.m_41777_();
-               placed.m_41764_(moved);
+            int limit = Math.min(stack.getMaxStackSize(), this.getMaxStackSize());
+            if (pass == 0 && !existing.isEmpty() && ItemStack.isSameItemSameTags(existing, stack)) {
+               int moved = Math.min(stack.getCount(), Math.max(0, limit - existing.getCount()));
+               existing.grow(moved);
+               stack.shrink(moved);
+            } else if (pass == 1 && existing.isEmpty()) {
+               int moved = Math.min(stack.getCount(), limit);
+               ItemStack placed = stack.copy();
+               placed.setCount(moved);
                inventory.set(slot, placed);
-               stack.m_41774_(moved);
+               stack.shrink(moved);
             }
          }
       }
@@ -905,7 +905,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    @Override
    public BlockPos getBoundsMin() {
       if (this.boundsMin == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMin;
@@ -914,7 +914,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    @Override
    public BlockPos getBoundsMax() {
       if (this.boundsMax == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMax;
@@ -926,7 +926,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    public void adjustBounds(int minXDelta, int maxXDelta, int minZDelta, int maxZDelta) {
       WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjust(
-         this.f_58858_, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
+         this.worldPosition, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
       );
       if (adjusted != null) {
          this.boundsMin = adjusted.min();
@@ -945,12 +945,12 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    public boolean containsWorkTarget(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_()
-         && pos.m_123342_() >= min.m_123342_()
-         && pos.m_123342_() <= min.m_123342_() + 16;
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ()
+         && pos.getY() >= min.getY()
+         && pos.getY() <= min.getY() + 16;
    }
 
    public byte[] getTargetMap() {
@@ -961,29 +961,29 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       if (targetMap.length <= 256) {
          this.normalizeTargetMap(targetMap);
          this.invalidateTreePlan();
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
    private int targetIndex(BlockPos pos) {
-      int x = pos.m_123341_() - this.getBoundsMin().m_123341_();
-      int z = pos.m_123343_() - this.getBoundsMin().m_123343_();
+      int x = pos.getX() - this.getBoundsMin().getX();
+      int z = pos.getZ() - this.getBoundsMin().getZ();
       return z * 16 + x;
    }
 
    private void resetDefaultBounds(BlockPos pos, BlockState state) {
       this.invalidateTreePlan();
-      Direction facing = state.m_61138_(AutomationWorksiteBlock.FACING)
-         ? ((Direction)state.m_61143_(AutomationWorksiteBlock.FACING)).m_122424_()
+      Direction facing = state.hasProperty(AutomationWorksiteBlock.FACING)
+         ? ((Direction)state.getValue(AutomationWorksiteBlock.FACING)).getOpposite()
          : Direction.SOUTH;
-      BlockPos near = pos.m_121945_(facing);
-      BlockPos far = pos.m_5484_(facing, 5);
-      if (facing.m_122434_() == Axis.Z) {
-         this.boundsMin = new BlockPos(pos.m_123341_() - 2, pos.m_123342_(), Math.min(near.m_123343_(), far.m_123343_()));
-         this.boundsMax = new BlockPos(pos.m_123341_() + 2, pos.m_123342_(), Math.max(near.m_123343_(), far.m_123343_()));
+      BlockPos near = pos.relative(facing);
+      BlockPos far = pos.relative(facing, 5);
+      if (facing.getAxis() == Axis.Z) {
+         this.boundsMin = new BlockPos(pos.getX() - 2, pos.getY(), Math.min(near.getZ(), far.getZ()));
+         this.boundsMax = new BlockPos(pos.getX() + 2, pos.getY(), Math.max(near.getZ(), far.getZ()));
       } else {
-         this.boundsMin = new BlockPos(Math.min(near.m_123341_(), far.m_123341_()), pos.m_123342_(), pos.m_123343_() - 2);
-         this.boundsMax = new BlockPos(Math.max(near.m_123341_(), far.m_123341_()), pos.m_123342_(), pos.m_123343_() + 2);
+         this.boundsMin = new BlockPos(Math.min(near.getX(), far.getX()), pos.getY(), pos.getZ() - 2);
+         this.boundsMax = new BlockPos(Math.max(near.getX(), far.getX()), pos.getY(), pos.getZ() + 2);
       }
    }
 
@@ -998,54 +998,54 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    @Override
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128382_("TargetMap", this.targetMap);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putByteArray("TargetMap", this.targetMap);
       ListTag plan = new ListTag();
 
       for (Entry<BlockPos, Block> entry : this.plannedBlocks.entrySet()) {
          CompoundTag block = new CompoundTag();
-         block.m_128356_("Pos", entry.getKey().m_121878_());
-         block.m_128359_("Block", BuiltInRegistries.f_256975_.m_7981_(entry.getValue()).toString());
+         block.putLong("Pos", entry.getKey().asLong());
+         block.putString("Block", BuiltInRegistries.BLOCK.getKey(entry.getValue()).toString());
          plan.add(block);
       }
 
-      tag.m_128365_("HarvestPlan", plan);
+      tag.put("HarvestPlan", plan);
    }
 
    @Override
-   public void m_142466_(CompoundTag tag) {
+   public void load(CompoundTag tag) {
       this.invalidateTreePlan();
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      if (tag.m_128441_("BoundsMin")) {
-         this.boundsMin = BlockPos.m_122022_(tag.m_128454_("BoundsMin"));
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      if (tag.contains("BoundsMin")) {
+         this.boundsMin = BlockPos.of(tag.getLong("BoundsMin"));
       }
 
-      if (tag.m_128441_("BoundsMax")) {
-         this.boundsMax = BlockPos.m_122022_(tag.m_128454_("BoundsMax"));
+      if (tag.contains("BoundsMax")) {
+         this.boundsMax = BlockPos.of(tag.getLong("BoundsMax"));
       }
 
-      if (tag.m_128441_("TargetMap")) {
-         byte[] loadedTargets = tag.m_128463_("TargetMap");
+      if (tag.contains("TargetMap")) {
+         byte[] loadedTargets = tag.getByteArray("TargetMap");
          if (loadedTargets.length <= 256) {
             this.normalizeTargetMap(loadedTargets);
          }
       }
 
       this.normalizeLoadedBounds();
-      ListTag plan = tag.m_128437_("HarvestPlan", 10);
+      ListTag plan = tag.getList("HarvestPlan", 10);
 
       for (int i = 0; i < Math.min(plan.size(), 16384); i++) {
-         CompoundTag entry = plan.m_128728_(i);
-         ResourceLocation blockId = ResourceLocation.m_135820_(entry.m_128461_("Block"));
-         BlockPos pos = BlockPos.m_122022_(entry.m_128454_("Pos"));
-         if (blockId != null && BuiltInRegistries.f_256975_.m_7804_(blockId) && this.isTargetPosition(pos)) {
-            Block block = (Block)BuiltInRegistries.f_256975_.m_7745_(blockId);
-            BlockState state = block.m_49966_();
+         CompoundTag entry = plan.getCompound(i);
+         ResourceLocation blockId = ResourceLocation.tryParse(entry.getString("Block"));
+         BlockPos pos = BlockPos.of(entry.getLong("Pos"));
+         if (blockId != null && BuiltInRegistries.BLOCK.containsKey(blockId) && this.isTargetPosition(pos)) {
+            Block block = (Block)BuiltInRegistries.BLOCK.get(blockId);
+            BlockState state = block.defaultBlockState();
             if (this.isHarvestLogLike(state)) {
                this.treeTargets.logs.add(pos);
             } else {
@@ -1076,89 +1076,89 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private void normalizeLoadedBounds() {
-      if (this.f_58857_ == null || !this.f_58857_.f_46443_) {
+      if (this.level == null || !this.level.isClientSide) {
          if (this.boundsMin != null && this.boundsMax != null && !WorksiteBoundsGeometry.hasValidSize(this.boundsMin, this.boundsMax, this.getMaxBoundsWidth())
             )
           {
-            this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+            this.resetDefaultBounds(this.worldPosition, this.getBlockState());
          }
       }
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128382_("TargetMap", this.targetMap);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putByteArray("TargetMap", this.targetMap);
       return tag;
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 38;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return this.isValidSlot(slot) ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return this.isValidSlot(slot) ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         this.m_6596_();
+         this.setChanged();
          if (slot >= 33 && slot < 38) {
             this.refreshChunkLoading();
          }
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_(this.getDescriptionId());
+   public Component getDisplayName() {
+      return Component.translatable(this.getDescriptionId());
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new TreeFarmMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new TreeFarmMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createBoundsMenu(int containerId, Inventory playerInventory) {
-      return new TreeFarmBoundsMenu(containerId, playerInventory, this.f_58858_);
+      return new TreeFarmBoundsMenu(containerId, playerInventory, this.worldPosition);
    }
 
    @Override

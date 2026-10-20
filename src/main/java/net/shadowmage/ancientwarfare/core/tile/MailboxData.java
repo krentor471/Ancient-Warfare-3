@@ -24,35 +24,35 @@ public class MailboxData extends SavedData {
    private final Map<String, Set<String>> privateNames = new HashMap<>();
 
    public static MailboxData get(ServerLevel level) {
-      return (MailboxData)level.m_8895_().m_164861_(MailboxData::load, MailboxData::new, "ancientwarfare_mailboxes");
+      return (MailboxData)level.getDataStorage().computeIfAbsent(MailboxData::load, MailboxData::new, "ancientwarfare_mailboxes");
    }
 
    public static MailboxData load(CompoundTag tag) {
       MailboxData data = new MailboxData();
 
-      for (Tag t : tag.m_128437_("PublicNames", 8)) {
-         data.publicNames.add(t.m_7916_());
+      for (Tag t : tag.getList("PublicNames", 8)) {
+         data.publicNames.add(t.getAsString());
       }
 
-      CompoundTag priv = tag.m_128469_("PrivateNames");
+      CompoundTag priv = tag.getCompound("PrivateNames");
 
-      for (String owner : priv.m_128431_()) {
+      for (String owner : priv.getAllKeys()) {
          Set<String> names = new TreeSet<>();
 
-         for (Tag t : priv.m_128437_(owner, 8)) {
-            names.add(t.m_7916_());
+         for (Tag t : priv.getList(owner, 8)) {
+            names.add(t.getAsString());
          }
 
          data.privateNames.put(owner, names);
       }
 
-      CompoundTag pend = tag.m_128469_("Pending");
+      CompoundTag pend = tag.getCompound("Pending");
 
-      for (String key : pend.m_128431_()) {
+      for (String key : pend.getAllKeys()) {
          List<ItemStack> list = new ArrayList<>();
 
-         for (Tag x : pend.m_128437_(key, 10)) {
-            list.add(ItemStack.m_41712_((CompoundTag)x));
+         for (Tag x : pend.getList(key, 10)) {
+            list.add(ItemStack.of((CompoundTag)x));
          }
 
          data.pending.put(key, list);
@@ -61,30 +61,30 @@ public class MailboxData extends SavedData {
       return data;
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
+   public CompoundTag save(CompoundTag tag) {
       ListTag pub = new ListTag();
-      this.publicNames.forEach(n -> pub.add(StringTag.m_129297_(n)));
-      tag.m_128365_("PublicNames", pub);
+      this.publicNames.forEach(n -> pub.add(StringTag.valueOf(n)));
+      tag.put("PublicNames", pub);
       CompoundTag priv = new CompoundTag();
       this.privateNames.forEach((owner, names) -> {
          ListTag list = new ListTag();
-         names.forEach(n -> list.add(StringTag.m_129297_(n)));
-         priv.m_128365_(owner, list);
+         names.forEach(n -> list.add(StringTag.valueOf(n)));
+         priv.put(owner, list);
       });
-      tag.m_128365_("PrivateNames", priv);
+      tag.put("PrivateNames", priv);
       CompoundTag pend = new CompoundTag();
       this.pending.forEach((key, list) -> {
          ListTag l = new ListTag();
 
          for (ItemStack st : list) {
-            if (!st.m_41619_()) {
-               l.add(st.m_41739_(new CompoundTag()));
+            if (!st.isEmpty()) {
+               l.add(st.save(new CompoundTag()));
             }
          }
 
-         pend.m_128365_(key, l);
+         pend.put(key, l);
       });
-      tag.m_128365_("Pending", pend);
+      tag.put("Pending", pend);
       return tag;
    }
 
@@ -96,7 +96,7 @@ public class MailboxData extends SavedData {
       if (name != null && !name.isBlank()) {
          boolean c = (isPrivate ? this.privateNames.computeIfAbsent(owner, k -> new TreeSet<>()) : this.publicNames).add(name);
          if (c) {
-            this.m_77762_();
+            this.setDirty();
          }
 
          return c;
@@ -109,7 +109,7 @@ public class MailboxData extends SavedData {
       Set<String> s = isPrivate ? this.privateNames.get(owner) : this.publicNames;
       boolean c = s != null && s.remove(name);
       if (c) {
-         this.m_77762_();
+         this.setDirty();
       }
 
       return c;
@@ -131,7 +131,7 @@ public class MailboxData extends SavedData {
 
          while (i < list.size()) {
             ItemStack rem = box.insertReceived(list.get(i));
-            if (!rem.m_41619_()) {
+            if (!rem.isEmpty()) {
                list.set(i, rem);
                break;
             }
@@ -143,7 +143,7 @@ public class MailboxData extends SavedData {
             this.pending.remove(key);
          }
 
-         this.m_77762_();
+         this.setDirty();
       }
    }
 
@@ -151,7 +151,7 @@ public class MailboxData extends SavedData {
       List<MailboxData.MailboxInfo> out = new ArrayList<>();
       this.receivers.forEach((k, set) -> {
          for (MailboxBlockEntity b : set) {
-            out.add(new MailboxData.MailboxInfo(b.getMailboxName(), b.getOwnerNamePublic(), b.m_58899_()));
+            out.add(new MailboxData.MailboxInfo(b.getMailboxName(), b.getOwnerNamePublic(), b.getBlockPos()));
          }
       });
       return out;
@@ -163,21 +163,21 @@ public class MailboxData extends SavedData {
    }
 
    public ItemStack deliver(MailboxBlockEntity from, String target, ItemStack stack) {
-      if (target != null && !target.isBlank() && !stack.m_41619_()) {
+      if (target != null && !target.isBlank() && !stack.isEmpty()) {
          Set<MailboxBlockEntity> set = (from.isPrivateBox() ? this.privateReceivers : this.receivers).get(from.keyFor(target));
          if (set == null) {
-            this.pending.computeIfAbsent(from.keyFor(target), k -> new ArrayList<>()).add(stack.m_41777_());
-            this.m_77762_();
-            return ItemStack.f_41583_;
+            this.pending.computeIfAbsent(from.keyFor(target), k -> new ArrayList<>()).add(stack.copy());
+            this.setDirty();
+            return ItemStack.EMPTY;
          } else {
             for (MailboxBlockEntity box : new ArrayList<>(set)) {
                stack = box.insertReceived(stack);
-               if (stack.m_41619_()) {
+               if (stack.isEmpty()) {
                   break;
                }
             }
 
-            this.m_77762_();
+            this.setDirty();
             return stack;
          }
       } else {

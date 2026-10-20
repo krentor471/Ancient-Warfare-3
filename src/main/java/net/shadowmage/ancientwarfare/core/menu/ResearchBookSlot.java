@@ -11,11 +11,11 @@ public class ResearchBookSlot extends Slot {
       super(container, slot, x, y);
    }
 
-   public boolean m_5857_(ItemStack stack) {
+   public boolean mayPlace(ItemStack stack) {
       return AWCoreRegistryAccess.is(stack, AWCoreIds.RESEARCH_BOOK);
    }
 
-   public int m_6641_() {
+   public int getMaxStackSize() {
       return 1;
    }
 }

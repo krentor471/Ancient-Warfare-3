@@ -8,7 +8,7 @@ import net.shadowmage.ancientwarfare.core.common.research.ResearchResource;
 
 public record ResearchGoal(String id, String displayName, int time, Set<String> dependencies, List<ResearchResource> resourceRequirements) {
    public Component translatedName() {
-      return Component.m_237115_("research.ancientwarfare." + this.id);
+      return Component.translatable("research.ancientwarfare." + this.id);
    }
 
    public boolean canResearch(Set<String> completedResearch) {
@@ -16,6 +16,6 @@ public record ResearchGoal(String id, String displayName, int time, Set<String> 
    }
 
    public List<ItemStack> resources() {
-      return this.resourceRequirements.stream().map(ResearchResource::toStack).filter(stack -> !stack.m_41619_()).toList();
+      return this.resourceRequirements.stream().map(ResearchResource::toStack).filter(stack -> !stack.isEmpty()).toList();
    }
 }

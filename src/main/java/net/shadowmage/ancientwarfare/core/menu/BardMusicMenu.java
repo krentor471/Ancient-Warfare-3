@@ -19,11 +19,11 @@ public class BardMusicMenu extends AbstractContainerMenu {
    private boolean guiLockHeld;
 
    public BardMusicMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buffer) {
-      this(containerId, playerInventory, buffer.m_130242_(), readTracks(buffer), null);
+      this(containerId, playerInventory, buffer.readVarInt(), readTracks(buffer), null);
    }
 
    public BardMusicMenu(int containerId, Inventory playerInventory, BardNpcEntity bard) {
-      this(containerId, playerInventory, bard == null ? -1 : bard.m_19879_(), bard == null ? List.of() : bard.getBardTracks(), bard);
+      this(containerId, playerInventory, bard == null ? -1 : bard.getId(), bard == null ? List.of() : bard.getBardTracks(), bard);
    }
 
    private BardMusicMenu(int containerId, Inventory playerInventory, int bardEntityId, List<BardTrack> tracks, BardNpcEntity bard) {
@@ -31,8 +31,8 @@ public class BardMusicMenu extends AbstractContainerMenu {
       this.bardEntityId = bardEntityId;
       this.tracks = List.copyOf(tracks);
       this.bard = bard;
-      if (bard != null && !playerInventory.f_35978_.m_9236_().f_46443_) {
-         bard.beginGuiInteraction(playerInventory.f_35978_);
+      if (bard != null && !playerInventory.player.level().isClientSide) {
+         bard.beginGuiInteraction(playerInventory.player);
          this.guiLockHeld = bard.isGuiInteractionPaused();
       }
    }
@@ -45,23 +45,23 @@ public class BardMusicMenu extends AbstractContainerMenu {
       return this.tracks;
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 
-   public boolean m_6875_(Player player) {
-      if (player.m_9236_().m_6815_(this.bardEntityId) instanceof BardNpcEntity bard
-         && bard.m_6084_()
+   public boolean stillValid(Player player) {
+      if (player.level().getEntity(this.bardEntityId) instanceof BardNpcEntity bard
+         && bard.isAlive()
          && bard.hasCommandPermission(player)
-         && bard.m_20280_(player) < 64.0) {
+         && bard.distanceToSqr(player) < 64.0) {
          return true;
       }
 
       return false;
    }
 
-   public void m_6877_(Player player) {
-      super.m_6877_(player);
+   public void removed(Player player) {
+      super.removed(player);
       if (this.guiLockHeld && this.bard != null) {
          this.bard.endGuiInteraction(player);
          this.guiLockHeld = false;
@@ -69,8 +69,8 @@ public class BardMusicMenu extends AbstractContainerMenu {
    }
 
    public static void writeTracks(FriendlyByteBuf buffer, int entityId, List<BardTrack> tracks) {
-      buffer.m_130130_(entityId);
-      buffer.m_130130_(Math.min(32, tracks.size()));
+      buffer.writeVarInt(entityId);
+      buffer.writeVarInt(Math.min(32, tracks.size()));
 
       for (BardTrack track : tracks.stream().limit(32L).toList()) {
          track.toNetwork(buffer);
@@ -78,7 +78,7 @@ public class BardMusicMenu extends AbstractContainerMenu {
    }
 
    private static List<BardTrack> readTracks(FriendlyByteBuf buffer) {
-      int count = Math.min(32, buffer.m_130242_());
+      int count = Math.min(32, buffer.readVarInt());
       List<BardTrack> tracks = new ArrayList<>(count);
 
       for (int i = 0; i < count; i++) {

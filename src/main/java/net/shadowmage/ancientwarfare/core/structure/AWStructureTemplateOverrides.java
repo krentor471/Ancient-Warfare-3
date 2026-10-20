@@ -105,7 +105,7 @@ public final class AWStructureTemplateOverrides {
                   }
 
                   String normalized = biome.getAsString().trim().toLowerCase(Locale.ROOT);
-                  if (ResourceLocation.m_135820_(normalized) == null) {
+                  if (ResourceLocation.tryParse(normalized) == null) {
                      throw new IllegalArgumentException("Invalid biome id: " + normalized);
                   }
 

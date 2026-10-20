@@ -41,23 +41,23 @@ import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.TownHallDeathData;
 
 public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcOwnerAccess {
-   private static final EntityDataAccessor<Optional<UUID>> OWNER = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135041_);
-   private static final EntityDataAccessor<String> CURRENT_COMMAND = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135030_);
-   private static final EntityDataAccessor<BlockPos> COMMAND_TARGET = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135038_);
-   private static final EntityDataAccessor<Boolean> HOME_SET = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135035_);
-   private static final EntityDataAccessor<BlockPos> HOME_POS = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135038_);
-   private static final EntityDataAccessor<Optional<UUID>> FOLLOW_TARGET = SynchedEntityData.m_135353_(
-      PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135041_
+   private static final EntityDataAccessor<Optional<UUID>> OWNER = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+   private static final EntityDataAccessor<String> CURRENT_COMMAND = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.STRING);
+   private static final EntityDataAccessor<BlockPos> COMMAND_TARGET = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BLOCK_POS);
+   private static final EntityDataAccessor<Boolean> HOME_SET = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BOOLEAN);
+   private static final EntityDataAccessor<BlockPos> HOME_POS = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BLOCK_POS);
+   private static final EntityDataAccessor<Optional<UUID>> FOLLOW_TARGET = SynchedEntityData.defineId(
+      PlayerOwnedNpcEntity.class, EntityDataSerializers.OPTIONAL_UUID
    );
-   private static final EntityDataAccessor<ItemStack> ORDERS_STACK = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135033_);
-   private static final EntityDataAccessor<ItemStack> UPKEEP_STACK = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135033_);
-   private static final EntityDataAccessor<ItemStack> FOOD_STACK = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135033_);
-   private static final EntityDataAccessor<Integer> FOOD_REMAINING = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Boolean> GETTING_FOOD = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135035_);
-   private static final EntityDataAccessor<Boolean> TOWN_HALL_SET = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135035_);
-   private static final EntityDataAccessor<BlockPos> TOWN_HALL_POS = SynchedEntityData.m_135353_(PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135038_);
-   private static final EntityDataAccessor<Integer> DRAGON_RIDER_MOUNT = SynchedEntityData.m_135353_(
-      PlayerOwnedNpcEntity.class, EntityDataSerializers.f_135028_
+   private static final EntityDataAccessor<ItemStack> ORDERS_STACK = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.ITEM_STACK);
+   private static final EntityDataAccessor<ItemStack> UPKEEP_STACK = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.ITEM_STACK);
+   private static final EntityDataAccessor<ItemStack> FOOD_STACK = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.ITEM_STACK);
+   private static final EntityDataAccessor<Integer> FOOD_REMAINING = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Boolean> GETTING_FOOD = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BOOLEAN);
+   private static final EntityDataAccessor<Boolean> TOWN_HALL_SET = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BOOLEAN);
+   private static final EntityDataAccessor<BlockPos> TOWN_HALL_POS = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BLOCK_POS);
+   private static final EntityDataAccessor<Integer> DRAGON_RIDER_MOUNT = SynchedEntityData.defineId(
+      PlayerOwnedNpcEntity.class, EntityDataSerializers.INT
    );
    private static final String TAG_OWNER = "Owner";
    private static final String TAG_CURRENT_COMMAND = "CurrentCommand";
@@ -79,7 +79,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private static final double FOLLOW_COMBAT_RESUME_DISTANCE = 10.0;
    private final Map<UUID, Integer> guiViewers = new HashMap<>();
    private UUID combatGroupCommanderId;
-   private Vec3 combatGroupOffset = Vec3.f_82478_;
+   private Vec3 combatGroupOffset = Vec3.ZERO;
    private long combatGroupRefreshTime = Long.MIN_VALUE;
    private UUID dragonRiderMountUuid;
    private UUID attackCommandTargetUuid;
@@ -88,143 +88,143 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    protected PlayerOwnedNpcEntity(EntityType<? extends PlayerOwnedNpcEntity> entityType, Level level) {
       super(entityType, level);
-      this.f_21345_.m_25352_(3, new FoodSupplyGoal(this));
-      this.f_21345_.m_25352_(3, new FollowPlayerGoal(this, 3.0F, 6.0F));
+      this.goalSelector.addGoal(3, new FoodSupplyGoal(this));
+      this.goalSelector.addGoal(3, new FollowPlayerGoal(this, 3.0F, 6.0F));
    }
 
    @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(OWNER, Optional.empty());
-      this.f_19804_.m_135372_(CURRENT_COMMAND, NpcCommandType.NONE.name());
-      this.f_19804_.m_135372_(COMMAND_TARGET, BlockPos.f_121853_);
-      this.f_19804_.m_135372_(HOME_SET, false);
-      this.f_19804_.m_135372_(HOME_POS, BlockPos.f_121853_);
-      this.f_19804_.m_135372_(FOLLOW_TARGET, Optional.empty());
-      this.f_19804_.m_135372_(ORDERS_STACK, ItemStack.f_41583_);
-      this.f_19804_.m_135372_(UPKEEP_STACK, ItemStack.f_41583_);
-      this.f_19804_.m_135372_(FOOD_STACK, ItemStack.f_41583_);
-      this.f_19804_.m_135372_(FOOD_REMAINING, 0);
-      this.f_19804_.m_135372_(GETTING_FOOD, false);
-      this.f_19804_.m_135372_(TOWN_HALL_SET, false);
-      this.f_19804_.m_135372_(TOWN_HALL_POS, BlockPos.f_121853_);
-      this.f_19804_.m_135372_(DRAGON_RIDER_MOUNT, -1);
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(OWNER, Optional.empty());
+      this.entityData.define(CURRENT_COMMAND, NpcCommandType.NONE.name());
+      this.entityData.define(COMMAND_TARGET, BlockPos.ZERO);
+      this.entityData.define(HOME_SET, false);
+      this.entityData.define(HOME_POS, BlockPos.ZERO);
+      this.entityData.define(FOLLOW_TARGET, Optional.empty());
+      this.entityData.define(ORDERS_STACK, ItemStack.EMPTY);
+      this.entityData.define(UPKEEP_STACK, ItemStack.EMPTY);
+      this.entityData.define(FOOD_STACK, ItemStack.EMPTY);
+      this.entityData.define(FOOD_REMAINING, 0);
+      this.entityData.define(GETTING_FOOD, false);
+      this.entityData.define(TOWN_HALL_SET, false);
+      this.entityData.define(TOWN_HALL_POS, BlockPos.ZERO);
+      this.entityData.define(DRAGON_RIDER_MOUNT, -1);
    }
 
    @Override
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
-      this.getOwner().ifPresent(uuid -> tag.m_128362_("Owner", uuid));
-      tag.m_128359_("CurrentCommand", this.getCurrentCommand().name());
-      tag.m_128356_("CommandTarget", this.getCommandTarget().m_121878_());
-      tag.m_128379_("HomeSet", this.hasHome());
-      tag.m_128356_("HomePos", this.getHomePos().m_121878_());
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
+      this.getOwner().ifPresent(uuid -> tag.putUUID("Owner", uuid));
+      tag.putString("CurrentCommand", this.getCurrentCommand().name());
+      tag.putLong("CommandTarget", this.getCommandTarget().asLong());
+      tag.putBoolean("HomeSet", this.hasHome());
+      tag.putLong("HomePos", this.getHomePos().asLong());
       if (this.attackCommandTargetUuid != null) {
-         tag.m_128362_("AttackCommandTarget", this.attackCommandTargetUuid);
+         tag.putUUID("AttackCommandTarget", this.attackCommandTargetUuid);
       }
 
-      this.getFollowTarget().ifPresent(uuid -> tag.m_128362_("FollowTarget", uuid));
+      this.getFollowTarget().ifPresent(uuid -> tag.putUUID("FollowTarget", uuid));
       if (this.dragonRiderMountUuid != null) {
-         tag.m_128362_("DragonRiderMount", this.dragonRiderMountUuid);
+         tag.putUUID("DragonRiderMount", this.dragonRiderMountUuid);
       }
 
-      if (!this.getOrdersStack().m_41619_()) {
-         tag.m_128365_("OrdersStack", this.getOrdersStack().m_41739_(new CompoundTag()));
+      if (!this.getOrdersStack().isEmpty()) {
+         tag.put("OrdersStack", this.getOrdersStack().save(new CompoundTag()));
       }
 
-      if (!this.getUpkeepStack().m_41619_()) {
-         tag.m_128365_("UpkeepStack", this.getUpkeepStack().m_41739_(new CompoundTag()));
+      if (!this.getUpkeepStack().isEmpty()) {
+         tag.put("UpkeepStack", this.getUpkeepStack().save(new CompoundTag()));
       }
 
-      if (!this.getFoodStack().m_41619_()) {
-         tag.m_128365_("FoodStack", this.getFoodStack().m_41739_(new CompoundTag()));
+      if (!this.getFoodStack().isEmpty()) {
+         tag.put("FoodStack", this.getFoodStack().save(new CompoundTag()));
       }
 
-      tag.m_128405_("FoodRemaining", this.getFoodRemaining());
-      tag.m_128379_("TownHallSet", this.hasTownHall());
-      tag.m_128356_("TownHallPos", this.getTownHallPos().m_121878_());
+      tag.putInt("FoodRemaining", this.getFoodRemaining());
+      tag.putBoolean("TownHallSet", this.hasTownHall());
+      tag.putLong("TownHallPos", this.getTownHallPos().asLong());
    }
 
    @Override
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
-      if (tag.m_128403_("Owner")) {
-         this.setOwner(tag.m_128342_("Owner"));
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
+      if (tag.hasUUID("Owner")) {
+         this.setOwner(tag.getUUID("Owner"));
       }
 
-      this.dragonRiderMountUuid = tag.m_128403_("DragonRiderMount") ? tag.m_128342_("DragonRiderMount") : null;
-      this.attackCommandTargetUuid = tag.m_128403_("AttackCommandTarget") ? tag.m_128342_("AttackCommandTarget") : null;
-      if (tag.m_128441_("CurrentCommand")) {
-         this.setCurrentCommand(parseCommand(tag.m_128461_("CurrentCommand")));
+      this.dragonRiderMountUuid = tag.hasUUID("DragonRiderMount") ? tag.getUUID("DragonRiderMount") : null;
+      this.attackCommandTargetUuid = tag.hasUUID("AttackCommandTarget") ? tag.getUUID("AttackCommandTarget") : null;
+      if (tag.contains("CurrentCommand")) {
+         this.setCurrentCommand(parseCommand(tag.getString("CurrentCommand")));
       }
 
-      if (tag.m_128441_("CommandTarget")) {
-         this.setCommandTarget(BlockPos.m_122022_(tag.m_128454_("CommandTarget")));
+      if (tag.contains("CommandTarget")) {
+         this.setCommandTarget(BlockPos.of(tag.getLong("CommandTarget")));
       }
 
-      if (tag.m_128441_("HomeSet")) {
-         this.f_19804_.m_135381_(HOME_SET, tag.m_128471_("HomeSet"));
+      if (tag.contains("HomeSet")) {
+         this.entityData.set(HOME_SET, tag.getBoolean("HomeSet"));
       }
 
-      if (tag.m_128441_("HomePos")) {
-         this.f_19804_.m_135381_(HOME_POS, BlockPos.m_122022_(tag.m_128454_("HomePos")));
+      if (tag.contains("HomePos")) {
+         this.entityData.set(HOME_POS, BlockPos.of(tag.getLong("HomePos")));
       }
 
-      if (tag.m_128403_("FollowTarget")) {
-         this.setFollowTarget(tag.m_128342_("FollowTarget"));
+      if (tag.hasUUID("FollowTarget")) {
+         this.setFollowTarget(tag.getUUID("FollowTarget"));
       }
 
-      if (tag.m_128441_("OrdersStack")) {
-         this.setOrdersStack(ItemStack.m_41712_(tag.m_128469_("OrdersStack")));
+      if (tag.contains("OrdersStack")) {
+         this.setOrdersStack(ItemStack.of(tag.getCompound("OrdersStack")));
       }
 
-      if (tag.m_128441_("UpkeepStack")) {
-         this.setUpkeepStack(ItemStack.m_41712_(tag.m_128469_("UpkeepStack")));
+      if (tag.contains("UpkeepStack")) {
+         this.setUpkeepStack(ItemStack.of(tag.getCompound("UpkeepStack")));
       }
 
-      if (tag.m_128441_("FoodStack")) {
-         this.setFoodStack(ItemStack.m_41712_(tag.m_128469_("FoodStack")));
+      if (tag.contains("FoodStack")) {
+         this.setFoodStack(ItemStack.of(tag.getCompound("FoodStack")));
       }
 
-      if (tag.m_128441_("FoodRemaining")) {
-         this.setFoodRemaining(tag.m_128451_("FoodRemaining"));
+      if (tag.contains("FoodRemaining")) {
+         this.setFoodRemaining(tag.getInt("FoodRemaining"));
       }
 
-      if (tag.m_128441_("TownHallSet")) {
-         this.f_19804_.m_135381_(TOWN_HALL_SET, tag.m_128471_("TownHallSet"));
+      if (tag.contains("TownHallSet")) {
+         this.entityData.set(TOWN_HALL_SET, tag.getBoolean("TownHallSet"));
       }
 
-      if (tag.m_128441_("TownHallPos")) {
-         this.f_19804_.m_135381_(TOWN_HALL_POS, BlockPos.m_122022_(tag.m_128454_("TownHallPos")));
+      if (tag.contains("TownHallPos")) {
+         this.entityData.set(TOWN_HALL_POS, BlockPos.of(tag.getLong("TownHallPos")));
       }
    }
 
    @Override
    public Optional<UUID> getOwner() {
-      return (Optional<UUID>)this.f_19804_.m_135370_(OWNER);
+      return (Optional<UUID>)this.entityData.get(OWNER);
    }
 
    public void setOwner(UUID owner) {
-      this.f_19804_.m_135381_(OWNER, Optional.ofNullable(owner));
+      this.entityData.set(OWNER, Optional.ofNullable(owner));
    }
 
-   public boolean m_7307_(Entity entity) {
-      return NpcTargeting.isProtectedAlly(this, entity) || super.m_7307_(entity);
+   public boolean isAlliedTo(Entity entity) {
+      return NpcTargeting.isProtectedAlly(this, entity) || super.isAlliedTo(entity);
    }
 
    public void beginGuiInteraction(Player player) {
-      if (!this.m_9236_().f_46443_ && player != null && this.hasCommandPermission(player)) {
+      if (!this.level().isClientSide && player != null && this.hasCommandPermission(player)) {
          if (this.guiViewers.isEmpty()) {
             this.freezeForGui();
          }
 
-         this.guiViewers.merge(player.m_20148_(), 1, Integer::sum);
+         this.guiViewers.merge(player.getUUID(), 1, Integer::sum);
       }
    }
 
    public void endGuiInteraction(Player player) {
-      if (!this.m_9236_().f_46443_ && player != null) {
-         UUID playerId = player.m_20148_();
+      if (!this.level().isClientSide && player != null) {
+         UUID playerId = player.getUUID();
          Integer openMenus = this.guiViewers.get(playerId);
          if (openMenus != null) {
             if (openMenus > 1) {
@@ -234,7 +234,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
             }
 
             if (this.guiViewers.isEmpty()) {
-               this.m_21573_().m_26573_();
+               this.getNavigation().stop();
             }
          }
       }
@@ -245,10 +245,10 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    @Override
-   public void m_8119_() {
-      if (this.m_5448_() != null && !NpcTargeting.canHarm(this, this.m_5448_())) {
-         this.m_6710_(null);
-         this.m_6703_(null);
+   public void tick() {
+      if (this.getTarget() != null && !NpcTargeting.canHarm(this, this.getTarget())) {
+         this.setTarget(null);
+         this.setLastHurtByMob(null);
       }
 
       this.updateFollowCombatRecall();
@@ -257,7 +257,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
          this.freezeForGui();
       }
 
-      super.m_8119_();
+      super.tick();
       if (this.isGuiInteractionPaused()) {
          this.freezeForGui();
       }
@@ -266,13 +266,13 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    private void updateFollowCombatRecall() {
-      if (!this.m_9236_().f_46443_ && this.getCurrentCommand() == NpcCommandType.FOLLOW) {
+      if (!this.level().isClientSide && this.getCurrentCommand() == NpcCommandType.FOLLOW) {
          Player player = this.getFollowTargetPlayer().orElse(null);
          if (player == null) {
             this.followCombatRecallActive = false;
          } else {
-            Entity movingEntity = (Entity)(this.m_20202_() != null ? this.m_20201_() : this);
-            double distanceSq = movingEntity.m_20280_(player);
+            Entity movingEntity = (Entity)(this.getVehicle() != null ? this.getRootVehicle() : this);
+            double distanceSq = movingEntity.distanceToSqr(player);
             if (!this.followCombatRecallActive && distanceSq > 576.0) {
                this.followCombatRecallActive = true;
             } else if (this.followCombatRecallActive && distanceSq <= 100.0) {
@@ -280,8 +280,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
             }
 
             if (this.followCombatRecallActive) {
-               this.m_6710_(null);
-               this.m_6703_(null);
+               this.setTarget(null);
+               this.setLastHurtByMob(null);
             }
          }
       } else {
@@ -294,42 +294,42 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    private void freezeForGui() {
-      this.m_21573_().m_26573_();
-      this.m_20256_(Vec3.f_82478_);
-      Entity vehicle = this.m_20202_();
-      if (vehicle != null && vehicle.m_146895_() == this) {
+      this.getNavigation().stop();
+      this.setDeltaMovement(Vec3.ZERO);
+      Entity vehicle = this.getVehicle();
+      if (vehicle != null && vehicle.getFirstPassenger() == this) {
          if (vehicle instanceof Mob mount) {
-            mount.m_21573_().m_26573_();
+            mount.getNavigation().stop();
          }
 
-         vehicle.m_20256_(Vec3.f_82478_);
+         vehicle.setDeltaMovement(Vec3.ZERO);
       }
    }
 
    public boolean hasCommandPermission(Player player) {
-      return this.getOwner().map(owner -> owner.equals(player.m_20148_())).orElse(true);
+      return this.getOwner().map(owner -> owner.equals(player.getUUID())).orElse(true);
    }
 
    public NpcCommandType getCurrentCommand() {
-      return parseCommand((String)this.f_19804_.m_135370_(CURRENT_COMMAND));
+      return parseCommand((String)this.entityData.get(CURRENT_COMMAND));
    }
 
    public void setCurrentCommand(NpcCommandType command) {
-      this.f_19804_.m_135381_(CURRENT_COMMAND, (command == null ? NpcCommandType.NONE : command).name());
+      this.entityData.set(CURRENT_COMMAND, (command == null ? NpcCommandType.NONE : command).name());
    }
 
    public BlockPos getCommandTarget() {
-      return (BlockPos)this.f_19804_.m_135370_(COMMAND_TARGET);
+      return (BlockPos)this.entityData.get(COMMAND_TARGET);
    }
 
    public void setCommandTarget(BlockPos target) {
-      this.f_19804_.m_135381_(COMMAND_TARGET, target == null ? BlockPos.f_121853_ : target);
+      this.entityData.set(COMMAND_TARGET, target == null ? BlockPos.ZERO : target);
    }
 
    public void setMoveCommand(BlockPos target) {
       this.setFollowTarget(null);
       this.attackCommandTargetUuid = null;
-      this.m_6710_(null);
+      this.setTarget(null);
       this.setCommandTarget(target);
       this.setCurrentCommand(NpcCommandType.MOVE);
    }
@@ -337,8 +337,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    public void setAttackCommand(LivingEntity target) {
       if (NpcTargeting.canHarm(this, target)) {
          this.setFollowTarget(null);
-         this.attackCommandTargetUuid = target.m_20148_();
-         this.m_6710_(target);
+         this.attackCommandTargetUuid = target.getUUID();
+         this.setTarget(target);
          this.setCurrentCommand(NpcCommandType.ATTACK);
       }
    }
@@ -350,23 +350,23 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
       this.setCurrentCommand(NpcCommandType.NONE);
       this.attackCommandTargetUuid = null;
-      this.setCommandTarget(BlockPos.f_121853_);
-      this.m_6710_(null);
+      this.setCommandTarget(BlockPos.ZERO);
+      this.setTarget(null);
    }
 
    private void enforceAttackCommandTarget() {
-      if (!this.m_9236_().f_46443_ && this.getCurrentCommand() == NpcCommandType.ATTACK) {
+      if (!this.level().isClientSide && this.getCurrentCommand() == NpcCommandType.ATTACK) {
          if (this.attackCommandTargetUuid == null) {
-            LivingEntity current = this.m_5448_();
+            LivingEntity current = this.getTarget();
             if (NpcTargeting.canHarm(this, current)) {
-               this.attackCommandTargetUuid = current.m_20148_();
+               this.attackCommandTargetUuid = current.getUUID();
             }
          } else {
-            if (this.m_9236_() instanceof ServerLevel serverLevel) {
-               Entity entity = serverLevel.m_8791_(this.attackCommandTargetUuid);
+            if (this.level() instanceof ServerLevel serverLevel) {
+               Entity entity = serverLevel.getEntity(this.attackCommandTargetUuid);
                if (entity instanceof LivingEntity living && NpcTargeting.canHarm(this, living)) {
-                  if (this.m_5448_() != living) {
-                     this.m_6710_(living);
+                  if (this.getTarget() != living) {
+                     this.setTarget(living);
                   }
 
                   return;
@@ -386,9 +386,9 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    public void assignCombatGroupFormation(PlayerOwnedNpcEntity commander, double lateralOffset, double rearOffset) {
       if (commander != null) {
-         this.combatGroupCommanderId = commander.m_20148_();
+         this.combatGroupCommanderId = commander.getUUID();
          this.combatGroupOffset = new Vec3(lateralOffset, 0.0, rearOffset);
-         this.combatGroupRefreshTime = this.m_9236_().m_46467_();
+         this.combatGroupRefreshTime = this.level().getGameTime();
       }
    }
 
@@ -418,16 +418,16 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    public Optional<PlayerOwnedNpcEntity> getCombatGroupCommander() {
-      if (this.combatGroupCommanderId != null && !this.m_9236_().f_46443_ && this.m_9236_().m_46467_() - this.combatGroupRefreshTime <= 40L) {
-         if (((ServerLevel)this.m_9236_()).m_8791_(this.combatGroupCommanderId) instanceof PlayerOwnedNpcEntity commander
-            && commander.m_6084_()
+      if (this.combatGroupCommanderId != null && !this.level().isClientSide && this.level().getGameTime() - this.combatGroupRefreshTime <= 40L) {
+         if (((ServerLevel)this.level()).getEntity(this.combatGroupCommanderId) instanceof PlayerOwnedNpcEntity commander
+            && commander.isAlive()
             && this.getOwner().equals(commander.getOwner())
-            && CommandBatonItem.isCombatGroupMode(commander.m_21205_())
+            && CommandBatonItem.isCombatGroupMode(commander.getMainHandItem())
             && commander.isCombatGroupEligible()
             && commander.isDragonRiderCombatGroupCommander() == this.isLogicalDragonRider()
             && commander.isHippogryphCombatGroupCommander() == this.isHippogryphRider()
             && commander.isHippocampusCombatGroupCommander() == this.isHippocampusRider()
-            && CommandBatonItem.containsCombatGroupNpc(commander.m_21205_(), this.m_20148_())) {
+            && CommandBatonItem.containsCombatGroupNpc(commander.getMainHandItem(), this.getUUID())) {
             return Optional.of(commander);
          }
 
@@ -439,29 +439,29 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    public Optional<Vec3> getCombatGroupFormationPosition() {
       return this.getCombatGroupCommander().map(commander -> {
-         double yaw = Math.toRadians((double)commander.m_146908_());
+         double yaw = Math.toRadians((double)commander.getYRot());
          Vec3 right = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw));
          Vec3 rear = new Vec3(Math.sin(yaw), 0.0, -Math.cos(yaw));
-         Vec3 anchor = commander.m_20182_();
+         Vec3 anchor = commander.position();
          if (commander.isLogicalDragonRider()) {
             Entity mount = DragonRiderController.getLogicalMount(commander);
             if (mount != null) {
-               anchor = mount.m_20182_();
+               anchor = mount.position();
             } else {
-               anchor = anchor.m_82492_(0.0, 2.35, 0.0);
+               anchor = anchor.subtract(0.0, 2.35, 0.0);
             }
-         } else if (commander instanceof CombatNpcEntity && IceAndFireHippogryphCompat.isHippogryph(commander.m_20202_())) {
-            anchor = commander.m_20202_().m_20182_();
-         } else if (commander instanceof CombatNpcEntity && IceAndFireHippocampusCompat.isHippocampus(commander.m_20202_())) {
-            anchor = commander.m_20202_().m_20182_();
+         } else if (commander instanceof CombatNpcEntity && IceAndFireHippogryphCompat.isHippogryph(commander.getVehicle())) {
+            anchor = commander.getVehicle().position();
+         } else if (commander instanceof CombatNpcEntity && IceAndFireHippocampusCompat.isHippocampus(commander.getVehicle())) {
+            anchor = commander.getVehicle().position();
          }
 
-         return anchor.m_82549_(right.m_82490_(this.combatGroupOffset.f_82479_)).m_82549_(rear.m_82490_(this.combatGroupOffset.f_82481_));
+         return anchor.add(right.scale(this.combatGroupOffset.x)).add(rear.scale(this.combatGroupOffset.z));
       });
    }
 
    public boolean isCombatGroupCommander() {
-      return this.isCombatGroupEligible() && CommandBatonItem.isCombatGroupMode(this.m_21205_());
+      return this.isCombatGroupEligible() && CommandBatonItem.isCombatGroupMode(this.getMainHandItem());
    }
 
    public boolean isDragonRiderCombatGroupCommander() {
@@ -469,7 +469,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    public boolean isHippogryphRider() {
-      return this instanceof CombatNpcEntity && IceAndFireHippogryphCompat.isHippogryph(this.m_20202_());
+      return this instanceof CombatNpcEntity && IceAndFireHippogryphCompat.isHippogryph(this.getVehicle());
    }
 
    public boolean isHippogryphCombatGroupCommander() {
@@ -477,7 +477,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    public boolean isHippocampusRider() {
-      return this instanceof CombatNpcEntity && IceAndFireHippocampusCompat.isHippocampus(this.m_20202_());
+      return this instanceof CombatNpcEntity && IceAndFireHippocampusCompat.isHippocampus(this.getVehicle());
    }
 
    public boolean isHippocampusCombatGroupCommander() {
@@ -485,41 +485,41 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    public boolean shouldFollowCombatGroupFormation() {
-      LivingEntity target = this.m_5448_();
+      LivingEntity target = this.getTarget();
       return this.getCurrentCommand() == NpcCommandType.NONE
          && !this.isGettingFood()
-         && (target == null || !target.m_6084_())
+         && (target == null || !target.isAlive())
          && this.getCombatGroupCommander().isPresent();
    }
 
    public boolean hasHome() {
-      return (Boolean)this.f_19804_.m_135370_(HOME_SET);
+      return (Boolean)this.entityData.get(HOME_SET);
    }
 
    public BlockPos getHomePos() {
-      return (BlockPos)this.f_19804_.m_135370_(HOME_POS);
+      return (BlockPos)this.entityData.get(HOME_POS);
    }
 
    public void setHome(BlockPos pos) {
-      this.f_19804_.m_135381_(HOME_SET, true);
-      this.f_19804_.m_135381_(HOME_POS, pos == null ? this.m_20183_() : pos);
+      this.entityData.set(HOME_SET, true);
+      this.entityData.set(HOME_POS, pos == null ? this.blockPosition() : pos);
    }
 
    public void clearHome() {
-      this.f_19804_.m_135381_(HOME_SET, false);
-      this.f_19804_.m_135381_(HOME_POS, BlockPos.f_121853_);
+      this.entityData.set(HOME_SET, false);
+      this.entityData.set(HOME_POS, BlockPos.ZERO);
    }
 
    public Optional<UUID> getFollowTarget() {
-      return (Optional<UUID>)this.f_19804_.m_135370_(FOLLOW_TARGET);
+      return (Optional<UUID>)this.entityData.get(FOLLOW_TARGET);
    }
 
    public void setFollowTarget(UUID followTarget) {
-      this.f_19804_.m_135381_(FOLLOW_TARGET, Optional.ofNullable(followTarget));
+      this.entityData.set(FOLLOW_TARGET, Optional.ofNullable(followTarget));
    }
 
    public Optional<Player> getFollowTargetPlayer() {
-      return this.getFollowTarget().<Player>map(this.m_9236_()::m_46003_).filter(player -> player.m_6084_() && !player.m_5833_());
+      return this.getFollowTarget().<Player>map(this.level()::getPlayerByUUID).filter(player -> player.isAlive() && !player.isSpectator());
    }
 
    public void toggleFollow(Player player) {
@@ -529,72 +529,72 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
             worker.setWorkState("idle");
          }
 
-         player.m_5661_(Component.m_237110_("guistrings.npc.follow_disabled", new Object[]{this.m_5446_()}), true);
+         player.displayClientMessage(Component.translatable("guistrings.npc.follow_disabled", new Object[]{this.getDisplayName()}), true);
       } else {
          this.clearCommand();
          this.setGettingFood(false);
-         this.setFollowTarget(player.m_20148_());
+         this.setFollowTarget(player.getUUID());
          this.setCurrentCommand(NpcCommandType.FOLLOW);
          if (this instanceof WorkerNpcEntity worker) {
             worker.setWorkState("follow");
          }
 
-         player.m_5661_(Component.m_237110_("guistrings.npc.follow_enabled", new Object[]{this.m_5446_()}), true);
+         player.displayClientMessage(Component.translatable("guistrings.npc.follow_enabled", new Object[]{this.getDisplayName()}), true);
       }
    }
 
    public ItemStack getOrdersStack() {
-      return (ItemStack)this.f_19804_.m_135370_(ORDERS_STACK);
+      return (ItemStack)this.entityData.get(ORDERS_STACK);
    }
 
    public void setOrdersStack(ItemStack stack) {
-      this.f_19804_.m_135381_(ORDERS_STACK, stack == null ? ItemStack.f_41583_ : stack.m_41777_());
+      this.entityData.set(ORDERS_STACK, stack == null ? ItemStack.EMPTY : stack.copy());
    }
 
    public ItemStack getUpkeepStack() {
-      return (ItemStack)this.f_19804_.m_135370_(UPKEEP_STACK);
+      return (ItemStack)this.entityData.get(UPKEEP_STACK);
    }
 
    public void setUpkeepStack(ItemStack stack) {
-      this.f_19804_.m_135381_(UPKEEP_STACK, stack == null ? ItemStack.f_41583_ : stack.m_41777_());
+      this.entityData.set(UPKEEP_STACK, stack == null ? ItemStack.EMPTY : stack.copy());
    }
 
    public ItemStack getFoodStack() {
-      return (ItemStack)this.f_19804_.m_135370_(FOOD_STACK);
+      return (ItemStack)this.entityData.get(FOOD_STACK);
    }
 
    public void setFoodStack(ItemStack stack) {
-      if (stack != null && !stack.m_41619_() && foodValue(stack) > 0) {
-         ItemStack stored = stack.m_41777_();
-         stored.m_41764_(Math.min(stored.m_41613_(), 64));
-         this.f_19804_.m_135381_(FOOD_STACK, stored);
-         if (!this.m_9236_().f_46443_) {
+      if (stack != null && !stack.isEmpty() && foodValue(stack) > 0) {
+         ItemStack stored = stack.copy();
+         stored.setCount(Math.min(stored.getCount(), 64));
+         this.entityData.set(FOOD_STACK, stored);
+         if (!this.level().isClientSide) {
             this.stopGettingFood();
          }
       } else {
-         this.f_19804_.m_135381_(FOOD_STACK, ItemStack.f_41583_);
+         this.entityData.set(FOOD_STACK, ItemStack.EMPTY);
       }
    }
 
    public int getFoodRemaining() {
-      return (Integer)this.f_19804_.m_135370_(FOOD_REMAINING);
+      return (Integer)this.entityData.get(FOOD_REMAINING);
    }
 
    public boolean isGettingFood() {
-      return (Boolean)this.f_19804_.m_135370_(GETTING_FOOD);
+      return (Boolean)this.entityData.get(GETTING_FOOD);
    }
 
    boolean isFoodSupplyBlockedByDeployment() {
-      if (this.isGuiInteractionPaused() || this.m_20159_() || this.getCurrentCommand() != NpcCommandType.NONE) {
+      if (this.isGuiInteractionPaused() || this.isPassenger() || this.getCurrentCommand() != NpcCommandType.NONE) {
          return true;
       } else if (this.hasActiveWeaponDeployment()) {
          return true;
       } else {
-         LivingEntity combatTarget = this.m_5448_();
-         if (combatTarget != null && combatTarget.m_6084_()) {
+         LivingEntity combatTarget = this.getTarget();
+         if (combatTarget != null && combatTarget.isAlive()) {
             return true;
          } else if (!this.getCombatGroupCommander().isPresent()
-            && (!this.isCombatGroupCommander() || CommandBatonItem.getCombatGroupNpcs(this.m_21205_()).isEmpty())) {
+            && (!this.isCombatGroupCommander() || CommandBatonItem.getCombatGroupNpcs(this.getMainHandItem()).isEmpty())) {
             if (this instanceof CombatNpcEntity combat && combat.hasActiveCombatDeployment()) {
                return true;
             }
@@ -615,41 +615,41 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    private void setGettingFood(boolean gettingFood) {
-      this.f_19804_.m_135381_(GETTING_FOOD, gettingFood);
+      this.entityData.set(GETTING_FOOD, gettingFood);
    }
 
    public void setFoodRemaining(int amount) {
-      this.f_19804_.m_135381_(FOOD_REMAINING, Math.max(0, amount));
+      this.entityData.set(FOOD_REMAINING, Math.max(0, amount));
    }
 
    public static int foodValue(ItemStack stack) {
-      if (stack == null || stack.m_41619_()) {
+      if (stack == null || stack.isEmpty()) {
          return 0;
-      } else if (stack.m_150930_(Items.f_42583_) || stack.m_150930_(Items.f_42675_) || stack.m_150930_(Items.f_42591_)) {
+      } else if (stack.is(Items.ROTTEN_FLESH) || stack.is(Items.POISONOUS_POTATO) || stack.is(Items.SPIDER_EYE)) {
          return 0;
-      } else if (stack.m_150930_(Items.f_42410_)) {
+      } else if (stack.is(Items.APPLE)) {
          return 3000;
-      } else if (stack.m_150930_(Items.f_42400_)) {
+      } else if (stack.is(Items.MUSHROOM_STEW)) {
          return 4500;
       } else {
-         FoodProperties food = stack.m_41720_().m_41473_();
+         FoodProperties food = stack.getItem().getFoodProperties();
          if (food == null) {
             return 0;
          } else {
-            int nutrition = food.m_38744_();
-            return Math.max(0, (nutrition + nutrition * (int)(food.m_38745_() * 2.0F)) * 350);
+            int nutrition = food.getNutrition();
+            return Math.max(0, (nutrition + nutrition * (int)(food.getSaturationModifier() * 2.0F)) * 350);
          }
       }
    }
 
    protected boolean tryAcceptFood(Player player, InteractionHand hand) {
-      ItemStack offered = player.m_21120_(hand);
+      ItemStack offered = player.getItemInHand(hand);
       int value = foodValue(offered);
       UpkeepOrderData.UpkeepEntry entry = UpkeepOrderData.getEntry(this.getUpkeepStack()).orElse(null);
       int target = entry == null ? 6000 : entry.upkeepAmount();
       if (value > 0 && this.getFoodRemaining() < target) {
-         if (!this.m_9236_().f_46443_ && !player.m_150110_().f_35937_) {
-            offered.m_41774_(1);
+         if (!this.level().isClientSide && !player.getAbilities().instabuild) {
+            offered.shrink(1);
          }
 
          this.setFoodRemaining(this.getFoodRemaining() + value);
@@ -665,24 +665,24 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       int target = entry == null ? 6000 : entry.upkeepAmount();
       int needed = target - this.getFoodRemaining();
       if (needed > 0 && handler != null) {
-         ItemStack requestedFood = entry == null ? ItemStack.f_41583_ : UpkeepOrderData.getFoodTarget(this.getUpkeepStack());
+         ItemStack requestedFood = entry == null ? ItemStack.EMPTY : UpkeepOrderData.getFoodTarget(this.getUpkeepStack());
          ItemStack storedFood = this.getFoodStack();
-         if (!requestedFood.m_41619_() && !storedFood.m_41619_() && !ItemStack.m_150942_(requestedFood, storedFood)) {
+         if (!requestedFood.isEmpty() && !storedFood.isEmpty() && !ItemStack.isSameItemSameTags(requestedFood, storedFood)) {
             return false;
          } else {
             int gained = 0;
 
             for (int slot = 0; slot < handler.getSlots() && gained < needed; slot++) {
                ItemStack stack = handler.getStackInSlot(slot);
-               if (foodValue(stack) > 0 && (requestedFood.m_41619_() || ItemStack.m_150942_(requestedFood, stack))) {
-                  int maxCount = requestedFood.m_41619_() ? 1 : requestedFood.m_41613_();
-                  ItemStack removed = handler.extractItem(slot, Math.min(maxCount, stack.m_41613_()), false);
-                  if (!removed.m_41619_()) {
+               if (foodValue(stack) > 0 && (requestedFood.isEmpty() || ItemStack.isSameItemSameTags(requestedFood, stack))) {
+                  int maxCount = requestedFood.isEmpty() ? 1 : requestedFood.getCount();
+                  ItemStack removed = handler.extractItem(slot, Math.min(maxCount, stack.getCount()), false);
+                  if (!removed.isEmpty()) {
                      int value = foodValue(removed);
-                     int consumeCount = Math.min(removed.m_41613_(), Math.max(1, (int)Math.ceil((double)needed / (double)Math.max(1, value))));
+                     int consumeCount = Math.min(removed.getCount(), Math.max(1, (int)Math.ceil((double)needed / (double)Math.max(1, value))));
                      gained += value * consumeCount;
-                     if (removed.m_41613_() > consumeCount) {
-                        this.storeFood(removed.m_255036_(removed.m_41613_() - consumeCount));
+                     if (removed.getCount() > consumeCount) {
+                        this.storeFood(removed.copyWithCount(removed.getCount() - consumeCount));
                      }
                   }
                }
@@ -700,19 +700,19 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    private void storeFood(ItemStack food) {
-      if (!food.m_41619_() && foodValue(food) > 0) {
+      if (!food.isEmpty() && foodValue(food) > 0) {
          ItemStack current = this.getFoodStack();
-         if (current.m_41619_()) {
+         if (current.isEmpty()) {
             this.setFoodStack(food);
-         } else if (ItemStack.m_150942_(current, food)) {
-            current.m_41769_(Math.min(food.m_41613_(), 64 - current.m_41613_()));
+         } else if (ItemStack.isSameItemSameTags(current, food)) {
+            current.grow(Math.min(food.getCount(), 64 - current.getCount()));
             this.setFoodStack(current);
          }
       }
    }
 
    private void updateFoodSupply() {
-      if (!this.m_9236_().f_46443_ && !this.m_5803_()) {
+      if (!this.level().isClientSide && !this.isSleeping()) {
          if (this.foodSupplyRetryTicks > 0) {
             this.foodSupplyRetryTicks--;
          }
@@ -722,7 +722,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
          }
 
          ItemStack carriedFood = this.getFoodStack();
-         if (!carriedFood.m_41619_() && foodValue(carriedFood) > 0) {
+         if (!carriedFood.isEmpty() && foodValue(carriedFood) > 0) {
             if (this.getFoodRemaining() <= 0) {
                this.consumeFoodStack();
             }
@@ -733,8 +733,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
          } else if (this.getCurrentCommand() != NpcCommandType.NONE) {
             this.stopGettingFood();
          } else {
-            LivingEntity combatTarget = this.m_5448_();
-            if (combatTarget != null && combatTarget.m_6084_()) {
+            LivingEntity combatTarget = this.getTarget();
+            if (combatTarget != null && combatTarget.isAlive()) {
                this.stopGettingFood();
             } else if (this.getFoodRemaining() > 0) {
                this.stopGettingFood();
@@ -742,7 +742,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
                UpkeepOrderData.UpkeepEntry entry = UpkeepOrderData.getEntry(this.getUpkeepStack()).orElse(null);
                BlockPos supplyPos = entry == null ? (this.hasTownHall() ? this.getTownHallPos() : null) : entry.pos();
                if (supplyPos != null && this.isSameSupplyDimension(entry)) {
-                  if (entry == null && this.m_9236_().m_46805_(supplyPos) && !(this.m_9236_().m_7702_(supplyPos) instanceof TownHallBlockEntity)) {
+                  if (entry == null && this.level().hasChunkAt(supplyPos) && !(this.level().getBlockEntity(supplyPos) instanceof TownHallBlockEntity)) {
                      this.clearTownHall();
                      this.stopGettingFood();
                   } else {
@@ -751,25 +751,25 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
                      }
 
                      if (this.isGettingFood()) {
-                        double distance = this.m_20275_(
-                           (double)supplyPos.m_123341_() + 0.5, (double)supplyPos.m_123342_() + 0.5, (double)supplyPos.m_123343_() + 0.5
+                        double distance = this.distanceToSqr(
+                           (double)supplyPos.getX() + 0.5, (double)supplyPos.getY() + 0.5, (double)supplyPos.getZ() + 0.5
                         );
                         if (distance > 9.0) {
-                           this.m_21573_()
-                              .m_26519_(
-                                 (double)supplyPos.m_123341_() + 0.5,
-                                 (double)supplyPos.m_123342_() + 0.5,
-                                 (double)supplyPos.m_123343_() + 0.5,
+                           this.getNavigation()
+                              .moveTo(
+                                 (double)supplyPos.getX() + 0.5,
+                                 (double)supplyPos.getY() + 0.5,
+                                 (double)supplyPos.getZ() + 0.5,
                                  this instanceof WorkerNpcEntity ? this.playerSprintNavigationSpeed() : this.playerWalkNavigationSpeed()
                               );
-                           this.m_21563_()
-                              .m_24946_((double)supplyPos.m_123341_() + 0.5, (double)supplyPos.m_123342_() + 0.5, (double)supplyPos.m_123343_() + 0.5);
+                           this.getLookControl()
+                              .setLookAt((double)supplyPos.getX() + 0.5, (double)supplyPos.getY() + 0.5, (double)supplyPos.getZ() + 0.5);
                         } else {
-                           BlockEntity blockEntity = this.m_9236_().m_7702_(supplyPos);
+                           BlockEntity blockEntity = this.level().getBlockEntity(supplyPos);
                            Direction side = entry == null ? Direction.DOWN : entry.side();
                            if (blockEntity instanceof TownHallBlockEntity townHall) {
                               ItemStack removed = townHall.extractFoodLike(1);
-                              if (!removed.m_41619_()) {
+                              if (!removed.isEmpty()) {
                                  this.setFoodRemaining(this.getFoodRemaining() + foodValue(removed));
                                  if (this.getFoodRemaining() > 0) {
                                     this.stopGettingFood();
@@ -806,22 +806,22 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private void stopGettingFood() {
       if (this.isGettingFood()) {
          this.setGettingFood(false);
-         this.m_21573_().m_26573_();
+         this.getNavigation().stop();
       }
    }
 
    private boolean consumeFoodStack() {
       ItemStack food = this.getFoodStack();
-      if (food.m_41619_()) {
+      if (food.isEmpty()) {
          return false;
       } else {
          int value = foodValue(food);
          if (value <= 0) {
-            this.setFoodStack(ItemStack.f_41583_);
+            this.setFoodStack(ItemStack.EMPTY);
             return false;
          } else {
-            ItemStack remaining = food.m_41777_();
-            remaining.m_41774_(1);
+            ItemStack remaining = food.copy();
+            remaining.shrink(1);
             this.setFoodStack(remaining);
             this.setFoodRemaining(value);
             return true;
@@ -830,37 +830,37 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    private boolean isSameSupplyDimension(UpkeepOrderData.UpkeepEntry entry) {
-      return entry == null || entry.dimension().isEmpty() || entry.dimension().equals(this.m_9236_().m_46472_().m_135782_().toString());
+      return entry == null || entry.dimension().isEmpty() || entry.dimension().equals(this.level().dimension().location().toString());
    }
 
    public boolean hasTownHall() {
-      return (Boolean)this.f_19804_.m_135370_(TOWN_HALL_SET);
+      return (Boolean)this.entityData.get(TOWN_HALL_SET);
    }
 
    public BlockPos getTownHallPos() {
-      return (BlockPos)this.f_19804_.m_135370_(TOWN_HALL_POS);
+      return (BlockPos)this.entityData.get(TOWN_HALL_POS);
    }
 
    public void handleTownHallBroadcast(BlockPos pos) {
       if (pos != null) {
          if (!this.hasTownHall() || this.closerThanCurrentTownHall(pos)) {
-            this.f_19804_.m_135381_(TOWN_HALL_SET, true);
-            this.f_19804_.m_135381_(TOWN_HALL_POS, pos.m_7949_());
+            this.entityData.set(TOWN_HALL_SET, true);
+            this.entityData.set(TOWN_HALL_POS, pos.immutable());
          }
       }
    }
 
    public void clearTownHall() {
-      this.f_19804_.m_135381_(TOWN_HALL_SET, false);
-      this.f_19804_.m_135381_(TOWN_HALL_POS, BlockPos.f_121853_);
+      this.entityData.set(TOWN_HALL_SET, false);
+      this.entityData.set(TOWN_HALL_POS, BlockPos.ZERO);
    }
 
    public int getDragonRiderMountId() {
-      return (Integer)this.f_19804_.m_135370_(DRAGON_RIDER_MOUNT);
+      return (Integer)this.entityData.get(DRAGON_RIDER_MOUNT);
    }
 
    public void setDragonRiderMountId(int id) {
-      this.f_19804_.m_135381_(DRAGON_RIDER_MOUNT, id);
+      this.entityData.set(DRAGON_RIDER_MOUNT, id);
    }
 
    public UUID getDragonRiderMountUuid() {
@@ -868,8 +868,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    public void setDragonRiderMount(Entity mount) {
-      this.dragonRiderMountUuid = mount == null ? null : mount.m_20148_();
-      this.setDragonRiderMountId(mount == null ? -1 : mount.m_19879_());
+      this.dragonRiderMountUuid = mount == null ? null : mount.getUUID();
+      this.setDragonRiderMountId(mount == null ? -1 : mount.getId());
    }
 
    public void clearDragonRiderMount() {
@@ -881,35 +881,35 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       return this.getDragonRiderMountId() >= 0 || this.dragonRiderMountUuid != null;
    }
 
-   public void m_8107_() {
+   public void aiStep() {
       if (this.isGuiInteractionPaused()) {
          this.freezeForGui();
       } else {
-         super.m_8107_();
+         super.aiStep();
          this.updateOwnedMountedMovement();
       }
    }
 
-   public double m_6049_() {
-      return this.m_20202_() instanceof Mob ? super.m_6049_() - 0.45 : super.m_6049_();
+   public double getMyRidingOffset() {
+      return this.getVehicle() instanceof Mob ? super.getMyRidingOffset() - 0.45 : super.getMyRidingOffset();
    }
 
-   public void m_6667_(DamageSource damageSource) {
-      if (!this.f_20890_) {
+   public void die(DamageSource damageSource) {
+      if (!this.dead) {
          TownHallBlockEntity townHall = TownHallBlockEntity.findForDeath(this);
          boolean deferred = townHall == null
             && this.hasTownHall()
-            && this.m_9236_() instanceof ServerLevel server
-            && server.m_7726_().m_7131_(this.getTownHallPos().m_123341_() >> 4, this.getTownHallPos().m_123343_() >> 4) == null;
+            && this.level() instanceof ServerLevel server
+            && server.getChunkSource().getChunkNow(this.getTownHallPos().getX() >> 4, this.getTownHallPos().getZ() >> 4) == null;
          CompoundTag details = townHall == null && !deferred ? null : TownHallBlockEntity.captureDeathDetails(this, damageSource);
          if (townHall != null) {
-            details.m_128356_("TownHallPos", townHall.m_58899_().m_121878_());
+            details.putLong("TownHallPos", townHall.getBlockPos().asLong());
          }
 
-         super.m_6667_(damageSource);
-         if (this.f_20890_) {
+         super.die(damageSource);
+         if (this.dead) {
             this.recordTownHallDeath(townHall, damageSource, details);
-            if (deferred && this.m_9236_() instanceof ServerLevel serverx) {
+            if (deferred && this.level() instanceof ServerLevel serverx) {
                TownHallDeathData.get(serverx).enqueue(this.getTownHallPos(), TownHallBlockEntity.createDeathEntry(this, damageSource, details));
             }
          }
@@ -918,22 +918,22 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    private boolean closerThanCurrentTownHall(BlockPos pos) {
       BlockPos current = this.getTownHallPos();
-      return BlockPos.f_121853_.equals(current)
+      return BlockPos.ZERO.equals(current)
          ? true
-         : this.m_20275_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_() + 0.5, (double)pos.m_123343_() + 0.5)
-            < this.m_20275_((double)current.m_123341_() + 0.5, (double)current.m_123342_() + 0.5, (double)current.m_123343_() + 0.5);
+         : this.distanceToSqr((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5)
+            < this.distanceToSqr((double)current.getX() + 0.5, (double)current.getY() + 0.5, (double)current.getZ() + 0.5);
    }
 
    private void recordTownHallDeath(TownHallBlockEntity townHall, DamageSource damageSource, CompoundTag details) {
-      if (!this.m_9236_().f_46443_ && townHall != null && !townHall.m_58901_() && details != null) {
+      if (!this.level().isClientSide && townHall != null && !townHall.isRemoved() && details != null) {
          townHall.recordNpcDeath(this, damageSource, details);
       }
    }
 
    private void updateOwnedMountedMovement() {
-      Entity vehicle = this.m_20202_();
+      Entity vehicle = this.getVehicle();
       if (vehicle != null && IceAndFireHippocampusCompat.isHippocampus(vehicle)) {
-         this.m_21573_().m_26573_();
+         this.getNavigation().stop();
       } else {
          if (this.shouldFollowCombatGroupFormation()) {
             Optional<Vec3> formationPosition = this.getCombatGroupFormationPosition();
@@ -945,7 +945,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
                }
 
                label77: {
-                  if (vehicle instanceof Mob mount && mount.m_20182_().m_82557_(destination) > 2.25) {
+                  if (vehicle instanceof Mob mount && mount.position().distanceToSqr(destination) > 2.25) {
                      this.driveMountToward(mount, destination);
                      break label77;
                   }
@@ -964,21 +964,21 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
          if (vehicle instanceof Mob mount) {
             if (!this.usesCustomMountedMovement()) {
                if (!this.followCombatRecallActive || !this.updateMountedFollowMovement()) {
-                  LivingEntity target = this.m_5448_();
-                  if (target != null && target.m_6084_()) {
+                  LivingEntity target = this.getTarget();
+                  if (target != null && target.isAlive()) {
                      double stopDistance = "archer".equals(this.getNpcSubtype()) ? 12.0 : 2.5;
-                     if (mount.m_20280_(target) > stopDistance * stopDistance) {
-                        this.driveMountToward(mount, target.m_20182_());
+                     if (mount.distanceToSqr(target) > stopDistance * stopDistance) {
+                        this.driveMountToward(mount, target.position());
                      } else {
                         this.stopMount(mount, 0.55);
-                        this.faceMountedTarget(mount, target.m_20182_());
+                        this.faceMountedTarget(mount, target.position());
                      }
                   } else {
                      if (this.getCurrentCommand() == NpcCommandType.MOVE) {
                         BlockPos targetPos = this.getCommandTarget();
-                        if (!BlockPos.f_121853_.equals(targetPos)) {
-                           Vec3 destinationx = Vec3.m_82539_(targetPos);
-                           if (mount.m_20238_(destinationx) > 4.0) {
+                        if (!BlockPos.ZERO.equals(targetPos)) {
+                           Vec3 destinationx = Vec3.atBottomCenterOf(targetPos);
+                           if (mount.distanceToSqr(destinationx) > 4.0) {
                               this.driveMountToward(mount, destinationx);
                            } else {
                               this.stopMount(mount, 0.4);
@@ -1003,11 +1003,11 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    protected boolean updateMountedFollowMovement() {
       if (this.getCurrentCommand() == NpcCommandType.FOLLOW && !this.isGuiInteractionPaused()) {
-         LivingEntity combatTarget = this.m_5448_();
-         if (!this.followCombatRecallActive && combatTarget != null && combatTarget.m_6084_()) {
+         LivingEntity combatTarget = this.getTarget();
+         if (!this.followCombatRecallActive && combatTarget != null && combatTarget.isAlive()) {
             return false;
          } else {
-            Entity vehicle = this.m_20202_();
+            Entity vehicle = this.getVehicle();
             if (vehicle instanceof Mob mount && !IceAndFireHippogryphCompat.isHippogryph(vehicle) && !IceAndFireHippocampusCompat.isHippocampus(vehicle)) {
                Player player = this.getFollowTargetPlayer().orElse(null);
                if (player == null) {
@@ -1015,9 +1015,9 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
                   return true;
                }
 
-               double distanceSq = mount.m_20280_(player);
+               double distanceSq = mount.distanceToSqr(player);
                if (distanceSq > 100.0) {
-                  this.driveMountToward(mount, player.m_20182_());
+                  this.driveMountToward(mount, player.position());
                } else if (distanceSq <= 9.0) {
                   this.stopMount(mount, 0.5);
                }
@@ -1034,21 +1034,21 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    protected boolean updateMountedMoveMovement() {
       if (this.getCurrentCommand() == NpcCommandType.MOVE && !this.isGuiInteractionPaused()) {
-         LivingEntity combatTarget = this.m_5448_();
-         if (combatTarget != null && combatTarget.m_6084_()) {
+         LivingEntity combatTarget = this.getTarget();
+         if (combatTarget != null && combatTarget.isAlive()) {
             return false;
          } else {
-            Entity vehicle = this.m_20202_();
+            Entity vehicle = this.getVehicle();
             if (vehicle instanceof Mob mount && !IceAndFireHippogryphCompat.isHippogryph(vehicle) && !IceAndFireHippocampusCompat.isHippocampus(vehicle)) {
                BlockPos target = this.getCommandTarget();
-               if (BlockPos.f_121853_.equals(target)) {
+               if (BlockPos.ZERO.equals(target)) {
                   this.clearCommand();
                   this.stopMount(mount, 0.4);
                   return true;
                }
 
-               Vec3 destination = Vec3.m_82539_(target);
-               if (mount.m_20238_(destination) > 4.0) {
+               Vec3 destination = Vec3.atBottomCenterOf(target);
+               if (mount.distanceToSqr(destination) > 4.0) {
                   this.driveMountToward(mount, destination);
                } else {
                   this.stopMount(mount, 0.4);
@@ -1070,17 +1070,17 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
          return;
       }
 
-      Vec3 delta = destination.m_82546_(cart.m_20182_());
-      if (delta.m_165925_() <= 2.25) {
+      Vec3 delta = destination.subtract(cart.position());
+      if (delta.horizontalDistanceSqr() <= 2.25) {
          if (cart instanceof BatteringRamEntity ram) {
             ram.setNpcFormationInput(this, 0.0F, 0.0F);
          } else {
             cart.setVehicleInput(0.0F, 0.0F);
          }
       } else {
-         float desiredYaw = (float)Math.toDegrees(Math.atan2(-delta.f_82479_, delta.f_82481_));
-         float yawError = Mth.m_14177_(desiredYaw - cart.m_146908_());
-         float turn = Mth.m_14036_(-yawError / 28.0F, -1.0F, 1.0F);
+         float desiredYaw = (float)Math.toDegrees(Math.atan2(-delta.x, delta.z));
+         float yawError = Mth.wrapDegrees(desiredYaw - cart.getYRot());
+         float turn = Mth.clamp(-yawError / 28.0F, -1.0F, 1.0F);
          float forward = Math.abs(yawError) > 75.0F ? 0.2F : 1.0F;
          if (cart instanceof BatteringRamEntity ram) {
             ram.setNpcFormationInput(this, forward, turn);
@@ -1099,44 +1099,44 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    private void driveMountToward(Mob mount, Vec3 destination) {
-      Vec3 delta = destination.m_82546_(mount.m_20182_());
-      Vec3 horizontal = new Vec3(delta.f_82479_, 0.0, delta.f_82481_);
-      if (!(horizontal.m_82556_() < 1.0E-4)) {
+      Vec3 delta = destination.subtract(mount.position());
+      Vec3 horizontal = new Vec3(delta.x, 0.0, delta.z);
+      if (!(horizontal.lengthSqr() < 1.0E-4)) {
          double speed = 0.22;
-         AttributeInstance speedAttribute = mount.m_21051_(Attributes.f_22279_);
+         AttributeInstance speedAttribute = mount.getAttribute(Attributes.MOVEMENT_SPEED);
          if (speedAttribute != null) {
-            speed = Math.max(speed, speedAttribute.m_22135_() * 0.65);
+            speed = Math.max(speed, speedAttribute.getValue() * 0.65);
          }
 
-         Vec3 direction = horizontal.m_82541_();
-         Vec3 current = mount.m_20184_();
-         mount.m_20334_(direction.f_82479_ * speed, current.f_82480_, direction.f_82481_ * speed);
-         mount.m_21573_().m_26573_();
+         Vec3 direction = horizontal.normalize();
+         Vec3 current = mount.getDeltaMovement();
+         mount.setDeltaMovement(direction.x * speed, current.y, direction.z * speed);
+         mount.getNavigation().stop();
          this.faceDirection(mount, direction);
       }
    }
 
    private void stopMount(Mob mount, double damping) {
-      mount.m_21573_().m_26573_();
-      mount.m_20256_(mount.m_20184_().m_82542_(damping, 1.0, damping));
+      mount.getNavigation().stop();
+      mount.setDeltaMovement(mount.getDeltaMovement().multiply(damping, 1.0, damping));
    }
 
    private void faceMountedTarget(Mob mount, Vec3 destination) {
-      Vec3 delta = destination.m_82546_(mount.m_20182_());
-      Vec3 horizontal = new Vec3(delta.f_82479_, 0.0, delta.f_82481_);
-      if (horizontal.m_82556_() >= 1.0E-4) {
-         this.faceDirection(mount, horizontal.m_82541_());
+      Vec3 delta = destination.subtract(mount.position());
+      Vec3 horizontal = new Vec3(delta.x, 0.0, delta.z);
+      if (horizontal.lengthSqr() >= 1.0E-4) {
+         this.faceDirection(mount, horizontal.normalize());
       }
    }
 
    private void faceDirection(Mob mount, Vec3 direction) {
-      float yaw = (float)(Math.atan2(direction.f_82481_, direction.f_82479_) * 180.0F / (float)Math.PI) - 90.0F;
-      mount.m_146922_(yaw);
-      mount.m_5618_(yaw);
-      mount.m_5616_(yaw);
-      this.m_146922_(yaw);
-      this.m_5618_(yaw);
-      this.m_5616_(yaw);
+      float yaw = (float)(Math.atan2(direction.z, direction.x) * 180.0F / (float)Math.PI) - 90.0F;
+      mount.setYRot(yaw);
+      mount.setYBodyRot(yaw);
+      mount.setYHeadRot(yaw);
+      this.setYRot(yaw);
+      this.setYBodyRot(yaw);
+      this.setYHeadRot(yaw);
    }
 
    private static NpcCommandType parseCommand(String name) {

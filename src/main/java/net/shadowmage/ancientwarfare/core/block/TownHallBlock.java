@@ -28,49 +28,49 @@ import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class TownHallBlock extends BaseEntityBlock {
-   private static final VoxelShape SHAPE = m_49796_(0.0, 0.0, 0.0, 16.0, 32.0, 16.0);
+   private static final VoxelShape SHAPE = box(0.0, 0.0, 0.0, 16.0, 32.0, 16.0);
 
    public TownHallBlock(Properties properties) {
       super(properties);
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return new TownHallBlockEntity(pos, state);
    }
 
-   public void m_6402_(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-      if (!level.f_46443_ && placer instanceof Player player && level.m_7702_(pos) instanceof TownHallBlockEntity townHall) {
-         townHall.setOwner(player.m_20148_());
+   public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+      if (!level.isClientSide && placer instanceof Player player && level.getBlockEntity(pos) instanceof TownHallBlockEntity townHall) {
+         townHall.setOwner(player.getUUID());
       }
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if (!level.f_46443_ && level.m_7702_(pos) instanceof MenuProvider provider) {
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if (!level.isClientSide && level.getBlockEntity(pos) instanceof MenuProvider provider) {
          AWCorePlatform.openBlockMenu(player, provider, pos);
       }
 
-      return InteractionResult.m_19078_(level.f_46443_);
+      return InteractionResult.sidedSuccess(level.isClientSide);
    }
 
-   public void m_6810_(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-      if (!state.m_60713_(newState.m_60734_()) && level.m_7702_(pos) instanceof Container container) {
-         Containers.m_19002_(level, pos, container);
+   public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+      if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof Container container) {
+         Containers.dropContents(level, pos, container);
       }
 
-      super.m_6810_(state, level, pos, newState, movedByPiston);
+      super.onRemove(state, level, pos, newState, movedByPiston);
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.MODEL;
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return SHAPE;
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState state, BlockEntityType<T> type) {
-      return level.f_46443_ ? null : m_152132_(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.TOWN_HALL), TownHallBlockEntity::serverTick);
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+      return level.isClientSide ? null : createTickerHelper(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.TOWN_HALL), TownHallBlockEntity::serverTick);
    }
 }

@@ -41,7 +41,7 @@ public final class EngineeringRecipeTransferHandler implements IRecipeTransferHa
       AbstractContainerMenu container, EngineeringRecipe recipe, IRecipeSlotsView recipeSlots, Player player, boolean maxTransfer, boolean doTransfer
    ) {
       if (!(container instanceof EngineeringStationMenu) && !(container instanceof AutoCraftingMenu) && !(container instanceof WarehouseCraftingStationMenu)) {
-         return this.helper.createUserErrorWithTooltip(Component.m_237115_("jei.ancientwarfare.invalid_container"));
+         return this.helper.createUserErrorWithTooltip(Component.translatable("jei.ancientwarfare.invalid_container"));
       } else {
          if (doTransfer) {
             AWCoreNetwork.sendTransferEngineeringRecipe(recipe.id());

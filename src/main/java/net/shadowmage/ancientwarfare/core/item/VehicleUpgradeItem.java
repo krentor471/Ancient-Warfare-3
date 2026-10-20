@@ -22,8 +22,8 @@ public class VehicleUpgradeItem extends Item {
       return this.id;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_("item.ancientwarfare.vehicle_upgrade_tooltip").m_130940_(ChatFormatting.GRAY));
-      tooltip.add(Component.m_237115_("item.ancientwarfare." + this.id + ".tooltip").m_130940_(ChatFormatting.DARK_GRAY));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("item.ancientwarfare.vehicle_upgrade_tooltip").withStyle(ChatFormatting.GRAY));
+      tooltip.add(Component.translatable("item.ancientwarfare." + this.id + ".tooltip").withStyle(ChatFormatting.DARK_GRAY));
    }
 }

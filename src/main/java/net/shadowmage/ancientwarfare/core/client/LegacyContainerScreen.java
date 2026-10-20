@@ -16,34 +16,34 @@ public abstract class LegacyContainerScreen<T extends AbstractContainerMenu> ext
 
    protected LegacyContainerScreen(T menu, Inventory inventory, Component title, int width, int height) {
       super(menu, inventory, title);
-      this.f_97726_ = width;
-      this.f_97727_ = height;
-      this.f_97728_ = 10000;
-      this.f_97731_ = 10000;
+      this.imageWidth = width;
+      this.imageHeight = height;
+      this.titleLabelX = 10000;
+      this.inventoryLabelY = 10000;
    }
 
-   protected void m_7856_() {
+   protected void init() {
       this.layoutRects.clear();
-      super.m_7856_();
+      super.init();
 
-      for (int i = 0; i < this.f_97732_.f_38839_.size(); i++) {
-         Slot slot = (Slot)this.f_97732_.f_38839_.get(i);
-         if (slot.m_6659_()) {
-            this.registerLayoutRect("slot " + i, slot.f_40220_, slot.f_40221_, 16, 16, true);
+      for (int i = 0; i < this.menu.slots.size(); i++) {
+         Slot slot = (Slot)this.menu.slots.get(i);
+         if (slot.isActive()) {
+            this.registerLayoutRect("slot " + i, slot.x, slot.y, 16, 16, true);
          }
       }
    }
 
    protected final <W extends AbstractWidget> W addLegacyWidget(String id, W widget, int x, int y, int width, int height) {
       this.registerLayoutRect(id, x, y, width, height, true);
-      return (W)this.m_142416_(widget);
+      return (W)this.addRenderableWidget(widget);
    }
 
    protected final void registerLayoutRect(String id, int x, int y, int width, int height, boolean checkOverlap) {
       LegacyContainerScreen.LayoutRect next = new LegacyContainerScreen.LayoutRect(id, x, y, width, height, checkOverlap);
-      if (x < 0 || y < 0 || x + width > this.f_97726_ || y + height > this.f_97727_) {
+      if (x < 0 || y < 0 || x + width > this.imageWidth || y + height > this.imageHeight) {
          AncientWarfareCore.LOG
-            .warn("Legacy GUI element {} lies outside {}x{} at {},{} {}x{}", new Object[]{id, this.f_97726_, this.f_97727_, x, y, width, height});
+            .warn("Legacy GUI element {} lies outside {}x{} at {},{} {}x{}", new Object[]{id, this.imageWidth, this.imageHeight, x, y, width, height});
       }
 
       if (checkOverlap) {
@@ -58,15 +58,15 @@ public abstract class LegacyContainerScreen<T extends AbstractContainerMenu> ext
    }
 
    protected final LegacyTexturedButton legacyButton(String id, int x, int y, int width, int height, Component message, LegacyTexturedButton.OnPress onPress) {
-      return this.addLegacyWidget(id, new LegacyTexturedButton(this.f_97735_ + x, this.f_97736_ + y, width, height, message, onPress), x, y, width, height);
+      return this.addLegacyWidget(id, new LegacyTexturedButton(this.leftPos + x, this.topPos + y, width, height, message, onPress), x, y, width, height);
    }
 
-   protected final void m_7286_(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      LegacyGuiStyle.background(graphics, this.f_97735_, this.f_97736_, this.f_97726_, this.f_97727_);
+   protected final void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+      LegacyGuiStyle.background(graphics, this.leftPos, this.topPos, this.imageWidth, this.imageHeight);
 
-      for (Slot slot : this.f_97732_.f_38839_) {
-         if (slot.m_6659_() && this.renderMenuSlotBackground(slot)) {
-            LegacyGuiStyle.slot(graphics, this.f_97735_, this.f_97736_, slot.f_40220_, slot.f_40221_);
+      for (Slot slot : this.menu.slots) {
+         if (slot.isActive() && this.renderMenuSlotBackground(slot)) {
+            LegacyGuiStyle.slot(graphics, this.leftPos, this.topPos, slot.x, slot.y);
          }
       }
 
@@ -80,12 +80,12 @@ public abstract class LegacyContainerScreen<T extends AbstractContainerMenu> ext
    protected void renderLegacyBackground(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
       this.beforeContainerRender(graphics, mouseX, mouseY, partialTick);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
+      super.render(graphics, mouseX, mouseY, partialTick);
       this.afterContainerRender(graphics, mouseX, mouseY, partialTick);
-      this.m_280072_(graphics, mouseX, mouseY);
+      this.renderTooltip(graphics, mouseX, mouseY);
    }
 
    protected void beforeContainerRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {

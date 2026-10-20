@@ -548,7 +548,7 @@ public final class AWCoreItems {
    public static final RegistryObject<Item> SHIELD_BUFFLOKA = npcShield("shield_buffloka", Tiers.WOOD, 336);
    public static final RegistryObject<Item> COIN = REGISTER.register("coin", CoinItem::new);
    public static final RegistryObject<Item> FOOD_BUNDLE = REGISTER.register(
-      "food_bundle", () -> new Item(new Properties().m_41489_(new Builder().m_38760_(15).m_38758_(1.0F).m_38757_().m_38767_()))
+      "food_bundle", () -> new Item(new Properties().food(new Builder().nutrition(15).saturationMod(1.0F).meat().build()))
    );
    public static final RegistryObject<Item> BARD_INSTRUMENT = REGISTER.register("bard_instrument", BardInstrumentItem::new);
    public static final RegistryObject<Item> GATE_SPAWNER = REGISTER.register("gate_spawner", GateSpawnerItem::new);

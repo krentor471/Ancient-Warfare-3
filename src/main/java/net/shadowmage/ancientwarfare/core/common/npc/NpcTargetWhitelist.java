@@ -23,7 +23,7 @@ public final class NpcTargetWhitelist {
       if (ids != null) {
          for (String value : ids) {
             if (value != null) {
-               ResourceLocation id = ResourceLocation.m_135820_(value.trim().toLowerCase(Locale.ROOT));
+               ResourceLocation id = ResourceLocation.tryParse(value.trim().toLowerCase(Locale.ROOT));
                if (id != null) {
                   parsed.add(id);
                }
@@ -35,7 +35,7 @@ public final class NpcTargetWhitelist {
    }
 
    public static boolean contains(EntityType<?> type) {
-      ResourceLocation id = EntityType.m_20613_(type);
+      ResourceLocation id = EntityType.getKey(type);
       return id != null && FRIENDLY.get().contains(id);
    }
 }

@@ -50,7 +50,7 @@ public final class NaturalGateTerritory {
       } else {
          List<AwsWorldGenerationData.Entry> structures = AwsWorldGenerationData.get(level).entries();
          List<AwtWorldGenerationData.TownTask> towns = AwtWorldGenerationData.get(level).towns();
-         long now = level.m_46467_();
+         long now = level.getGameTime();
          NaturalGateTerritory.Attribution cached = ATTRIBUTIONS.get(gate);
          if (cached != null && cached.valid(level, gate, structures.size(), towns.size(), now)) {
             return cached.faction();
@@ -103,12 +103,12 @@ public final class NaturalGateTerritory {
    }
 
    private static boolean contains(AwsWorldGenerationData.Entry entry, BlockPos min, BlockPos max) {
-      return entry.minX() <= min.m_123341_()
-         && entry.minY() <= min.m_123342_()
-         && entry.minZ() <= min.m_123343_()
-         && entry.maxX() >= max.m_123341_()
-         && entry.maxY() >= max.m_123342_()
-         && entry.maxZ() >= max.m_123343_();
+      return entry.minX() <= min.getX()
+         && entry.minY() <= min.getY()
+         && entry.minZ() <= min.getZ()
+         && entry.maxX() >= max.getX()
+         && entry.maxY() >= max.getY()
+         && entry.maxZ() >= max.getZ();
    }
 
    private static boolean containsTown(AwtWorldGenerationData.TownTask town, int chunks, BlockPos min, BlockPos max) {
@@ -118,10 +118,10 @@ public final class NaturalGateTerritory {
          long size = (long)chunks * 16L;
          long minX = (long)town.x - size / 2L;
          long minZ = (long)town.z - size / 2L;
-         return minX <= (long)min.m_123341_()
-            && minZ <= (long)min.m_123343_()
-            && minX + size - 1L >= (long)max.m_123341_()
-            && minZ + size - 1L >= (long)max.m_123343_();
+         return minX <= (long)min.getX()
+            && minZ <= (long)min.getZ()
+            && minX + size - 1L >= (long)max.getX()
+            && minZ + size - 1L >= (long)max.getZ();
       }
    }
 

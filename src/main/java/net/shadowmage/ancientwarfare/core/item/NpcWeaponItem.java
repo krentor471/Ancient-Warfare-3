@@ -23,12 +23,12 @@ public class NpcWeaponItem extends Item {
    private final NpcWeaponEffect effect;
 
    public NpcWeaponItem(Tier tier, double attackOffset, double attackSpeed, float reach, NpcWeaponEffect effect, Properties properties) {
-      super(properties.m_41503_(tier.m_6609_()));
+      super(properties.durability(tier.getUses()));
       this.reach = reach;
       this.effect = effect;
       Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-      builder.put(Attributes.f_22281_, new AttributeModifier(f_41374_, "Weapon modifier", (double)tier.m_6631_() + attackOffset, Operation.ADDITION));
-      builder.put(Attributes.f_22283_, new AttributeModifier(f_41375_, "Weapon modifier", attackSpeed, Operation.ADDITION));
+      builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Weapon modifier", (double)tier.getAttackDamageBonus() + attackOffset, Operation.ADDITION));
+      builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Weapon modifier", attackSpeed, Operation.ADDITION));
       this.defaultModifiers = builder.build();
    }
 
@@ -40,29 +40,29 @@ public class NpcWeaponItem extends Item {
       return this.effect;
    }
 
-   public Multimap<Attribute, AttributeModifier> m_7167_(EquipmentSlot slot) {
-      return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.m_7167_(slot);
+   public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
+      return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.getDefaultAttributeModifiers(slot);
    }
 
-   public boolean m_7579_(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+   public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
       switch (this.effect) {
          case ICE:
-            target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 50));
-            target.m_7292_(new MobEffectInstance(MobEffects.f_19599_, 150));
+            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 50));
+            target.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 150));
             break;
          case WITHER:
-            target.m_7292_(new MobEffectInstance(MobEffects.f_19615_, 100));
+            target.addEffect(new MobEffectInstance(MobEffects.WITHER, 100));
             break;
          case CLUB_KNOCKBACK:
-            target.m_147240_(0.8, attacker.m_20185_() - target.m_20185_(), attacker.m_20189_() - target.m_20189_());
+            target.knockback(0.8, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
          case NONE:
       }
 
-      stack.m_41622_(1, attacker, entity -> entity.m_21166_(EquipmentSlot.MAINHAND));
+      stack.hurtAndBreak(1, attacker, entity -> entity.broadcastBreakEvent(EquipmentSlot.MAINHAND));
       return true;
    }
 
-   public boolean m_8120_(ItemStack stack) {
+   public boolean isEnchantable(ItemStack stack) {
       return true;
    }
 }

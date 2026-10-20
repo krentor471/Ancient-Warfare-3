@@ -26,29 +26,29 @@ public final class ForgeFactionCommands {
 
    @SubscribeEvent
    public static void registerCommands(RegisterCommandsEvent event) {
-      RequiredArgumentBuilder<CommandSourceStack, String> factionArgument = Commands.m_82129_("faction", StringArgumentType.word())
-         .suggests((context, builder) -> SharedSuggestionProvider.m_82970_(FactionRegistry.factionNames(), builder));
+      RequiredArgumentBuilder<CommandSourceStack, String> factionArgument = Commands.argument("faction", StringArgumentType.word())
+         .suggests((context, builder) -> SharedSuggestionProvider.suggest(FactionRegistry.factionNames(), builder));
       event.getDispatcher()
          .register(
-            (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.m_82127_("awfaction")
+            (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("awfaction")
                      .then(
-                        Commands.m_82127_("get")
+                        Commands.literal("get")
                            .then(
                               factionArgument.executes(
-                                 context -> showStanding(((CommandSourceStack)context.getSource()).m_81375_(), StringArgumentType.getString(context, "faction"))
+                                 context -> showStanding(((CommandSourceStack)context.getSource()).getPlayerOrException(), StringArgumentType.getString(context, "faction"))
                               )
                            )
                      ))
                   .then(
-                     ((LiteralArgumentBuilder)Commands.m_82127_("set").requires(source -> source.m_6761_(2)))
+                     ((LiteralArgumentBuilder)Commands.literal("set").requires(source -> source.hasPermission(2)))
                         .then(
-                           Commands.m_82129_("faction", StringArgumentType.word())
-                              .suggests((context, builder) -> SharedSuggestionProvider.m_82970_(FactionRegistry.factionNames(), builder))
+                           Commands.argument("faction", StringArgumentType.word())
+                              .suggests((context, builder) -> SharedSuggestionProvider.suggest(FactionRegistry.factionNames(), builder))
                               .then(
-                                 Commands.m_82129_("value", IntegerArgumentType.integer())
+                                 Commands.argument("value", IntegerArgumentType.integer())
                                     .executes(
                                        context -> setStanding(
-                                             ((CommandSourceStack)context.getSource()).m_81375_(),
+                                             ((CommandSourceStack)context.getSource()).getPlayerOrException(),
                                              StringArgumentType.getString(context, "faction"),
                                              IntegerArgumentType.getInteger(context, "value")
                                           )
@@ -57,15 +57,15 @@ public final class ForgeFactionCommands {
                         )
                   ))
                .then(
-                  ((LiteralArgumentBuilder)Commands.m_82127_("add").requires(source -> source.m_6761_(2)))
+                  ((LiteralArgumentBuilder)Commands.literal("add").requires(source -> source.hasPermission(2)))
                      .then(
-                        Commands.m_82129_("faction", StringArgumentType.word())
-                           .suggests((context, builder) -> SharedSuggestionProvider.m_82970_(FactionRegistry.factionNames(), builder))
+                        Commands.argument("faction", StringArgumentType.word())
+                           .suggests((context, builder) -> SharedSuggestionProvider.suggest(FactionRegistry.factionNames(), builder))
                            .then(
-                              Commands.m_82129_("value", IntegerArgumentType.integer())
+                              Commands.argument("value", IntegerArgumentType.integer())
                                  .executes(
                                     context -> addStanding(
-                                          ((CommandSourceStack)context.getSource()).m_81375_(),
+                                          ((CommandSourceStack)context.getSource()).getPlayerOrException(),
                                           StringArgumentType.getString(context, "faction"),
                                           IntegerArgumentType.getInteger(context, "value")
                                        )
@@ -77,20 +77,20 @@ public final class ForgeFactionCommands {
    }
 
    private static int showStanding(ServerPlayer player, String faction) {
-      int standing = FactionStandingData.get(player.m_284548_()).getStanding(player.m_20148_(), faction);
-      player.m_213846_(Component.m_237113_("Faction " + faction + " standing: " + standing + (standing < 0 ? " (hostile)" : " (neutral/friendly)")));
+      int standing = FactionStandingData.get(player.serverLevel()).getStanding(player.getUUID(), faction);
+      player.sendSystemMessage(Component.literal("Faction " + faction + " standing: " + standing + (standing < 0 ? " (hostile)" : " (neutral/friendly)")));
       return standing;
    }
 
    private static int setStanding(ServerPlayer player, String faction, int value) {
-      int standing = FactionStandingData.get(player.m_284548_()).setStanding(player.m_20148_(), faction, value);
-      player.m_213846_(Component.m_237113_("Faction " + faction + " standing set to " + standing));
+      int standing = FactionStandingData.get(player.serverLevel()).setStanding(player.getUUID(), faction, value);
+      player.sendSystemMessage(Component.literal("Faction " + faction + " standing set to " + standing));
       return standing;
    }
 
    private static int addStanding(ServerPlayer player, String faction, int value) {
-      int standing = FactionStandingData.get(player.m_284548_()).adjustStanding(player.m_20148_(), faction, value);
-      player.m_213846_(Component.m_237113_("Faction " + faction + " standing is now " + standing));
+      int standing = FactionStandingData.get(player.serverLevel()).adjustStanding(player.getUUID(), faction, value);
+      player.sendSystemMessage(Component.literal("Faction " + faction + " standing is now " + standing));
       return standing;
    }
 }

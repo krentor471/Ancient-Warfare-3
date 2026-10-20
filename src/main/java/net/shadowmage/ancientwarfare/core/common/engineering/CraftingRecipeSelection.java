@@ -23,15 +23,15 @@ public final class CraftingRecipeSelection {
       List<Recipe<CraftingContainer>> recipes = new ArrayList<>();
       RecipeType<EngineeringRecipe> engineeringType = AWCoreRegistryAccess.recipeType(AWCoreIds.id("engineering"));
 
-      for (EngineeringRecipe recipe : level.m_7465_().m_44056_(engineeringType, crafting, level)) {
+      for (EngineeringRecipe recipe : level.getRecipeManager().getRecipesFor(engineeringType, crafting, level)) {
          String required = recipe.requiredResearch();
          if (required == null || EngineeringRecipeLogic.hasCompletedResearch(completedResearch, required)) {
             recipes.add(recipe);
          }
       }
 
-      recipes.addAll(level.m_7465_().m_44056_(RecipeType.f_44107_, crafting, level));
-      recipes.sort(Comparator.comparing(recipex -> recipex.m_6423_().toString()));
+      recipes.addAll(level.getRecipeManager().getRecipesFor(RecipeType.CRAFTING, crafting, level));
+      recipes.sort(Comparator.comparing(recipex -> recipex.getId().toString()));
       return recipes;
    }
 
@@ -42,7 +42,7 @@ public final class CraftingRecipeSelection {
       } else {
          if (selectedId != null) {
             for (Recipe<CraftingContainer> recipe : recipes) {
-               if (recipe.m_6423_().equals(selectedId)) {
+               if (recipe.getId().equals(selectedId)) {
                   return recipe;
                }
             }
@@ -60,25 +60,25 @@ public final class CraftingRecipeSelection {
          int current = 0;
          if (selectedId != null) {
             for (int index = 0; index < recipes.size(); index++) {
-               if (recipes.get(index).m_6423_().equals(selectedId)) {
+               if (recipes.get(index).getId().equals(selectedId)) {
                   current = index;
                   break;
                }
             }
          }
 
-         return recipes.get(Math.floorMod(current + direction, recipes.size())).m_6423_();
+         return recipes.get(Math.floorMod(current + direction, recipes.size())).getId();
       }
    }
 
    public static ItemStack result(@Nullable Recipe<CraftingContainer> recipe, CraftingContainer crafting, Level level) {
-      return recipe == null ? ItemStack.f_41583_ : recipe.m_5874_(crafting, level.m_9598_());
+      return recipe == null ? ItemStack.EMPTY : recipe.assemble(crafting, level.registryAccess());
    }
 
    @Nullable
    public static Recipe<CraftingContainer> normalize(List<Recipe<CraftingContainer>> recipes, CraftingRecipeMemory memory) {
       Recipe<CraftingContainer> selected = select(recipes, memory.getSelectedRecipeId());
-      ResourceLocation normalizedId = selected == null ? null : selected.m_6423_();
+      ResourceLocation normalizedId = selected == null ? null : selected.getId();
       if (!Objects.equals(normalizedId, memory.getSelectedRecipeId())) {
          memory.setSelectedRecipeId(normalizedId);
       }

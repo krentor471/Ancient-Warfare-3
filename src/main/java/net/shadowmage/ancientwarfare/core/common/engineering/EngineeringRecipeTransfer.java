@@ -15,7 +15,7 @@ public final class EngineeringRecipeTransfer {
    public static boolean fill(
       Container target, int targetStart, int bookSlot, Inventory playerInventory, EngineeringRecipe recipe, int[] sourceStarts, int[] sourceCounts
    ) {
-      if (recipe != null && recipe.ingredients().length == 9 && researchUnlocked(target.m_8020_(bookSlot), recipe)) {
+      if (recipe != null && recipe.ingredients().length == 9 && researchUnlocked(target.getItem(bookSlot), recipe)) {
          if (sourceStarts.length != sourceCounts.length) {
             return false;
          } else {
@@ -24,20 +24,20 @@ public final class EngineeringRecipeTransfer {
             for (int group = 0; group < sourceStarts.length; group++) {
                for (int i = 0; i < sourceCounts[group]; i++) {
                   int slot = sourceStarts[group] + i;
-                  sources.add(new EngineeringRecipeTransfer.Source(target, slot, target.m_8020_(slot).m_41777_()));
+                  sources.add(new EngineeringRecipeTransfer.Source(target, slot, target.getItem(slot).copy()));
                }
             }
 
             ItemStack[] playerStacks = new ItemStack[36];
 
             for (int i = 0; i < playerStacks.length; i++) {
-               playerStacks[i] = playerInventory.m_8020_(i).m_41777_();
+               playerStacks[i] = playerInventory.getItem(i).copy();
             }
 
             ItemStack[] targets = new ItemStack[9];
 
             for (int i = 0; i < targets.length; i++) {
-               targets[i] = target.m_8020_(targetStart + i).m_41777_();
+               targets[i] = target.getItem(targetStart + i).copy();
             }
 
             EngineeringIngredient[] arranged = arrangeForTransfer(recipe, targets, sources, playerStacks);
@@ -48,27 +48,27 @@ public final class EngineeringRecipeTransfer {
                   EngineeringIngredient ingredient = arranged[i];
                   ItemStack existing = targets[i];
                   if (ingredient.isEmpty()) {
-                     if (!existing.m_41619_() && !insert(sources, playerStacks, existing)) {
+                     if (!existing.isEmpty() && !insert(sources, playerStacks, existing)) {
                         return false;
                      }
 
-                     targets[i] = ItemStack.f_41583_;
+                     targets[i] = ItemStack.EMPTY;
                   } else if (ingredient.test(existing)) {
-                     if (existing.m_41613_() > ingredient.count()) {
-                        ItemStack extra = existing.m_255036_(existing.m_41613_() - ingredient.count());
+                     if (existing.getCount() > ingredient.count()) {
+                        ItemStack extra = existing.copyWithCount(existing.getCount() - ingredient.count());
                         if (!insert(sources, playerStacks, extra)) {
                            return false;
                         }
 
-                        targets[i].m_41764_(ingredient.count());
+                        targets[i].setCount(ingredient.count());
                      }
                   } else {
-                     if (!existing.m_41619_() && !insert(sources, playerStacks, existing)) {
+                     if (!existing.isEmpty() && !insert(sources, playerStacks, existing)) {
                         return false;
                      }
 
                      ItemStack picked = take(ingredient, sources, playerStacks);
-                     if (picked.m_41619_()) {
+                     if (picked.isEmpty()) {
                         return false;
                      }
 
@@ -77,20 +77,20 @@ public final class EngineeringRecipeTransfer {
                }
 
                for (EngineeringRecipeTransfer.Source source : sources) {
-                  source.container.m_6836_(source.slot, source.stack);
+                  source.container.setItem(source.slot, source.stack);
                }
 
                for (int ix = 0; ix < 36; ix++) {
-                  playerInventory.m_6836_(ix, playerStacks[ix]);
+                  playerInventory.setItem(ix, playerStacks[ix]);
                }
 
-               playerInventory.m_6596_();
+               playerInventory.setChanged();
 
                for (int ix = 0; ix < 9; ix++) {
-                  target.m_6836_(targetStart + ix, targets[ix]);
+                  target.setItem(targetStart + ix, targets[ix]);
                }
 
-               target.m_6596_();
+               target.setChanged();
                return true;
             }
          }
@@ -111,7 +111,7 @@ public final class EngineeringRecipeTransfer {
          boolean[] usedIngredients = new boolean[required.size()];
 
          for (int slot = 0; slot < targets.length; slot++) {
-            if (!targets[slot].m_41619_()) {
+            if (!targets[slot].isEmpty()) {
                for (int ingredient = 0; ingredient < required.size(); ingredient++) {
                   if (!usedIngredients[ingredient] && required.get(ingredient).test(targets[slot])) {
                      arranged[slot] = required.get(ingredient);
@@ -170,72 +170,72 @@ public final class EngineeringRecipeTransfer {
 
    private static boolean researchUnlocked(ItemStack book, EngineeringRecipe recipe) {
       return recipe.requiredResearch() == null
-         || !book.m_41619_() && EngineeringRecipeLogic.hasCompletedResearch(ResearchBookData.getCompletedResearch(book), recipe.requiredResearch());
+         || !book.isEmpty() && EngineeringRecipeLogic.hasCompletedResearch(ResearchBookData.getCompletedResearch(book), recipe.requiredResearch());
    }
 
    private static ItemStack take(EngineeringIngredient ingredient, List<EngineeringRecipeTransfer.Source> sources, ItemStack[] playerStacks) {
       for (EngineeringRecipeTransfer.Source source : sources) {
-         if (!source.stack.m_41619_() && ingredient.test(source.stack)) {
-            ItemStack picked = source.stack.m_255036_(ingredient.count());
-            source.stack.m_41774_(ingredient.count());
+         if (!source.stack.isEmpty() && ingredient.test(source.stack)) {
+            ItemStack picked = source.stack.copyWithCount(ingredient.count());
+            source.stack.shrink(ingredient.count());
             return picked;
          }
       }
 
       for (int i = 0; i < playerStacks.length; i++) {
-         if (!playerStacks[i].m_41619_() && ingredient.test(playerStacks[i])) {
-            ItemStack picked = playerStacks[i].m_255036_(ingredient.count());
-            playerStacks[i].m_41774_(ingredient.count());
+         if (!playerStacks[i].isEmpty() && ingredient.test(playerStacks[i])) {
+            ItemStack picked = playerStacks[i].copyWithCount(ingredient.count());
+            playerStacks[i].shrink(ingredient.count());
             return picked;
          }
       }
 
-      return ItemStack.f_41583_;
+      return ItemStack.EMPTY;
    }
 
    private static boolean insert(List<EngineeringRecipeTransfer.Source> sources, ItemStack[] inventory, ItemStack stack) {
-      ItemStack remaining = stack.m_41777_();
+      ItemStack remaining = stack.copy();
 
       for (EngineeringRecipeTransfer.Source source : sources) {
          ItemStack current = source.stack;
-         if (!current.m_41619_() && ItemStack.m_150942_(current, remaining)) {
-            int moved = Math.min(remaining.m_41613_(), current.m_41741_() - current.m_41613_());
-            current.m_41769_(moved);
-            remaining.m_41774_(moved);
-            if (remaining.m_41619_()) {
+         if (!current.isEmpty() && ItemStack.isSameItemSameTags(current, remaining)) {
+            int moved = Math.min(remaining.getCount(), current.getMaxStackSize() - current.getCount());
+            current.grow(moved);
+            remaining.shrink(moved);
+            if (remaining.isEmpty()) {
                return true;
             }
          }
       }
 
       for (EngineeringRecipeTransfer.Source sourcex : sources) {
-         if (sourcex.stack.m_41619_()) {
-            int moved = Math.min(remaining.m_41613_(), remaining.m_41741_());
-            sourcex.stack = remaining.m_255036_(moved);
-            remaining.m_41774_(moved);
-            if (remaining.m_41619_()) {
+         if (sourcex.stack.isEmpty()) {
+            int moved = Math.min(remaining.getCount(), remaining.getMaxStackSize());
+            sourcex.stack = remaining.copyWithCount(moved);
+            remaining.shrink(moved);
+            if (remaining.isEmpty()) {
                return true;
             }
          }
       }
 
       for (ItemStack current : inventory) {
-         if (!current.m_41619_() && ItemStack.m_150942_(current, remaining)) {
-            int moved = Math.min(remaining.m_41613_(), current.m_41741_() - current.m_41613_());
-            current.m_41769_(moved);
-            remaining.m_41774_(moved);
-            if (remaining.m_41619_()) {
+         if (!current.isEmpty() && ItemStack.isSameItemSameTags(current, remaining)) {
+            int moved = Math.min(remaining.getCount(), current.getMaxStackSize() - current.getCount());
+            current.grow(moved);
+            remaining.shrink(moved);
+            if (remaining.isEmpty()) {
                return true;
             }
          }
       }
 
       for (int i = 0; i < inventory.length; i++) {
-         if (inventory[i].m_41619_()) {
-            int moved = Math.min(remaining.m_41613_(), remaining.m_41741_());
-            inventory[i] = remaining.m_255036_(moved);
-            remaining.m_41774_(moved);
-            if (remaining.m_41619_()) {
+         if (inventory[i].isEmpty()) {
+            int moved = Math.min(remaining.getCount(), remaining.getMaxStackSize());
+            inventory[i] = remaining.copyWithCount(moved);
+            remaining.shrink(moved);
+            if (remaining.isEmpty()) {
                return true;
             }
          }

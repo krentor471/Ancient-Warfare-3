@@ -22,11 +22,11 @@ public final class ForgeCommandBatonEvents {
    @SubscribeEvent
    public static void onAttackEntity(AttackEntityEvent event) {
       Player player = event.getEntity();
-      if (!player.m_9236_().f_46443_ && player.m_9236_() instanceof ServerLevel level && event.getTarget() instanceof LivingEntity target) {
-         ItemStack stack = player.m_21205_();
+      if (!player.level().isClientSide && player.level() instanceof ServerLevel level && event.getTarget() instanceof LivingEntity target) {
+         ItemStack stack = player.getMainHandItem();
          if (CommandBatonItem.isAttackMode(stack)) {
             int commanded = CommandBatonItem.commandAttack(level, player, stack, target);
-            player.m_5661_(Component.m_237110_("guistrings.npc.baton.attack_command", new Object[]{commanded}), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.attack_command", new Object[]{commanded}), true);
             event.setCanceled(true);
          }
       }

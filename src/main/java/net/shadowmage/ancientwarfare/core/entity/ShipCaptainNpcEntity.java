@@ -22,7 +22,7 @@ public class ShipCaptainNpcEntity extends ModernSoldierNpcEntity {
    }
 
    @Override
-   public Component m_5677_() {
-      return Component.m_237115_("entity.ancientwarfare.ship_captain");
+   public Component getTypeName() {
+      return Component.translatable("entity.ancientwarfare.ship_captain");
    }
 }

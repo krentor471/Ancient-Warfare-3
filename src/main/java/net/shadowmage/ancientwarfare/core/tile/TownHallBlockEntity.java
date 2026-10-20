@@ -49,7 +49,7 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
    private static final String OWNER_TAG = "Owner";
    private static final String DEATH_NOTICES_TAG = "DeathNotices";
    private static final String BROADCAST_DELAY_TAG = "BroadcastDelay";
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(27, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
    private final List<TownHallBlockEntity.NpcDeathEntry> deathNotices = new ArrayList<>();
    private UUID owner;
    private int broadcastDelay;
@@ -94,24 +94,24 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
 
    @Nullable
    public static TownHallBlockEntity findForDeath(PlayerOwnedNpcEntity npc) {
-      if (npc.m_9236_() instanceof ServerLevel server) {
+      if (npc.level() instanceof ServerLevel server) {
          if (npc.hasTownHall()) {
             BlockPos cached = npc.getTownHallPos();
-            LevelChunk chunk = server.m_7726_().m_7131_(cached.m_123341_() >> 4, cached.m_123343_() >> 4);
-            if (chunk != null && chunk.m_7702_(cached) instanceof TownHallBlockEntity hall && !hall.m_58901_() && hall.acceptsNpc(npc)) {
+            LevelChunk chunk = server.getChunkSource().getChunkNow(cached.getX() >> 4, cached.getZ() >> 4);
+            if (chunk != null && chunk.getBlockEntity(cached) instanceof TownHallBlockEntity hall && !hall.isRemoved() && hall.acceptsNpc(npc)) {
                return hall;
             }
          }
 
-         BlockPos origin = npc.m_20183_();
+         BlockPos origin = npc.blockPosition();
          TownHallBlockEntity nearest = null;
          double nearestDistance = Double.MAX_VALUE;
 
-         for (BlockEntity blockEntity : WarehouseNetwork.loadedEntities(server, origin.m_7918_(-128, -64, -128), origin.m_7918_(128, 64, 128))) {
+         for (BlockEntity blockEntity : WarehouseNetwork.loadedEntities(server, origin.offset(-128, -64, -128), origin.offset(128, 64, 128))) {
             if (blockEntity instanceof TownHallBlockEntity) {
                TownHallBlockEntity hall = (TownHallBlockEntity)blockEntity;
                if (hall.acceptsNpc(npc)) {
-                  double distance = npc.m_20238_(hall.f_58858_.m_252807_());
+                  double distance = npc.distanceToSqr(hall.worldPosition.getCenter());
                   if (distance < nearestDistance) {
                      nearest = hall;
                      nearestDistance = distance;
@@ -136,7 +136,7 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
    }
 
    public void recordNpcDeath(PlayerOwnedNpcEntity npc, DamageSource source, CompoundTag details) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && this.acceptsNpc(npc)) {
+      if (this.level != null && !this.level.isClientSide && this.acceptsNpc(npc)) {
          this.addDeathEntry(createDeathEntry(npc, source, details));
       }
    }
@@ -145,22 +145,22 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
       ItemStack spawnerStack = NpcSpawnerItem.createFromNpc(npc);
       return new TownHallBlockEntity.NpcDeathEntry(
          spawnerStack,
-         details.m_128461_("NpcType").isBlank() ? npc.getNpcType() : details.m_128461_("NpcType"),
-         details.m_128461_("NpcName").isBlank() ? npc.m_5446_().getString() : details.m_128461_("NpcName"),
-         source == null ? "unknown" : source.m_19385_(),
-         npc.m_20183_(),
+         details.getString("NpcType").isBlank() ? npc.getNpcType() : details.getString("NpcType"),
+         details.getString("NpcName").isBlank() ? npc.getDisplayName().getString() : details.getString("NpcName"),
+         source == null ? "unknown" : source.getMsgId(),
+         npc.blockPosition(),
          false,
          true,
          false,
          UUID.randomUUID(),
-         details.m_6426_()
+         details.copy()
       );
    }
 
    private void addDeathEntry(TownHallBlockEntity.NpcDeathEntry entry) {
       if (!this.deathNotices.stream().anyMatch(existing -> existing.recordId().equals(entry.recordId()))) {
          this.deathNotices.add(entry);
-         this.deathNotices.sort(Comparator.comparingLong(record -> record.details().m_128454_("DeathTimeMillis")));
+         this.deathNotices.sort(Comparator.comparingLong(record -> record.details().getLong("DeathTimeMillis")));
 
          while (this.deathNotices.size() > 64) {
             this.deathNotices.remove(0);
@@ -172,73 +172,73 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
 
    public static CompoundTag captureDeathDetails(PlayerOwnedNpcEntity npc, DamageSource source) {
       CompoundTag details = new CompoundTag();
-      details.m_128359_("NpcType", npc.getNpcType());
-      details.m_128359_("NpcName", npc.m_5446_().getString());
-      details.m_128362_("NpcUUID", npc.m_20148_());
+      details.putString("NpcType", npc.getNpcType());
+      details.putString("NpcName", npc.getDisplayName().getString());
+      details.putUUID("NpcUUID", npc.getUUID());
       npc.getOwner().ifPresent(id -> {
-         details.m_128362_("Owner", id);
-         if (npc.m_9236_() instanceof ServerLevel server) {
-            server.m_7654_().m_129927_().m_11002_(id).ifPresent(profile -> details.m_128359_("OwnerName", profile.getName()));
+         details.putUUID("Owner", id);
+         if (npc.level() instanceof ServerLevel server) {
+            server.getServer().getProfileCache().get(id).ifPresent(profile -> details.putString("OwnerName", profile.getName()));
          }
       });
-      details.m_128359_("NpcSubtype", npc.getNpcSubtype());
-      details.m_128359_("Dimension", npc.m_9236_().m_46472_().m_135782_().toString());
-      details.m_128356_("DeathTimeMillis", System.currentTimeMillis());
-      details.m_128356_("DeathGameTime", npc.m_9236_().m_46467_());
-      details.m_128359_("DeathMessage", source == null ? "" : source.m_6157_(npc).getString());
+      details.putString("NpcSubtype", npc.getNpcSubtype());
+      details.putString("Dimension", npc.level().dimension().location().toString());
+      details.putLong("DeathTimeMillis", System.currentTimeMillis());
+      details.putLong("DeathGameTime", npc.level().getGameTime());
+      details.putString("DeathMessage", source == null ? "" : source.getLocalizedDeathMessage(npc).getString());
       if (source != null) {
-         details.m_128359_("DeathMessageJson", Serializer.m_130703_(source.m_6157_(npc)));
+         details.putString("DeathMessageJson", Serializer.toJson(source.getLocalizedDeathMessage(npc)));
       }
 
-      Entity killer = source == null ? null : source.m_7639_();
+      Entity killer = source == null ? null : source.getEntity();
       if (killer != null) {
-         details.m_128359_("KillerName", killer.m_5446_().getString());
+         details.putString("KillerName", killer.getDisplayName().getString());
       }
 
-      details.m_128350_("MaxHealth", npc.m_21233_());
-      AttributeInstance attack = npc.m_21051_(Attributes.f_22281_);
-      details.m_128347_("AttackDamage", attack == null ? 0.0 : attack.m_22135_());
-      details.m_128405_("CombatRank", npc.getCombatRank());
-      details.m_128359_("Command", npc.getCurrentCommand().name());
-      details.m_128356_("CommandTarget", npc.getCommandTarget().m_121878_());
-      details.m_128379_("HomeSet", npc.hasHome());
-      details.m_128356_("HomePos", npc.getHomePos().m_121878_());
+      details.putFloat("MaxHealth", npc.getMaxHealth());
+      AttributeInstance attack = npc.getAttribute(Attributes.ATTACK_DAMAGE);
+      details.putDouble("AttackDamage", attack == null ? 0.0 : attack.getValue());
+      details.putInt("CombatRank", npc.getCombatRank());
+      details.putString("Command", npc.getCurrentCommand().name());
+      details.putLong("CommandTarget", npc.getCommandTarget().asLong());
+      details.putBoolean("HomeSet", npc.hasHome());
+      details.putLong("HomePos", npc.getHomePos().asLong());
       if (npc.hasTownHall()) {
-         details.m_128356_("TownHallPos", npc.getTownHallPos().m_121878_());
+         details.putLong("TownHallPos", npc.getTownHallPos().asLong());
       }
 
       Entity mount = DragonRiderController.getLogicalMount(npc);
       if (mount == null) {
-         mount = npc.m_20202_();
+         mount = npc.getVehicle();
       }
 
       if (mount != null) {
-         details.m_128359_("MountType", mount.m_6095_().m_20676_().getString());
+         details.putString("MountType", mount.getType().getDescription().getString());
       }
 
       ListTag equipment = new ListTag();
 
       for (EquipmentSlot slot : EquipmentSlot.values()) {
-         ItemStack stack = npc.m_6844_(slot);
-         if (!stack.m_41619_()) {
+         ItemStack stack = npc.getItemBySlot(slot);
+         if (!stack.isEmpty()) {
             CompoundTag entry = new CompoundTag();
-            entry.m_128359_("Slot", slot.m_20751_());
-            entry.m_128365_("Stack", stack.m_41739_(new CompoundTag()));
+            entry.putString("Slot", slot.getName());
+            entry.put("Stack", stack.save(new CompoundTag()));
             equipment.add(entry);
          }
       }
 
-      details.m_128365_("Equipment", equipment);
-      if (!npc.getFoodStack().m_41619_()) {
-         details.m_128365_("Food", npc.getFoodStack().m_41739_(new CompoundTag()));
+      details.put("Equipment", equipment);
+      if (!npc.getFoodStack().isEmpty()) {
+         details.put("Food", npc.getFoodStack().save(new CompoundTag()));
       }
 
-      if (!npc.getOrdersStack().m_41619_()) {
-         details.m_128365_("Orders", npc.getOrdersStack().m_41739_(new CompoundTag()));
+      if (!npc.getOrdersStack().isEmpty()) {
+         details.put("Orders", npc.getOrdersStack().save(new CompoundTag()));
       }
 
-      if (!npc.getUpkeepStack().m_41619_()) {
-         details.m_128365_("Upkeep", npc.getUpkeepStack().m_41739_(new CompoundTag()));
+      if (!npc.getUpkeepStack().isEmpty()) {
+         details.put("Upkeep", npc.getUpkeepStack().save(new CompoundTag()));
       }
 
       return details;
@@ -247,7 +247,7 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
    public Optional<TownHallBlockEntity.NpcDeathEntry> claimResurrection() {
       for (int i = 0; i < this.deathNotices.size(); i++) {
          TownHallBlockEntity.NpcDeathEntry entry = this.deathNotices.get(i);
-         if (entry.canResurrect() && !entry.spawnerStack().m_41619_() && !entry.resurrected() && !entry.beingResurrected()) {
+         if (entry.canResurrect() && !entry.spawnerStack().isEmpty() && !entry.resurrected() && !entry.beingResurrected()) {
             TownHallBlockEntity.NpcDeathEntry claimed = entry.withBeingResurrected(true);
             this.deathNotices.set(i, claimed);
             this.syncChanged();
@@ -279,14 +279,14 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
 
    public ItemStack extractFoodLike(int amount) {
       if (amount <= 0) {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       } else {
          for (int slot = 0; slot < this.items.size(); slot++) {
             ItemStack stack = (ItemStack)this.items.get(slot);
             if (this.isFoodLike(stack)) {
-               ItemStack removed = stack.m_41620_(Math.min(amount, stack.m_41613_()));
-               if (stack.m_41619_()) {
-                  this.items.set(slot, ItemStack.f_41583_);
+               ItemStack removed = stack.split(Math.min(amount, stack.getCount()));
+               if (stack.isEmpty()) {
+                  this.items.set(slot, ItemStack.EMPTY);
                }
 
                this.syncChanged();
@@ -294,66 +294,66 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
             }
          }
 
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
    private void broadcast(Level level, BlockPos pos) {
       AABB area = new AABB(
-         (double)(pos.m_123341_() - 128),
-         (double)(pos.m_123342_() - 64),
-         (double)(pos.m_123343_() - 128),
-         (double)(pos.m_123341_() + 128 + 1),
-         (double)(pos.m_123342_() + 64 + 1),
-         (double)(pos.m_123343_() + 128 + 1)
+         (double)(pos.getX() - 128),
+         (double)(pos.getY() - 64),
+         (double)(pos.getZ() - 128),
+         (double)(pos.getX() + 128 + 1),
+         (double)(pos.getY() + 64 + 1),
+         (double)(pos.getZ() + 128 + 1)
       );
 
-      for (PlayerOwnedNpcEntity npc : level.m_45976_(PlayerOwnedNpcEntity.class, area)) {
-         if (npc.m_6084_() && this.acceptsNpc(npc)) {
+      for (PlayerOwnedNpcEntity npc : level.getEntitiesOfClass(PlayerOwnedNpcEntity.class, area)) {
+         if (npc.isAlive() && this.acceptsNpc(npc)) {
             npc.handleTownHallBroadcast(pos);
          }
       }
    }
 
    private boolean isFoodLike(ItemStack stack) {
-      return !stack.m_41619_() && (stack.m_41614_() || AWCoreRegistryAccess.is(stack, AWCoreIds.FOOD_BUNDLE));
+      return !stack.isEmpty() && (stack.isEdible() || AWCoreRegistryAccess.is(stack, AWCoreIds.FOOD_BUNDLE));
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
       if (this.owner != null) {
-         tag.m_128362_("Owner", this.owner);
+         tag.putUUID("Owner", this.owner);
       }
 
-      tag.m_128405_("BroadcastDelay", this.broadcastDelay);
-      ContainerHelper.m_18973_(tag, this.items);
+      tag.putInt("BroadcastDelay", this.broadcastDelay);
+      ContainerHelper.saveAllItems(tag, this.items);
       ListTag deathList = new ListTag();
 
       for (TownHallBlockEntity.NpcDeathEntry entry : this.deathNotices) {
          deathList.add(entry.save());
       }
 
-      tag.m_128365_("DeathNotices", deathList);
+      tag.put("DeathNotices", deathList);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.owner = tag.m_128403_("Owner") ? tag.m_128342_("Owner") : null;
-      this.broadcastDelay = tag.m_128451_("BroadcastDelay");
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+      this.broadcastDelay = tag.getInt("BroadcastDelay");
       this.pendingDeathsImported = false;
-      ContainerHelper.m_18980_(tag, this.items);
+      ContainerHelper.loadAllItems(tag, this.items);
       this.deathNotices.clear();
-      ListTag deathList = tag.m_128437_("DeathNotices", 10);
+      ListTag deathList = tag.getList("DeathNotices", 10);
 
       for (int i = 0; i < deathList.size(); i++) {
-         this.deathNotices.add(TownHallBlockEntity.NpcDeathEntry.load(deathList.m_128728_(i)).withBeingResurrected(false));
+         this.deathNotices.add(TownHallBlockEntity.NpcDeathEntry.load(deathList.getCompound(i)).withBeingResurrected(false));
       }
    }
 
-   public CompoundTag m_5995_() {
+   public CompoundTag getUpdateTag() {
       CompoundTag tag = new CompoundTag();
       if (this.owner != null) {
-         tag.m_128362_("Owner", this.owner);
+         tag.putUUID("Owner", this.owner);
       }
 
       ListTag deathList = new ListTag();
@@ -362,92 +362,92 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
          deathList.add(entry.saveForClient());
       }
 
-      tag.m_128365_("DeathNotices", deathList);
+      tag.put("DeathNotices", deathList);
       return tag;
    }
 
    public void handleUpdateTag(CompoundTag tag) {
-      this.owner = tag.m_128403_("Owner") ? tag.m_128342_("Owner") : null;
+      this.owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
       this.deathNotices.clear();
-      ListTag deathList = tag.m_128437_("DeathNotices", 10);
+      ListTag deathList = tag.getList("DeathNotices", 10);
 
       for (int i = 0; i < deathList.size(); i++) {
-         this.deathNotices.add(TownHallBlockEntity.NpcDeathEntry.load(deathList.m_128728_(i)));
+         this.deathNotices.add(TownHallBlockEntity.NpcDeathEntry.load(deathList.getCompound(i)));
       }
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {
-      CompoundTag tag = packet.m_131708_();
+      CompoundTag tag = packet.getTag();
       if (tag != null) {
          this.handleUpdateTag(tag);
       }
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return this.items.size();
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return slot >= 0 && slot < this.items.size() ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return slot >= 0 && slot < this.items.size() ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = slot >= 0 && slot < this.items.size() ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = slot >= 0 && slot < this.items.size() ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
          this.syncChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return slot >= 0 && slot < this.items.size() ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return slot >= 0 && slot < this.items.size() ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (slot >= 0 && slot < this.items.size()) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
          this.syncChanged();
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
       this.syncChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.town_hall");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.town_hall");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new TownHallMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new TownHallMenu(containerId, playerInventory, this.worldPosition);
    }
 
    private void syncChanged() {
-      this.m_6596_();
-      if (this.f_58857_ != null) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+      this.setChanged();
+      if (this.level != null) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 
@@ -487,80 +487,80 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
 
       public CompoundTag save() {
          CompoundTag tag = this.saveForClient();
-         tag.m_128365_("SpawnerStack", this.spawnerStack.m_41739_(new CompoundTag()));
+         tag.put("SpawnerStack", this.spawnerStack.save(new CompoundTag()));
          return tag;
       }
 
       public CompoundTag saveForClient() {
          CompoundTag tag = new CompoundTag();
-         tag.m_128359_("NpcType", this.npcType);
-         tag.m_128359_("NpcName", this.npcName);
-         tag.m_128359_("DeathCause", this.deathCause);
-         tag.m_128356_("Pos", this.pos.m_121878_());
-         tag.m_128379_("Resurrected", this.resurrected);
-         tag.m_128379_("CanResurrect", this.canResurrect);
-         tag.m_128379_("BeingResurrected", this.beingResurrected);
-         tag.m_128362_("RecordId", this.recordId);
-         tag.m_128365_("Details", this.details.m_6426_());
+         tag.putString("NpcType", this.npcType);
+         tag.putString("NpcName", this.npcName);
+         tag.putString("DeathCause", this.deathCause);
+         tag.putLong("Pos", this.pos.asLong());
+         tag.putBoolean("Resurrected", this.resurrected);
+         tag.putBoolean("CanResurrect", this.canResurrect);
+         tag.putBoolean("BeingResurrected", this.beingResurrected);
+         tag.putUUID("RecordId", this.recordId);
+         tag.put("Details", this.details.copy());
          return tag;
       }
 
       public static TownHallBlockEntity.NpcDeathEntry load(CompoundTag tag) {
          return new TownHallBlockEntity.NpcDeathEntry(
-            ItemStack.m_41712_(tag.m_128469_("SpawnerStack")),
-            tag.m_128461_("NpcType"),
-            tag.m_128461_("NpcName"),
-            tag.m_128461_("DeathCause"),
-            tag.m_128441_("Pos") ? BlockPos.m_122022_(tag.m_128454_("Pos")) : BlockPos.f_121853_,
-            tag.m_128471_("Resurrected"),
-            tag.m_128471_("CanResurrect"),
-            tag.m_128471_("BeingResurrected"),
-            tag.m_128403_("RecordId") ? tag.m_128342_("RecordId") : UUID.randomUUID(),
-            tag.m_128425_("Details", 10) ? tag.m_128469_("Details").m_6426_() : legacyDetails(tag)
+            ItemStack.of(tag.getCompound("SpawnerStack")),
+            tag.getString("NpcType"),
+            tag.getString("NpcName"),
+            tag.getString("DeathCause"),
+            tag.contains("Pos") ? BlockPos.of(tag.getLong("Pos")) : BlockPos.ZERO,
+            tag.getBoolean("Resurrected"),
+            tag.getBoolean("CanResurrect"),
+            tag.getBoolean("BeingResurrected"),
+            tag.hasUUID("RecordId") ? tag.getUUID("RecordId") : UUID.randomUUID(),
+            tag.contains("Details", 10) ? tag.getCompound("Details").copy() : legacyDetails(tag)
          );
       }
 
       private static CompoundTag legacyDetails(CompoundTag tag) {
          CompoundTag details = new CompoundTag();
-         CompoundTag npcData = tag.m_128469_("SpawnerStack").m_128469_("tag").m_128469_("npcData");
+         CompoundTag npcData = tag.getCompound("SpawnerStack").getCompound("tag").getCompound("npcData");
 
          for (String key : List.of("Owner", "NpcSubtype", "MaxHealth", "HomeSet", "HomePos", "TownHallPos")) {
-            if (npcData.m_128441_(key)) {
-               details.m_128365_(key, npcData.m_128423_(key).m_6426_());
+            if (npcData.contains(key)) {
+               details.put(key, npcData.get(key).copy());
             }
          }
 
-         if (npcData.m_128403_("UUID")) {
-            details.m_128362_("NpcUUID", npcData.m_128342_("UUID"));
+         if (npcData.hasUUID("UUID")) {
+            details.putUUID("NpcUUID", npcData.getUUID("UUID"));
          }
 
-         details.m_128356_("DeathTimeMillis", 0L);
-         details.m_128356_("DeathGameTime", -1L);
+         details.putLong("DeathTimeMillis", 0L);
+         details.putLong("DeathGameTime", -1L);
          ListTag equipment = new ListTag();
 
          for (Type type : Type.values()) {
-            ListTag items = npcData.m_128437_(type == Type.HAND ? "HandItems" : "ArmorItems", 10);
+            ListTag items = npcData.getList(type == Type.HAND ? "HandItems" : "ArmorItems", 10);
 
             for (EquipmentSlot slot : EquipmentSlot.values()) {
-               if (slot.m_20743_() == type && slot.m_20749_() < items.size()) {
-                  CompoundTag stack = items.m_128728_(slot.m_20749_());
-                  if (stack.m_128445_("Count") > 0) {
+               if (slot.getType() == type && slot.getIndex() < items.size()) {
+                  CompoundTag stack = items.getCompound(slot.getIndex());
+                  if (stack.getByte("Count") > 0) {
                      CompoundTag entry = new CompoundTag();
-                     entry.m_128359_("Slot", slot.m_20751_());
-                     entry.m_128365_("Stack", stack.m_6426_());
+                     entry.putString("Slot", slot.getName());
+                     entry.put("Stack", stack.copy());
                      equipment.add(entry);
                   }
                }
             }
          }
 
-         details.m_128365_("Equipment", equipment);
+         details.put("Equipment", equipment);
          return details;
       }
 
       public TownHallBlockEntity.NpcDeathEntry withResurrected(boolean value) {
          return new TownHallBlockEntity.NpcDeathEntry(
-            this.spawnerStack.m_41777_(),
+            this.spawnerStack.copy(),
             this.npcType,
             this.npcName,
             this.deathCause,
@@ -569,13 +569,13 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
             this.canResurrect,
             this.beingResurrected,
             this.recordId,
-            this.details.m_6426_()
+            this.details.copy()
          );
       }
 
       public TownHallBlockEntity.NpcDeathEntry withBeingResurrected(boolean value) {
          return new TownHallBlockEntity.NpcDeathEntry(
-            this.spawnerStack.m_41777_(),
+            this.spawnerStack.copy(),
             this.npcType,
             this.npcName,
             this.deathCause,
@@ -584,7 +584,7 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
             this.canResurrect,
             value,
             this.recordId,
-            this.details.m_6426_()
+            this.details.copy()
          );
       }
 

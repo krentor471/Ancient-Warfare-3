@@ -33,15 +33,15 @@ public class FlywheelStorageGeoModel extends GeoModel<FlywheelStorageBlockEntity
    }
 
    public RenderType getRenderType(FlywheelStorageBlockEntity animatable, ResourceLocation texture) {
-      return this.windows ? RenderType.m_110473_(texture) : RenderType.m_110458_(texture);
+      return this.windows ? RenderType.entityTranslucent(texture) : RenderType.entityCutoutNoCull(texture);
    }
 
    public void handleAnimations(FlywheelStorageBlockEntity animatable, long instanceId, AnimationState<FlywheelStorageBlockEntity> animationState) {
       super.handleAnimations(animatable, instanceId, animationState);
-      if (!this.windows && animatable.m_58904_() != null) {
+      if (!this.windows && animatable.getLevel() != null) {
          CoreGeoBone spindle = this.getAnimationProcessor().getBone("spindle");
          if (spindle != null) {
-            float ticks = (float)animatable.m_58904_().m_46467_() + animationState.getPartialTick();
+            float ticks = (float)animatable.getLevel().getGameTime() + animationState.getPartialTick();
             spindle.setRotY((float)Math.toRadians((double)(ticks * 7.5F)));
          }
       }

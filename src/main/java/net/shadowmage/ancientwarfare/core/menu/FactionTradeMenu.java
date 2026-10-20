@@ -29,7 +29,7 @@ public class FactionTradeMenu extends AbstractContainerMenu {
    private boolean invalidMenuLogged;
 
    public FactionTradeMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buffer) {
-      this(containerId, playerInventory, buffer.readInt(), buffer.m_130277_(), FactionTradeListRegistry.readTrades(buffer));
+      this(containerId, playerInventory, buffer.readInt(), buffer.readUtf(), FactionTradeListRegistry.readTrades(buffer));
    }
 
    public FactionTradeMenu(
@@ -48,22 +48,22 @@ public class FactionTradeMenu extends AbstractContainerMenu {
    }
 
    public boolean canTrade(int index) {
-      return FactionTradeListRegistry.canTrade(this.trades, index, this.playerInventory.f_35978_);
+      return FactionTradeListRegistry.canTrade(this.trades, index, this.playerInventory.player);
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       if (player instanceof ServerPlayer serverPlayer) {
          int index = id - 0;
-         if (player.f_36096_ != this || player.m_5833_()) {
-            this.logTrade(serverPlayer, index, "REJECTED", player.m_5833_() ? "SPECTATOR" : "MENU_MISMATCH");
+         if (player.containerMenu != this || player.isSpectator()) {
+            this.logTrade(serverPlayer, index, "REJECTED", player.isSpectator() ? "SPECTATOR" : "MENU_MISMATCH");
             return false;
-         } else if (!this.m_6875_(player)) {
+         } else if (!this.stillValid(player)) {
             return false;
          } else {
             FactionTradeListRegistry.TradeResult result = FactionTradeListRegistry.performTradeWithResult(this.trades, index, player);
             if (result == FactionTradeListRegistry.TradeResult.SUCCESS) {
-               FactionStandingData.get(serverPlayer.m_284548_())
-                  .adjustStanding(player.m_20148_(), this.faction, FactionRegistry.get(this.faction).tradeStandingChange());
+               FactionStandingData.get(serverPlayer.serverLevel())
+                  .adjustStanding(player.getUUID(), this.faction, FactionRegistry.get(this.faction).tradeStandingChange());
             }
 
             this.logTrade(serverPlayer, index, result == FactionTradeListRegistry.TradeResult.SUCCESS ? "SUCCESS" : "REJECTED", result.name());
@@ -74,11 +74,11 @@ public class FactionTradeMenu extends AbstractContainerMenu {
       }
    }
 
-   public boolean m_6875_(Player player) {
-      Entity entity = player.m_9236_().m_6815_(this.traderEntityId);
+   public boolean stillValid(Player player) {
+      Entity entity = player.level().getEntity(this.traderEntityId);
       String reason = !(entity instanceof FactionTraderNpcEntity)
          ? "TRADER_MISSING"
-         : (!entity.m_6084_() ? "TRADER_DEAD" : (player.m_20280_(entity) >= 64.0 ? "TOO_FAR" : null));
+         : (!entity.isAlive() ? "TRADER_DEAD" : (player.distanceToSqr(entity) >= 64.0 ? "TOO_FAR" : null));
       if (reason != null && !this.invalidMenuLogged && player instanceof ServerPlayer serverPlayer) {
          this.invalidMenuLogged = true;
          this.logTrade(serverPlayer, -1, "MENU_INVALID", reason);
@@ -87,8 +87,8 @@ public class FactionTradeMenu extends AbstractContainerMenu {
       return reason == null;
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 
    public static int tradeButton(int index) {
@@ -100,7 +100,7 @@ public class FactionTradeMenu extends AbstractContainerMenu {
    }
 
    private void logTrade(ServerPlayer player, int index, String result, String reason) {
-      Entity trader = player.m_9236_().m_6815_(this.traderEntityId);
+      Entity trader = player.level().getEntity(this.traderEntityId);
       FactionTradeListRegistry.FactionTradeEntry trade = index >= 0 && index < this.trades.size() ? this.trades.get(index) : null;
       AncientWarfareCore.LOG
          .info(
@@ -108,14 +108,14 @@ public class FactionTradeMenu extends AbstractContainerMenu {
             new Object[]{
                result,
                reason,
-               player.m_36316_().getName(),
-               player.m_20148_(),
+               player.getGameProfile().getName(),
+               player.getUUID(),
                this.traderEntityId,
-               trader == null ? "missing" : trader.m_20148_(),
+               trader == null ? "missing" : trader.getUUID(),
                this.faction.replace('\n', ' ').replace('\r', ' '),
-               player.m_9236_().m_46472_().m_135782_(),
-               trader == null ? "missing" : trader.m_20183_().m_123344_(),
-               this.f_38840_,
+               player.level().dimension().location(),
+               trader == null ? "missing" : trader.blockPosition().toShortString(),
+               this.containerId,
                index,
                trade == null ? "[]" : describeStacks(trade.inputs()),
                trade == null ? "[]" : describeStacks(trade.outputs())
@@ -125,12 +125,12 @@ public class FactionTradeMenu extends AbstractContainerMenu {
 
    private static String describeStacks(List<ItemStack> stacks) {
       return stacks.stream()
-         .filter(stack -> !stack.m_41619_())
+         .filter(stack -> !stack.isEmpty())
          .map(
-            stack -> BuiltInRegistries.f_257033_.m_7981_(stack.m_41720_())
+            stack -> BuiltInRegistries.ITEM.getKey(stack.getItem())
                   + "x"
-                  + stack.m_41613_()
-                  + (stack.m_41720_() instanceof CoinItem ? "(metal=" + CoinItem.getMetal(stack) + ")" : "")
+                  + stack.getCount()
+                  + (stack.getItem() instanceof CoinItem ? "(metal=" + CoinItem.getMetal(stack) + ")" : "")
          )
          .collect(Collectors.joining(",", "[", "]"));
    }
@@ -138,12 +138,12 @@ public class FactionTradeMenu extends AbstractContainerMenu {
    private void addPlayerInventorySlots(Inventory inventory, int x, int y) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(inventory, col + row * 9 + 9, x + col * 18, y + row * 18));
+            this.addSlot(new Slot(inventory, col + row * 9 + 9, x + col * 18, y + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(inventory, col, x + col * 18, y + 58));
+         this.addSlot(new Slot(inventory, col, x + col * 18, y + 58));
       }
    }
 }

@@ -14,7 +14,7 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 public class BallistaMobileGeoRenderer extends GeoEntityRenderer<BallistaMobileEntity> {
    public BallistaMobileGeoRenderer(Context context) {
       super(context, new BallistaMobileGeoModel());
-      this.f_114477_ = 0.9F;
+      this.shadowRadius = 0.9F;
    }
 
    public void preRender(
@@ -32,12 +32,12 @@ public class BallistaMobileGeoRenderer extends GeoEntityRenderer<BallistaMobileE
       float blue,
       float alpha
    ) {
-      poseStack.m_85837_(0.0, -1.45, 0.0);
+      poseStack.translate(0.0, -1.45, 0.0);
       super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
    }
 
    protected void applyRotations(BallistaMobileEntity animatable, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTick) {
-      poseStack.m_252781_(Axis.f_252436_.m_252977_(180.0F - Mth.m_14179_(partialTick, animatable.f_19859_, animatable.m_146908_())));
+      poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - Mth.lerp(partialTick, animatable.yRotO, animatable.getYRot())));
    }
 
    public Color getRenderColor(BallistaMobileEntity animatable, float partialTick, int packedLight) {

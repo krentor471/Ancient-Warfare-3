@@ -11,8 +11,8 @@ public final class LargeIslandWorldGenerationData extends SavedData {
    private LargeIslandWorldGenerationData.Task active;
 
    public static LargeIslandWorldGenerationData get(ServerLevel level) {
-      return (LargeIslandWorldGenerationData)level.m_8895_()
-         .m_164861_(LargeIslandWorldGenerationData::load, LargeIslandWorldGenerationData::new, "ancientwarfare_large_island_worldgen");
+      return (LargeIslandWorldGenerationData)level.getDataStorage()
+         .computeIfAbsent(LargeIslandWorldGenerationData::load, LargeIslandWorldGenerationData::new, "ancientwarfare_large_island_worldgen");
    }
 
    public LargeIslandWorldGenerationData.Task active() {
@@ -21,48 +21,48 @@ public final class LargeIslandWorldGenerationData extends SavedData {
 
    public void setActive(LargeIslandWorldGenerationData.Task active) {
       this.active = active;
-      this.m_77762_();
+      this.setDirty();
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
+   public CompoundTag save(CompoundTag tag) {
       if (this.active != null) {
          CompoundTag value = new CompoundTag();
-         value.m_128359_("Path", this.active.path);
-         value.m_128359_("Name", this.active.name);
-         value.m_128405_("MinX", this.active.minX);
-         value.m_128405_("MinY", this.active.minY);
-         value.m_128405_("MinZ", this.active.minZ);
-         value.m_128405_("Facing", this.active.facing);
-         value.m_128359_("Phase", this.active.phase.name());
-         value.m_128405_("Progress", this.active.progress);
-         value.m_128405_("Layer", this.active.layer);
-         value.m_128405_("CellCursor", this.active.cellCursor);
-         value.m_128405_("EntityCursor", this.active.entityCursor);
-         value.m_128405_("LegacyConfiguredChunks", this.active.legacyConfiguredChunks);
-         value.m_128405_("PlanSizeX", this.active.planSizeX);
-         value.m_128405_("PlanSizeY", this.active.planSizeY);
-         value.m_128405_("PlanSizeZ", this.active.planSizeZ);
-         value.m_128359_("LastError", this.active.lastError);
-         value.m_128379_("LayeredBuild", this.active.layeredBuild);
-         value.m_128379_("ModernSurvey", this.active.modernSurvey);
-         value.m_128356_("SurveySamples", this.active.surveySamples);
-         value.m_128356_("SurveyWaterSamples", this.active.surveyWaterSamples);
-         value.m_128356_("SurveyDepthSamples", this.active.surveyDepthSamples);
-         value.m_128405_("RetryAttempt", this.active.retryAttempt);
-         value.m_128405_("AnchorX", this.active.anchorX);
-         value.m_128405_("AnchorY", this.active.anchorY);
-         value.m_128405_("AnchorZ", this.active.anchorZ);
-         value.m_128356_("RetrySeed", this.active.retrySeed);
+         value.putString("Path", this.active.path);
+         value.putString("Name", this.active.name);
+         value.putInt("MinX", this.active.minX);
+         value.putInt("MinY", this.active.minY);
+         value.putInt("MinZ", this.active.minZ);
+         value.putInt("Facing", this.active.facing);
+         value.putString("Phase", this.active.phase.name());
+         value.putInt("Progress", this.active.progress);
+         value.putInt("Layer", this.active.layer);
+         value.putInt("CellCursor", this.active.cellCursor);
+         value.putInt("EntityCursor", this.active.entityCursor);
+         value.putInt("LegacyConfiguredChunks", this.active.legacyConfiguredChunks);
+         value.putInt("PlanSizeX", this.active.planSizeX);
+         value.putInt("PlanSizeY", this.active.planSizeY);
+         value.putInt("PlanSizeZ", this.active.planSizeZ);
+         value.putString("LastError", this.active.lastError);
+         value.putBoolean("LayeredBuild", this.active.layeredBuild);
+         value.putBoolean("ModernSurvey", this.active.modernSurvey);
+         value.putLong("SurveySamples", this.active.surveySamples);
+         value.putLong("SurveyWaterSamples", this.active.surveyWaterSamples);
+         value.putLong("SurveyDepthSamples", this.active.surveyDepthSamples);
+         value.putInt("RetryAttempt", this.active.retryAttempt);
+         value.putInt("AnchorX", this.active.anchorX);
+         value.putInt("AnchorY", this.active.anchorY);
+         value.putInt("AnchorZ", this.active.anchorZ);
+         value.putLong("RetrySeed", this.active.retrySeed);
          CompoundTag rejected = new CompoundTag();
          int rejectionCount = Math.min(3, this.active.rejectedTemplates.size());
-         rejected.m_128405_("Count", rejectionCount);
+         rejected.putInt("Count", rejectionCount);
 
          for (int index = 0; index < rejectionCount; index++) {
-            rejected.m_128359_("Template" + index, this.active.rejectedTemplates.get(index));
+            rejected.putString("Template" + index, this.active.rejectedTemplates.get(index));
          }
 
-         value.m_128365_("RejectedTemplates", rejected);
-         tag.m_128365_("Active", value);
+         value.put("RejectedTemplates", rejected);
+         tag.put("Active", value);
       }
 
       return tag;
@@ -70,36 +70,36 @@ public final class LargeIslandWorldGenerationData extends SavedData {
 
    private static LargeIslandWorldGenerationData load(CompoundTag tag) {
       LargeIslandWorldGenerationData data = new LargeIslandWorldGenerationData();
-      if (tag.m_128441_("Active")) {
-         CompoundTag value = tag.m_128469_("Active");
+      if (tag.contains("Active")) {
+         CompoundTag value = tag.getCompound("Active");
          data.active = new LargeIslandWorldGenerationData.Task(
-            value.m_128461_("Path"),
-            value.m_128461_("Name"),
-            value.m_128451_("MinX"),
-            value.m_128451_("MinY"),
-            value.m_128451_("MinZ"),
-            value.m_128451_("Facing")
+            value.getString("Path"),
+            value.getString("Name"),
+            value.getInt("MinX"),
+            value.getInt("MinY"),
+            value.getInt("MinZ"),
+            value.getInt("Facing")
          );
          boolean invalidPhase = false;
 
          try {
-            data.active.phase = LargeIslandWorldGenerationData.Phase.valueOf(value.m_128461_("Phase"));
+            data.active.phase = LargeIslandWorldGenerationData.Phase.valueOf(value.getString("Phase"));
          } catch (IllegalArgumentException var8) {
             data.active.phase = LargeIslandWorldGenerationData.Phase.SURVEY;
             invalidPhase = true;
          }
 
-         data.active.progress = Math.max(0, value.m_128451_("Progress"));
-         data.active.layer = Math.max(0, value.m_128451_("Layer"));
-         data.active.cellCursor = Math.max(0, value.m_128451_("CellCursor"));
-         data.active.entityCursor = Math.max(0, value.m_128451_("EntityCursor"));
-         data.active.legacyConfiguredChunks = Math.max(0, value.m_128451_("LegacyConfiguredChunks"));
-         data.active.planSizeX = Math.max(0, value.m_128451_("PlanSizeX"));
-         data.active.planSizeY = Math.max(0, value.m_128451_("PlanSizeY"));
-         data.active.planSizeZ = Math.max(0, value.m_128451_("PlanSizeZ"));
-         data.active.lastError = value.m_128461_("LastError");
-         data.active.layeredBuild = value.m_128441_("LayeredBuild") && value.m_128471_("LayeredBuild");
-         data.active.modernSurvey = value.m_128441_("ModernSurvey") && value.m_128471_("ModernSurvey");
+         data.active.progress = Math.max(0, value.getInt("Progress"));
+         data.active.layer = Math.max(0, value.getInt("Layer"));
+         data.active.cellCursor = Math.max(0, value.getInt("CellCursor"));
+         data.active.entityCursor = Math.max(0, value.getInt("EntityCursor"));
+         data.active.legacyConfiguredChunks = Math.max(0, value.getInt("LegacyConfiguredChunks"));
+         data.active.planSizeX = Math.max(0, value.getInt("PlanSizeX"));
+         data.active.planSizeY = Math.max(0, value.getInt("PlanSizeY"));
+         data.active.planSizeZ = Math.max(0, value.getInt("PlanSizeZ"));
+         data.active.lastError = value.getString("LastError");
+         data.active.layeredBuild = value.contains("LayeredBuild") && value.getBoolean("LayeredBuild");
+         data.active.modernSurvey = value.contains("ModernSurvey") && value.getBoolean("ModernSurvey");
          if (invalidPhase) {
             data.active.modernSurvey = false;
             data.active.progress = 0;
@@ -108,19 +108,19 @@ public final class LargeIslandWorldGenerationData extends SavedData {
             data.active.entityCursor = 0;
          }
 
-         data.active.surveySamples = Math.max(0L, value.m_128454_("SurveySamples"));
-         data.active.surveyWaterSamples = Math.max(0L, value.m_128454_("SurveyWaterSamples"));
-         data.active.surveyDepthSamples = Math.max(0L, value.m_128454_("SurveyDepthSamples"));
-         data.active.retryAttempt = Math.max(0, Math.min(3, value.m_128451_("RetryAttempt")));
-         data.active.anchorX = value.m_128441_("AnchorX") ? value.m_128451_("AnchorX") : data.active.minX;
-         data.active.anchorY = value.m_128441_("AnchorY") ? value.m_128451_("AnchorY") : data.active.minY;
-         data.active.anchorZ = value.m_128441_("AnchorZ") ? value.m_128451_("AnchorZ") : data.active.minZ;
-         data.active.retrySeed = value.m_128454_("RetrySeed");
-         CompoundTag rejected = value.m_128469_("RejectedTemplates");
-         int rejectionCount = Math.max(0, Math.min(3, rejected.m_128451_("Count")));
+         data.active.surveySamples = Math.max(0L, value.getLong("SurveySamples"));
+         data.active.surveyWaterSamples = Math.max(0L, value.getLong("SurveyWaterSamples"));
+         data.active.surveyDepthSamples = Math.max(0L, value.getLong("SurveyDepthSamples"));
+         data.active.retryAttempt = Math.max(0, Math.min(3, value.getInt("RetryAttempt")));
+         data.active.anchorX = value.contains("AnchorX") ? value.getInt("AnchorX") : data.active.minX;
+         data.active.anchorY = value.contains("AnchorY") ? value.getInt("AnchorY") : data.active.minY;
+         data.active.anchorZ = value.contains("AnchorZ") ? value.getInt("AnchorZ") : data.active.minZ;
+         data.active.retrySeed = value.getLong("RetrySeed");
+         CompoundTag rejected = value.getCompound("RejectedTemplates");
+         int rejectionCount = Math.max(0, Math.min(3, rejected.getInt("Count")));
 
          for (int index = 0; index < rejectionCount; index++) {
-            String path = rejected.m_128461_("Template" + index);
+            String path = rejected.getString("Template" + index);
             if (!path.isEmpty() && !data.active.rejectedTemplates.contains(path)) {
                data.active.rejectedTemplates.add(path);
             }

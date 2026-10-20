@@ -31,7 +31,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.NpcFactionAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
 
 public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFactionAccess {
-   private static final EntityDataAccessor<String> FACTION_NAME = SynchedEntityData.m_135353_(FactionNpcEntity.class, EntityDataSerializers.f_135030_);
+   private static final EntityDataAccessor<String> FACTION_NAME = SynchedEntityData.defineId(FactionNpcEntity.class, EntityDataSerializers.STRING);
    private static final String TAG_FACTION_NAME = "FactionName";
    private static final double COMBAT_VERTICAL_TARGET_RANGE = 96.0;
    private static final int TARGET_SCAN_INTERVAL = 4;
@@ -47,22 +47,22 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(FACTION_NAME, "brigand");
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(FACTION_NAME, "brigand");
    }
 
    @Override
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
-      tag.m_128359_("FactionName", this.getFactionName());
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
+      tag.putString("FactionName", this.getFactionName());
    }
 
    @Override
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
-      if (tag.m_128441_("FactionName")) {
-         this.setFactionName(tag.m_128461_("FactionName"));
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
+      if (tag.contains("FactionName")) {
+         this.setFactionName(tag.getString("FactionName"));
       }
 
       this.applyFactionDefaults();
@@ -70,17 +70,17 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
 
    @Override
    public String getFactionName() {
-      return (String)this.f_19804_.m_135370_(FACTION_NAME);
+      return (String)this.entityData.get(FACTION_NAME);
    }
 
    public void setFactionName(String factionName) {
       String normalized = factionName != null && !factionName.isBlank() ? factionName.trim() : "brigand";
-      this.f_19804_.m_135381_(FACTION_NAME, normalized);
+      this.entityData.set(FACTION_NAME, normalized);
       this.setNpcType(normalized);
       this.applyFactionDefaults();
-      LivingEntity currentTarget = this.m_5448_();
-      if (currentTarget != null && this.m_7307_(currentTarget)) {
-         this.m_6710_(null);
+      LivingEntity currentTarget = this.getTarget();
+      if (currentTarget != null && this.isAlliedTo(currentTarget)) {
+         this.setTarget(null);
       }
    }
 
@@ -90,11 +90,11 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    @Override
-   public Component m_5677_() {
+   public Component getTypeName() {
       return this.applyCombatRankName(
-         Component.m_237110_(
+         Component.translatable(
             "entity.ancientwarfare.faction.named",
-            new Object[]{this.getFactionName(), Component.m_237115_("entity.ancientwarfare.faction." + this.getNpcSubtype())}
+            new Object[]{this.getFactionName(), Component.translatable("entity.ancientwarfare.faction." + this.getNpcSubtype())}
          )
       );
    }
@@ -105,40 +105,40 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
 
    protected void addSharedGoals(boolean allowRandomStroll) {
       if (!(this instanceof FactionSoldierNpcEntity)) {
-         this.f_21345_.m_25352_(0, new FloatGoal(this));
+         this.goalSelector.addGoal(0, new FloatGoal(this));
       }
 
       if (allowRandomStroll) {
-         this.f_21345_.m_25352_(6, new WaterAvoidingRandomStrollGoal(this, 0.8));
+         this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.8));
       }
 
-      this.f_21345_.m_25352_(7, new LookAtPlayerGoal(this, Player.class, 8.0F));
-      this.f_21345_.m_25352_(8, new RandomLookAroundGoal(this));
+      this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0F));
+      this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
    }
 
    public boolean isHostileTowards(Entity entity) {
       if (!NpcTargeting.canHarm(this, entity)) {
          return false;
       } else if (entity instanceof FactionNpcEntity factionNpc) {
-         return this.m_7307_(factionNpc) ? false : FactionRegistry.isHostile(this.getFactionName(), factionNpc.getFactionName());
+         return this.isAlliedTo(factionNpc) ? false : FactionRegistry.isHostile(this.getFactionName(), factionNpc.getFactionName());
       } else if (!(entity instanceof Player player)) {
          return entity instanceof PlayerOwnedNpcEntity ownedNpc ? ownedNpc.getOwner().map(owner -> {
             if (FactionRegistry.get(this.getFactionName()).defaultStanding() < 0) {
                return true;
             } else {
-               if (this.m_9236_() instanceof ServerLevel serverLevelx && FactionStandingData.get(serverLevelx).isHostile(owner, this.getFactionName())) {
+               if (this.level() instanceof ServerLevel serverLevelx && FactionStandingData.get(serverLevelx).isHostile(owner, this.getFactionName())) {
                   return true;
                }
 
                return false;
             }
          }).orElse(false) : false;
-      } else if (player.m_7500_()) {
+      } else if (player.isCreative()) {
          return false;
       } else if (FactionRegistry.get(this.getFactionName()).defaultStanding() < 0) {
          return true;
       } else {
-         if (this.m_9236_() instanceof ServerLevel serverLevel && FactionStandingData.get(serverLevel).isHostile(player.m_20148_(), this.getFactionName())) {
+         if (this.level() instanceof ServerLevel serverLevel && FactionStandingData.get(serverLevel).isHostile(player.getUUID(), this.getFactionName())) {
             return true;
          }
 
@@ -146,25 +146,25 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       }
    }
 
-   public boolean m_7307_(Entity entity) {
+   public boolean isAlliedTo(Entity entity) {
       if (entity instanceof FactionNpcEntity factionNpc && FactionRegistry.isSameFaction(this.getFactionName(), factionNpc.getFactionName())) {
          return true;
       }
 
-      return super.m_7307_(entity);
+      return super.isAlliedTo(entity);
    }
 
    @Override
-   public boolean m_6779_(LivingEntity target) {
-      return NpcTargeting.canHarm(this, target) && super.m_6779_(target);
+   public boolean canAttack(LivingEntity target) {
+      return NpcTargeting.canHarm(this, target) && super.canAttack(target);
    }
 
    @Override
-   public void m_6710_(LivingEntity target) {
+   public void setTarget(LivingEntity target) {
       if (target != null && !NpcTargeting.canHarm(this, target)) {
-         super.m_6710_(null);
+         super.setTarget(null);
       } else {
-         LivingEntity current = this.m_5448_();
+         LivingEntity current = this.getTarget();
          if (target != null && current != null && current != target && this.isValidLockedTarget(current)) {
             int currentTier = this.targetPriorityTier(current);
             int incomingTier = this.targetPriorityTier(target);
@@ -173,20 +173,20 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
             }
          }
 
-         super.m_6710_(target);
+         super.setTarget(target);
       }
    }
 
    @Override
-   public boolean m_7327_(Entity target) {
+   public boolean doHurtTarget(Entity target) {
       if (!NpcTargeting.canHarm(this, target)) {
-         if (target == this.m_5448_()) {
-            this.m_6710_(null);
+         if (target == this.getTarget()) {
+            this.setTarget(null);
          }
 
          return false;
       } else {
-         return super.m_7327_(target);
+         return super.doHurtTarget(target);
       }
    }
 
@@ -195,23 +195,23 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    protected void addFactionCombatTargets(boolean mustSee) {
-      this.f_21346_.m_25352_(1, new FactionNpcEntity.FactionHurtByTargetGoal(this));
-      this.f_21346_
-         .m_25352_(
+      this.targetSelector.addGoal(1, new FactionNpcEntity.FactionHurtByTargetGoal(this));
+      this.targetSelector
+         .addGoal(
             2,
             new VerticalRangeTargetGoal<LivingEntity>(
                this, LivingEntity.class, 4, false, false, target -> this.isPlayerTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
             )
          );
-      this.f_21346_
-         .m_25352_(
+      this.targetSelector
+         .addGoal(
             4,
             new VerticalRangeTargetGoal(
                this, FactionNpcEntity.class, 4, mustSee, false, target -> this.isFactionTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
             )
          );
-      this.f_21346_
-         .m_25352_(
+      this.targetSelector
+         .addGoal(
             5,
             new VerticalRangeTargetGoal<LivingEntity>(
                this, LivingEntity.class, 4, mustSee, false, target -> this.isMonsterTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
@@ -220,11 +220,11 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    protected final boolean isPlayerTierTarget(LivingEntity target) {
-      return target != null && target.m_6084_() && (target instanceof Player || target instanceof PlayerOwnedNpcEntity) && this.isHostileTowards(target);
+      return target != null && target.isAlive() && (target instanceof Player || target instanceof PlayerOwnedNpcEntity) && this.isHostileTowards(target);
    }
 
    protected final boolean isFactionTierTarget(LivingEntity target) {
-      if (target instanceof FactionNpcEntity factionNpc && target.m_6084_() && this.isHostileTowards(target)) {
+      if (target instanceof FactionNpcEntity factionNpc && target.isAlive() && this.isHostileTowards(target)) {
          return true;
       }
 
@@ -243,7 +243,7 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       } else if (NpcTargeting.isAutomaticHostile(this, target)) {
          return 3;
       } else {
-         return target == this.m_21188_() && NpcTargeting.canHarm(this, target) ? 3 : Integer.MAX_VALUE;
+         return target == this.getLastHurtByMob() && NpcTargeting.canHarm(this, target) ? 3 : Integer.MAX_VALUE;
       }
    }
 
@@ -256,13 +256,13 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    @Override
-   public boolean m_6469_(DamageSource source, float amount) {
-      LivingEntity attacker = source.m_7639_() instanceof LivingEntity livingx ? livingx : (source.m_7640_() instanceof LivingEntity living ? living : null);
-      if (attacker == null || !NpcTargeting.isProtectedAlly(this, attacker) && !this.m_7307_(attacker) && !attacker.m_7307_(this)) {
-         boolean damaged = super.m_6469_(source, amount);
-         if (!this.m_9236_().f_46443_ && NpcTargeting.canHarm(this, attacker)) {
-            this.m_6703_(attacker);
-            this.m_6710_(attacker);
+   public boolean hurt(DamageSource source, float amount) {
+      LivingEntity attacker = source.getEntity() instanceof LivingEntity livingx ? livingx : (source.getDirectEntity() instanceof LivingEntity living ? living : null);
+      if (attacker == null || !NpcTargeting.isProtectedAlly(this, attacker) && !this.isAlliedTo(attacker) && !attacker.isAlliedTo(this)) {
+         boolean damaged = super.hurt(source, amount);
+         if (!this.level().isClientSide && NpcTargeting.canHarm(this, attacker)) {
+            this.setLastHurtByMob(attacker);
+            this.setTarget(attacker);
             this.alertFactionCombatants(attacker);
          }
 
@@ -273,19 +273,19 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    private void alertFactionCombatants(LivingEntity attacker) {
-      this.m_9236_()
-         .m_6443_(
+      this.level()
+         .getEntitiesOfClass(
             FactionNpcEntity.class,
-            this.m_20191_().m_82377_(64.0, 16.0, 64.0),
+            this.getBoundingBox().inflate(64.0, 16.0, 64.0),
             ally -> ally != this
-                  && ally.m_6084_()
+                  && ally.isAlive()
                   && ally.getFactionName().equalsIgnoreCase(this.getFactionName())
                   && isFactionCombatRole(ally)
                   && NpcTargeting.canHarm(ally, attacker)
          )
          .forEach(ally -> {
-            ally.m_6703_(attacker);
-            ally.m_6710_(attacker);
+            ally.setLastHurtByMob(attacker);
+            ally.setTarget(attacker);
          });
    }
 
@@ -298,8 +298,8 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       }).orElse(false);
    }
 
-   public int m_213860_() {
-      return this.f_20888_ != null && this.isHostileTowards(this.f_20888_) ? FactionNpcRole.byId(this.getNpcSubtype()).map(role -> {
+   public int getExperienceReward() {
+      return this.lastHurtByPlayer != null && this.isHostileTowards(this.lastHurtByPlayer) ? FactionNpcRole.byId(this.getNpcSubtype()).map(role -> {
          return switch (role) {
             case SOLDIER, ARCHER, CAVALRY, MOUNTED_ARCHER, LEADER, SIEGE_ENGINEER, SPELLCASTER -> 20;
             case SOLDIER_ELITE, ARCHER_ELITE, LEADER_ELITE -> 40;
@@ -309,46 +309,46 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    @Override
-   public boolean m_6785_(double distanceToClosestPlayer) {
+   public boolean removeWhenFarAway(double distanceToClosestPlayer) {
       return false;
    }
 
-   public void m_8107_() {
-      super.m_8107_();
+   public void aiStep() {
+      super.aiStep();
       this.updateMountedMovement();
    }
 
-   public double m_6049_() {
-      return this.isMountedFactionRole() ? super.m_6049_() - 0.45 : super.m_6049_();
+   public double getMyRidingOffset() {
+      return this.isMountedFactionRole() ? super.getMyRidingOffset() - 0.45 : super.getMyRidingOffset();
    }
 
    protected void updateMountedMovement() {
-      if (!(this.m_20202_() instanceof Mob mount) || !this.isMountedFactionRole()) {
+      if (!(this.getVehicle() instanceof Mob mount) || !this.isMountedFactionRole()) {
          return;
       }
 
       if (!NpcWaterEscape.isRecoveryActive(this)) {
-         if (mount.m_21525_()) {
-            mount.m_21557_(false);
+         if (mount.isNoAi()) {
+            mount.setNoAi(false);
          }
 
-         mount.m_6710_(null);
-         mount.m_21561_(false);
+         mount.setTarget(null);
+         mount.setAggressive(false);
          if (!this.usesCustomMountedMovement()) {
-            LivingEntity target = this.m_5448_();
-            if (target != null && target.m_6084_()) {
-               double distanceSqr = mount.m_20280_(target);
+            LivingEntity target = this.getTarget();
+            if (target != null && target.isAlive()) {
+               double distanceSqr = mount.distanceToSqr(target);
                double stopDistance = FactionNpcRole.MOUNTED_ARCHER.id().equals(this.getNpcSubtype()) ? 18.0 : NpcEquipmentResolver.meleeHoldDistance(this);
                if (distanceSqr > stopDistance * stopDistance) {
                   this.driveMountToward(mount, target);
                } else {
-                  mount.m_21573_().m_26573_();
-                  mount.m_20256_(mount.m_20184_().m_82542_(0.55, 1.0, 0.55));
+                  mount.getNavigation().stop();
+                  mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.55, 1.0, 0.55));
                   this.faceMountedTarget(mount, target);
                }
             } else {
-               mount.m_21573_().m_26573_();
-               mount.m_20256_(mount.m_20184_().m_82542_(0.4, 1.0, 0.4));
+               mount.getNavigation().stop();
+               mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.4, 1.0, 0.4));
             }
          }
       }
@@ -359,44 +359,44 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    private void driveMountToward(Mob mount, LivingEntity target) {
-      Vec3 delta = target.m_20182_().m_82546_(mount.m_20182_());
-      Vec3 horizontal = new Vec3(delta.f_82479_, 0.0, delta.f_82481_);
-      if (!(horizontal.m_82556_() < 1.0E-4)) {
+      Vec3 delta = target.position().subtract(mount.position());
+      Vec3 horizontal = new Vec3(delta.x, 0.0, delta.z);
+      if (!(horizontal.lengthSqr() < 1.0E-4)) {
          double speed = 0.22;
-         AttributeInstance speedAttribute = mount.m_21051_(Attributes.f_22279_);
+         AttributeInstance speedAttribute = mount.getAttribute(Attributes.MOVEMENT_SPEED);
          if (speedAttribute != null) {
-            speed = Math.max(speed, speedAttribute.m_22135_() * 0.65);
+            speed = Math.max(speed, speedAttribute.getValue() * 0.65);
          }
 
-         Vec3 direction = horizontal.m_82541_();
+         Vec3 direction = horizontal.normalize();
          if (!NpcMovementSafety.canMoveMountedSafely(mount, direction)) {
-            mount.m_21573_().m_26573_();
-            mount.m_20256_(mount.m_20184_().m_82542_(0.4, 1.0, 0.4));
+            mount.getNavigation().stop();
+            mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.4, 1.0, 0.4));
          } else {
-            Vec3 current = mount.m_20184_();
-            mount.m_20334_(direction.f_82479_ * speed, current.f_82480_, direction.f_82481_ * speed);
-            mount.m_21573_().m_26573_();
+            Vec3 current = mount.getDeltaMovement();
+            mount.setDeltaMovement(direction.x * speed, current.y, direction.z * speed);
+            mount.getNavigation().stop();
             this.faceDirection(mount, direction);
          }
       }
    }
 
    private void faceMountedTarget(Mob mount, LivingEntity target) {
-      Vec3 delta = target.m_20182_().m_82546_(mount.m_20182_());
-      Vec3 horizontal = new Vec3(delta.f_82479_, 0.0, delta.f_82481_);
-      if (horizontal.m_82556_() >= 1.0E-4) {
-         this.faceDirection(mount, horizontal.m_82541_());
+      Vec3 delta = target.position().subtract(mount.position());
+      Vec3 horizontal = new Vec3(delta.x, 0.0, delta.z);
+      if (horizontal.lengthSqr() >= 1.0E-4) {
+         this.faceDirection(mount, horizontal.normalize());
       }
    }
 
    private void faceDirection(Mob mount, Vec3 direction) {
-      float yaw = (float)(Math.atan2(direction.f_82481_, direction.f_82479_) * 180.0F / (float)Math.PI) - 90.0F;
-      mount.m_146922_(yaw);
-      mount.m_5618_(mount.m_146908_());
-      mount.m_5616_(mount.m_146908_());
-      this.m_146922_(yaw);
-      this.m_5618_(yaw);
-      this.m_5616_(yaw);
+      float yaw = (float)(Math.atan2(direction.z, direction.x) * 180.0F / (float)Math.PI) - 90.0F;
+      mount.setYRot(yaw);
+      mount.setYBodyRot(mount.getYRot());
+      mount.setYHeadRot(mount.getYRot());
+      this.setYRot(yaw);
+      this.setYBodyRot(yaw);
+      this.setYHeadRot(yaw);
    }
 
    private boolean isMountedFactionRole() {
@@ -404,7 +404,7 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    protected void swingWeapon() {
-      this.m_6674_(InteractionHand.MAIN_HAND);
+      this.swing(InteractionHand.MAIN_HAND);
    }
 
    protected void applyFactionDefaults() {
@@ -420,14 +420,14 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
          this.npc = npc;
       }
 
-      public boolean m_8036_() {
-         LivingEntity attacker = this.npc.m_21188_();
-         return NpcTargeting.canHarm(this.npc, attacker) && super.m_8036_();
+      public boolean canUse() {
+         LivingEntity attacker = this.npc.getLastHurtByMob();
+         return NpcTargeting.canHarm(this.npc, attacker) && super.canUse();
       }
 
-      public void m_8056_() {
-         super.m_8056_();
-         LivingEntity attacker = this.npc.m_21188_();
+      public void start() {
+         super.start();
+         LivingEntity attacker = this.npc.getLastHurtByMob();
          if (NpcTargeting.canHarm(this.npc, attacker)) {
             this.npc.alertFactionCombatants(attacker);
          }

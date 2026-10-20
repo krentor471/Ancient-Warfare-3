@@ -39,10 +39,10 @@ public final class AncientWarfareJeiPlugin implements IModPlugin {
    }
 
    public void registerRecipes(IRecipeRegistration registration) {
-      ClientPacketListener connection = Minecraft.m_91087_().m_91403_();
+      ClientPacketListener connection = Minecraft.getInstance().getConnection();
       List<EngineeringRecipe> recipes = connection == null
          ? EngineeringRecipeRegistry.all()
-         : connection.m_105141_().m_44013_((RecipeType)AWCoreRecipeTypes.ENGINEERING.get());
+         : connection.getRecipeManager().getAllRecipesFor((RecipeType)AWCoreRecipeTypes.ENGINEERING.get());
       registration.addRecipes(EngineeringRecipeCategory.TYPE, recipes);
    }
 

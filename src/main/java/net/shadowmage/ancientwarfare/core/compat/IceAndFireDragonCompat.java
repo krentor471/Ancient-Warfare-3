@@ -46,12 +46,12 @@ public final class IceAndFireDragonCompat {
 
    public static boolean canBeMountedBy(Entity dragon, UUID owner) {
       if (isDragon(dragon) && owner != null) {
-         long playerPassengers = dragon.m_20197_().stream().filter(passenger -> passenger instanceof Player).count();
+         long playerPassengers = dragon.getPassengers().stream().filter(passenger -> passenger instanceof Player).count();
          if (playerPassengers > 0L) {
-            AncientWarfareCore.LOG.info("Dragon mount rejected: dragon has {} real player passenger(s), passengers={}", playerPassengers, dragon.m_20197_());
+            AncientWarfareCore.LOG.info("Dragon mount rejected: dragon has {} real player passenger(s), passengers={}", playerPassengers, dragon.getPassengers());
             return false;
          } else {
-            Boolean tame = dragon instanceof TamableAnimal tamable ? tamable.m_21824_() : invokeBoolean(dragon, "isTame");
+            Boolean tame = dragon instanceof TamableAnimal tamable ? tamable.isTame() : invokeBoolean(dragon, "isTame");
             Integer stage = invokeInt(dragon, "getDragonStage");
             UUID dragonOwner = ownerUuid(dragon);
             boolean valid = Boolean.TRUE.equals(tame) && stage != null && stage >= 3 && owner.equals(dragonOwner);
@@ -59,7 +59,7 @@ public final class IceAndFireDragonCompat {
                AncientWarfareCore.LOG
                   .info(
                      "Dragon mount rejected: tame={}, stage={}, dragonOwner={}, commandOwner={}, passengers={}, class={}",
-                     new Object[]{tame, stage, dragonOwner, owner, dragon.m_20197_().size(), dragon.getClass().getName()}
+                     new Object[]{tame, stage, dragonOwner, owner, dragon.getPassengers().size(), dragon.getClass().getName()}
                   );
             }
 
@@ -71,16 +71,16 @@ public final class IceAndFireDragonCompat {
    }
 
    public static void detachRealPassenger(Entity rider) {
-      if (rider != null && rider.m_20159_()) {
-         rider.m_8127_();
+      if (rider != null && rider.isPassenger()) {
+         rider.stopRiding();
       }
    }
 
    public static void prepareForRider(Entity dragon) {
       if (isDragon(dragon)) {
-         for (Entity passenger : new ArrayList(dragon.m_20197_())) {
+         for (Entity passenger : new ArrayList(dragon.getPassengers())) {
             if (!(passenger instanceof Player)) {
-               passenger.m_8127_();
+               passenger.stopRiding();
             }
          }
 
@@ -156,7 +156,7 @@ public final class IceAndFireDragonCompat {
       if (isDragon(dragon) && point != null) {
          try {
             Method method = dragon.getClass().getMethod("stimulateFire", double.class, double.class, double.class, int.class);
-            method.invoke(dragon, point.f_82479_, point.f_82480_, point.f_82481_, 1);
+            method.invoke(dragon, point.x, point.y, point.z, 1);
          } catch (Throwable var3) {
          }
       }
@@ -164,11 +164,11 @@ public final class IceAndFireDragonCompat {
 
    public static Vec3 riderPosition(Entity dragon) {
       if (!isDragon(dragon)) {
-         return dragon.m_20182_();
+         return dragon.position();
       } else {
          int stage = Math.max(1, Math.min(5, Objects.requireNonNullElse(invokeInt(dragon, "getDragonStage"), 3)));
 
-         return dragon.m_20182_().m_82520_(0.0, switch (stage) {
+         return dragon.position().add(0.0, switch (stage) {
             case 1 -> 0.9;
             case 2 -> 1.45;
             default -> 2.35;
@@ -183,11 +183,11 @@ public final class IceAndFireDragonCompat {
          invoke(dragon, "doHurtTarget", new Class[]{Entity.class}, new Object[]{target});
 
          try {
-            double damage = dragon.getClass().getMethod("getAttribute", Attribute.class).invoke(dragon, Attributes.f_22281_) instanceof AttributeInstance instance
-               ? instance.m_22135_()
+            double damage = dragon.getClass().getMethod("getAttribute", Attribute.class).invoke(dragon, Attributes.ATTACK_DAMAGE) instanceof AttributeInstance instance
+               ? instance.getValue()
                : 1.0;
             if (dragon instanceof LivingEntity livingDragon) {
-               target.m_6469_(target.m_9236_().m_269111_().m_269333_(livingDragon), (float)damage);
+               target.hurt(target.level().damageSources().mobAttack(livingDragon), (float)damage);
             }
          } catch (Throwable var6) {
          }
@@ -273,14 +273,14 @@ public final class IceAndFireDragonCompat {
 
    private static UUID ownerUuid(Entity dragon) {
       if (dragon instanceof OwnableEntity ownable) {
-         UUID direct = ownable.m_21805_();
+         UUID direct = ownable.getOwnerUUID();
          if (direct != null) {
             return direct;
          }
 
-         Entity owner = ownable.m_269323_();
+         Entity owner = ownable.getOwner();
          if (owner != null) {
-            return owner.m_20148_();
+            return owner.getUUID();
          }
       }
 
@@ -290,7 +290,7 @@ public final class IceAndFireDragonCompat {
       } else {
          try {
             if (dragon.getClass().getMethod("getOwner").invoke(dragon) instanceof LivingEntity living) {
-               return living.m_20148_();
+               return living.getUUID();
             }
          } catch (Throwable var4) {
          }

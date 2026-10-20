@@ -25,7 +25,7 @@ public class TorqueTransportGeoModel extends GeoModel<TorqueTransportBlockEntity
    }
 
    public ResourceLocation getTextureResource(TorqueTransportBlockEntity animatable) {
-      TorqueTier tier = animatable.m_58900_().m_60734_() instanceof TorqueTransportBlock block ? block.getTier() : TorqueTier.LIGHT;
+      TorqueTier tier = animatable.getBlockState().getBlock() instanceof TorqueTransportBlock block ? block.getTier() : TorqueTier.LIGHT;
       String prefix = this.kind(animatable) == TorqueTransportKind.JUNCTION
          ? "torque_junction_"
          : (this.kind(animatable) == TorqueTransportKind.DISTRIBUTOR ? "torque_distributor_" : "torque_shaft_");
@@ -42,12 +42,12 @@ public class TorqueTransportGeoModel extends GeoModel<TorqueTransportBlockEntity
       TorqueTransportKind kind = this.kind(animatable);
       if (kind == TorqueTransportKind.JUNCTION || kind == TorqueTransportKind.DISTRIBUTOR) {
          String prefix = kind == TorqueTransportKind.JUNCTION ? "junction_" : "distributor_";
-         Direction facing = (Direction)animatable.m_58900_().m_61143_(TorqueTransportBlock.FACING);
-         Direction specialFace = kind == TorqueTransportKind.JUNCTION ? facing : facing.m_122424_();
+         Direction facing = (Direction)animatable.getBlockState().getValue(TorqueTransportBlock.FACING);
+         Direction specialFace = kind == TorqueTransportKind.JUNCTION ? facing : facing.getOpposite();
          Direction modelSpecialFace = this.centerModelDirection(specialFace);
 
          for (Direction direction : Direction.values()) {
-            this.setHidden(animatable, prefix + "center_" + direction.m_122433_(), direction != modelSpecialFace);
+            this.setHidden(animatable, prefix + "center_" + direction.getName(), direction != modelSpecialFace);
          }
 
          this.setHidden(animatable, prefix + "east_rotating", !this.connected(animatable, Direction.EAST));
@@ -62,7 +62,7 @@ public class TorqueTransportGeoModel extends GeoModel<TorqueTransportBlockEntity
    }
 
    private Direction centerModelDirection(Direction worldDirection) {
-      return worldDirection.m_122434_().m_122479_() ? worldDirection.m_122424_() : worldDirection;
+      return worldDirection.getAxis().isHorizontal() ? worldDirection.getOpposite() : worldDirection;
    }
 
    private boolean isJunction(TorqueTransportBlockEntity animatable) {
@@ -70,11 +70,11 @@ public class TorqueTransportGeoModel extends GeoModel<TorqueTransportBlockEntity
    }
 
    private TorqueTransportKind kind(TorqueTransportBlockEntity animatable) {
-      return animatable.m_58900_().m_60734_() instanceof TorqueTransportBlock block ? block.getKind() : TorqueTransportKind.SHAFT;
+      return animatable.getBlockState().getBlock() instanceof TorqueTransportBlock block ? block.getKind() : TorqueTransportKind.SHAFT;
    }
 
    private boolean connected(TorqueTransportBlockEntity animatable, Direction direction) {
-      if (animatable.m_58900_().m_60734_() instanceof TorqueTransportBlock block && block.isConnected(animatable.m_58900_(), direction)) {
+      if (animatable.getBlockState().getBlock() instanceof TorqueTransportBlock block && block.isConnected(animatable.getBlockState(), direction)) {
          return true;
       }
 

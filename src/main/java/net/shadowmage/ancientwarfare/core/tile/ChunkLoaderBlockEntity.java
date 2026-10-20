@@ -34,7 +34,7 @@ public class ChunkLoaderBlockEntity extends BlockEntity {
    }
 
    public void releaseChunkLoading() {
-      if (this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (this.level instanceof ServerLevel serverLevel) {
          this.setForcedChunks(serverLevel, Set.of());
       }
    }
@@ -46,13 +46,13 @@ public class ChunkLoaderBlockEntity extends BlockEntity {
    private void setForcedChunks(ServerLevel serverLevel, Set<Long> desired) {
       for (long chunk : Set.copyOf(this.forcedChunks)) {
          if (!desired.contains(chunk)) {
-            AWCorePlatform.setChunkForced(serverLevel, this.f_58858_, new ChunkPos(chunk), false, true);
+            AWCorePlatform.setChunkForced(serverLevel, this.worldPosition, new ChunkPos(chunk), false, true);
             this.forcedChunks.remove(chunk);
          }
       }
 
       for (long chunkx : desired) {
-         if (!this.forcedChunks.contains(chunkx) && AWCorePlatform.setChunkForced(serverLevel, this.f_58858_, new ChunkPos(chunkx), true, true)) {
+         if (!this.forcedChunks.contains(chunkx) && AWCorePlatform.setChunkForced(serverLevel, this.worldPosition, new ChunkPos(chunkx), true, true)) {
             this.forcedChunks.add(chunkx);
          }
       }
@@ -60,11 +60,11 @@ public class ChunkLoaderBlockEntity extends BlockEntity {
 
    private Set<Long> desiredForcedChunks() {
       Set<Long> chunks = new HashSet<>();
-      ChunkPos center = new ChunkPos(this.f_58858_);
+      ChunkPos center = new ChunkPos(this.worldPosition);
 
-      for (int chunkX = center.f_45578_ - 1; chunkX <= center.f_45578_ + 1; chunkX++) {
-         for (int chunkZ = center.f_45579_ - 1; chunkZ <= center.f_45579_ + 1; chunkZ++) {
-            chunks.add(ChunkPos.m_45589_(chunkX, chunkZ));
+      for (int chunkX = center.x - 1; chunkX <= center.x + 1; chunkX++) {
+         for (int chunkZ = center.z - 1; chunkZ <= center.z + 1; chunkZ++) {
+            chunks.add(ChunkPos.asLong(chunkX, chunkZ));
          }
       }
 

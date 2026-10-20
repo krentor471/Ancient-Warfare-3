@@ -25,16 +25,16 @@ public final class ForgeProtectionFlagBlockItem extends ProtectionFlagBlockItem 
       consumer.accept(
          new IClientItemExtensions() {
             private final BlockEntityWithoutLevelRenderer renderer = new BlockEntityWithoutLevelRenderer(
-               Minecraft.m_91087_().m_167982_(), Minecraft.m_91087_().m_167973_()
+               Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels()
             ) {
-               public void m_108829_(
+               public void renderByItem(
                   ItemStack stack, ItemDisplayContext context, PoseStack poseStack, MultiBufferSource buffers, int packedLight, int packedOverlay
                ) {
                   ProtectionFlagBlockEntity flag = new ProtectionFlagBlockEntity(
-                     BlockPos.f_121853_, (BlockState)ForgeProtectionFlagBlockItem.this.m_40614_().m_49966_().m_61124_(ProtectionFlagBlock.ROTATION, 0)
+                     BlockPos.ZERO, (BlockState)ForgeProtectionFlagBlockItem.this.getBlock().defaultBlockState().setValue(ProtectionFlagBlock.ROTATION, 0)
                   );
                   flag.loadFromItem(stack);
-                  Minecraft.m_91087_().m_167982_().m_112272_(flag, poseStack, buffers, packedLight, packedOverlay);
+                  Minecraft.getInstance().getBlockEntityRenderDispatcher().renderItem(flag, poseStack, buffers, packedLight, packedOverlay);
                }
             };
 

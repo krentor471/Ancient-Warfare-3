@@ -10,19 +10,19 @@ public class FishFarmControlScreen extends LegacyContainerScreen<FishFarmControl
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
+   protected void init() {
+      super.init();
       this.addLegacyWidget(
          "fish toggle",
          new LegacyCheckbox(
-            this.f_97735_ + 8,
-            this.f_97736_ + 8,
+            this.leftPos + 8,
+            this.topPos + 8,
             16,
-            Component.m_237115_("guistrings.automation.harvest_fish"),
-            ((FishFarmControlMenu)this.f_97732_).harvestFish(),
+            Component.translatable("guistrings.automation.harvest_fish"),
+            ((FishFarmControlMenu)this.menu).harvestFish(),
             checked -> {
-               ((FishFarmControlMenu)this.f_97732_).previewButton(0);
-               this.f_96541_.f_91072_.m_105208_(((FishFarmControlMenu)this.f_97732_).f_38840_, 0);
+               ((FishFarmControlMenu)this.menu).previewButton(0);
+               this.minecraft.gameMode.handleInventoryButtonClick(((FishFarmControlMenu)this.menu).containerId, 0);
             }
          ),
          8,
@@ -33,14 +33,14 @@ public class FishFarmControlScreen extends LegacyContainerScreen<FishFarmControl
       this.addLegacyWidget(
          "ink toggle",
          new LegacyCheckbox(
-            this.f_97735_ + 8,
-            this.f_97736_ + 24,
+            this.leftPos + 8,
+            this.topPos + 24,
             16,
-            Component.m_237115_("guistrings.automation.harvest_ink"),
-            ((FishFarmControlMenu)this.f_97732_).harvestInk(),
+            Component.translatable("guistrings.automation.harvest_ink"),
+            ((FishFarmControlMenu)this.menu).harvestInk(),
             checked -> {
-               ((FishFarmControlMenu)this.f_97732_).previewButton(1);
-               this.f_96541_.f_91072_.m_105208_(((FishFarmControlMenu)this.f_97732_).f_38840_, 1);
+               ((FishFarmControlMenu)this.menu).previewButton(1);
+               this.minecraft.gameMode.handleInventoryButtonClick(((FishFarmControlMenu)this.menu).containerId, 1);
             }
          ),
          8,

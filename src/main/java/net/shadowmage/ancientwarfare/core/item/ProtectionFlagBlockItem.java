@@ -16,22 +16,22 @@ public class ProtectionFlagBlockItem extends BlockItem {
    public static ItemStack create(Block block, String factionName) {
       ItemStack stack = new ItemStack(block);
       String faction = normalize(factionName);
-      CompoundTag tag = stack.m_41784_();
-      tag.m_128359_("FlagName", faction);
-      tag.m_128359_("name", faction);
+      CompoundTag tag = stack.getOrCreateTag();
+      tag.putString("FlagName", faction);
+      tag.putString("name", faction);
       return stack;
    }
 
-   public Component m_7626_(ItemStack stack) {
+   public Component getName(ItemStack stack) {
       String faction = factionName(stack);
       return (Component)(!faction.isBlank() && !"generic".equals(faction)
-         ? Component.m_237113_(displayFactionName(faction) + " ").m_7220_(Component.m_237115_("block.ancientwarfare.protection_flag"))
-         : super.m_7626_(stack));
+         ? Component.literal(displayFactionName(faction) + " ").append(Component.translatable("block.ancientwarfare.protection_flag"))
+         : super.getName(stack));
    }
 
    private static String factionName(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag == null ? "generic" : normalize(tag.m_128441_("FlagName") ? tag.m_128461_("FlagName") : tag.m_128461_("name"));
+      CompoundTag tag = stack.getTag();
+      return tag == null ? "generic" : normalize(tag.contains("FlagName") ? tag.getString("FlagName") : tag.getString("name"));
    }
 
    private static String displayFactionName(String faction) {

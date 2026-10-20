@@ -11,15 +11,15 @@ public final class BackpackInventoryAccess {
    public static SimpleContainer load(ItemStack backpack) {
       int slots = BackpackData.getSlotCount(backpack);
       SimpleContainer inventory = new SimpleContainer(slots);
-      CompoundTag tag = backpack.m_41784_();
-      if (!tag.m_128441_("backpackItems")) {
+      CompoundTag tag = backpack.getOrCreateTag();
+      if (!tag.contains("backpackItems")) {
          return inventory;
       } else {
-         CompoundTag itemsTag = tag.m_128469_("backpackItems");
+         CompoundTag itemsTag = tag.getCompound("backpackItems");
 
          for (int i = 0; i < slots; i++) {
-            if (itemsTag.m_128441_("slot" + i)) {
-               inventory.m_6836_(i, ItemStack.m_41712_(itemsTag.m_128469_("slot" + i)));
+            if (itemsTag.contains("slot" + i)) {
+               inventory.setItem(i, ItemStack.of(itemsTag.getCompound("slot" + i)));
             }
          }
 
@@ -30,13 +30,13 @@ public final class BackpackInventoryAccess {
    public static void save(ItemStack backpack, SimpleContainer inventory) {
       CompoundTag itemsTag = new CompoundTag();
 
-      for (int i = 0; i < inventory.m_6643_(); i++) {
-         ItemStack stack = inventory.m_8020_(i);
-         if (!stack.m_41619_()) {
-            itemsTag.m_128365_("slot" + i, stack.m_41739_(new CompoundTag()));
+      for (int i = 0; i < inventory.getContainerSize(); i++) {
+         ItemStack stack = inventory.getItem(i);
+         if (!stack.isEmpty()) {
+            itemsTag.put("slot" + i, stack.save(new CompoundTag()));
          }
       }
 
-      backpack.m_41784_().m_128365_("backpackItems", itemsTag);
+      backpack.getOrCreateTag().put("backpackItems", itemsTag);
    }
 }

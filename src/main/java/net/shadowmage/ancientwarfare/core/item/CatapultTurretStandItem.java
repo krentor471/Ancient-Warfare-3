@@ -21,35 +21,35 @@ public class CatapultTurretStandItem extends Item {
    }
 
    public CatapultTurretStandItem(int materialLevel, boolean fixedTurret) {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
       this.materialLevel = materialLevel;
       this.fixedTurret = fixedTurret;
    }
 
-   public InteractionResult m_6225_(UseOnContext context) {
-      Level level = context.m_43725_();
-      ItemStack stack = context.m_43722_();
-      if (!level.f_46443_) {
-         BlockPos pos = context.m_8083_().m_121945_(context.m_43719_());
-         CatapultTurretStandEntity catapult = (CatapultTurretStandEntity)AWCoreRegistryAccess.entityType(AWCoreIds.CATAPULT_TURRET_STAND).m_20615_(level);
+   public InteractionResult useOn(UseOnContext context) {
+      Level level = context.getLevel();
+      ItemStack stack = context.getItemInHand();
+      if (!level.isClientSide) {
+         BlockPos pos = context.getClickedPos().relative(context.getClickedFace());
+         CatapultTurretStandEntity catapult = (CatapultTurretStandEntity)AWCoreRegistryAccess.entityType(AWCoreIds.CATAPULT_TURRET_STAND).create(level);
          if (catapult != null) {
             catapult.setMaterialLevel(this.materialLevel);
             catapult.setFixedTurret(this.fixedTurret);
-            if (stack.m_41782_() && stack.m_41783_().m_128441_("CatapultTurretStandData")) {
-               catapult.loadCartData(stack.m_41783_().m_128469_("CatapultTurretStandData"));
+            if (stack.hasTag() && stack.getTag().contains("CatapultTurretStandData")) {
+               catapult.loadCartData(stack.getTag().getCompound("CatapultTurretStandData"));
             } else {
                catapult.setHealth(catapult.getMaxHealth());
             }
 
-            catapult.m_7678_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_(), (double)pos.m_123343_() + 0.5, context.m_7074_(), 0.0F);
-            level.m_7967_(catapult);
-            if (context.m_43723_() == null || !context.m_43723_().m_150110_().f_35937_) {
-               stack.m_41774_(1);
+            catapult.moveTo((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5, context.getRotation(), 0.0F);
+            level.addFreshEntity(catapult);
+            if (context.getPlayer() == null || !context.getPlayer().getAbilities().instabuild) {
+               stack.shrink(1);
             }
          }
       }
 
-      return InteractionResult.m_19078_(level.f_46443_);
+      return InteractionResult.sidedSuccess(level.isClientSide);
    }
 
    public static Item itemForMaterialLevel(int level, boolean fixedTurret) {

@@ -22,16 +22,16 @@ final class VerticalRangeTargetGoal<T extends LivingEntity> extends NearestAttac
       super(mob, targetType, randomInterval, mustSee, mustReach, predicate);
       this.verticalRange = verticalRange;
       if (!mustSee) {
-         this.f_26051_.m_148355_();
+         this.targetConditions.ignoreLineOfSight();
       }
    }
 
-   protected void m_26073_() {
-      this.f_26051_.m_26883_(this.m_7623_());
-      super.m_26073_();
+   protected void findTarget() {
+      this.targetConditions.range(this.getFollowDistance());
+      super.findTarget();
    }
 
-   protected AABB m_7255_(double followDistance) {
-      return this.f_26135_.m_20191_().m_82377_(followDistance, Math.max(4.0, this.verticalRange.getAsDouble()), followDistance);
+   protected AABB getTargetSearchArea(double followDistance) {
+      return this.mob.getBoundingBox().inflate(followDistance, Math.max(4.0, this.verticalRange.getAsDouble()), followDistance);
    }
 }

@@ -15,8 +15,8 @@ public final class ForgeTerritoryProtectionEvents {
    }
 
    public static void onBreakSpeed(BreakSpeed event) {
-      if (event.getEntity().m_9236_() instanceof ServerLevel serverLevel
-         && TerritoryProtectionData.get(serverLevel).isProtected(event.getPosition().orElse(event.getEntity().m_20183_()))) {
+      if (event.getEntity().level() instanceof ServerLevel serverLevel
+         && TerritoryProtectionData.get(serverLevel).isProtected(event.getPosition().orElse(event.getEntity().blockPosition()))) {
          event.setNewSpeed(event.getNewSpeed() * 0.5F);
       }
    }

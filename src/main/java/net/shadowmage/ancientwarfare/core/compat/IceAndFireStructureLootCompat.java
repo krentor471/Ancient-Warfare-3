@@ -36,30 +36,30 @@ public final class IceAndFireStructureLootCompat {
    public static void configure(ChestBlockEntity chest, IceAndFireStructureLootCompat.Settings settings, long seed) {
       if (loaded() && settings != null) {
          CompoundTag data = AWCorePlatform.blockEntityData(chest);
-         data.m_128359_("AWIceAndFireLootTheme", settings.theme());
-         data.m_128405_("AWIceAndFireLootTier", settings.tier());
-         data.m_128356_("AWIceAndFireLootSeed", seed);
-         chest.m_6596_();
+         data.putString("AWIceAndFireLootTheme", settings.theme());
+         data.putInt("AWIceAndFireLootTier", settings.tier());
+         data.putLong("AWIceAndFireLootSeed", seed);
+         chest.setChanged();
       }
    }
 
    public static boolean hasPendingLoot(ChestBlockEntity chest) {
-      return AWCorePlatform.blockEntityData(chest).m_128441_("AWIceAndFireLootTheme");
+      return AWCorePlatform.blockEntityData(chest).contains("AWIceAndFireLootTheme");
    }
 
    public static List<ItemStack> consumeChestLoot(ChestBlockEntity chest) {
       CompoundTag data = AWCorePlatform.blockEntityData(chest);
-      if (!data.m_128441_("AWIceAndFireLootTheme")) {
+      if (!data.contains("AWIceAndFireLootTheme")) {
          return List.of();
       } else {
-         String theme = data.m_128461_("AWIceAndFireLootTheme");
-         int tier = Math.max(1, data.m_128451_("AWIceAndFireLootTier"));
-         long seed = data.m_128454_("AWIceAndFireLootSeed");
-         data.m_128473_("AWIceAndFireLootTheme");
-         data.m_128473_("AWIceAndFireLootTier");
-         data.m_128473_("AWIceAndFireLootSeed");
-         chest.m_6596_();
-         return chest.m_58904_() instanceof ServerLevel serverLevel ? roll(serverLevel, theme, tier, seed) : List.of();
+         String theme = data.getString("AWIceAndFireLootTheme");
+         int tier = Math.max(1, data.getInt("AWIceAndFireLootTier"));
+         long seed = data.getLong("AWIceAndFireLootSeed");
+         data.remove("AWIceAndFireLootTheme");
+         data.remove("AWIceAndFireLootTier");
+         data.remove("AWIceAndFireLootSeed");
+         chest.setChanged();
+         return chest.getLevel() instanceof ServerLevel serverLevel ? roll(serverLevel, theme, tier, seed) : List.of();
       }
    }
 
@@ -69,18 +69,18 @@ public final class IceAndFireStructureLootCompat {
       } else {
          IceAndFireStructureLootCompat.Theme theme = IceAndFireStructureLootCompat.Theme.byId(themeName);
          int clampedTier = Math.max(1, Math.min(3, tier));
-         RandomSource random = RandomSource.m_216335_(seed == 0L ? level.f_46441_.m_188505_() : seed);
+         RandomSource random = RandomSource.create(seed == 0L ? level.random.nextLong() : seed);
          List<ItemStack> rewards = new ArrayList<>();
          float primaryChance = Math.min(0.48F, theme.baseChance + (float)(clampedTier - 1) * 0.07F);
-         if (random.m_188501_() < primaryChance) {
+         if (random.nextFloat() < primaryChance) {
             addRoll(rewards, theme, clampedTier, random);
          }
 
-         if (clampedTier >= 2 && random.m_188501_() < (clampedTier == 3 ? 0.18F : 0.08F)) {
+         if (clampedTier >= 2 && random.nextFloat() < (clampedTier == 3 ? 0.18F : 0.08F)) {
             addRoll(rewards, theme, clampedTier, random);
          }
 
-         if (clampedTier == 3 && random.m_188501_() < 0.03F) {
+         if (clampedTier == 3 && random.nextFloat() < 0.03F) {
             addRoll(rewards, theme, clampedTier, random);
          }
 
@@ -95,14 +95,14 @@ public final class IceAndFireStructureLootCompat {
          .toList();
       int totalWeight = available.stream().mapToInt(IceAndFireStructureLootCompat.Entry::weight).sum();
       if (totalWeight > 0) {
-         int selection = random.m_188503_(totalWeight);
+         int selection = random.nextInt(totalWeight);
 
          for (IceAndFireStructureLootCompat.Entry entry : available) {
             selection -= entry.weight;
             if (selection < 0) {
                Item item = item(entry.itemId);
                if (item != null) {
-                  int count = entry.minCount + random.m_188503_(entry.maxCount - entry.minCount + 1);
+                  int count = entry.minCount + random.nextInt(entry.maxCount - entry.minCount + 1);
                   rewards.add(new ItemStack(item, count));
                }
 
@@ -114,7 +114,7 @@ public final class IceAndFireStructureLootCompat {
 
    private static Item item(String path) {
       ResourceLocation id = new ResourceLocation("iceandfire", path);
-      return BuiltInRegistries.f_257033_.m_7804_(id) ? (Item)BuiltInRegistries.f_257033_.m_7745_(id) : null;
+      return BuiltInRegistries.ITEM.containsKey(id) ? (Item)BuiltInRegistries.ITEM.get(id) : null;
    }
 
    private static boolean loaded() {

@@ -25,11 +25,11 @@ public class GateProxyBlockEntity extends BlockEntity {
 
    public void setGateUuid(UUID gateUuid) {
       this.gateUuid = gateUuid;
-      this.m_6596_();
+      this.setChanged();
    }
 
    public Entity getGate(ServerLevel level) {
-      return this.gateUuid == null ? null : level.m_8791_(this.gateUuid);
+      return this.gateUuid == null ? null : level.getEntity(this.gateUuid);
    }
 
    public boolean isGate(UUID uuid) {
@@ -37,11 +37,11 @@ public class GateProxyBlockEntity extends BlockEntity {
    }
 
    public static boolean damageGate(Level level, BlockPos pos, DamageSource source, float amount) {
-      if (!(level instanceof ServerLevel server) || !(level.m_7702_(pos) instanceof GateProxyBlockEntity proxy)) {
+      if (!(level instanceof ServerLevel server) || !(level.getBlockEntity(pos) instanceof GateProxyBlockEntity proxy)) {
          return false;
       }
 
-      if (proxy.getGate(server) instanceof GateEntity gate && gate.ownsProxyPosition(pos) && gate.m_6469_(source, amount)) {
+      if (proxy.getGate(server) instanceof GateEntity gate && gate.ownsProxyPosition(pos) && gate.hurt(source, amount)) {
          return true;
       }
 
@@ -55,17 +55,17 @@ public class GateProxyBlockEntity extends BlockEntity {
 
       if (level instanceof ServerLevel serverLevel) {
          Entity entity = proxy.getGate(serverLevel);
-         if (entity instanceof GateEntity && entity.m_6084_()) {
+         if (entity instanceof GateEntity && entity.isAlive()) {
             proxy.orphanTicks = 0;
          } else {
             GateEntity nearbyGate = findOwningGate(serverLevel, pos);
             if (nearbyGate != null) {
-               proxy.setGateUuid(nearbyGate.m_20148_());
+               proxy.setGateUuid(nearbyGate.getUUID());
                proxy.orphanTicks = 0;
             } else {
                proxy.orphanTicks++;
-               if (proxy.orphanTicks > 100 && level.m_8055_(pos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))) {
-                  level.m_7471_(pos, false);
+               if (proxy.orphanTicks > 100 && level.getBlockState(pos).is(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))) {
+                  level.removeBlock(pos, false);
                }
             }
          }
@@ -73,9 +73,9 @@ public class GateProxyBlockEntity extends BlockEntity {
    }
 
    private static GateEntity findOwningGate(ServerLevel level, BlockPos pos) {
-      AABB searchArea = new AABB(pos).m_82400_(32.0);
+      AABB searchArea = new AABB(pos).inflate(32.0);
 
-      for (GateEntity gate : level.m_6443_(GateEntity.class, searchArea, Entity::m_6084_)) {
+      for (GateEntity gate : level.getEntitiesOfClass(GateEntity.class, searchArea, Entity::isAlive)) {
          if (isInsideGate(gate, pos)) {
             return gate;
          }
@@ -88,15 +88,15 @@ public class GateProxyBlockEntity extends BlockEntity {
       return gate.ownsProxyPosition(pos);
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
       if (this.gateUuid != null) {
-         tag.m_128362_("Gate", this.gateUuid);
+         tag.putUUID("Gate", this.gateUuid);
       }
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.gateUuid = tag.m_128403_("Gate") ? tag.m_128342_("Gate") : null;
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.gateUuid = tag.hasUUID("Gate") ? tag.getUUID("Gate") : null;
    }
 }

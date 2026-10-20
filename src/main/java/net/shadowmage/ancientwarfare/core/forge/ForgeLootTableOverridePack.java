@@ -68,14 +68,14 @@ public final class ForgeLootTableOverridePack {
 
          event.addRepositorySource(
             output -> {
-               Pack pack = Pack.m_245429_(
+               Pack pack = Pack.readMetaAndCreate(
                   "ancientwarfare_loot_overrides",
-                  Component.m_237113_("Ancient Warfare Loot Overrides"),
+                  Component.literal("Ancient Warfare Loot Overrides"),
                   true,
                   id -> activeSnapshot.packResources(id),
                   PackType.SERVER_DATA,
                   Position.TOP,
-                  PackSource.f_10527_
+                  PackSource.DEFAULT
                );
                if (pack != null) {
                   output.accept(pack);

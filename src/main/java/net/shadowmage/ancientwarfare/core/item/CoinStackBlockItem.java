@@ -16,7 +16,7 @@ public class CoinStackBlockItem extends BlockItem {
       super(block, properties);
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237110_("tooltip.ancientwarfare.coin_stack.count", new Object[]{CoinStackBlock.stackSize(stack)}));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.coin_stack.count", new Object[]{CoinStackBlock.stackSize(stack)}));
    }
 }

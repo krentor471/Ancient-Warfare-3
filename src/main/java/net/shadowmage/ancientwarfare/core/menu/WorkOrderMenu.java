@@ -21,13 +21,13 @@ public class WorkOrderMenu extends AbstractContainerMenu {
 
    public WorkOrderMenu(int containerId, Inventory playerInventory, InteractionHand hand) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.WORK_ORDER_MENU), containerId);
-      this.player = playerInventory.f_35978_;
+      this.player = playerInventory.player;
       this.hand = hand;
       this.addPlayerInventorySlots(playerInventory, 47, 156);
    }
 
    public ItemStack getWorkOrderStack() {
-      return this.player.m_21120_(this.hand);
+      return this.player.getItemInHand(this.hand);
    }
 
    public List<WorkOrderData.WorkEntry> getEntries() {
@@ -42,7 +42,7 @@ public class WorkOrderMenu extends AbstractContainerMenu {
       return WorkOrderData.isNightShift(this.getWorkOrderStack());
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       ItemStack stack = this.getWorkOrderStack();
       if (!AWCoreRegistryAccess.is(stack, AWCoreIds.WORK_ORDER)) {
          return false;
@@ -76,8 +76,8 @@ public class WorkOrderMenu extends AbstractContainerMenu {
       }
    }
 
-   public boolean m_6875_(Player player) {
-      return AWCoreRegistryAccess.is(player.m_21120_(this.hand), AWCoreIds.WORK_ORDER);
+   public boolean stillValid(Player player) {
+      return AWCoreRegistryAccess.is(player.getItemInHand(this.hand), AWCoreIds.WORK_ORDER);
    }
 
    public static int incrementButton(int index) {
@@ -92,19 +92,19 @@ public class WorkOrderMenu extends AbstractContainerMenu {
       return 10 + index * 3 + 2;
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 
    private void addPlayerInventorySlots(Inventory inventory, int x, int y) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(inventory, col + row * 9 + 9, x + col * 18, y + row * 18));
+            this.addSlot(new Slot(inventory, col + row * 9 + 9, x + col * 18, y + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(inventory, col, x + col * 18, y + 58));
+         this.addSlot(new Slot(inventory, col, x + col * 18, y + 58));
       }
    }
 }

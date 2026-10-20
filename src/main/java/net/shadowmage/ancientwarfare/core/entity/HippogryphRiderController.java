@@ -26,57 +26,57 @@ public final class HippogryphRiderController {
    }
 
    public static boolean isHippogryphRider(CombatNpcEntity rider) {
-      return rider != null && IceAndFireHippogryphCompat.isHippogryph(rider.m_20202_());
+      return rider != null && IceAndFireHippogryphCompat.isHippogryph(rider.getVehicle());
    }
 
    public static void tick(CombatNpcEntity rider) {
-      if (!rider.m_9236_().f_46443_ && rider.m_9236_() instanceof ServerLevel) {
-         Entity mount = rider.m_20202_();
+      if (!rider.level().isClientSide && rider.level() instanceof ServerLevel) {
+         Entity mount = rider.getVehicle();
          if (!IceAndFireHippogryphCompat.isHippogryph(mount)) {
-            ACTIVE.remove(rider.m_20148_());
+            ACTIVE.remove(rider.getUUID());
          } else {
             HippogryphRiderController.State state = ACTIVE.computeIfAbsent(
-               rider.m_20148_(), id -> new HippogryphRiderController.State(rider.m_217043_().m_188500_() * Math.PI * 2.0)
+               rider.getUUID(), id -> new HippogryphRiderController.State(rider.getRandom().nextDouble() * Math.PI * 2.0)
             );
             PlayerOwnedNpcEntity commander = rider.getCombatGroupCommander().orElse(null);
             boolean groupMember = commander != null && commander.isHippogryphCombatGroupCommander();
-            LivingEntity target = groupMember ? commander.m_5448_() : rider.m_5448_();
+            LivingEntity target = groupMember ? commander.getTarget() : rider.getTarget();
             if (rider.getCurrentCommand() != NpcCommandType.MOVE && !NpcTargeting.canHarm(rider, target) && !groupMember) {
                target = findTarget(rider);
                if (target != null) {
-                  rider.m_6710_(target);
+                  rider.setTarget(target);
                }
             }
 
             if (rider.getCurrentCommand() != NpcCommandType.MOVE && NpcTargeting.canHarm(rider, target)) {
                state.angle = state.angle + (state.clockwise ? 0.08 : -0.08);
-               boolean ranged = rider.m_21205_().m_41720_() instanceof BowItem || rider.m_21205_().m_41720_() instanceof CrossbowItem;
+               boolean ranged = rider.getMainHandItem().getItem() instanceof BowItem || rider.getMainHandItem().getItem() instanceof CrossbowItem;
                if (ranged) {
                   IceAndFireHippogryphCompat.setFlying(mount, true);
                   Vec3 point = orbitPoint(target, state.angle);
                   moveTo(mount, point);
                   face(mount, orbitPoint(target, state.angle + (state.clockwise ? 0.15 : -0.15)));
-                  if (rider.m_9236_().m_46467_() >= state.nextShot) {
-                     rider.m_6504_(target, 1.0F);
-                     state.nextShot = rider.m_9236_().m_46467_() + 28L + (long)rider.m_217043_().m_188503_(20);
+                  if (rider.level().getGameTime() >= state.nextShot) {
+                     rider.performRangedAttack(target, 1.0F);
+                     state.nextShot = rider.level().getGameTime() + 28L + (long)rider.getRandom().nextInt(20);
                   }
                } else {
-                  if (state.mode == HippogryphRiderController.Mode.ORBIT && rider.m_9236_().m_46467_() >= state.nextDive) {
+                  if (state.mode == HippogryphRiderController.Mode.ORBIT && rider.level().getGameTime() >= state.nextDive) {
                      state.mode = HippogryphRiderController.Mode.DIVE;
                      state.phaseTicks = 0;
-                     state.phaseStart = mount.m_20182_();
+                     state.phaseStart = mount.position();
                   }
 
                   if (state.mode == HippogryphRiderController.Mode.DIVE) {
                      state.phaseTicks++;
                      IceAndFireHippogryphCompat.setFlying(mount, true);
-                     Vec3 point = target.m_20182_().m_82520_(0.0, (double)target.m_20206_() + 1.0, 0.0);
+                     Vec3 point = target.position().add(0.0, (double)target.getBbHeight() + 1.0, 0.0);
                      moveTo(mount, point);
-                     face(mount, target.m_20182_());
+                     face(mount, target.position());
                      if (state.phaseTicks >= 30) {
-                        rider.m_7327_(target);
+                        rider.doHurtTarget(target);
                         state.mode = HippogryphRiderController.Mode.ORBIT;
-                        state.nextDive = rider.m_9236_().m_46467_() + 120L + (long)rider.m_217043_().m_188503_(160);
+                        state.nextDive = rider.level().getGameTime() + 120L + (long)rider.getRandom().nextInt(160);
                      }
                   } else {
                      state.mode = HippogryphRiderController.Mode.ORBIT;
@@ -87,9 +87,9 @@ public final class HippogryphRiderController {
                }
 
                syncSeat(rider, mount);
-               ACTIVE.put(rider.m_20148_(), state);
+               ACTIVE.put(rider.getUUID(), state);
             } else {
-               rider.m_6710_(null);
+               rider.setTarget(null);
                if (groupMember) {
                   followFormation(rider, mount, commander, state);
                } else if (rider.getCurrentCommand() == NpcCommandType.MOVE) {
@@ -107,21 +107,21 @@ public final class HippogryphRiderController {
    }
 
    public static void detach(CombatNpcEntity rider) {
-      ACTIVE.remove(rider.m_20148_());
-      Entity mount = rider.m_20202_();
+      ACTIVE.remove(rider.getUUID());
+      Entity mount = rider.getVehicle();
       if (IceAndFireHippogryphCompat.isHippogryph(mount)) {
          land(mount);
       }
 
-      rider.m_8127_();
+      rider.stopRiding();
    }
 
    public static void postServerTick(ServerLevel level) {
-      for (Entity entity : level.m_8583_()) {
+      for (Entity entity : level.getAllEntities()) {
          if (entity instanceof CombatNpcEntity) {
             CombatNpcEntity rider = (CombatNpcEntity)entity;
             if (isHippogryphRider(rider)) {
-               Entity mount = rider.m_20202_();
+               Entity mount = rider.getVehicle();
                if (mount != null) {
                   syncSeat(rider, mount);
                }
@@ -135,18 +135,18 @@ public final class HippogryphRiderController {
       if (destination == null) {
          land(mount);
       } else {
-         double distance = mount.m_20182_().m_82557_(destination);
+         double distance = mount.position().distanceToSqr(destination);
          if (distance > 9.0) {
             IceAndFireHippogryphCompat.setFlying(mount, true);
-            moveTo(mount, destination.m_82520_(0.0, 4.0, 0.0));
+            moveTo(mount, destination.add(0.0, 4.0, 0.0));
          } else {
             land(mount);
             moveTo(mount, destination);
          }
 
-         mount.m_146922_(commander.m_146908_());
-         mount.m_5618_(commander.m_146908_());
-         mount.m_5616_(commander.m_146908_());
+         mount.setYRot(commander.getYRot());
+         mount.setYBodyRot(commander.getYRot());
+         mount.setYHeadRot(commander.getYRot());
       }
    }
 
@@ -155,11 +155,11 @@ public final class HippogryphRiderController {
       if (player == null) {
          land(mount);
       } else {
-         double distanceSq = mount.m_20280_(player);
+         double distanceSq = mount.distanceToSqr(player);
          if (distanceSq > 100.0) {
             IceAndFireHippogryphCompat.setFlying(mount, true);
-            moveTo(mount, player.m_20182_().m_82520_(0.0, 4.0, 0.0));
-            face(mount, player.m_20182_());
+            moveTo(mount, player.position().add(0.0, 4.0, 0.0));
+            face(mount, player.position());
          } else if (distanceSq <= 9.0) {
             land(mount);
          }
@@ -168,14 +168,14 @@ public final class HippogryphRiderController {
 
    private static void moveToCommand(CombatNpcEntity rider, Entity mount) {
       BlockPos target = rider.getCommandTarget();
-      if (BlockPos.f_121853_.equals(target)) {
+      if (BlockPos.ZERO.equals(target)) {
          rider.clearCommand();
          land(mount);
       } else {
-         Vec3 destination = Vec3.m_82539_(target);
-         if (mount.m_20238_(destination) > 16.0) {
+         Vec3 destination = Vec3.atBottomCenterOf(target);
+         if (mount.distanceToSqr(destination) > 16.0) {
             IceAndFireHippogryphCompat.setFlying(mount, true);
-            moveTo(mount, destination.m_82520_(0.0, 4.0, 0.0));
+            moveTo(mount, destination.add(0.0, 4.0, 0.0));
             face(mount, destination);
          } else {
             land(mount);
@@ -187,50 +187,50 @@ public final class HippogryphRiderController {
    private static void land(Entity mount) {
       IceAndFireHippogryphCompat.setFlying(mount, false);
       IceAndFireHippogryphCompat.setHovering(mount, false);
-      mount.m_20256_(Vec3.f_82478_);
+      mount.setDeltaMovement(Vec3.ZERO);
    }
 
    private static void moveTo(Entity mount, Vec3 point) {
-      Vec3 delta = point.m_82546_(mount.m_20182_());
-      if (delta.m_82556_() < 0.2) {
-         mount.m_20256_(Vec3.f_82478_);
+      Vec3 delta = point.subtract(mount.position());
+      if (delta.lengthSqr() < 0.2) {
+         mount.setDeltaMovement(Vec3.ZERO);
       } else {
-         Vec3 velocity = delta.m_82541_().m_82490_(Math.min(0.35, delta.m_82553_()));
-         mount.m_20256_(velocity);
-         mount.m_6478_(MoverType.SELF, velocity);
+         Vec3 velocity = delta.normalize().scale(Math.min(0.35, delta.length()));
+         mount.setDeltaMovement(velocity);
+         mount.move(MoverType.SELF, velocity);
       }
    }
 
    private static void syncSeat(CombatNpcEntity rider, Entity mount) {
-      rider.m_146922_(mount.m_146908_());
-      rider.m_5618_(mount.m_146908_());
-      rider.m_5616_(mount.m_6080_());
-      rider.f_19789_ = 0.0F;
+      rider.setYRot(mount.getYRot());
+      rider.setYBodyRot(mount.getYRot());
+      rider.setYHeadRot(mount.getYHeadRot());
+      rider.fallDistance = 0.0F;
    }
 
    private static Vec3 orbitPoint(LivingEntity target, double angle) {
-      return target.m_20182_().m_82520_(Math.cos(angle) * 18.0, (double)target.m_20206_() + 8.0, Math.sin(angle) * 18.0);
+      return target.position().add(Math.cos(angle) * 18.0, (double)target.getBbHeight() + 8.0, Math.sin(angle) * 18.0);
    }
 
    private static void face(Entity mount, Vec3 point) {
-      Vec3 delta = point.m_82546_(mount.m_20182_());
-      if (delta.m_165925_() > 0.001) {
-         float yaw = (float)Math.toDegrees(Math.atan2(-delta.f_82479_, delta.f_82481_));
-         mount.m_146922_(yaw);
-         mount.m_5618_(yaw);
-         mount.m_5616_(yaw);
+      Vec3 delta = point.subtract(mount.position());
+      if (delta.horizontalDistanceSqr() > 0.001) {
+         float yaw = (float)Math.toDegrees(Math.atan2(-delta.x, delta.z));
+         mount.setYRot(yaw);
+         mount.setYBodyRot(yaw);
+         mount.setYHeadRot(yaw);
       }
    }
 
    private static LivingEntity findTarget(CombatNpcEntity rider) {
-      return rider.m_9236_()
-         .m_6443_(
+      return rider.level()
+         .getEntitiesOfClass(
             LivingEntity.class,
-            rider.m_20191_().m_82377_(64.0, 32.0, 64.0),
-            candidate -> candidate != rider && candidate.m_6084_() && isHostile(rider, candidate)
+            rider.getBoundingBox().inflate(64.0, 32.0, 64.0),
+            candidate -> candidate != rider && candidate.isAlive() && isHostile(rider, candidate)
          )
          .stream()
-         .min(Comparator.comparingDouble(rider::m_20280_))
+         .min(Comparator.comparingDouble(rider::distanceToSqr))
          .orElse(null);
    }
 
@@ -251,7 +251,7 @@ public final class HippogryphRiderController {
       private int phaseTicks;
       private long nextDive;
       private long nextShot;
-      private Vec3 phaseStart = Vec3.f_82478_;
+      private Vec3 phaseStart = Vec3.ZERO;
 
       private State(double angle) {
          this.angle = angle;

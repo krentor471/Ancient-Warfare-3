@@ -20,21 +20,21 @@ public final class TorqueTransportMixedRenderer implements BlockEntityRenderer<T
    public void render(
       TorqueTransportBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay
    ) {
-      if (blockEntity.m_58900_().m_60734_() instanceof TorqueTransportBlock block && block.getKind() == TorqueTransportKind.SHAFT) {
-         this.geo.m_6922_(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
+      if (blockEntity.getBlockState().getBlock() instanceof TorqueTransportBlock block && block.getKind() == TorqueTransportKind.SHAFT) {
+         this.geo.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
          return;
       }
 
-      if (blockEntity.m_58900_().m_60734_() instanceof TorqueTransportBlock block
+      if (blockEntity.getBlockState().getBlock() instanceof TorqueTransportBlock block
          && (block.getKind() == TorqueTransportKind.JUNCTION || block.getKind() == TorqueTransportKind.DISTRIBUTOR)) {
-         this.geo.m_6922_(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
+         this.geo.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
          return;
       }
 
       this.legacy.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
    }
 
-   public int m_142163_() {
-      return Math.max(this.legacy.m_142163_(), this.geo.m_142163_());
+   public int getViewDistance() {
+      return Math.max(this.legacy.getViewDistance(), this.geo.getViewDistance());
    }
 }

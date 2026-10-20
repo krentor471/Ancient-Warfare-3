@@ -19,8 +19,8 @@ public class AdvancedSpawnerMenu extends AbstractContainerMenu {
    public AdvancedSpawnerMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.ADVANCED_SPAWNER), containerId);
       this.pos = pos;
-      Level level = playerInventory.f_35978_.m_9236_();
-      this.spawner = level.m_7702_(pos) instanceof AdvancedSpawnerBlockEntity advancedSpawner ? advancedSpawner : null;
+      Level level = playerInventory.player.level();
+      this.spawner = level.getBlockEntity(pos) instanceof AdvancedSpawnerBlockEntity advancedSpawner ? advancedSpawner : null;
    }
 
    public BlockPos getPos() {
@@ -33,11 +33,11 @@ public class AdvancedSpawnerMenu extends AbstractContainerMenu {
          : this.spawner.getConfig();
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.ADVANCED_SPAWNER));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.ADVANCED_SPAWNER));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

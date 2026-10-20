@@ -20,13 +20,13 @@ public class AdvancedSpawnerRenderer implements BlockEntityRenderer<AdvancedSpaw
    public void render(
       AdvancedSpawnerBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay
    ) {
-      Player player = Minecraft.m_91087_().f_91074_;
-      if (player != null && player.m_7500_()) {
-         BlockState state = blockEntity.m_58900_();
-         BlockRenderDispatcher blockRenderer = Minecraft.m_91087_().m_91289_();
-         BakedModel model = blockRenderer.m_110910_(state);
-         VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110463_());
-         blockRenderer.m_110937_().m_111067_(poseStack.m_85850_(), consumer, state, model, 1.0F, 1.0F, 1.0F, packedLight, packedOverlay);
+      Player player = Minecraft.getInstance().player;
+      if (player != null && player.isCreative()) {
+         BlockState state = blockEntity.getBlockState();
+         BlockRenderDispatcher blockRenderer = Minecraft.getInstance().getBlockRenderer();
+         BakedModel model = blockRenderer.getBlockModel(state);
+         VertexConsumer consumer = bufferSource.getBuffer(RenderType.cutout());
+         blockRenderer.getModelRenderer().renderModel(poseStack.last(), consumer, state, model, 1.0F, 1.0F, 1.0F, packedLight, packedOverlay);
       }
    }
 }

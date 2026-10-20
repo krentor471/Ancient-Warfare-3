@@ -46,71 +46,71 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
    private float bookScale = 1.0F;
    private float bookLeft;
    private float bookTop;
-   private ItemStack hoveredItem = ItemStack.f_41583_;
+   private ItemStack hoveredItem = ItemStack.EMPTY;
 
    public ManualScreen(ManualMenu menu, Inventory inventory, Component title) {
       super(menu, inventory, title);
-      this.f_97726_ = 412;
-      this.f_97727_ = 254;
+      this.imageWidth = 412;
+      this.imageHeight = 254;
    }
 
-   protected void m_7856_() {
-      super.m_7856_();
-      this.bookScale = Math.min(1.0F, Math.min(((float)this.f_96543_ - 12.0F) / 412.0F, ((float)this.f_96544_ - 12.0F) / 254.0F));
+   protected void init() {
+      super.init();
+      this.bookScale = Math.min(1.0F, Math.min(((float)this.width - 12.0F) / 412.0F, ((float)this.height - 12.0F) / 254.0F));
       this.bookScale = Math.max(0.1F, this.bookScale);
-      this.bookLeft = ((float)this.f_96543_ - 412.0F * this.bookScale) / 2.0F;
-      this.bookTop = ((float)this.f_96544_ - 254.0F * this.bookScale) / 2.0F;
+      this.bookLeft = ((float)this.width - 412.0F * this.bookScale) / 2.0F;
+      this.bookTop = ((float)this.height - 254.0F * this.bookScale) / 2.0F;
       int savedPage = this.pageIndex;
       this.loadCategory(this.currentCategory);
       this.pageIndex = this.clampPage(savedPage);
    }
 
-   protected void m_7286_(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      graphics.m_280163_(MANUAL_TEXTURE, 0, 0, 0.0F, 0.0F, 412, 254, 512, 512);
+   protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+      graphics.blit(MANUAL_TEXTURE, 0, 0, 0.0F, 0.0F, 412, 254, 512, 512);
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
       this.links.clear();
-      this.hoveredItem = ItemStack.f_41583_;
+      this.hoveredItem = ItemStack.EMPTY;
       double localX = (double)(((float)mouseX - this.bookLeft) / this.bookScale);
       double localY = (double)(((float)mouseY - this.bookTop) / this.bookScale);
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_(this.bookLeft, this.bookTop, 0.0F);
-      graphics.m_280168_().m_85841_(this.bookScale, this.bookScale, 1.0F);
-      this.m_7286_(graphics, partialTick, mouseX, mouseY);
+      graphics.pose().pushPose();
+      graphics.pose().translate(this.bookLeft, this.bookTop, 0.0F);
+      graphics.pose().scale(this.bookScale, this.bookScale, 1.0F);
+      this.renderBg(graphics, partialTick, mouseX, mouseY);
       this.renderPage(graphics, this.pageIndex, 22, 18, localX, localY);
       this.renderPage(graphics, this.pageIndex + 1, 228, 18, localX, localY);
       this.renderFooter(graphics, localX, localY);
-      graphics.m_280168_().m_85849_();
-      if (!this.hoveredItem.m_41619_()) {
-         graphics.m_280153_(this.f_96547_, this.hoveredItem, mouseX, mouseY);
+      graphics.pose().popPose();
+      if (!this.hoveredItem.isEmpty()) {
+         graphics.renderTooltip(this.font, this.hoveredItem, mouseX, mouseY);
       }
    }
 
    private void renderFooter(GuiGraphics graphics, double mouseX, double mouseY) {
-      graphics.m_280653_(
-         this.f_96547_,
-         Component.m_237110_("gui.ancientwarfare.manual.pages", new Object[]{this.pageIndex + 1, this.pageIndex + 2, this.book.pages().size()}),
+      graphics.drawCenteredString(
+         this.font,
+         Component.translatable("gui.ancientwarfare.manual.pages", new Object[]{this.pageIndex + 1, this.pageIndex + 2, this.book.pages().size()}),
          272,
          232,
          6710886
       );
-      this.drawControl(graphics, Component.m_237113_("<"), 355, this.canTurn(-2), mouseX, mouseY);
-      this.drawControl(graphics, Component.m_237113_(">"), 389, this.canTurn(2), mouseX, mouseY);
+      this.drawControl(graphics, Component.literal("<"), 355, this.canTurn(-2), mouseX, mouseY);
+      this.drawControl(graphics, Component.literal(">"), 389, this.canTurn(2), mouseX, mouseY);
       if (!this.currentCategory.equals("table_of_contents")) {
-         this.drawControl(graphics, Component.m_237115_("gui.ancientwarfare.manual.contents"), 22, true, mouseX, mouseY);
-         this.drawControl(graphics, Component.m_237115_("gui.ancientwarfare.manual.chapter"), 90, this.pageIndex > 0, mouseX, mouseY);
+         this.drawControl(graphics, Component.translatable("gui.ancientwarfare.manual.contents"), 22, true, mouseX, mouseY);
+         this.drawControl(graphics, Component.translatable("gui.ancientwarfare.manual.chapter"), 90, this.pageIndex > 0, mouseX, mouseY);
       }
 
-      this.drawControl(graphics, Component.m_237115_("gui.ancientwarfare.manual.back"), 158, !this.history.isEmpty(), mouseX, mouseY);
+      this.drawControl(graphics, Component.translatable("gui.ancientwarfare.manual.back"), 158, !this.history.isEmpty(), mouseX, mouseY);
    }
 
    private void drawControl(GuiGraphics graphics, Component label, int x, boolean enabled, double mouseX, double mouseY) {
       int color = !enabled
          ? 11184810
-         : (contains(mouseX, mouseY, (double)(x - 3), 228.0, (double)(this.f_96547_.m_92852_(label) + 6), 18.0) ? 10112793 : 4473924);
-      graphics.m_280614_(this.f_96547_, label, x, 232, color, false);
+         : (contains(mouseX, mouseY, (double)(x - 3), 228.0, (double)(this.font.width(label) + 6), 18.0) ? 10112793 : 4473924);
+      graphics.drawString(this.font, label, x, 232, color, false);
    }
 
    private void renderPage(GuiGraphics graphics, int index, int x, int y, double mouseX, double mouseY) {
@@ -120,7 +120,7 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
          if (i instanceof ManualScreen.TextLine) {
             ManualScreen.TextLine text = (ManualScreen.TextLine)i;
             int color = text.link() == null ? 1118481 : 6308643;
-            int lineWidth = this.f_96547_.m_92724_(text.line());
+            int lineWidth = this.font.width(text.line());
             if (text.link() != null) {
                ManualScreen.LinkArea area = new ManualScreen.LinkArea(x, cursorY, lineWidth, 10, text.link());
                this.links.add(area);
@@ -129,12 +129,12 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
                }
             }
 
-            graphics.m_280649_(this.f_96547_, text.line(), x, cursorY, color, false);
+            graphics.drawString(this.font, text.line(), x, cursorY, color, false);
          } else if (placed.content() instanceof ManualScreen.ItemRow row) {
             for (int ix = 0; ix < row.stacks().size(); ix++) {
                ItemStack stack = row.stacks().get(ix);
                int itemX = x + ix * 21;
-               graphics.m_280480_(stack, itemX, cursorY);
+               graphics.renderItem(stack, itemX, cursorY);
                if (contains(mouseX, mouseY, (double)itemX, (double)cursorY, 16.0, 16.0)) {
                   this.hoveredItem = stack;
                }
@@ -143,7 +143,7 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
       }
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
       double x = (mouseX - (double)this.bookLeft) / (double)this.bookScale;
       double y = (mouseY - (double)this.bookTop) / (double)this.bookScale;
       if (button == 0) {
@@ -182,24 +182,24 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
          }
       }
 
-      return super.m_6375_(mouseX, mouseY, button);
+      return super.mouseClicked(mouseX, mouseY, button);
    }
 
-   protected boolean m_7467_(double mouseX, double mouseY, int left, int top, int button) {
+   protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
       return !contains(mouseX, mouseY, (double)this.bookLeft, (double)this.bookTop, (double)(412.0F * this.bookScale), (double)(254.0F * this.bookScale));
    }
 
-   public boolean m_6050_(double mouseX, double mouseY, double delta) {
+   public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
       if (delta != 0.0
          && contains(mouseX, mouseY, (double)this.bookLeft, (double)this.bookTop, (double)(412.0F * this.bookScale), (double)(254.0F * this.bookScale))) {
          this.turnPage(delta > 0.0 ? -2 : 2);
          return true;
       } else {
-         return super.m_6050_(mouseX, mouseY, delta);
+         return super.mouseScrolled(mouseX, mouseY, delta);
       }
    }
 
-   public boolean m_7933_(int keyCode, int scanCode, int modifiers) {
+   public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
       if (keyCode == 262 || keyCode == 267) {
          this.turnPage(2);
          return true;
@@ -210,7 +210,7 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
          this.navigate(new ManualScreen.Target("table_of_contents", ""));
          return true;
       } else {
-         return keyCode == 259 && this.goBack() ? true : super.m_7933_(keyCode, scanCode, modifiers);
+         return keyCode == 259 && this.goBack() ? true : super.keyPressed(keyCode, scanCode, modifiers);
       }
    }
 
@@ -277,12 +277,12 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
    }
 
    private Optional<Resource> findResource(String language, String category) {
-      ResourceLocation location = ResourceLocation.m_135820_("ancientwarfare:registry/manual/" + language + "/" + category + ".json");
-      return location == null ? Optional.empty() : Minecraft.m_91087_().m_91098_().m_213713_(location);
+      ResourceLocation location = ResourceLocation.tryParse("ancientwarfare:registry/manual/" + language + "/" + category + ".json");
+      return location == null ? Optional.empty() : Minecraft.getInstance().getResourceManager().getResource(location);
    }
 
    private List<ManualPaginator.Element<ManualScreen.ManualElement>> readElements(String category) {
-      String language = Minecraft.m_91087_().m_91102_().m_264236_().toLowerCase(Locale.ROOT);
+      String language = Minecraft.getInstance().getLanguageManager().getSelected().toLowerCase(Locale.ROOT);
       List<String> candidates = new ArrayList<>();
       candidates.add(language);
       if (language.startsWith("zh_") && !language.equals("zh_cn")) {
@@ -298,35 +298,35 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
          if (!resource.isEmpty()) {
             try {
                Object var24;
-               try (BufferedReader reader = resource.get().m_215508_()) {
+               try (BufferedReader reader = resource.get().openAsReader()) {
                   JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
                   List<ManualPaginator.Element<ManualScreen.ManualElement>> elements = new ArrayList<>();
 
-                  for (JsonElement element : GsonHelper.m_13832_(root, "content", new JsonArray())) {
+                  for (JsonElement element : GsonHelper.getAsJsonArray(root, "content", new JsonArray())) {
                      JsonObject object = element.getAsJsonObject();
-                     String type = GsonHelper.m_13851_(object, "content_type", "text");
+                     String type = GsonHelper.getAsString(object, "content_type", "text");
                      switch (type) {
                         case "toc_list":
-                           for (JsonElement entry : GsonHelper.m_13832_(object, "items", new JsonArray())) {
+                           for (JsonElement entry : GsonHelper.getAsJsonArray(object, "items", new JsonArray())) {
                               JsonObject item = entry.getAsJsonObject();
                               ManualScreen.Target target = new ManualScreen.Target(
-                                 GsonHelper.m_13851_(item, "category_link", category), GsonHelper.m_13851_(item, "anchor", "")
+                                 GsonHelper.getAsString(item, "category_link", category), GsonHelper.getAsString(item, "anchor", "")
                               );
-                              this.addText(elements, Component.m_237113_(GsonHelper.m_13851_(item, "text", "")), target, 5, false, null);
+                              this.addText(elements, Component.literal(GsonHelper.getAsString(item, "text", "")), target, 5, false, null);
                            }
                            break;
                         case "heading":
                            this.addText(
                               elements,
-                              Component.m_237113_(GsonHelper.m_13851_(object, "text", "")).m_130938_(style -> style.m_131136_(true)),
+                              Component.literal(GsonHelper.getAsString(object, "text", "")).withStyle(style -> style.withBold(true)),
                               null,
                               5,
                               true,
-                              GsonHelper.m_13851_(object, "anchor", "")
+                              GsonHelper.getAsString(object, "anchor", "")
                            );
                            break;
                         case "text":
-                           this.addText(elements, Component.m_237113_(GsonHelper.m_13851_(object, "text", "")), null, 4, false, null);
+                           this.addText(elements, Component.literal(GsonHelper.getAsString(object, "text", "")), null, 4, false, null);
                            break;
                         case "item":
                            this.addItems(elements, object);
@@ -344,14 +344,14 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
       }
 
       List<ManualPaginator.Element<ManualScreen.ManualElement>> error = new ArrayList<>();
-      this.addText(error, Component.m_237110_("gui.ancientwarfare.manual.missing", new Object[]{category}), null, 0, false, null);
+      this.addText(error, Component.translatable("gui.ancientwarfare.manual.missing", new Object[]{category}), null, 0, false, null);
       return error;
    }
 
    private void addText(
       List<ManualPaginator.Element<ManualScreen.ManualElement>> elements, Component text, ManualScreen.Target link, int gap, boolean heading, String anchor
    ) {
-      List<FormattedCharSequence> lines = this.f_96547_.m_92923_(text, 174);
+      List<FormattedCharSequence> lines = this.font.split(text, 174);
 
       for (int i = 0; i < lines.size(); i++) {
          elements.add(
@@ -364,14 +364,14 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
       List<ItemStack> stacks = new ArrayList<>();
       if (object.has("name")) {
          ItemStack stack = this.readItem(object);
-         if (!stack.m_41619_()) {
+         if (!stack.isEmpty()) {
             stacks.add(stack);
          }
       }
 
-      for (JsonElement item : GsonHelper.m_13832_(object, "items", new JsonArray())) {
+      for (JsonElement item : GsonHelper.getAsJsonArray(object, "items", new JsonArray())) {
          ItemStack stack = this.readItem(item.getAsJsonObject());
-         if (!stack.m_41619_()) {
+         if (!stack.isEmpty()) {
             stacks.add(stack);
          }
       }
@@ -384,14 +384,14 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
    }
 
    private ItemStack readItem(JsonObject object) {
-      String name = GsonHelper.m_13851_(object, "name", "");
-      ResourceLocation id = ResourceLocation.m_135820_(name);
-      if (id != null && BuiltInRegistries.f_257033_.m_7804_(id)) {
-         ItemStack stack = new ItemStack((ItemLike)BuiltInRegistries.f_257033_.m_7745_(id));
+      String name = GsonHelper.getAsString(object, "name", "");
+      ResourceLocation id = ResourceLocation.tryParse(name);
+      if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
+         ItemStack stack = new ItemStack((ItemLike)BuiltInRegistries.ITEM.get(id));
          if (object.has("tag")) {
             try {
                JsonElement tag = object.get("tag");
-               stack.m_41751_(TagParser.m_129359_(tag.isJsonObject() ? tag.toString() : tag.getAsString()));
+               stack.setTag(TagParser.parseTag(tag.isJsonObject() ? tag.toString() : tag.getAsString()));
             } catch (Exception var6) {
                AncientWarfareCore.LOG.warn("Invalid manual item data for {}", name, var6);
             }
@@ -399,7 +399,7 @@ public class ManualScreen extends AbstractContainerScreen<ManualMenu> {
 
          return stack;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 

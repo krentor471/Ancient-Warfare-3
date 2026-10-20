@@ -22,24 +22,24 @@ public class WorksiteSideConfigMenu extends AbstractContainerMenu {
    public WorksiteSideConfigMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.WORKSITE_SIDE_CONFIG), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      this.worksite = this.level.m_7702_(pos) instanceof SideConfigurableWorksite configurable ? configurable : null;
+      this.level = playerInventory.player.level();
+      this.worksite = this.level.getBlockEntity(pos) instanceof SideConfigurableWorksite configurable ? configurable : null;
 
       for (WorksiteRelativeSide side : WorksiteRelativeSide.values()) {
          this.previewAccess[side.ordinal()] = this.getSideAccessFromWorksite(side);
       }
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (this.worksite != null && !this.level.f_46443_ && id >= 0 && id < WorksiteRelativeSide.values().length) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (this.worksite != null && !this.level.isClientSide && id >= 0 && id < WorksiteRelativeSide.values().length) {
          WorksiteRelativeSide side = WorksiteRelativeSide.values()[id];
          this.worksite.setSideAccess(side, this.worksite.getSideAccess(side).next());
          this.previewAccess[side.ordinal()] = this.worksite.getSideAccess(side);
-         if (this.level.m_7702_(this.pos) != null) {
-            this.level.m_7702_(this.pos).m_6596_();
+         if (this.level.getBlockEntity(this.pos) != null) {
+            this.level.getBlockEntity(this.pos).setChanged();
          }
 
-         this.m_38946_();
+         this.broadcastChanges();
          return true;
       } else {
          return false;
@@ -47,7 +47,7 @@ public class WorksiteSideConfigMenu extends AbstractContainerMenu {
    }
 
    public WorksiteInventoryAccess getSideAccess(WorksiteRelativeSide side) {
-      return this.level.f_46443_ ? this.previewAccess[side.ordinal()] : this.getSideAccessFromWorksite(side);
+      return this.level.isClientSide ? this.previewAccess[side.ordinal()] : this.getSideAccessFromWorksite(side);
    }
 
    public void previewButton(int id) {
@@ -64,11 +64,11 @@ public class WorksiteSideConfigMenu extends AbstractContainerMenu {
       return this.pos;
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, player.m_9236_().m_8055_(this.pos).m_60734_());
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, player.level().getBlockState(this.pos).getBlock());
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

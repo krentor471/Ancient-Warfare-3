@@ -52,13 +52,13 @@ public final class ForgeAwsWorldGenerationEvents {
 
    @SubscribeEvent
    public static void onChunkLoad(Load event) {
-      if (event.isNewChunk() && event.getLevel() instanceof ServerLevel level && level.m_46472_() == Level.f_46428_) {
-         ChunkPos chunk = event.getChunk().m_7697_();
-         if (AwsWorldGenerator.isCandidateChunk(level.m_7328_(), chunk) && !NaturalGenerationContext.isInternalChunk(chunk)) {
-            if (level.m_7654_().m_18695_()) {
+      if (event.isNewChunk() && event.getLevel() instanceof ServerLevel level && level.dimension() == Level.OVERWORLD) {
+         ChunkPos chunk = event.getChunk().getPos();
+         if (AwsWorldGenerator.isCandidateChunk(level.getSeed(), chunk) && !NaturalGenerationContext.isInternalChunk(chunk)) {
+            if (level.getServer().isSameThread()) {
                queueNaturalCandidate(level, chunk);
             } else {
-               level.m_7654_().execute(() -> queueNaturalCandidate(level, chunk));
+               level.getServer().execute(() -> queueNaturalCandidate(level, chunk));
             }
          }
       }
@@ -68,19 +68,19 @@ public final class ForgeAwsWorldGenerationEvents {
    public static void onPlayerTick(PlayerTickEvent event) {
       if (event.phase == Phase.END
          && event.player instanceof ServerPlayer player
-         && player.m_284548_().m_46472_() == Level.f_46428_
-         && player.f_19797_ % 20 == 0) {
-         ChunkPos current = player.m_146902_();
-         ChunkPos previous = LAST_PLAYER_CHUNKS.put(player.m_20148_(), current);
+         && player.serverLevel().dimension() == Level.OVERWORLD
+         && player.tickCount % 20 == 0) {
+         ChunkPos current = player.chunkPosition();
+         ChunkPos previous = LAST_PLAYER_CHUNKS.put(player.getUUID(), current);
          if (AWCorePlatform.gameplayConfig().awtEnabled()
             && ValkyrienShipyardCompat.isReady()
-            && !ValkyrienShipyardCompat.isShipyardChunk(player.m_284548_(), current.f_45578_, current.f_45579_)
-            && AwtWorldGenerator.isCandidateChunk(player.m_284548_().m_7328_(), current)) {
-            AwtWorldGenerator.queueAt(player.m_284548_(), current, false, "");
+            && !ValkyrienShipyardCompat.isShipyardChunk(player.serverLevel(), current.x, current.z)
+            && AwtWorldGenerator.isCandidateChunk(player.serverLevel().getSeed(), current)) {
+            AwtWorldGenerator.queueAt(player.serverLevel(), current, false, "");
          }
 
          if (!current.equals(previous)) {
-            queueNaturalCandidate(player.m_284548_(), current);
+            queueNaturalCandidate(player.serverLevel(), current);
          }
       }
    }
@@ -88,7 +88,7 @@ public final class ForgeAwsWorldGenerationEvents {
    @SubscribeEvent
    public static void onServerTick(ServerTickEvent event) {
       if (event.phase == Phase.END) {
-         ServerLevel overworld = event.getServer().m_129783_();
+         ServerLevel overworld = event.getServer().overworld();
          LargeIslandWorldGenerator.tick(overworld);
          if (!LargeIslandWorldGenerator.active(overworld)) {
             AwtWorldGenerator.tick(overworld);
@@ -106,7 +106,7 @@ public final class ForgeAwsWorldGenerationEvents {
    }
 
    static boolean processPending(ServerLevel level) {
-      if (level.m_46472_() == Level.f_46428_
+      if (level.dimension() == Level.OVERWORLD
          && AWCorePlatform.gameplayConfig().awsEnabled()
          && !LargeIslandWorldGenerator.active(level)
          && AwtWorldGenerationData.get(level).active() == null
@@ -116,7 +116,7 @@ public final class ForgeAwsWorldGenerationEvents {
          if (chunk == null) {
             return false;
          } else {
-            boolean shipyard = ValkyrienShipyardCompat.isShipyardChunk(level, chunk.f_45578_, chunk.f_45579_);
+            boolean shipyard = ValkyrienShipyardCompat.isShipyardChunk(level, chunk.x, chunk.z);
             if (!ValkyrienShipyardCompat.isReady()) {
                return false;
             } else {
@@ -125,7 +125,7 @@ public final class ForgeAwsWorldGenerationEvents {
                      AwsWorldGenerator.generateAt(level, chunk, false);
                   } catch (RuntimeException var5) {
                      AncientWarfareCore.LOG
-                        .error("AWS candidate {}, {} failed; recording the attempt to prevent a retry loop", new Object[]{chunk.f_45578_, chunk.f_45579_, var5});
+                        .error("AWS candidate {}, {} failed; recording the attempt to prevent a retry loop", new Object[]{chunk.x, chunk.z, var5});
                   }
                }
 
@@ -140,7 +140,7 @@ public final class ForgeAwsWorldGenerationEvents {
 
    @SubscribeEvent
    public static void onPlayerLogout(PlayerLoggedOutEvent event) {
-      LAST_PLAYER_CHUNKS.remove(event.getEntity().m_20148_());
+      LAST_PLAYER_CHUNKS.remove(event.getEntity().getUUID());
    }
 
    @SubscribeEvent
@@ -157,8 +157,8 @@ public final class ForgeAwsWorldGenerationEvents {
 
    @SubscribeEvent
    public static void onRightClickBlock(RightClickBlock event) {
-      if (!event.getLevel().f_46443_) {
-         if (event.getLevel().m_7702_(event.getPos()) instanceof ChestBlockEntity) {
+      if (!event.getLevel().isClientSide) {
+         if (event.getLevel().getBlockEntity(event.getPos()) instanceof ChestBlockEntity) {
             AdvancedLootChestBlock.restoreFormerLootrChest(event.getLevel(), event.getPos());
             AdvancedLootChestBlock.generateConnectedLoot(event.getLevel(), event.getPos(), event.getEntity());
          }
@@ -166,17 +166,17 @@ public final class ForgeAwsWorldGenerationEvents {
    }
 
    static void queueNaturalCandidate(ServerLevel level, ChunkPos chunk) {
-      if (level.m_46472_() == Level.f_46428_
+      if (level.dimension() == Level.OVERWORLD
          && AWCorePlatform.gameplayConfig().awsEnabled()
          && !NaturalGenerationContext.isInternalChunk(chunk)
-         && AwsWorldGenerator.isCandidateChunk(level.m_7328_(), chunk)
+         && AwsWorldGenerator.isCandidateChunk(level.getSeed(), chunk)
          && !insideActiveConstruction(level, chunk)
          && ValkyrienShipyardCompat.isReady()) {
-         if (!ValkyrienShipyardCompat.isShipyardChunk(level, chunk.f_45578_, chunk.f_45579_)) {
+         if (!ValkyrienShipyardCompat.isShipyardChunk(level, chunk.x, chunk.z)) {
             AwsWorldGenerationQueue queue = AwsWorldGenerationQueue.get(level);
             if (queue.enqueue(chunk)) {
                AncientWarfareCore.LOG
-                  .debug("Queued AWS world-generation candidate chunk {}, {}; pending={}", new Object[]{chunk.f_45578_, chunk.f_45579_, queue.pendingCount()});
+                  .debug("Queued AWS world-generation candidate chunk {}, {}; pending={}", new Object[]{chunk.x, chunk.z, queue.pendingCount()});
             }
          }
       }
@@ -187,7 +187,7 @@ public final class ForgeAwsWorldGenerationEvents {
       if (island != null) {
          AwsWorldGenTemplateRegistry.Template template = AwsWorldGenTemplateRegistry.templateForActivePath(island.path);
          if (template != null) {
-            Direction facing = Direction.m_122407_(island.facing);
+            Direction facing = Direction.from2DDataValue(island.facing);
             if (intersectsChunk(
                chunk, island.minX - 16, island.minZ - 16, island.minX + template.rotatedSizeX(facing) + 15, island.minZ + template.rotatedSizeZ(facing) + 15
             )) {
@@ -207,9 +207,9 @@ public final class ForgeAwsWorldGenerationEvents {
    }
 
    private static boolean intersectsChunk(ChunkPos chunk, int minX, int minZ, int maxX, int maxZ) {
-      return chunk.f_45578_ >= Math.floorDiv(minX, 16)
-         && chunk.f_45578_ <= Math.floorDiv(maxX, 16)
-         && chunk.f_45579_ >= Math.floorDiv(minZ, 16)
-         && chunk.f_45579_ <= Math.floorDiv(maxZ, 16);
+      return chunk.x >= Math.floorDiv(minX, 16)
+         && chunk.x <= Math.floorDiv(maxX, 16)
+         && chunk.z >= Math.floorDiv(minZ, 16)
+         && chunk.z <= Math.floorDiv(maxZ, 16);
    }
 }

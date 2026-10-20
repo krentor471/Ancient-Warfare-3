@@ -26,8 +26,8 @@ public class HandCrankedGeneratorGeoModel extends GeoModel<HandCrankedGeneratorB
 
    public void handleAnimations(HandCrankedGeneratorBlockEntity animatable, long instanceId, AnimationState<HandCrankedGeneratorBlockEntity> animationState) {
       super.handleAnimations(animatable, instanceId, animationState);
-      float angle = animatable.getCrankActiveTicks() > 0 && animatable.m_58904_() != null
-         ? (float)Math.toRadians((double)(((float)animatable.m_58904_().m_46467_() + animationState.getPartialTick()) * 30.0F))
+      float angle = animatable.getCrankActiveTicks() > 0 && animatable.getLevel() != null
+         ? (float)Math.toRadians((double)(((float)animatable.getLevel().getGameTime() + animationState.getPartialTick()) * 30.0F))
          : 0.0F;
       CoreGeoBone inputGear = this.getAnimationProcessor().getBone("input_gear");
       if (inputGear != null) {

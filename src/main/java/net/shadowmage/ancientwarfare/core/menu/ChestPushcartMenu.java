@@ -38,7 +38,7 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
    private int topStorageRow;
 
    public ChestPushcartMenu(int containerId, Inventory playerInventory, int entityId) {
-      this(containerId, playerInventory, findCart(playerInventory.f_35978_.m_9236_(), entityId));
+      this(containerId, playerInventory, findCart(playerInventory.player.level(), entityId));
    }
 
    public ChestPushcartMenu(int containerId, Inventory playerInventory, ChestPushcartEntity cart) {
@@ -50,8 +50,8 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
       this.visibleStorageSlots = this.visibleStorageRows * 9;
       this.upgradeStart = this.visibleStorageSlots;
       this.playerStart = this.upgradeStart + 6;
-      this.storage.m_5856_(playerInventory.f_35978_);
-      this.upgrades.m_5856_(playerInventory.f_35978_);
+      this.storage.startOpen(playerInventory.player);
+      this.upgrades.startOpen(playerInventory.player);
       this.addStorageSlots();
       this.addUpgradeSlots();
       this.addPlayerInventory(playerInventory, 8, 128);
@@ -66,7 +66,7 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
    }
 
    public int getStorageRows() {
-      return Math.max(1, (this.storage.m_6643_() + 9 - 1) / 9);
+      return Math.max(1, (this.storage.getContainerSize() + 9 - 1) / 9);
    }
 
    public void scrollStorageRows(int amount) {
@@ -97,21 +97,21 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
       for (int row = 0; row < this.visibleStorageRows; row++) {
          for (int col = 0; col < 9; col++) {
             int visibleIndex = row * 9 + col;
-            this.m_38897_(new ChestPushcartMenu.ScrollingStorageSlot(this.storage, visibleIndex, 8 + col * 18, 34 + row * 18));
+            this.addSlot(new ChestPushcartMenu.ScrollingStorageSlot(this.storage, visibleIndex, 8 + col * 18, 34 + row * 18));
          }
       }
    }
 
    private void addUpgradeSlots() {
       for (int i = 0; i < 6; i++) {
-         this.m_38897_(new ChestPushcartMenu.VehicleUpgradeSlot(this.upgrades, i, 62 + i * 18, 92));
+         this.addSlot(new ChestPushcartMenu.VehicleUpgradeSlot(this.upgrades, i, 62 + i * 18, 92));
       }
    }
 
    private void setTopStorageRow(int row) {
       int maxTop = Math.max(0, this.getStorageRows() - this.visibleStorageRows);
       this.topStorageRow = Math.max(0, Math.min(maxTop, row));
-      this.m_38946_();
+      this.broadcastChanges();
    }
 
    private int storageIndexForVisibleSlot(int visibleIndex) {
@@ -123,16 +123,16 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
    private void addPlayerInventory(Inventory playerInventory, int x, int y) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(playerInventory, col + row * 9 + 9, x + col * 18, y + row * 18));
+            this.addSlot(new Slot(playerInventory, col + row * 9 + 9, x + col * 18, y + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(playerInventory, col, x + col * 18, y + 58));
+         this.addSlot(new Slot(playerInventory, col, x + col * 18, y + 58));
       }
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       if (id == 0) {
          this.scrollStorageRows(-1);
          return true;
@@ -143,84 +143,84 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
          this.cart.packIntoItem(player);
          return true;
       } else {
-         return super.m_6366_(player, id);
+         return super.clickMenuButton(player, id);
       }
    }
 
-   public boolean m_6875_(Player player) {
-      return this.storage.m_6542_(player);
+   public boolean stillValid(Player player) {
+      return this.storage.stillValid(player);
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      if (index >= 0 && index < this.f_38839_.size()) {
-         Slot slot = (Slot)this.f_38839_.get(index);
-         if (slot != null && slot.m_6657_()) {
-            ItemStack stack = slot.m_7993_();
-            ItemStack original = stack.m_41777_();
+   public ItemStack quickMoveStack(Player player, int index) {
+      if (index >= 0 && index < this.slots.size()) {
+         Slot slot = (Slot)this.slots.get(index);
+         if (slot != null && slot.hasItem()) {
+            ItemStack stack = slot.getItem();
+            ItemStack original = stack.copy();
             if (index < this.visibleStorageSlots) {
-               if (!this.m_38903_(stack, this.playerStart, this.f_38839_.size(), true)) {
-                  return ItemStack.f_41583_;
+               if (!this.moveItemStackTo(stack, this.playerStart, this.slots.size(), true)) {
+                  return ItemStack.EMPTY;
                }
             } else if (index < this.playerStart) {
-               if (!this.m_38903_(stack, this.playerStart, this.f_38839_.size(), true)) {
-                  return ItemStack.f_41583_;
+               if (!this.moveItemStackTo(stack, this.playerStart, this.slots.size(), true)) {
+                  return ItemStack.EMPTY;
                }
             } else if (isVehicleUpgradeStack(stack)) {
-               if (!this.m_38903_(stack, this.upgradeStart, this.playerStart, false) && !this.moveIntoStorage(stack)) {
-                  return ItemStack.f_41583_;
+               if (!this.moveItemStackTo(stack, this.upgradeStart, this.playerStart, false) && !this.moveIntoStorage(stack)) {
+                  return ItemStack.EMPTY;
                }
             } else if (!this.moveIntoStorage(stack)) {
-               return ItemStack.f_41583_;
+               return ItemStack.EMPTY;
             }
 
-            if (stack.m_41619_()) {
-               slot.m_269060_(ItemStack.f_41583_);
+            if (stack.isEmpty()) {
+               slot.setByPlayer(ItemStack.EMPTY);
             } else {
-               slot.m_6654_();
+               slot.setChanged();
             }
 
-            if (stack.m_41613_() == original.m_41613_()) {
-               return ItemStack.f_41583_;
+            if (stack.getCount() == original.getCount()) {
+               return ItemStack.EMPTY;
             } else {
-               slot.m_142406_(player, stack);
-               this.m_38946_();
+               slot.onTake(player, stack);
+               this.broadcastChanges();
                return original;
             }
          } else {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          }
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
-   public void m_6877_(Player player) {
-      super.m_6877_(player);
-      this.storage.m_5785_(player);
-      this.upgrades.m_5785_(player);
+   public void removed(Player player) {
+      super.removed(player);
+      this.storage.stopOpen(player);
+      this.upgrades.stopOpen(player);
    }
 
    private boolean moveIntoStorage(ItemStack stack) {
       boolean changed = false;
-      if (stack.m_41753_()) {
-         for (int i = 0; i < this.storage.m_6643_() && !stack.m_41619_(); i++) {
-            ItemStack stored = this.storage.m_8020_(i);
-            if (!stored.m_41619_() && ItemStack.m_150942_(stack, stored)) {
-               int room = Math.min(stored.m_41741_(), this.storage.m_6893_()) - stored.m_41613_();
+      if (stack.isStackable()) {
+         for (int i = 0; i < this.storage.getContainerSize() && !stack.isEmpty(); i++) {
+            ItemStack stored = this.storage.getItem(i);
+            if (!stored.isEmpty() && ItemStack.isSameItemSameTags(stack, stored)) {
+               int room = Math.min(stored.getMaxStackSize(), this.storage.getMaxStackSize()) - stored.getCount();
                if (room > 0) {
-                  int moved = Math.min(room, stack.m_41613_());
-                  stored.m_41769_(moved);
-                  stack.m_41774_(moved);
-                  this.storage.m_6596_();
+                  int moved = Math.min(room, stack.getCount());
+                  stored.grow(moved);
+                  stack.shrink(moved);
+                  this.storage.setChanged();
                   changed = true;
                }
             }
          }
       }
 
-      for (int ix = 0; ix < this.storage.m_6643_() && !stack.m_41619_(); ix++) {
-         if (this.storage.m_8020_(ix).m_41619_()) {
-            this.storage.m_6836_(ix, stack.m_41620_(Math.min(stack.m_41741_(), this.storage.m_6893_())));
+      for (int ix = 0; ix < this.storage.getContainerSize() && !stack.isEmpty(); ix++) {
+         if (this.storage.getItem(ix).isEmpty()) {
+            this.storage.setItem(ix, stack.split(Math.min(stack.getMaxStackSize(), this.storage.getMaxStackSize())));
             changed = true;
          }
       }
@@ -229,11 +229,11 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
    }
 
    private static boolean isVehicleUpgradeStack(ItemStack stack) {
-      return WorksiteUpgrade.fromStack(stack) != null || stack.m_41720_() instanceof VehicleUpgradeItem || VehicleArmorItem.fromStack(stack) != null;
+      return WorksiteUpgrade.fromStack(stack) != null || stack.getItem() instanceof VehicleUpgradeItem || VehicleArmorItem.fromStack(stack) != null;
    }
 
    private static ChestPushcartEntity findCart(Level level, int entityId) {
-      return level.m_6815_(entityId) instanceof ChestPushcartEntity cart ? cart : null;
+      return level.getEntity(entityId) instanceof ChestPushcartEntity cart ? cart : null;
    }
 
    private class ScrollingStorageSlot extends Slot {
@@ -244,43 +244,43 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
          this.visibleIndex = visibleIndex;
       }
 
-      public int m_150661_() {
+      public int getContainerSlot() {
          return ChestPushcartMenu.this.storageIndexForVisibleSlot(this.visibleIndex);
       }
 
-      public ItemStack m_7993_() {
-         int slot = this.m_150661_();
-         return slot < ChestPushcartMenu.this.storage.m_6643_() ? ChestPushcartMenu.this.storage.m_8020_(slot) : ItemStack.f_41583_;
+      public ItemStack getItem() {
+         int slot = this.getContainerSlot();
+         return slot < ChestPushcartMenu.this.storage.getContainerSize() ? ChestPushcartMenu.this.storage.getItem(slot) : ItemStack.EMPTY;
       }
 
-      public boolean m_6657_() {
-         return !this.m_7993_().m_41619_();
+      public boolean hasItem() {
+         return !this.getItem().isEmpty();
       }
 
-      public void m_5852_(ItemStack stack) {
-         if (this.m_150661_() < ChestPushcartMenu.this.storage.m_6643_()) {
-            ChestPushcartMenu.this.storage.m_6836_(this.m_150661_(), stack);
+      public void set(ItemStack stack) {
+         if (this.getContainerSlot() < ChestPushcartMenu.this.storage.getContainerSize()) {
+            ChestPushcartMenu.this.storage.setItem(this.getContainerSlot(), stack);
          }
 
-         this.m_6654_();
+         this.setChanged();
       }
 
-      public void m_269060_(ItemStack stack) {
-         this.m_5852_(stack);
+      public void setByPlayer(ItemStack stack) {
+         this.set(stack);
       }
 
-      public ItemStack m_6201_(int amount) {
-         return this.m_150661_() < ChestPushcartMenu.this.storage.m_6643_()
-            ? ChestPushcartMenu.this.storage.m_7407_(this.m_150661_(), amount)
-            : ItemStack.f_41583_;
+      public ItemStack remove(int amount) {
+         return this.getContainerSlot() < ChestPushcartMenu.this.storage.getContainerSize()
+            ? ChestPushcartMenu.this.storage.removeItem(this.getContainerSlot(), amount)
+            : ItemStack.EMPTY;
       }
 
-      public boolean m_5857_(ItemStack stack) {
-         return this.m_150661_() < ChestPushcartMenu.this.storage.m_6643_() && ChestPushcartMenu.this.storage.m_7013_(this.m_150661_(), stack);
+      public boolean mayPlace(ItemStack stack) {
+         return this.getContainerSlot() < ChestPushcartMenu.this.storage.getContainerSize() && ChestPushcartMenu.this.storage.canPlaceItem(this.getContainerSlot(), stack);
       }
 
-      public void m_6654_() {
-         ChestPushcartMenu.this.storage.m_6596_();
+      public void setChanged() {
+         ChestPushcartMenu.this.storage.setChanged();
       }
    }
 
@@ -289,11 +289,11 @@ public class ChestPushcartMenu extends AbstractContainerMenu {
          super(container, slot, x, y);
       }
 
-      public boolean m_5857_(ItemStack stack) {
+      public boolean mayPlace(ItemStack stack) {
          return ChestPushcartMenu.isVehicleUpgradeStack(stack);
       }
 
-      public int m_6641_() {
+      public int getMaxStackSize() {
          return 1;
       }
    }

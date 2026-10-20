@@ -28,8 +28,8 @@ final class CombatGroupController {
    }
 
    static void tick(PlayerOwnedNpcEntity commander) {
-      if (!commander.m_9236_().f_46443_ && commander.m_9236_() instanceof ServerLevel level) {
-         ItemStack baton = commander.m_21205_();
+      if (!commander.level().isClientSide && commander.level() instanceof ServerLevel level) {
+         ItemStack baton = commander.getMainHandItem();
          if (CommandBatonItem.isCombatGroupMode(baton)) {
             List<UUID> selected = CommandBatonItem.getCombatGroupNpcs(baton);
             if (!selected.isEmpty()) {
@@ -51,11 +51,11 @@ final class CombatGroupController {
       boolean hippocampusGroup = commander.isHippocampusCombatGroupCommander();
 
       for (int order = 0; order < selected.size(); order++) {
-         Entity entity = level.m_8791_(selected.get(order));
+         Entity entity = level.getEntity(selected.get(order));
          if (entity instanceof PlayerOwnedNpcEntity) {
             PlayerOwnedNpcEntity npc = (PlayerOwnedNpcEntity)entity;
             if (npc != commander
-               && npc.m_6084_()
+               && npc.isAlive()
                && npc.getOwner().equals(commander.getOwner())
                && npc.isCombatGroupEligible()
                && (
@@ -114,57 +114,57 @@ final class CombatGroupController {
    }
 
    private static void coordinateEngagement(PlayerOwnedNpcEntity commander, List<CombatGroupController.GroupMember> members) {
-      LivingEntity commanderTarget = commander.m_5448_();
+      LivingEntity commanderTarget = commander.getTarget();
       if (NpcTargeting.canHarm(commander, commanderTarget)) {
-         AABB searchBox = commander.m_20191_().m_82400_(40.0);
+         AABB searchBox = commander.getBoundingBox().inflate(40.0);
          List<LivingEntity> nearbyEnemies = new ArrayList<>(
-            commander.m_9236_()
-               .m_6443_(LivingEntity.class, searchBox, target -> target instanceof FactionNpcEntity || NpcTargeting.isAutomaticHostile(commander, target))
+            commander.level()
+               .getEntitiesOfClass(LivingEntity.class, searchBox, target -> target instanceof FactionNpcEntity || NpcTargeting.isAutomaticHostile(commander, target))
          );
          if (!nearbyEnemies.contains(commanderTarget)) {
             nearbyEnemies.add(commanderTarget);
          }
 
          Map<UUID, Integer> assignments = new HashMap<>();
-         assignments.put(commanderTarget.m_20148_(), 1);
+         assignments.put(commanderTarget.getUUID(), 1);
 
          for (CombatGroupController.GroupMember groupMember : members) {
             PlayerOwnedNpcEntity member = groupMember.npc();
-            LivingEntity currentTarget = member.m_5448_();
-            if (member.getCurrentCommand() != NpcCommandType.NONE || currentTarget != null && currentTarget.m_6084_()) {
-               if (currentTarget != null && currentTarget.m_6084_()) {
-                  assignments.merge(currentTarget.m_20148_(), 1, Integer::sum);
+            LivingEntity currentTarget = member.getTarget();
+            if (member.getCurrentCommand() != NpcCommandType.NONE || currentTarget != null && currentTarget.isAlive()) {
+               if (currentTarget != null && currentTarget.isAlive()) {
+                  assignments.merge(currentTarget.getUUID(), 1, Integer::sum);
                }
             } else {
-               double range = member.isSiegeEngineerProfession() ? 96.0 : Math.max(24.0, member.m_21133_(Attributes.f_22277_));
+               double range = member.isSiegeEngineerProfession() ? 96.0 : Math.max(24.0, member.getAttributeValue(Attributes.FOLLOW_RANGE));
                if (commander.isDragonRiderCombatGroupCommander()) {
                   if (validTargetFor(member, commanderTarget, true)) {
-                     member.m_6710_(commanderTarget);
-                     assignments.merge(commanderTarget.m_20148_(), 1, Integer::sum);
+                     member.setTarget(commanderTarget);
+                     assignments.merge(commanderTarget.getUUID(), 1, Integer::sum);
                   }
                } else if (commander.isHippogryphCombatGroupCommander()) {
                   if (validTargetFor(member, commanderTarget, true)) {
-                     member.m_6710_(commanderTarget);
-                     assignments.merge(commanderTarget.m_20148_(), 1, Integer::sum);
+                     member.setTarget(commanderTarget);
+                     assignments.merge(commanderTarget.getUUID(), 1, Integer::sum);
                   }
                } else if (commander.isHippocampusCombatGroupCommander()) {
                   if (validTargetFor(member, commanderTarget, true)) {
-                     member.m_6710_(commanderTarget);
-                     assignments.merge(commanderTarget.m_20148_(), 1, Integer::sum);
+                     member.setTarget(commanderTarget);
+                     assignments.merge(commanderTarget.getUUID(), 1, Integer::sum);
                   }
                } else {
                   LivingEntity chosen = nearbyEnemies.stream()
                      .filter(target -> validTargetFor(member, target, target == commanderTarget))
-                     .filter(target -> member.m_20280_(target) <= range * range)
+                     .filter(target -> member.distanceToSqr(target) <= range * range)
                      .min(
                         Comparator.comparingDouble(
-                           target -> member.m_20280_(target) + (double)assignments.getOrDefault(target.m_20148_(), 0).intValue() * 144.0
+                           target -> member.distanceToSqr(target) + (double)assignments.getOrDefault(target.getUUID(), 0).intValue() * 144.0
                         )
                      )
                      .orElse(null);
                   if (chosen != null) {
-                     member.m_6710_(chosen);
-                     assignments.merge(chosen.m_20148_(), 1, Integer::sum);
+                     member.setTarget(chosen);
+                     assignments.merge(chosen.getUUID(), 1, Integer::sum);
                   }
                }
             }
@@ -186,7 +186,7 @@ final class CombatGroupController {
       if (npc.isSiegeEngineerProfession()) {
          return 2;
       } else {
-         return !(npc.m_21205_().m_41720_() instanceof BowItem) && !(npc.m_21205_().m_41720_() instanceof CrossbowItem) ? 0 : 1;
+         return !(npc.getMainHandItem().getItem() instanceof BowItem) && !(npc.getMainHandItem().getItem() instanceof CrossbowItem) ? 0 : 1;
       }
    }
 

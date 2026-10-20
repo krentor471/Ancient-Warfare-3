@@ -26,12 +26,12 @@ public final class CreateHandCrankCompat {
    }
 
    public static Optional<WorkSite> getWorkSite(Level level, BlockPos pos) {
-      return !isHandCrank(level, pos) ? Optional.empty() : Optional.of(new CreateHandCrankCompat.HandCrankWorkSite(level, pos.m_7949_()));
+      return !isHandCrank(level, pos) ? Optional.empty() : Optional.of(new CreateHandCrankCompat.HandCrankWorkSite(level, pos.immutable()));
    }
 
    private static boolean isHandCrank(Level level, BlockPos pos) {
       return level != null && pos != null && AWCorePlatform.isModLoaded("create")
-         ? HAND_CRANK_ID.equals(BuiltInRegistries.f_256975_.m_7981_(level.m_8055_(pos).m_60734_())) && isCompatibleBlockEntity(level.m_7702_(pos))
+         ? HAND_CRANK_ID.equals(BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock())) && isCompatibleBlockEntity(level.getBlockEntity(pos))
          : false;
    }
 
@@ -41,8 +41,8 @@ public final class CreateHandCrankCompat {
    }
 
    private static void turn(Level level, BlockPos pos) {
-      if (level != null && !level.f_46443_ && isHandCrank(level, pos)) {
-         BlockEntity blockEntity = level.m_7702_(pos);
+      if (level != null && !level.isClientSide && isHandCrank(level, pos)) {
+         BlockEntity blockEntity = level.getBlockEntity(pos);
 
          try {
             turnMethod.invoke(blockEntity, false);

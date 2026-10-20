@@ -36,15 +36,15 @@ public final class ForgeClientInputEvents {
 
    @SubscribeEvent
    public static void onKeyInput(Key event) {
-      Minecraft minecraft = Minecraft.m_91087_();
-      if (minecraft.f_91074_ != null && minecraft.f_91080_ == null) {
-         while (ADD_WORK_ORDER_POINT.m_90859_()) {
-            if (isHoldingOrder(minecraft.f_91074_.m_21205_()) || isHoldingOrder(minecraft.f_91074_.m_21206_())) {
-               HitResult var3 = minecraft.f_91077_;
+      Minecraft minecraft = Minecraft.getInstance();
+      if (minecraft.player != null && minecraft.screen == null) {
+         while (ADD_WORK_ORDER_POINT.consumeClick()) {
+            if (isHoldingOrder(minecraft.player.getMainHandItem()) || isHoldingOrder(minecraft.player.getOffhandItem())) {
+               HitResult var3 = minecraft.hitResult;
                if (var3 instanceof BlockHitResult) {
                   BlockHitResult blockHit = (BlockHitResult)var3;
-                  if (blockHit.m_6662_() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-                     AWCorePlatform.addWorkOrderPoint(blockHit.m_82425_(), blockHit.m_82434_());
+                  if (blockHit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+                     AWCorePlatform.addWorkOrderPoint(blockHit.getBlockPos(), blockHit.getDirection());
                   }
                }
             }
@@ -66,15 +66,15 @@ public final class ForgeClientInputEvents {
    }
 
    private static void consumeBatonKey(Minecraft minecraft, KeyMapping mapping) {
-      while (mapping.m_90859_()) {
-         if (isHoldingBaton(minecraft.f_91074_.m_21205_()) || isHoldingBaton(minecraft.f_91074_.m_21206_())) {
+      while (mapping.consumeClick()) {
+         if (isHoldingBaton(minecraft.player.getMainHandItem()) || isHoldingBaton(minecraft.player.getOffhandItem())) {
             AWCorePlatform.clearCommandBatonSelections();
          }
       }
    }
 
    private static boolean isHoldingBaton(ItemStack stack) {
-      return stack != null && stack.m_41720_() instanceof CommandBatonItem;
+      return stack != null && stack.getItem() instanceof CommandBatonItem;
    }
 
    @EventBusSubscriber(

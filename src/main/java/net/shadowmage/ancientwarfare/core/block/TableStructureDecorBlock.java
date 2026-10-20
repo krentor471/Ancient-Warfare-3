@@ -15,54 +15,54 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class TableStructureDecorBlock extends Block {
-   public static final BooleanProperty LEG_NORTHEAST = BooleanProperty.m_61465_("leg_northeast");
-   public static final BooleanProperty LEG_SOUTHEAST = BooleanProperty.m_61465_("leg_southeast");
-   public static final BooleanProperty LEG_SOUTHWEST = BooleanProperty.m_61465_("leg_southwest");
-   public static final BooleanProperty LEG_NORTHWEST = BooleanProperty.m_61465_("leg_northwest");
+   public static final BooleanProperty LEG_NORTHEAST = BooleanProperty.create("leg_northeast");
+   public static final BooleanProperty LEG_SOUTHEAST = BooleanProperty.create("leg_southeast");
+   public static final BooleanProperty LEG_SOUTHWEST = BooleanProperty.create("leg_southwest");
+   public static final BooleanProperty LEG_NORTHWEST = BooleanProperty.create("leg_northwest");
    private static final VoxelShape SHAPE = StructureDecorBlock.shape(
-      Block.m_49796_(0.0, 14.0, 0.0, 16.0, 16.0, 16.0),
-      Block.m_49796_(0.0, 0.0, 0.0, 2.0, 14.0, 2.0),
-      Block.m_49796_(14.0, 0.0, 0.0, 16.0, 14.0, 2.0),
-      Block.m_49796_(14.0, 0.0, 14.0, 16.0, 14.0, 16.0),
-      Block.m_49796_(0.0, 0.0, 14.0, 2.0, 14.0, 16.0)
+      Block.box(0.0, 14.0, 0.0, 16.0, 16.0, 16.0),
+      Block.box(0.0, 0.0, 0.0, 2.0, 14.0, 2.0),
+      Block.box(14.0, 0.0, 0.0, 16.0, 14.0, 2.0),
+      Block.box(14.0, 0.0, 14.0, 16.0, 14.0, 16.0),
+      Block.box(0.0, 0.0, 14.0, 2.0, 14.0, 16.0)
    );
 
    public TableStructureDecorBlock(Properties properties) {
       super(properties);
-      this.m_49959_(
-         (BlockState)((BlockState)((BlockState)((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(LEG_NORTHEAST, true)).m_61124_(LEG_SOUTHEAST, true))
-               .m_61124_(LEG_SOUTHWEST, true))
-            .m_61124_(LEG_NORTHWEST, true)
+      this.registerDefaultState(
+         (BlockState)((BlockState)((BlockState)((BlockState)((BlockState)this.stateDefinition.any()).setValue(LEG_NORTHEAST, true)).setValue(LEG_SOUTHEAST, true))
+               .setValue(LEG_SOUTHWEST, true))
+            .setValue(LEG_NORTHWEST, true)
       );
    }
 
-   public BlockState m_7417_(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+   public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
       return this.connectedState(state, level, pos);
    }
 
-   public BlockState m_5573_(BlockPlaceContext context) {
-      return this.connectedState(this.m_49966_(), context.m_43725_(), context.m_8083_());
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      return this.connectedState(this.defaultBlockState(), context.getLevel(), context.getClickedPos());
    }
 
    private BlockState connectedState(BlockState state, BlockGetter level, BlockPos pos) {
-      boolean north = level.m_8055_(pos.m_122012_()).m_60713_(this);
-      boolean east = level.m_8055_(pos.m_122029_()).m_60713_(this);
-      boolean south = level.m_8055_(pos.m_122019_()).m_60713_(this);
-      boolean west = level.m_8055_(pos.m_122024_()).m_60713_(this);
-      return (BlockState)((BlockState)((BlockState)((BlockState)state.m_61124_(LEG_NORTHEAST, !north && !east)).m_61124_(LEG_SOUTHEAST, !south && !east))
-            .m_61124_(LEG_SOUTHWEST, !south && !west))
-         .m_61124_(LEG_NORTHWEST, !north && !west);
+      boolean north = level.getBlockState(pos.north()).is(this);
+      boolean east = level.getBlockState(pos.east()).is(this);
+      boolean south = level.getBlockState(pos.south()).is(this);
+      boolean west = level.getBlockState(pos.west()).is(this);
+      return (BlockState)((BlockState)((BlockState)((BlockState)state.setValue(LEG_NORTHEAST, !north && !east)).setValue(LEG_SOUTHEAST, !south && !east))
+            .setValue(LEG_SOUTHWEST, !south && !west))
+         .setValue(LEG_NORTHWEST, !north && !west);
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return SHAPE;
    }
 
-   public VoxelShape m_5939_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-      return this.m_5940_(state, level, pos, context);
+   public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+      return this.getShape(state, level, pos, context);
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{LEG_NORTHEAST, LEG_SOUTHEAST, LEG_SOUTHWEST, LEG_NORTHWEST});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{LEG_NORTHEAST, LEG_SOUTHEAST, LEG_SOUTHWEST, LEG_NORTHWEST});
    }
 }

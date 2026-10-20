@@ -7,7 +7,7 @@ public class WarehouseStockFilter {
    private static final String ITEM_TAG = "Item";
    private static final String TARGET_TAG = "Target";
    private static final String EQUALITY_TAG = "Equality";
-   private ItemStack item = ItemStack.f_41583_;
+   private ItemStack item = ItemStack.EMPTY;
    private long quantity;
    private int target;
    private WarehouseStockFilter.Equality equality = WarehouseStockFilter.Equality.EQUAL;
@@ -29,7 +29,7 @@ public class WarehouseStockFilter {
    }
 
    public void setItem(ItemStack stack) {
-      this.item = stack.m_41619_() ? ItemStack.f_41583_ : stack.m_255036_(1);
+      this.item = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
    }
 
    public void setQuantity(long quantity) {
@@ -45,28 +45,28 @@ public class WarehouseStockFilter {
    }
 
    public boolean passes() {
-      return !this.item.m_41619_() && this.equality.test(this.quantity, this.target);
+      return !this.item.isEmpty() && this.equality.test(this.quantity, this.target);
    }
 
    public CompoundTag save() {
       CompoundTag tag = new CompoundTag();
-      if (!this.item.m_41619_()) {
-         tag.m_128365_("Item", this.item.m_41739_(new CompoundTag()));
+      if (!this.item.isEmpty()) {
+         tag.put("Item", this.item.save(new CompoundTag()));
       }
 
-      tag.m_128405_("Target", this.target);
-      tag.m_128405_("Equality", this.equality.ordinal());
+      tag.putInt("Target", this.target);
+      tag.putInt("Equality", this.equality.ordinal());
       return tag;
    }
 
    public void load(CompoundTag tag) {
-      this.item = tag.m_128441_("Item") ? ItemStack.m_41712_(tag.m_128469_("Item")) : ItemStack.f_41583_;
-      if (!this.item.m_41619_()) {
-         this.item.m_41764_(1);
+      this.item = tag.contains("Item") ? ItemStack.of(tag.getCompound("Item")) : ItemStack.EMPTY;
+      if (!this.item.isEmpty()) {
+         this.item.setCount(1);
       }
 
-      this.target = Math.max(0, tag.m_128451_("Target"));
-      int index = tag.m_128451_("Equality");
+      this.target = Math.max(0, tag.getInt("Target"));
+      int index = tag.getInt("Equality");
       this.equality = index >= 0 && index < WarehouseStockFilter.Equality.values().length
          ? WarehouseStockFilter.Equality.values()[index]
          : WarehouseStockFilter.Equality.EQUAL;

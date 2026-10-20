@@ -31,7 +31,7 @@ import net.shadowmage.ancientwarfare.core.item.CommandBatonItem;
 import net.shadowmage.ancientwarfare.core.menu.NpcInventoryMenu;
 
 public class BardNpcEntity extends PlayerOwnedNpcEntity {
-   private static final EntityDataAccessor<String> BARD_TRACKS_DATA = SynchedEntityData.m_135353_(BardNpcEntity.class, EntityDataSerializers.f_135030_);
+   private static final EntityDataAccessor<String> BARD_TRACKS_DATA = SynchedEntityData.defineId(BardNpcEntity.class, EntityDataSerializers.STRING);
    private static final String TAG_BARD_TRACKS = "BardTracks";
    private static final int DEFAULT_PLAY_RANGE = 20;
    private final List<BardTrack> tracks = new ArrayList<>();
@@ -42,41 +42,41 @@ public class BardNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 20.0).m_22268_(Attributes.f_22279_, 0.25).m_22268_(Attributes.f_22277_, 24.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.25).add(Attributes.FOLLOW_RANGE, 24.0);
    }
 
    @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(BARD_TRACKS_DATA, "");
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(BARD_TRACKS_DATA, "");
    }
 
-   protected void m_8099_() {
-      this.f_21345_.m_25352_(0, new FloatGoal(this));
-      this.f_21345_.m_25352_(2, new BardNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
-      this.f_21345_.m_25352_(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
-      this.f_21345_.m_25352_(7, new RandomLookAroundGoal(this));
+   protected void registerGoals() {
+      this.goalSelector.addGoal(0, new FloatGoal(this));
+      this.goalSelector.addGoal(2, new BardNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+      this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
    }
 
-   protected InteractionResult m_6071_(Player player, InteractionHand hand) {
+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
       if (this.tryAcceptFood(player, hand)) {
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
-      } else if (player.m_21120_(hand).m_41720_() instanceof CommandBatonItem) {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.m_21120_(hand), player, this);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
+            CommandBatonItem.toggleNpcSelection(player.getItemInHand(hand), player, this);
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
             AWCorePlatform.openMenu(
                player,
-               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.m_5446_()),
-               buffer -> buffer.writeInt(this.m_19879_())
+               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.getDisplayName()),
+               buffer -> buffer.writeInt(this.getId())
             );
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
    }
 
@@ -91,31 +91,31 @@ public class BardNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    @Override
-   public Component m_5677_() {
-      return Component.m_237115_("entity.ancientwarfare.bard");
+   public Component getTypeName() {
+      return Component.translatable("entity.ancientwarfare.bard");
    }
 
    @Override
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
       ListTag list = new ListTag();
 
       for (BardTrack track : this.tracks) {
          list.add(track.save());
       }
 
-      tag.m_128365_("BardTracks", list);
+      tag.put("BardTracks", list);
    }
 
    @Override
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
       this.tracks.clear();
-      if (tag.m_128441_("BardTracks")) {
-         ListTag list = tag.m_128437_("BardTracks", 10);
+      if (tag.contains("BardTracks")) {
+         ListTag list = tag.getList("BardTracks", 10);
 
          for (int i = 0; i < list.size(); i++) {
-            this.tracks.add(BardTrack.load(list.m_128728_(i)));
+            this.tracks.add(BardTrack.load(list.getCompound(i)));
          }
       }
 
@@ -123,7 +123,7 @@ public class BardNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    public List<BardTrack> getBardTracks() {
-      return this.m_9236_().f_46443_ ? this.parseSyncedTracks() : List.copyOf(this.tracks);
+      return this.level().isClientSide ? this.parseSyncedTracks() : List.copyOf(this.tracks);
    }
 
    public void setBardTracks(List<BardTrack> tracks) {
@@ -147,22 +147,22 @@ public class BardNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       CompoundTag tag = new CompoundTag();
-      tag.m_128365_("BardTracks", list);
-      this.f_19804_.m_135381_(BARD_TRACKS_DATA, tag.toString());
+      tag.put("BardTracks", list);
+      this.entityData.set(BARD_TRACKS_DATA, tag.toString());
    }
 
    private List<BardTrack> parseSyncedTracks() {
-      String data = (String)this.f_19804_.m_135370_(BARD_TRACKS_DATA);
+      String data = (String)this.entityData.get(BARD_TRACKS_DATA);
       if (data.isBlank()) {
          return List.of();
       } else {
          try {
-            CompoundTag tag = TagParser.m_129359_(data);
-            ListTag list = tag.m_128437_("BardTracks", 10);
+            CompoundTag tag = TagParser.parseTag(data);
+            ListTag list = tag.getList("BardTracks", 10);
             List<BardTrack> parsed = new ArrayList<>(list.size());
 
             for (int i = 0; i < list.size(); i++) {
-               parsed.add(BardTrack.load(list.m_128728_(i)));
+               parsed.add(BardTrack.load(list.getCompound(i)));
             }
 
             return parsed;
@@ -182,45 +182,45 @@ public class BardNpcEntity extends PlayerOwnedNpcEntity {
          this.bard = bard;
          this.speedModifier = speedModifier;
          this.stopDistanceSq = stopDistance * stopDistance;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.bard.getCurrentCommand() != NpcCommandType.MOVE) {
             return false;
          } else {
             this.target = this.bard.getCommandTarget();
-            return !BlockPos.f_121853_.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
+            return !BlockPos.ZERO.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.bard.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() > this.stopDistanceSq;
       }
 
-      public void m_8037_() {
-         this.bard.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+      public void tick() {
+         this.bard.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
          this.bard
-            .m_21573_()
-            .m_26519_(
-               (double)this.target.m_123341_() + 0.5,
-               (double)this.target.m_123342_(),
-               (double)this.target.m_123343_() + 0.5,
+            .getNavigation()
+            .moveTo(
+               (double)this.target.getX() + 0.5,
+               (double)this.target.getY(),
+               (double)this.target.getZ() + 0.5,
                this.bard.playerWalkNavigationSpeed()
             );
       }
 
-      public void m_8041_() {
+      public void stop() {
          if (this.bard.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
             this.bard.clearCommand();
          }
 
          this.target = null;
-         this.bard.m_21573_().m_26573_();
+         this.bard.getNavigation().stop();
       }
 
       private double distanceToTargetSq() {
-         return this.bard.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+         return this.bard.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
       }
    }
 }

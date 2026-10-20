@@ -9,11 +9,11 @@ public class NpcShieldItem extends ShieldItem {
    private final Tier repairTier;
 
    public NpcShieldItem(Tier repairTier, int durability) {
-      super(new Properties().m_41503_(durability));
+      super(new Properties().durability(durability));
       this.repairTier = repairTier;
    }
 
-   public boolean m_6832_(ItemStack stack, ItemStack repairCandidate) {
-      return this.repairTier.m_6282_().test(repairCandidate) || super.m_6832_(stack, repairCandidate);
+   public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
+      return this.repairTier.getRepairIngredient().test(repairCandidate) || super.isValidRepairItem(stack, repairCandidate);
    }
 }

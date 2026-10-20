@@ -60,21 +60,21 @@ public class ProtectionFlagBlockEntity extends BlockEntity {
    }
 
    public AABB getRenderBoundingBox() {
-      return new AABB(this.f_58858_, this.f_58858_.m_7918_(1, 3, 1));
+      return new AABB(this.worldPosition, this.worldPosition.offset(1, 3, 1));
    }
 
    public boolean claim(Player player) {
-      if (this.owner == null && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (this.owner == null && this.level instanceof ServerLevel serverLevel) {
          if (this.hasTerritory()) {
-            List<FactionNpcEntity> enemies = serverLevel.m_6443_(
-               FactionNpcEntity.class, this.territoryBounds(), npc -> npc.m_6084_() && npc.isHostileTowards(player)
+            List<FactionNpcEntity> enemies = serverLevel.getEntitiesOfClass(
+               FactionNpcEntity.class, this.territoryBounds(), npc -> npc.isAlive() && npc.isHostileTowards(player)
             );
             if (!enemies.isEmpty()) {
                for (LivingEntity enemy : enemies) {
-                  enemy.m_7292_(new MobEffectInstance(MobEffects.f_19619_, 2400, 0, false, false, true));
+                  enemy.addEffect(new MobEffectInstance(MobEffects.GLOWING, 2400, 0, false, false, true));
                }
 
-               player.m_5661_(Component.m_237110_("message.ancientwarfare.protection_flag.enemies", new Object[]{enemies.size()}), true);
+               player.displayClientMessage(Component.translatable("message.ancientwarfare.protection_flag.enemies", new Object[]{enemies.size()}), true);
                return false;
             }
          }
@@ -82,7 +82,7 @@ public class ProtectionFlagBlockEntity extends BlockEntity {
          this.setOwner(player);
          this.claimed = true;
          if (this.hasTerritory()) {
-            TerritoryProtectionData.get(serverLevel).claim(this.f_58858_, this.owner, this.ownerName);
+            TerritoryProtectionData.get(serverLevel).claim(this.worldPosition, this.owner, this.ownerName);
          }
 
          this.syncChanged();
@@ -93,13 +93,13 @@ public class ProtectionFlagBlockEntity extends BlockEntity {
    }
 
    public void configureTerritory(BlockPos min, BlockPos max) {
-      this.territoryMin = min.m_7949_();
-      this.territoryMax = max.m_7949_();
+      this.territoryMin = min.immutable();
+      this.territoryMax = max.immutable();
       this.claimed = false;
       this.owner = null;
       this.ownerName = "";
-      if (this.f_58857_ instanceof ServerLevel serverLevel) {
-         TerritoryProtectionData.get(serverLevel).register(this.f_58858_, this.territoryMin, this.territoryMax);
+      if (this.level instanceof ServerLevel serverLevel) {
+         TerritoryProtectionData.get(serverLevel).register(this.worldPosition, this.territoryMin, this.territoryMax);
       }
 
       this.syncChanged();
@@ -118,21 +118,21 @@ public class ProtectionFlagBlockEntity extends BlockEntity {
    }
 
    private AABB territoryBounds() {
-      return new AABB(this.territoryMin, this.territoryMax.m_7918_(1, 1, 1));
+      return new AABB(this.territoryMin, this.territoryMax.offset(1, 1, 1));
    }
 
    public void setOwner(Player player) {
-      this.owner = player.m_20148_();
-      this.ownerName = player.m_36316_().getName();
+      this.owner = player.getUUID();
+      this.ownerName = player.getGameProfile().getName();
       this.syncChanged();
    }
 
    public boolean shouldProtectAgainst(Player player) {
-      return this.owner != null && !this.owner.equals(player.m_20148_());
+      return this.owner != null && !this.owner.equals(player.getUUID());
    }
 
    public void loadFromItem(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
+      CompoundTag tag = stack.getTag();
       if (tag != null) {
          this.readFlagData(tag);
          this.syncChanged();
@@ -153,18 +153,18 @@ public class ProtectionFlagBlockEntity extends BlockEntity {
       }
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
       this.writeFlagData(tag);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
+   public void load(CompoundTag tag) {
+      super.load(tag);
       this.readFlagData(tag);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
       this.writeFlagData(tag);
       return tag;
    }
@@ -174,57 +174,57 @@ public class ProtectionFlagBlockEntity extends BlockEntity {
    }
 
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
    private void writeFlagData(CompoundTag tag) {
-      tag.m_128359_("FlagName", this.flagName());
-      tag.m_128405_("TopColor", this.topColor);
-      tag.m_128405_("BottomColor", this.bottomColor);
-      tag.m_128379_("Claimed", this.claimed);
+      tag.putString("FlagName", this.flagName());
+      tag.putInt("TopColor", this.topColor);
+      tag.putInt("BottomColor", this.bottomColor);
+      tag.putBoolean("Claimed", this.claimed);
       if (this.hasTerritory()) {
-         tag.m_128356_("TerritoryMin", this.territoryMin.m_121878_());
-         tag.m_128356_("TerritoryMax", this.territoryMax.m_121878_());
+         tag.putLong("TerritoryMin", this.territoryMin.asLong());
+         tag.putLong("TerritoryMax", this.territoryMax.asLong());
       }
 
       if (this.owner != null) {
-         tag.m_128362_("Owner", this.owner);
-         tag.m_128359_("OwnerName", this.ownerName);
+         tag.putUUID("Owner", this.owner);
+         tag.putString("OwnerName", this.ownerName);
       }
    }
 
    private void readFlagData(CompoundTag tag) {
-      if (tag.m_128441_("FlagName")) {
-         this.flagName = tag.m_128461_("FlagName");
-      } else if (tag.m_128441_("name")) {
-         this.flagName = tag.m_128461_("name");
+      if (tag.contains("FlagName")) {
+         this.flagName = tag.getString("FlagName");
+      } else if (tag.contains("name")) {
+         this.flagName = tag.getString("name");
       }
 
-      if (tag.m_128441_("TopColor")) {
-         this.topColor = tag.m_128451_("TopColor");
-      } else if (tag.m_128441_("topColor")) {
-         this.topColor = tag.m_128451_("topColor");
+      if (tag.contains("TopColor")) {
+         this.topColor = tag.getInt("TopColor");
+      } else if (tag.contains("topColor")) {
+         this.topColor = tag.getInt("topColor");
       }
 
-      if (tag.m_128441_("BottomColor")) {
-         this.bottomColor = tag.m_128451_("BottomColor");
-      } else if (tag.m_128441_("bottomColor")) {
-         this.bottomColor = tag.m_128451_("bottomColor");
+      if (tag.contains("BottomColor")) {
+         this.bottomColor = tag.getInt("BottomColor");
+      } else if (tag.contains("bottomColor")) {
+         this.bottomColor = tag.getInt("bottomColor");
       }
 
-      this.claimed = tag.m_128471_("Claimed");
-      this.territoryMin = tag.m_128441_("TerritoryMin") ? BlockPos.m_122022_(tag.m_128454_("TerritoryMin")) : null;
-      this.territoryMax = tag.m_128441_("TerritoryMax") ? BlockPos.m_122022_(tag.m_128454_("TerritoryMax")) : null;
-      if (tag.m_128403_("Owner")) {
-         this.owner = tag.m_128342_("Owner");
-         this.ownerName = tag.m_128461_("OwnerName");
+      this.claimed = tag.getBoolean("Claimed");
+      this.territoryMin = tag.contains("TerritoryMin") ? BlockPos.of(tag.getLong("TerritoryMin")) : null;
+      this.territoryMax = tag.contains("TerritoryMax") ? BlockPos.of(tag.getLong("TerritoryMax")) : null;
+      if (tag.hasUUID("Owner")) {
+         this.owner = tag.getUUID("Owner");
+         this.ownerName = tag.getString("OwnerName");
       }
    }
 
    private void syncChanged() {
-      this.m_6596_();
-      if (this.f_58857_ != null) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+      this.setChanged();
+      if (this.level != null) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 

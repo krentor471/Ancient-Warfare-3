@@ -12,45 +12,45 @@ final class CombatGroupFollowGoal extends Goal {
 
    CombatGroupFollowGoal(PlayerOwnedNpcEntity npc) {
       this.npc = npc;
-      this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+      this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
    }
 
-   public boolean m_8036_() {
+   public boolean canUse() {
       return this.npc.shouldFollowCombatGroupFormation()
-         && this.npc.getCombatGroupFormationPosition().map(position -> this.moverPosition().m_82557_(position) > 2.25).orElse(false);
+         && this.npc.getCombatGroupFormationPosition().map(position -> this.moverPosition().distanceToSqr(position) > 2.25).orElse(false);
    }
 
-   public boolean m_8045_() {
-      return this.m_8036_();
+   public boolean canContinueToUse() {
+      return this.canUse();
    }
 
-   public void m_8056_() {
+   public void start() {
       this.repathTicks = 0;
    }
 
-   public void m_8037_() {
+   public void tick() {
       Vec3 destination = this.npc.getCombatGroupFormationPosition().orElse(null);
       if (destination != null) {
-         this.npc.m_21563_().m_24946_(destination.f_82479_, destination.f_82480_, destination.f_82481_);
-         if (!this.npc.m_20159_()) {
-            if (this.repathTicks-- <= 0 || this.npc.m_21573_().m_26571_()) {
-               double distance = this.npc.m_20182_().m_82554_(destination);
+         this.npc.getLookControl().setLookAt(destination.x, destination.y, destination.z);
+         if (!this.npc.isPassenger()) {
+            if (this.repathTicks-- <= 0 || this.npc.getNavigation().isDone()) {
+               double distance = this.npc.position().distanceTo(destination);
                double speed = distance > 12.0 ? this.npc.playerSprintNavigationSpeed() * 1.2 : this.npc.playerWalkNavigationSpeed();
-               this.npc.m_21573_().m_26519_(destination.f_82479_, destination.f_82480_, destination.f_82481_, speed);
+               this.npc.getNavigation().moveTo(destination.x, destination.y, destination.z, speed);
                this.repathTicks = 8;
             }
          }
       }
    }
 
-   public void m_8041_() {
+   public void stop() {
       this.repathTicks = 0;
       if (this.npc.shouldFollowCombatGroupFormation()) {
-         this.npc.m_21573_().m_26573_();
+         this.npc.getNavigation().stop();
       }
    }
 
    private Vec3 moverPosition() {
-      return this.npc.m_20202_() == null ? this.npc.m_20182_() : this.npc.m_20202_().m_20182_();
+      return this.npc.getVehicle() == null ? this.npc.position() : this.npc.getVehicle().position();
    }
 }

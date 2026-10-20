@@ -26,13 +26,13 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
    public static final int STORAGE_SLOT_COUNT = 27;
    private static final float MAX_TURRET_PITCH = 15.0F;
    private static final float MIN_TURRET_PITCH = -15.0F;
-   private static final EntityDataAccessor<Float> TURRET_PITCH = SynchedEntityData.m_135353_(BallistaMobileEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Float> TURRET_YAW = SynchedEntityData.m_135353_(BallistaMobileEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Integer> FIRE_ANIMATION = SynchedEntityData.m_135353_(BallistaMobileEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Float> CRANK_ANGLE = SynchedEntityData.m_135353_(BallistaMobileEntity.class, EntityDataSerializers.f_135029_);
-   private static final EntityDataAccessor<Boolean> FIXED_TURRET = SynchedEntityData.m_135353_(BallistaMobileEntity.class, EntityDataSerializers.f_135035_);
-   private static final Component TURRET_MENU_TITLE = Component.m_237115_("container.ancientwarfare.ballista_mobile");
-   private static final Component FIXED_MENU_TITLE = Component.m_237115_("container.ancientwarfare.ballista_mobile_fixed");
+   private static final EntityDataAccessor<Float> TURRET_PITCH = SynchedEntityData.defineId(BallistaMobileEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Float> TURRET_YAW = SynchedEntityData.defineId(BallistaMobileEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Integer> FIRE_ANIMATION = SynchedEntityData.defineId(BallistaMobileEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Float> CRANK_ANGLE = SynchedEntityData.defineId(BallistaMobileEntity.class, EntityDataSerializers.FLOAT);
+   private static final EntityDataAccessor<Boolean> FIXED_TURRET = SynchedEntityData.defineId(BallistaMobileEntity.class, EntityDataSerializers.BOOLEAN);
+   private static final Component TURRET_MENU_TITLE = Component.translatable("container.ancientwarfare.ballista_mobile");
+   private static final Component FIXED_MENU_TITLE = Component.translatable("container.ancientwarfare.ballista_mobile_fixed");
    private static final int FIRE_COOLDOWN_TICKS = 30;
    public static final int RELEASE_ANIMATION_TICKS = 5;
    public static final int RELOAD_ANIMATION_TICKS = 25;
@@ -46,50 +46,50 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(TURRET_PITCH, 0.0F);
-      this.f_19804_.m_135372_(TURRET_YAW, 0.0F);
-      this.f_19804_.m_135372_(FIRE_ANIMATION, 0);
-      this.f_19804_.m_135372_(CRANK_ANGLE, 0.0F);
-      this.f_19804_.m_135372_(FIXED_TURRET, false);
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(TURRET_PITCH, 0.0F);
+      this.entityData.define(TURRET_YAW, 0.0F);
+      this.entityData.define(FIRE_ANIMATION, 0);
+      this.entityData.define(CRANK_ANGLE, 0.0F);
+      this.entityData.define(FIXED_TURRET, false);
    }
 
    @Override
-   public int m_6643_() {
+   public int getContainerSize() {
       return 27;
    }
 
    public float getTurretPitch() {
-      return (Float)this.f_19804_.m_135370_(TURRET_PITCH);
+      return (Float)this.entityData.get(TURRET_PITCH);
    }
 
    public float getTurretYaw() {
-      return (Float)this.f_19804_.m_135370_(TURRET_YAW);
+      return (Float)this.entityData.get(TURRET_YAW);
    }
 
    public boolean hasFixedTurret() {
-      return (Boolean)this.f_19804_.m_135370_(FIXED_TURRET);
+      return (Boolean)this.entityData.get(FIXED_TURRET);
    }
 
    public int getFireAnimationTicks() {
-      return (Integer)this.f_19804_.m_135370_(FIRE_ANIMATION);
+      return (Integer)this.entityData.get(FIRE_ANIMATION);
    }
 
    public float getCrankAngle() {
-      return (Float)this.f_19804_.m_135370_(CRANK_ANGLE);
+      return (Float)this.entityData.get(CRANK_ANGLE);
    }
 
    public void setFixedTurret(boolean fixedTurret) {
-      this.f_19804_.m_135381_(FIXED_TURRET, fixedTurret);
+      this.entityData.set(FIXED_TURRET, fixedTurret);
       if (fixedTurret) {
-         this.f_19804_.m_135381_(TURRET_YAW, 0.0F);
+         this.entityData.set(TURRET_YAW, 0.0F);
       }
    }
 
    public void adjustTurret(float pitchDelta, float yawDelta) {
       this.setTurretPitch(clamp(this.getTurretPitch() + pitchDelta, -15.0F, 15.0F));
-      this.setTurretYaw(this.hasFixedTurret() ? 0.0F : Mth.m_14177_(this.getTurretYaw() + yawDelta));
+      this.setTurretYaw(this.hasFixedTurret() ? 0.0F : Mth.wrapDegrees(this.getTurretYaw() + yawDelta));
    }
 
    private static float clamp(float value, float min, float max) {
@@ -97,11 +97,11 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    protected void setTurretPitch(float pitch) {
-      this.f_19804_.m_135381_(TURRET_PITCH, pitch);
+      this.entityData.set(TURRET_PITCH, pitch);
    }
 
    protected void setTurretYaw(float yaw) {
-      this.f_19804_.m_135381_(TURRET_YAW, yaw);
+      this.entityData.set(TURRET_YAW, yaw);
    }
 
    @Override
@@ -123,9 +123,9 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    @Override
-   public void m_8119_() {
-      super.m_8119_();
-      if (!this.m_9236_().f_46443_) {
+   public void tick() {
+      super.tick();
+      if (!this.level().isClientSide) {
          if (this.fireCooldown > 0) {
             this.fireCooldown--;
          }
@@ -133,37 +133,37 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
          int animationTicks = this.getFireAnimationTicks();
          if (animationTicks > 0) {
             if (animationTicks <= 25) {
-               this.f_19804_.m_135381_(CRANK_ANGLE, this.getCrankAngle() - 4.0F);
+               this.entityData.set(CRANK_ANGLE, this.getCrankAngle() - 4.0F);
             }
 
-            this.f_19804_.m_135381_(FIRE_ANIMATION, animationTicks - 1);
+            this.entityData.set(FIRE_ANIMATION, animationTicks - 1);
          }
       }
    }
 
    public boolean tryFire() {
-      if (!this.m_9236_().f_46443_ && this.fireCooldown <= 0) {
+      if (!this.level().isClientSide && this.fireCooldown <= 0) {
          BallistaMobileEntity.AmmoSlot ammoSlot = this.findLoadedAmmo();
          if (ammoSlot == null) {
             return false;
          } else {
-            ItemStack stack = this.m_8020_(ammoSlot.slot());
-            stack.m_41774_(1);
-            this.m_6836_(ammoSlot.slot(), stack);
-            this.m_6596_();
-            LivingEntity shooter = this.m_6688_();
-            BallistaBoltEntity bolt = new BallistaBoltEntity(this.m_9236_(), shooter, ammoSlot.ammoType());
-            double yaw = Math.toRadians((double)(this.m_146908_() + this.getTurretYaw()));
+            ItemStack stack = this.getItem(ammoSlot.slot());
+            stack.shrink(1);
+            this.setItem(ammoSlot.slot(), stack);
+            this.setChanged();
+            LivingEntity shooter = this.getControllingPassenger();
+            BallistaBoltEntity bolt = new BallistaBoltEntity(this.level(), shooter, ammoSlot.ammoType());
+            double yaw = Math.toRadians((double)(this.getYRot() + this.getTurretYaw()));
             double pitch = Math.toRadians((double)this.getTurretPitch());
             double cosPitch = Math.cos(pitch);
-            Vec3 direction = new Vec3(-Math.sin(yaw) * cosPitch, Math.sin(pitch), Math.cos(yaw) * cosPitch).m_82541_();
-            Vec3 muzzle = this.m_20182_().m_82549_(direction.m_82490_(this.muzzleForwardOffset())).m_82520_(0.0, this.muzzleHeight(), 0.0);
-            bolt.m_7678_(muzzle.f_82479_, muzzle.f_82480_, muzzle.f_82481_, this.m_146908_() + this.getTurretYaw(), this.getTurretPitch());
+            Vec3 direction = new Vec3(-Math.sin(yaw) * cosPitch, Math.sin(pitch), Math.cos(yaw) * cosPitch).normalize();
+            Vec3 muzzle = this.position().add(direction.scale(this.muzzleForwardOffset())).add(0.0, this.muzzleHeight(), 0.0);
+            bolt.moveTo(muzzle.x, muzzle.y, muzzle.z, this.getYRot() + this.getTurretYaw(), this.getTurretPitch());
             bolt.setBlockCollisionGraceOrigin(muzzle);
-            bolt.m_6686_(direction.f_82479_, direction.f_82480_, direction.f_82481_, 3.4F, 0.35F);
-            this.m_9236_().m_7967_(bolt);
+            bolt.shoot(direction.x, direction.y, direction.z, 3.4F, 0.35F);
+            this.level().addFreshEntity(bolt);
             this.fireCooldown = 30;
-            this.f_19804_.m_135381_(FIRE_ANIMATION, 30);
+            this.entityData.set(FIRE_ANIMATION, 30);
             return true;
          }
       } else {
@@ -192,18 +192,18 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
          return false;
       } else {
          float worldYaw = SiegeWeaponNpcControl.worldYawTo(target, this);
-         if (this instanceof BallistaStandFixedEntity && Math.abs(Mth.m_14177_(worldYaw - this.m_146908_())) > 4.0F) {
+         if (this instanceof BallistaStandFixedEntity && Math.abs(Mth.wrapDegrees(worldYaw - this.getYRot())) > 4.0F) {
             return false;
          } else {
             float pitch = SiegeWeaponNpcControl.clearBallisticPitch(
-               this.m_9236_(),
+               this.level(),
                this,
                target,
                this.muzzleHeight(),
                this.muzzleForwardOffset(),
                (double)this.projectileSpeed(),
                (double)this.projectileGravity(),
-               this instanceof BallistaStandFixedEntity ? this.m_146908_() : worldYaw,
+               this instanceof BallistaStandFixedEntity ? this.getYRot() : worldYaw,
                -15.0F,
                15.0F,
                6.0
@@ -241,14 +241,14 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
       }
 
       float pitch = SiegeWeaponNpcControl.clearBallisticPitch(
-         this.m_9236_(),
+         this.level(),
          this,
          target,
          this.muzzleHeight(),
          this.muzzleForwardOffset(),
          (double)this.projectileSpeed(),
          (double)this.projectileGravity(),
-         this instanceof BallistaStandFixedEntity ? this.m_146908_() : worldYaw,
+         this instanceof BallistaStandFixedEntity ? this.getYRot() : worldYaw,
          -15.0F,
          15.0F,
          6.0
@@ -285,8 +285,8 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    private BallistaMobileEntity.AmmoSlot findLoadedAmmo() {
-      for (int i = 0; i < this.m_6643_(); i++) {
-         ItemStack stack = this.m_8020_(i);
+      for (int i = 0; i < this.getContainerSize(); i++) {
+         ItemStack stack = this.getItem(i);
          BallistaAmmoType ammoType = BallistaAmmoItem.ammoType(stack);
          if (ammoType != null) {
             return new BallistaMobileEntity.AmmoSlot(i, ammoType);
@@ -311,10 +311,10 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         Vec3 offset = this.getPassengerOffset().m_82524_(-this.m_146908_() * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         Vec3 offset = this.getPassengerOffset().yRot(-this.getYRot() * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -323,22 +323,22 @@ public class BallistaMobileEntity extends ChestPushcartEntity implements SiegeWe
       ItemStack stack = new ItemStack(BallistaMobileItem.itemForMaterialLevel(this.getMaterialLevel(), this.hasFixedTurret()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("BallistaMobileData", tag);
+      stack.getOrCreateTag().put("BallistaMobileData", tag);
       return stack;
    }
 
    @Override
    public void loadCartData(CompoundTag tag) {
       super.loadCartData(tag);
-      this.setFixedTurret(tag.m_128471_("FixedTurret"));
-      this.f_19804_.m_135381_(CRANK_ANGLE, tag.m_128457_("BallistaCrankAngle"));
+      this.setFixedTurret(tag.getBoolean("FixedTurret"));
+      this.entityData.set(CRANK_ANGLE, tag.getFloat("BallistaCrankAngle"));
    }
 
    @Override
    public void saveCartData(CompoundTag tag) {
       super.saveCartData(tag);
-      tag.m_128379_("FixedTurret", this.hasFixedTurret());
-      tag.m_128350_("BallistaCrankAngle", this.getCrankAngle());
+      tag.putBoolean("FixedTurret", this.hasFixedTurret());
+      tag.putFloat("BallistaCrankAngle", this.getCrankAngle());
    }
 
    private static record AmmoSlot(int slot, BallistaAmmoType ammoType) {

@@ -25,16 +25,16 @@ public final class WarehouseNetwork {
    }
 
    public static void changed(Level level) {
-      if (level != null && !level.f_46443_) {
+      if (level != null && !level.isClientSide) {
          STATES.computeIfAbsent(level, ignored -> new WarehouseNetwork.State()).revision++;
       }
    }
 
    public static void register(BlockEntity member) {
-      Level level = member.m_58904_();
-      if (level != null && !level.f_46443_) {
+      Level level = member.getLevel();
+      if (level != null && !level.isClientSide) {
          if (member instanceof WarehouseControlBlockEntity control) {
-            STATES.computeIfAbsent(level, ignored -> new WarehouseNetwork.State()).controls.put(member.m_58899_(), new WeakReference<>(control));
+            STATES.computeIfAbsent(level, ignored -> new WarehouseNetwork.State()).controls.put(member.getBlockPos(), new WeakReference<>(control));
          }
 
          changed(level);
@@ -46,19 +46,19 @@ public final class WarehouseNetwork {
       if (!(level instanceof ServerLevel server)) {
          return result;
       } else {
-         for (int x = min.m_123341_() >> 4; x <= max.m_123341_() >> 4; x++) {
-            for (int z = min.m_123343_() >> 4; z <= max.m_123343_() >> 4; z++) {
-               LevelChunk chunk = server.m_7726_().m_7131_(x, z);
+         for (int x = min.getX() >> 4; x <= max.getX() >> 4; x++) {
+            for (int z = min.getZ() >> 4; z <= max.getZ() >> 4; z++) {
+               LevelChunk chunk = server.getChunkSource().getChunkNow(x, z);
                if (chunk != null) {
-                  for (BlockEntity entity : new ArrayList(chunk.m_62954_().values())) {
-                     BlockPos p = entity.m_58899_();
-                     if (!entity.m_58901_()
-                        && p.m_123341_() >= min.m_123341_()
-                        && p.m_123341_() <= max.m_123341_()
-                        && p.m_123342_() >= min.m_123342_()
-                        && p.m_123342_() <= max.m_123342_()
-                        && p.m_123343_() >= min.m_123343_()
-                        && p.m_123343_() <= max.m_123343_()) {
+                  for (BlockEntity entity : new ArrayList(chunk.getBlockEntities().values())) {
+                     BlockPos p = entity.getBlockPos();
+                     if (!entity.isRemoved()
+                        && p.getX() >= min.getX()
+                        && p.getX() <= max.getX()
+                        && p.getY() >= min.getY()
+                        && p.getY() <= max.getY()
+                        && p.getZ() >= min.getZ()
+                        && p.getZ() <= max.getZ()) {
                         result.add(entity);
                      }
                   }
@@ -74,13 +74,13 @@ public final class WarehouseNetwork {
       if (level != null && pos != null) {
          BlockEntity entity;
          if (level instanceof ServerLevel server) {
-            LevelChunk chunk = server.m_7726_().m_7131_(pos.m_123341_() >> 4, pos.m_123343_() >> 4);
-            entity = chunk == null ? null : chunk.m_7702_(pos);
+            LevelChunk chunk = server.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+            entity = chunk == null ? null : chunk.getBlockEntity(pos);
          } else {
-            entity = level.m_46805_(pos) ? level.m_7702_(pos) : null;
+            entity = level.hasChunkAt(pos) ? level.getBlockEntity(pos) : null;
          }
 
-         if (entity instanceof WarehouseControlBlockEntity c && !c.m_58901_()) {
+         if (entity instanceof WarehouseControlBlockEntity c && !c.isRemoved()) {
             return c;
          }
 
@@ -91,18 +91,18 @@ public final class WarehouseNetwork {
    }
 
    public static boolean accepts(WarehouseControlBlockEntity control, BlockEntity member) {
-      return control.containsWorkTarget(member.m_58899_())
-         || member instanceof WarehouseCraftingStationBlockEntity && member.m_58899_().m_7495_().equals(control.m_58899_());
+      return control.containsWorkTarget(member.getBlockPos())
+         || member instanceof WarehouseCraftingStationBlockEntity && member.getBlockPos().below().equals(control.getBlockPos());
    }
 
    public static List<WarehouseControlBlockEntity> controllersFor(BlockEntity member) {
-      Level level = member.m_58904_();
-      if (level != null && !level.f_46443_) {
+      Level level = member.getLevel();
+      if (level != null && !level.isClientSide) {
          WarehouseNetwork.State state = STATES.computeIfAbsent(level, ignored -> new WarehouseNetwork.State());
 
-         for (BlockEntity entity : loadedEntities(level, member.m_58899_().m_7918_(-16, -4, -16), member.m_58899_().m_7918_(16, 4, 16))) {
+         for (BlockEntity entity : loadedEntities(level, member.getBlockPos().offset(-16, -4, -16), member.getBlockPos().offset(16, 4, 16))) {
             if (entity instanceof WarehouseControlBlockEntity control) {
-               state.controls.put(control.m_58899_(), new WeakReference<>(control));
+               state.controls.put(control.getBlockPos(), new WeakReference<>(control));
             }
          }
 
@@ -117,10 +117,10 @@ public final class WarehouseNetwork {
          }
 
          result.sort(
-            Comparator.<WarehouseControlBlockEntity>comparingDouble(c -> c.m_58899_().m_123331_(member.m_58899_()))
-               .thenComparingInt(c -> c.m_58899_().m_123341_())
-               .thenComparingInt(c -> c.m_58899_().m_123342_())
-               .thenComparingInt(c -> c.m_58899_().m_123343_())
+            Comparator.<WarehouseControlBlockEntity>comparingDouble(c -> c.getBlockPos().distSqr(member.getBlockPos()))
+               .thenComparingInt(c -> c.getBlockPos().getX())
+               .thenComparingInt(c -> c.getBlockPos().getY())
+               .thenComparingInt(c -> c.getBlockPos().getZ())
          );
          return result;
       } else {

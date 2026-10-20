@@ -21,6 +21,6 @@ public final class ForgePlatformAdapters {
    }
 
    public static PlatformFuel fuel() {
-      return stack -> ForgeHooks.getBurnTime(stack, RecipeType.f_44108_);
+      return stack -> ForgeHooks.getBurnTime(stack, RecipeType.SMELTING);
    }
 }

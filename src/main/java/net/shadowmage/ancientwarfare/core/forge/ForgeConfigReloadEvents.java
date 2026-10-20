@@ -41,7 +41,7 @@ public final class ForgeConfigReloadEvents {
          MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
          if (spec == AWStructureConfig.SPEC && server != null) {
             server.execute(() -> {
-               if (ServerLifecycleHooks.getCurrentServer() == server && !server.m_129918_()) {
+               if (ServerLifecycleHooks.getCurrentServer() == server && !server.isStopped()) {
                   ForgeAwsWorldGenerationEvents.refreshConfigCooldown();
                }
             });
@@ -61,7 +61,7 @@ public final class ForgeConfigReloadEvents {
 
       try {
          created.watcher = new ConfigFileWatcher(created.structureFile, created.lootRoot, changes -> created.server.execute(() -> {
-               if (session == created && !created.server.m_129918_()) {
+               if (session == created && !created.server.isStopped()) {
                   created.changed(changes);
                }
             }));
@@ -129,8 +129,8 @@ public final class ForgeConfigReloadEvents {
             this.reloadingLoot = true;
 
             try {
-               this.server.m_129861_(this.server.m_129891_().m_10523_()).whenComplete((unused, failure) -> this.server.execute(() -> {
-                     if (ForgeConfigReloadEvents.session == this && !this.server.m_129918_()) {
+               this.server.reloadResources(this.server.getPackRepository().getSelectedIds()).whenComplete((unused, failure) -> this.server.execute(() -> {
+                     if (ForgeConfigReloadEvents.session == this && !this.server.isStopped()) {
                         this.reloadingLoot = false;
                         if (failure == null) {
                            AncientWarfareCore.LOG.info("Applied saved Ancient Warfare loot override files");

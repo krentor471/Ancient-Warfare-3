@@ -40,14 +40,14 @@ public class TorqueTransportRenderer implements BlockEntityRenderer<TorqueTransp
    public void render(
       TorqueTransportBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay
    ) {
-      BlockState state = blockEntity.m_58900_();
-      if (state.m_60734_() instanceof TorqueTransportBlock block) {
+      BlockState state = blockEntity.getBlockState();
+      if (state.getBlock() instanceof TorqueTransportBlock block) {
          float speed = blockEntity.getVisualSpeed();
-         if (!(speed <= 0.001F) && blockEntity.m_58904_() != null) {
+         if (!(speed <= 0.001F) && blockEntity.getLevel() != null) {
             TextureAtlasSprite sprite = this.sprite(block.getTier());
-            VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110463_());
-            Direction facing = (Direction)state.m_61143_(TorqueTransportBlock.FACING);
-            float angle = ((float)blockEntity.m_58904_().m_46467_() + partialTick) * speed * 34.0F % 360.0F;
+            VertexConsumer consumer = bufferSource.getBuffer(RenderType.cutout());
+            Direction facing = (Direction)state.getValue(TorqueTransportBlock.FACING);
+            float angle = ((float)blockEntity.getLevel().getGameTime() + partialTick) * speed * 34.0F % 360.0F;
             if (block.getKind() == TorqueTransportKind.SHAFT) {
                this.renderShaft(poseStack, consumer, sprite, facing, angle, packedLight);
             } else {
@@ -58,12 +58,12 @@ public class TorqueTransportRenderer implements BlockEntityRenderer<TorqueTransp
    }
 
    private void renderShaft(PoseStack poseStack, VertexConsumer consumer, TextureAtlasSprite sprite, Direction facing, float angle, int packedLight) {
-      poseStack.m_85836_();
-      poseStack.m_85837_(0.5, 0.5, 0.5);
+      poseStack.pushPose();
+      poseStack.translate(0.5, 0.5, 0.5);
       this.rotateToDirection(poseStack, facing);
-      poseStack.m_252781_(Axis.f_252403_.m_252977_(angle));
+      poseStack.mulPose(Axis.ZP.rotationDegrees(angle));
       this.renderCuboid(poseStack, consumer, sprite, -0.165F, -0.165F, -0.51F, 0.165F, 0.165F, 0.51F, packedLight);
-      poseStack.m_85849_();
+      poseStack.popPose();
    }
 
    private void renderBranches(
@@ -79,20 +79,20 @@ public class TorqueTransportRenderer implements BlockEntityRenderer<TorqueTransp
    ) {
       for (Direction direction : Direction.values()) {
          if (block.isConnected(state, direction) && blockEntity.isSideVisuallyActive(direction)) {
-            float sideAngle = direction != facing && direction != facing.m_122424_() ? -angle : angle;
-            poseStack.m_85836_();
-            poseStack.m_85837_(0.5, 0.5, 0.5);
+            float sideAngle = direction != facing && direction != facing.getOpposite() ? -angle : angle;
+            poseStack.pushPose();
+            poseStack.translate(0.5, 0.5, 0.5);
             this.rotateToDirection(poseStack, direction);
-            poseStack.m_252781_(Axis.f_252403_.m_252977_(sideAngle));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(sideAngle));
             this.renderCuboid(poseStack, consumer, sprite, -0.165F, -0.165F, 0.0F, 0.165F, 0.165F, 0.5F, packedLight);
-            poseStack.m_85849_();
+            poseStack.popPose();
          }
       }
    }
 
    private TextureAtlasSprite sprite(TorqueTier tier) {
       ResourceLocation texture = new ResourceLocation("ancientwarfare", "block/automation/torque_shaft_" + this.tierName(tier));
-      return (TextureAtlasSprite)Minecraft.m_91087_().m_91258_(TextureAtlas.f_118259_).apply(texture);
+      return (TextureAtlasSprite)Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(texture);
    }
 
    private String tierName(TorqueTier tier) {
@@ -106,21 +106,21 @@ public class TorqueTransportRenderer implements BlockEntityRenderer<TorqueTransp
    private void rotateToDirection(PoseStack poseStack, Direction direction) {
       switch (direction) {
          case DOWN:
-            poseStack.m_252781_(Axis.f_252529_.m_252977_(180.0F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
          case UP:
          default:
             break;
          case NORTH:
-            poseStack.m_252781_(Axis.f_252529_.m_252977_(90.0F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
             break;
          case SOUTH:
-            poseStack.m_252781_(Axis.f_252529_.m_252977_(-90.0F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
             break;
          case WEST:
-            poseStack.m_252781_(Axis.f_252436_.m_252977_(-90.0F));
+            poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
             break;
          case EAST:
-            poseStack.m_252781_(Axis.f_252436_.m_252977_(90.0F));
+            poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
       }
    }
 
@@ -136,7 +136,7 @@ public class TorqueTransportRenderer implements BlockEntityRenderer<TorqueTransp
       float maxZ,
       int packedLight
    ) {
-      Pose pose = poseStack.m_85850_();
+      Pose pose = poseStack.last();
       int light = packedLight == 0 ? 15728880 : packedLight;
       this.quad(
          pose, consumer, sprite, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, 0.0F, 0.0F, 1.0F, 1.25F, 0.0F, 2.5F, 1.25F, light
@@ -203,17 +203,17 @@ public class TorqueTransportRenderer implements BlockEntityRenderer<TorqueTransp
       float normalZ,
       int packedLight
    ) {
-      Matrix4f matrix = pose.m_252922_();
-      Matrix3f normal = pose.m_252943_();
-      consumer.m_252986_(matrix, x, y, z)
-         .m_6122_(255, 255, 255, 255)
-         .m_7421_(sprite.m_118367_((double)u), sprite.m_118393_((double)v))
-         .m_85969_(packedLight)
-         .m_252939_(normal, normalX, normalY, normalZ)
-         .m_5752_();
+      Matrix4f matrix = pose.pose();
+      Matrix3f normal = pose.normal();
+      consumer.vertex(matrix, x, y, z)
+         .color(255, 255, 255, 255)
+         .uv(sprite.getU((double)u), sprite.getV((double)v))
+         .uv2(packedLight)
+         .normal(normal, normalX, normalY, normalZ)
+         .endVertex();
    }
 
-   public int m_142163_() {
-      return Mth.m_14167_(64.0F);
+   public int getViewDistance() {
+      return Mth.ceil(64.0F);
    }
 }

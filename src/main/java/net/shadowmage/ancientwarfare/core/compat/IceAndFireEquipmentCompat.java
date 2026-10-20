@@ -35,13 +35,13 @@ public final class IceAndFireEquipmentCompat {
    }
 
    public static void applySupportedMeleeHit(ItemStack weapon, LivingEntity target, LivingEntity attacker) {
-      if (weapon != null && !weapon.m_41619_() && target != null && attacker != null && !attacker.m_9236_().f_46443_) {
-         ResourceLocation itemId = BuiltInRegistries.f_257033_.m_7981_(weapon.m_41720_());
-         if ("iceandfire".equals(itemId.m_135827_()) && SUPPORTED_MELEE_WEAPONS.contains(itemId.m_135815_())) {
+      if (weapon != null && !weapon.isEmpty() && target != null && attacker != null && !attacker.level().isClientSide) {
+         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(weapon.getItem());
+         if ("iceandfire".equals(itemId.getNamespace()) && SUPPORTED_MELEE_WEAPONS.contains(itemId.getPath())) {
             try {
-               weapon.m_41720_().m_7579_(weapon, target, attacker);
-               if (itemId.m_135815_().endsWith("_sword_venom")) {
-                  target.m_7292_(new MobEffectInstance(MobEffects.f_19614_, 200));
+               weapon.getItem().hurtEnemy(weapon, target, attacker);
+               if (itemId.getPath().endsWith("_sword_venom")) {
+                  target.addEffect(new MobEffectInstance(MobEffects.POISON, 200));
                }
             } catch (Throwable var5) {
                AncientWarfareCore.LOG.warn("Failed to apply Ice and Fire NPC weapon effect for {}", itemId, var5);

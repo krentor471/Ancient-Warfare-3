@@ -16,11 +16,11 @@ public final class BackpackData {
    }
 
    public static int getLevel(ItemStack stack) {
-      return clampLevel(stack.m_41784_().m_128451_("backpackLevel"));
+      return clampLevel(stack.getOrCreateTag().getInt("backpackLevel"));
    }
 
    public static void setLevel(ItemStack stack, int level) {
-      stack.m_41784_().m_128405_("backpackLevel", clampLevel(level));
+      stack.getOrCreateTag().putInt("backpackLevel", clampLevel(level));
    }
 
    public static int getSlotCount(ItemStack stack) {

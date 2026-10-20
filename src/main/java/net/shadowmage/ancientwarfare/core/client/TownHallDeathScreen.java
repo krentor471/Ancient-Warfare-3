@@ -42,28 +42,28 @@ public class TownHallDeathScreen extends Screen {
    private boolean returningToParent;
 
    public TownHallDeathScreen(TownHallScreen parent) {
-      super(Component.m_237115_("gui.ancientwarfare.town_hall.records"));
+      super(Component.translatable("gui.ancientwarfare.town_hall.records"));
       this.parent = parent;
    }
 
-   protected void m_7856_() {
-      this.guiWidth = Math.min(440, Math.max(1, this.f_96543_ - 12));
-      this.guiHeight = Math.min(290, Math.max(1, this.f_96544_ - 12));
+   protected void init() {
+      this.guiWidth = Math.min(440, Math.max(1, this.width - 12));
+      this.guiHeight = Math.min(290, Math.max(1, this.height - 12));
       this.listWidth = Math.min(160, Math.max(108, this.guiWidth * 37 / 100));
-      this.left = (this.f_96543_ - this.guiWidth) / 2;
-      this.top = (this.f_96544_ - this.guiHeight) / 2;
-      String query = this.search == null ? "" : this.search.m_94155_();
+      this.left = (this.width - this.guiWidth) / 2;
+      this.top = (this.height - this.guiHeight) / 2;
+      String query = this.search == null ? "" : this.search.getValue();
       this.search = new EditBox(
-         this.f_96547_, this.left + 10, this.top + 36, this.listWidth - 20, 10, Component.m_237115_("gui.ancientwarfare.town_hall.search")
+         this.font, this.left + 10, this.top + 36, this.listWidth - 20, 10, Component.translatable("gui.ancientwarfare.town_hall.search")
       );
-      this.search.m_94182_(false);
-      this.search.m_94199_(128);
-      this.search.m_94144_(query);
-      this.search.m_94151_(value -> this.listScroll = 0);
-      this.m_142416_(this.search);
-      this.m_142416_(
+      this.search.setBordered(false);
+      this.search.setMaxLength(128);
+      this.search.setValue(query);
+      this.search.setResponder(value -> this.listScroll = 0);
+      this.addRenderableWidget(this.search);
+      this.addRenderableWidget(
          new LegacyTexturedButton(
-            this.left + this.guiWidth - 64, this.top + 8, 56, 14, Component.m_237115_("gui.ancientwarfare.drafting.back"), button -> this.m_7379_()
+            this.left + this.guiWidth - 64, this.top + 8, 56, 14, Component.translatable("gui.ancientwarfare.drafting.back"), button -> this.onClose()
          )
       );
       this.draggingPanel = -1;
@@ -94,7 +94,7 @@ public class TownHallDeathScreen extends Screen {
    }
 
    private List<TownHallBlockEntity.NpcDeathEntry> filteredEntries() {
-      String query = this.search == null ? "" : this.search.m_94155_().toLowerCase(Locale.ROOT).trim();
+      String query = this.search == null ? "" : this.search.getValue().toLowerCase(Locale.ROOT).trim();
       List<TownHallBlockEntity.NpcDeathEntry> entries = new ArrayList<>(this.menu().getDeathNotices());
       Collections.reverse(entries);
       if (!query.isEmpty()) {
@@ -124,7 +124,7 @@ public class TownHallDeathScreen extends Screen {
       String state = entry.resurrected()
          ? "resurrected"
          : (entry.beingResurrected() ? "resurrecting" : (entry.canResurrect() ? "awaiting_resurrection" : "recorded"));
-      return Component.m_237115_("gui.ancientwarfare.town_hall." + state);
+      return Component.translatable("gui.ancientwarfare.town_hall." + state);
    }
 
    private static String name(TownHallBlockEntity.NpcDeathEntry entry) {
@@ -132,15 +132,15 @@ public class TownHallDeathScreen extends Screen {
    }
 
    private static String profession(TownHallBlockEntity.NpcDeathEntry entry) {
-      String subtype = entry.details().m_128461_("NpcSubtype");
+      String subtype = entry.details().getString("NpcSubtype");
       String key = "entity.ancientwarfare." + entry.npcType();
-      if (!subtype.isBlank() && I18n.m_118936_(key + "." + subtype)) {
+      if (!subtype.isBlank() && I18n.exists(key + "." + subtype)) {
          key = key + "." + subtype;
-      } else if (!I18n.m_118936_(key) && I18n.m_118936_(key + "_npc")) {
+      } else if (!I18n.exists(key) && I18n.exists(key + "_npc")) {
          key = key + "_npc";
       }
 
-      return I18n.m_118936_(key) ? Component.m_237115_(key).getString() : entry.npcType();
+      return I18n.exists(key) ? Component.translatable(key).getString() : entry.npcType();
    }
 
    private static int listContentHeight(int count) {
@@ -182,17 +182,17 @@ public class TownHallDeathScreen extends Screen {
       return x >= (double)(left + 3) && x < (double)(left + width - 12) && y >= (double)(top + 3) && y < (double)(top + height - 3);
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
       LegacyGuiStyle.background(graphics, this.left, this.top, this.guiWidth, this.guiHeight);
-      String header = Component.m_237110_("gui.ancientwarfare.town_hall.deaths_total", new Object[]{this.menu().getDeathNotices().size()}).getString();
-      graphics.m_280056_(this.f_96547_, this.fitted(header, this.guiWidth - 80), this.left + 8, this.top + 10, -1, false);
-      graphics.m_280509_(this.left + 8, this.top + 32, this.left + this.listWidth - 8, this.top + 50, -1644826);
-      graphics.m_280509_(this.left + 9, this.top + 33, this.left + this.listWidth - 9, this.top + 49, -16777216);
-      if (this.search.m_94155_().isEmpty() && !this.search.m_93696_()) {
-         graphics.m_280056_(
-            this.f_96547_,
-            this.fitted(Component.m_237115_("gui.ancientwarfare.town_hall.search").getString(), this.listWidth - 20),
+      String header = Component.translatable("gui.ancientwarfare.town_hall.deaths_total", new Object[]{this.menu().getDeathNotices().size()}).getString();
+      graphics.drawString(this.font, this.fitted(header, this.guiWidth - 80), this.left + 8, this.top + 10, -1, false);
+      graphics.fill(this.left + 8, this.top + 32, this.left + this.listWidth - 8, this.top + 50, -1644826);
+      graphics.fill(this.left + 9, this.top + 33, this.left + this.listWidth - 9, this.top + 49, -16777216);
+      if (this.search.getValue().isEmpty() && !this.search.isFocused()) {
+         graphics.drawString(
+            this.font,
+            this.fitted(Component.translatable("gui.ancientwarfare.town_hall.search").getString(), this.listWidth - 20),
             this.left + 10,
             this.top + 36,
             -7829368,
@@ -206,13 +206,13 @@ public class TownHallDeathScreen extends Screen {
       this.clampScroll(entries.size(), details);
       this.renderList(graphics, entries, mouseX, mouseY);
       ItemStack hoveredItem = this.renderDetails(graphics, details, mouseX, mouseY);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
-      if (!hoveredItem.m_41619_()) {
-         graphics.m_280153_(this.f_96547_, hoveredItem, mouseX, mouseY);
+      super.render(graphics, mouseX, mouseY, partialTick);
+      if (!hoveredItem.isEmpty()) {
+         graphics.renderTooltip(this.font, hoveredItem, mouseX, mouseY);
       } else {
          int hovered = this.rowAt((double)mouseX, (double)mouseY, entries.size());
-         if (hovered >= 0 && this.f_96547_.m_92895_(name(entries.get(hovered))) > this.listWidth - 12 - 22) {
-            graphics.m_280557_(this.f_96547_, Component.m_237113_(name(entries.get(hovered))), mouseX, mouseY);
+         if (hovered >= 0 && this.font.width(name(entries.get(hovered))) > this.listWidth - 12 - 22) {
+            graphics.renderTooltip(this.font, Component.literal(name(entries.get(hovered))), mouseX, mouseY);
          }
       }
    }
@@ -233,8 +233,8 @@ public class TownHallDeathScreen extends Screen {
       );
       int right = panelLeft + panelWidth - 12;
       int hovered = this.rowAt((double)mouseX, (double)mouseY, entries.size());
-      graphics.m_280262_();
-      graphics.m_280588_(panelLeft + 3, this.listTop() + 3, right, this.listTop() + this.listHeight() - 3);
+      graphics.flush();
+      graphics.enableScissor(panelLeft + 3, this.listTop() + 3, right, this.listTop() + this.listHeight() - 3);
       int first = Math.max(0, (this.listScroll - 5) / 34);
       int last = Math.min(entries.size(), first + this.listHeight() / 34 + 3);
 
@@ -245,25 +245,25 @@ public class TownHallDeathScreen extends Screen {
          int rowWidth = right - x - 2;
          int stateY = !entry.recordId().equals(this.selectedRecord) && row != hovered ? 40 : 80;
          LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, x, y, rowWidth, 34, 0, stateY, 256, 40);
-         graphics.m_280056_(this.f_96547_, this.fitted(name(entry), rowWidth - 6), x + 3, y + 3, -1, false);
-         graphics.m_280056_(this.f_96547_, this.fitted(profession(entry), rowWidth - 6), x + 3, y + 13, -3355444, false);
-         graphics.m_280056_(
-            this.f_96547_, this.fitted(status(entry).getString(), rowWidth - 6), x + 3, y + 23, entry.resurrected() ? -4792678 : -1454950, false
+         graphics.drawString(this.font, this.fitted(name(entry), rowWidth - 6), x + 3, y + 3, -1, false);
+         graphics.drawString(this.font, this.fitted(profession(entry), rowWidth - 6), x + 3, y + 13, -3355444, false);
+         graphics.drawString(
+            this.font, this.fitted(status(entry).getString(), rowWidth - 6), x + 3, y + 23, entry.resurrected() ? -4792678 : -1454950, false
          );
       }
 
       if (entries.isEmpty()) {
-         Component empty = Component.m_237115_("gui.ancientwarfare.town_hall." + (this.menu().getDeathNotices().isEmpty() ? "empty" : "no_results"));
+         Component empty = Component.translatable("gui.ancientwarfare.town_hall." + (this.menu().getDeathNotices().isEmpty() ? "empty" : "no_results"));
          int y = this.listTop() + 8;
 
-         for (FormattedCharSequence line : this.f_96547_.m_92923_(empty, panelWidth - 12 - 14)) {
-            graphics.m_280649_(this.f_96547_, line, panelLeft + 7, y, -3355444, false);
+         for (FormattedCharSequence line : this.font.split(empty, panelWidth - 12 - 14)) {
+            graphics.drawString(this.font, line, panelLeft + 7, y, -3355444, false);
             y += 11;
          }
       }
 
-      graphics.m_280262_();
-      graphics.m_280618_();
+      graphics.flush();
+      graphics.disableScissor();
    }
 
    private ItemStack renderDetails(GuiGraphics graphics, List<TownHallDeathScreen.DetailRow> rows, int mouseX, int mouseY) {
@@ -274,19 +274,19 @@ public class TownHallDeathScreen extends Screen {
       DraftingStationScreen.drawScrollbar(
          graphics, panelLeft, panelTop, panelWidth, this.detailHeight(), detailContentHeight(rows), this.detailScroll, this.maxDetailScroll(rows)
       );
-      graphics.m_280262_();
-      graphics.m_280588_(panelLeft + 3, panelTop + 3, panelLeft + panelWidth - 12, panelTop + this.detailHeight() - 3);
+      graphics.flush();
+      graphics.enableScissor(panelLeft + 3, panelTop + 3, panelLeft + panelWidth - 12, panelTop + this.detailHeight() - 3);
       int x = panelLeft + 7;
       int y = panelTop + 8 - this.detailScroll;
-      ItemStack hovered = ItemStack.f_41583_;
+      ItemStack hovered = ItemStack.EMPTY;
 
       for (TownHallDeathScreen.DetailRow row : rows) {
          if (y + row.height() > panelTop + 3 && y < panelTop + this.detailHeight() - 3) {
             if (row.stack() != null) {
                LegacyGuiStyle.slot(graphics, panelLeft, panelTop, 7, y - panelTop + 1);
-               if (!row.stack().m_41619_()) {
-                  graphics.m_280480_(row.stack(), x, y + 1);
-                  graphics.m_280370_(this.f_96547_, row.stack(), x, y + 1);
+               if (!row.stack().isEmpty()) {
+                  graphics.renderItem(row.stack(), x, y + 1);
+                  graphics.renderItemDecorations(this.font, row.stack(), x, y + 1);
                   if (insidePanel((double)mouseX, (double)mouseY, panelLeft, panelTop, panelWidth, this.detailHeight())
                      && mouseX >= x
                      && mouseX < x + 16
@@ -296,45 +296,45 @@ public class TownHallDeathScreen extends Screen {
                   }
                }
 
-               graphics.m_280056_(this.f_96547_, this.fitted(row.label().getString(), panelWidth - 12 - 38), x + 22, y + 1, -3355444, false);
-               String itemName = row.stack().m_41619_()
-                  ? Component.m_237115_("gui.ancientwarfare.town_hall.none").getString()
-                  : row.stack().m_41786_().getString();
-               graphics.m_280056_(this.f_96547_, this.fitted(itemName, panelWidth - 12 - 38), x + 22, y + 10, -1, false);
+               graphics.drawString(this.font, this.fitted(row.label().getString(), panelWidth - 12 - 38), x + 22, y + 1, -3355444, false);
+               String itemName = row.stack().isEmpty()
+                  ? Component.translatable("gui.ancientwarfare.town_hall.none").getString()
+                  : row.stack().getHoverName().getString();
+               graphics.drawString(this.font, this.fitted(itemName, panelWidth - 12 - 38), x + 22, y + 10, -1, false);
             } else {
-               graphics.m_280649_(this.f_96547_, row.text(), x, y, row.color(), false);
+               graphics.drawString(this.font, row.text(), x, y, row.color(), false);
             }
          }
 
          y += row.height();
       }
 
-      graphics.m_280262_();
-      graphics.m_280618_();
+      graphics.flush();
+      graphics.disableScissor();
       return hovered;
    }
 
    private List<TownHallDeathScreen.DetailRow> detailRows(TownHallBlockEntity.NpcDeathEntry entry) {
       List<TownHallDeathScreen.DetailRow> rows = new ArrayList<>();
       if (entry == null) {
-         this.addText(rows, Component.m_237115_("gui.ancientwarfare.town_hall.select_record"), -3355444);
+         this.addText(rows, Component.translatable("gui.ancientwarfare.town_hall.select_record"), -3355444);
          return rows;
       } else {
          CompoundTag data = entry.details();
-         this.addText(rows, Component.m_237113_(name(entry)), -1);
+         this.addText(rows, Component.literal(name(entry)), -1);
          this.addField(rows, "profession", profession(entry));
          this.addField(rows, "status", status(entry).getString());
-         String owner = data.m_128461_("OwnerName");
-         if (owner.isBlank() && data.m_128403_("Owner")) {
-            owner = data.m_128342_("Owner").toString();
+         String owner = data.getString("OwnerName");
+         if (owner.isBlank() && data.hasUUID("Owner")) {
+            owner = data.getUUID("Owner").toString();
          }
 
          this.addField(rows, "owner", owner.isBlank() ? unknown() : owner);
          this.addField(rows, "death_cause", entry.deathCause());
-         Component deathMessage = Component.m_237113_(data.m_128461_("DeathMessage"));
-         if (!data.m_128461_("DeathMessageJson").isBlank()) {
+         Component deathMessage = Component.literal(data.getString("DeathMessage"));
+         if (!data.getString("DeathMessageJson").isBlank()) {
             try {
-               Component localized = Serializer.m_130701_(data.m_128461_("DeathMessageJson"));
+               Component localized = Serializer.fromJson(data.getString("DeathMessageJson"));
                if (localized != null) {
                   deathMessage = localized;
                }
@@ -346,80 +346,80 @@ public class TownHallDeathScreen extends Screen {
             this.addText(rows, deathMessage, -1454950);
          }
 
-         if (!data.m_128461_("KillerName").isBlank()) {
-            this.addField(rows, "killer", data.m_128461_("KillerName"));
+         if (!data.getString("KillerName").isBlank()) {
+            this.addField(rows, "killer", data.getString("KillerName"));
          }
 
-         long time = data.m_128454_("DeathTimeMillis");
+         long time = data.getLong("DeathTimeMillis");
          this.addField(rows, "death_time", time > 0L ? DEATH_DATE.format(Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault())) : unknown());
-         if (data.m_128425_("DeathGameTime", 99) && data.m_128454_("DeathGameTime") >= 0L) {
-            this.addField(rows, "game_time", Long.toString(data.m_128454_("DeathGameTime")));
+         if (data.contains("DeathGameTime", 99) && data.getLong("DeathGameTime") >= 0L) {
+            this.addField(rows, "game_time", Long.toString(data.getLong("DeathGameTime")));
          }
 
-         this.addField(rows, "dimension", data.m_128461_("Dimension").isBlank() ? unknown() : data.m_128461_("Dimension"));
+         this.addField(rows, "dimension", data.getString("Dimension").isBlank() ? unknown() : data.getString("Dimension"));
          this.addField(rows, "position", coordinates(entry.pos()));
-         if (data.m_128403_("NpcUUID")) {
-            this.addField(rows, "npc_uuid", data.m_128342_("NpcUUID").toString());
+         if (data.hasUUID("NpcUUID")) {
+            this.addField(rows, "npc_uuid", data.getUUID("NpcUUID").toString());
          }
 
-         if (data.m_128425_("MaxHealth", 99)) {
-            this.addField(rows, "max_health", number((double)data.m_128457_("MaxHealth")));
+         if (data.contains("MaxHealth", 99)) {
+            this.addField(rows, "max_health", number((double)data.getFloat("MaxHealth")));
          }
 
-         if (data.m_128425_("AttackDamage", 99)) {
-            this.addField(rows, "attack_damage", number(data.m_128459_("AttackDamage")));
+         if (data.contains("AttackDamage", 99)) {
+            this.addField(rows, "attack_damage", number(data.getDouble("AttackDamage")));
          }
 
-         if (data.m_128425_("CombatRank", 99)) {
-            this.addField(rows, "rank", Integer.toString(data.m_128451_("CombatRank")));
+         if (data.contains("CombatRank", 99)) {
+            this.addField(rows, "rank", Integer.toString(data.getInt("CombatRank")));
          }
 
-         if (!data.m_128461_("Command").isBlank()) {
-            String commandKey = "gui.ancientwarfare.town_hall.command." + data.m_128461_("Command").toLowerCase(Locale.ROOT);
-            this.addField(rows, "command", I18n.m_118936_(commandKey) ? Component.m_237115_(commandKey).getString() : data.m_128461_("Command"));
+         if (!data.getString("Command").isBlank()) {
+            String commandKey = "gui.ancientwarfare.town_hall.command." + data.getString("Command").toLowerCase(Locale.ROOT);
+            this.addField(rows, "command", I18n.exists(commandKey) ? Component.translatable(commandKey).getString() : data.getString("Command"));
          }
 
-         if (data.m_128425_("CommandTarget", 99)) {
-            this.addField(rows, "command_target", coordinates(BlockPos.m_122022_(data.m_128454_("CommandTarget"))));
+         if (data.contains("CommandTarget", 99)) {
+            this.addField(rows, "command_target", coordinates(BlockPos.of(data.getLong("CommandTarget"))));
          }
 
-         if (data.m_128441_("HomeSet")) {
+         if (data.contains("HomeSet")) {
             this.addField(
                rows,
                "home",
-               data.m_128471_("HomeSet")
-                  ? coordinates(BlockPos.m_122022_(data.m_128454_("HomePos")))
-                  : Component.m_237115_("gui.ancientwarfare.town_hall.none").getString()
+               data.getBoolean("HomeSet")
+                  ? coordinates(BlockPos.of(data.getLong("HomePos")))
+                  : Component.translatable("gui.ancientwarfare.town_hall.none").getString()
             );
          }
 
-         if (data.m_128425_("TownHallPos", 99)) {
-            this.addField(rows, "town_hall", coordinates(BlockPos.m_122022_(data.m_128454_("TownHallPos"))));
+         if (data.contains("TownHallPos", 99)) {
+            this.addField(rows, "town_hall", coordinates(BlockPos.of(data.getLong("TownHallPos"))));
          }
 
-         if (!data.m_128461_("MountType").isBlank()) {
-            this.addField(rows, "mount", data.m_128461_("MountType"));
+         if (!data.getString("MountType").isBlank()) {
+            this.addField(rows, "mount", data.getString("MountType"));
          }
 
-         ListTag equipment = data.m_128437_("Equipment", 10);
+         ListTag equipment = data.getList("Equipment", 10);
          if (!equipment.isEmpty()) {
-            this.addText(rows, Component.m_237115_("gui.ancientwarfare.town_hall.equipment_at_death"), -1454950);
+            this.addText(rows, Component.translatable("gui.ancientwarfare.town_hall.equipment_at_death"), -1454950);
 
             for (int i = 0; i < equipment.size(); i++) {
-               CompoundTag equipped = equipment.m_128728_(i);
+               CompoundTag equipped = equipment.getCompound(i);
                rows.add(
                   TownHallDeathScreen.DetailRow.item(
-                     Component.m_237115_("gui.ancientwarfare.town_hall.slot." + equipped.m_128461_("Slot")), ItemStack.m_41712_(equipped.m_128469_("Stack"))
+                     Component.translatable("gui.ancientwarfare.town_hall.slot." + equipped.getString("Slot")), ItemStack.of(equipped.getCompound("Stack"))
                   )
                );
             }
          }
 
          for (String supply : List.of("Food", "Orders", "Upkeep")) {
-            if (data.m_128425_(supply, 10)) {
+            if (data.contains(supply, 10)) {
                rows.add(
                   TownHallDeathScreen.DetailRow.item(
-                     Component.m_237115_("gui.ancientwarfare.town_hall." + supply.toLowerCase(Locale.ROOT)), ItemStack.m_41712_(data.m_128469_(supply))
+                     Component.translatable("gui.ancientwarfare.town_hall." + supply.toLowerCase(Locale.ROOT)), ItemStack.of(data.getCompound(supply))
                   )
                );
             }
@@ -430,21 +430,21 @@ public class TownHallDeathScreen extends Screen {
    }
 
    private void addField(List<TownHallDeathScreen.DetailRow> rows, String key, String value) {
-      this.addText(rows, Component.m_237110_("gui.ancientwarfare.town_hall." + key, new Object[]{value}), -2236963);
+      this.addText(rows, Component.translatable("gui.ancientwarfare.town_hall." + key, new Object[]{value}), -2236963);
    }
 
    private void addText(List<TownHallDeathScreen.DetailRow> rows, Component text, int color) {
-      for (FormattedCharSequence line : this.f_96547_.m_92923_(text, Math.max(24, this.detailWidth() - 12 - 14))) {
+      for (FormattedCharSequence line : this.font.split(text, Math.max(24, this.detailWidth() - 12 - 14))) {
          rows.add(new TownHallDeathScreen.DetailRow(line, null, null, 11, color));
       }
    }
 
    private String fitted(String text, int width) {
-      return DraftingStationScreen.fittedText(this.f_96547_, text, Math.max(0, width));
+      return DraftingStationScreen.fittedText(this.font, text, Math.max(0, width));
    }
 
    private static String coordinates(BlockPos pos) {
-      return pos.m_123341_() + ", " + pos.m_123342_() + ", " + pos.m_123343_();
+      return pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
    }
 
    private static String number(double value) {
@@ -452,10 +452,10 @@ public class TownHallDeathScreen extends Screen {
    }
 
    private static String unknown() {
-      return Component.m_237115_("gui.ancientwarfare.town_hall.unknown").getString();
+      return Component.translatable("gui.ancientwarfare.town_hall.unknown").getString();
    }
 
-   public boolean m_6375_(double x, double y, int button) {
+   public boolean mouseClicked(double x, double y, int button) {
       List<TownHallBlockEntity.NpcDeathEntry> entries = this.filteredEntries();
       List<TownHallDeathScreen.DetailRow> rows = this.detailRows(this.selection(entries));
       this.clampScroll(entries.size(), rows);
@@ -478,12 +478,12 @@ public class TownHallDeathScreen extends Screen {
             this.detailScroll = 0;
             return true;
          } else {
-            return super.m_6375_(x, y, button);
+            return super.mouseClicked(x, y, button);
          }
       }
    }
 
-   public boolean m_6050_(double x, double y, double delta) {
+   public boolean mouseScrolled(double x, double y, double delta) {
       List<TownHallBlockEntity.NpcDeathEntry> entries = this.filteredEntries();
       List<TownHallDeathScreen.DetailRow> rows = this.detailRows(this.selection(entries));
       if (insidePanel(x, y, this.left + 8, this.listTop(), this.listWidth - 8, this.listHeight())
@@ -493,7 +493,7 @@ public class TownHallDeathScreen extends Screen {
          return true;
       } else if (!insidePanel(x, y, this.detailLeft(), this.top + 32, this.detailWidth(), this.detailHeight())
          && !DraftingStationScreen.insideScrollbar(x, y, this.detailLeft(), this.top + 32, this.detailWidth(), this.detailHeight())) {
-         return super.m_6050_(x, y, delta);
+         return super.mouseScrolled(x, y, delta);
       } else {
          this.detailScroll = this.detailScroll - (int)Math.signum(delta) * 33;
          this.clampScroll(entries.size(), rows);
@@ -511,51 +511,51 @@ public class TownHallDeathScreen extends Screen {
       }
    }
 
-   public boolean m_7979_(double x, double y, int button, double dragX, double dragY) {
+   public boolean mouseDragged(double x, double y, int button, double dragX, double dragY) {
       if (button == 0 && this.draggingPanel >= 0) {
          List<TownHallBlockEntity.NpcDeathEntry> entries = this.filteredEntries();
          this.scrollToMouse(y, entries.size(), this.detailRows(this.selection(entries)));
          return true;
       } else {
-         return super.m_7979_(x, y, button, dragX, dragY);
+         return super.mouseDragged(x, y, button, dragX, dragY);
       }
    }
 
-   public boolean m_6348_(double x, double y, int button) {
+   public boolean mouseReleased(double x, double y, int button) {
       if (button == 0) {
          this.draggingPanel = -1;
       }
 
-      return super.m_6348_(x, y, button);
+      return super.mouseReleased(x, y, button);
    }
 
-   public void m_86600_() {
-      this.search.m_94120_();
-      if (this.f_96541_.f_91074_ == null || this.f_96541_.f_91074_.f_36096_ != this.menu()) {
-         this.f_96541_.m_91152_(null);
-      } else if (!this.f_96541_.f_91074_.m_6084_() || this.f_96541_.f_91074_.m_213877_() || !this.menu().m_6875_(this.f_96541_.f_91074_)) {
-         this.f_96541_.f_91074_.m_6915_();
+   public void tick() {
+      this.search.tick();
+      if (this.minecraft.player == null || this.minecraft.player.containerMenu != this.menu()) {
+         this.minecraft.setScreen(null);
+      } else if (!this.minecraft.player.isAlive() || this.minecraft.player.isRemoved() || !this.menu().stillValid(this.minecraft.player)) {
+         this.minecraft.player.closeContainer();
       }
    }
 
-   public void m_7379_() {
-      if (this.f_96541_.f_91074_ != null && this.f_96541_.f_91074_.f_36096_ == this.menu() && this.menu().m_6875_(this.f_96541_.f_91074_)) {
+   public void onClose() {
+      if (this.minecraft.player != null && this.minecraft.player.containerMenu == this.menu() && this.menu().stillValid(this.minecraft.player)) {
          this.returningToParent = true;
-         this.f_96541_.m_91152_(this.parent);
+         this.minecraft.setScreen(this.parent);
       } else {
-         this.f_96541_.m_91152_(null);
+         this.minecraft.setScreen(null);
       }
    }
 
-   public void m_7861_() {
+   public void removed() {
       if (!this.returningToParent) {
          this.parent.deathRecordsRemoved();
       }
 
-      super.m_7861_();
+      super.removed();
    }
 
-   public boolean m_7043_() {
+   public boolean isPauseScreen() {
       return false;
    }
 

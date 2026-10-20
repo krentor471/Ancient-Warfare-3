@@ -38,7 +38,7 @@ public final class EngineeringRecipeCategory implements IRecipeCategory<Engineer
    }
 
    public Component getTitle() {
-      return Component.m_237115_("jei.ancientwarfare.category.engineering");
+      return Component.translatable("jei.ancientwarfare.category.engineering");
    }
 
    public int getWidth() {
@@ -66,7 +66,7 @@ public final class EngineeringRecipeCategory implements IRecipeCategory<Engineer
          }
       }
 
-      builder.addOutputSlot(95, 19).addItemStack(recipe.result().m_41777_());
+      builder.addOutputSlot(95, 19).addItemStack(recipe.result().copy());
    }
 
    public void draw(EngineeringRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics graphics, double mouseX, double mouseY) {
@@ -79,7 +79,7 @@ public final class EngineeringRecipeCategory implements IRecipeCategory<Engineer
       this.slot.draw(graphics, 94, 18);
       this.arrow.draw(graphics, 61, (54 - this.arrow.getHeight()) / 2);
       String research = researchName(recipe.requiredResearch());
-      graphics.m_280056_(Minecraft.m_91087_().f_91062_, research, 60, 0, 4473924, false);
+      graphics.drawString(Minecraft.getInstance().font, research, 60, 0, 4473924, false);
    }
 
    private static String researchName(String researchId) {
@@ -87,7 +87,7 @@ public final class EngineeringRecipeCategory implements IRecipeCategory<Engineer
          ResearchGoal goal = ResearchRegistry.get(researchId);
          return goal == null ? researchId : goal.translatedName().getString();
       } else {
-         return Component.m_237115_("jei.ancientwarfare.no_research").getString();
+         return Component.translatable("jei.ancientwarfare.no_research").getString();
       }
    }
 }

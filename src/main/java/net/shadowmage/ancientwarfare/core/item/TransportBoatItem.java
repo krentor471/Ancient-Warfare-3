@@ -24,53 +24,53 @@ public class TransportBoatItem extends Item {
    private final int materialLevel;
 
    public TransportBoatItem(int materialLevel) {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
       this.materialLevel = materialLevel;
    }
 
-   public InteractionResult m_6225_(UseOnContext context) {
-      Level level = context.m_43725_();
-      BlockPos clickedPos = context.m_8083_();
-      if (!level.m_6425_(clickedPos).m_205070_(FluidTags.f_13131_)) {
+   public InteractionResult useOn(UseOnContext context) {
+      Level level = context.getLevel();
+      BlockPos clickedPos = context.getClickedPos();
+      if (!level.getFluidState(clickedPos).is(FluidTags.WATER)) {
          return InteractionResult.FAIL;
       } else {
-         if (!level.f_46443_) {
-            this.spawnBoat(level, clickedPos, context.m_43722_(), context.m_43723_(), context.m_7074_());
+         if (!level.isClientSide) {
+            this.spawnBoat(level, clickedPos, context.getItemInHand(), context.getPlayer(), context.getRotation());
          }
 
-         return InteractionResult.m_19078_(level.f_46443_);
+         return InteractionResult.sidedSuccess(level.isClientSide);
       }
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
-      ItemStack stack = player.m_21120_(hand);
-      BlockHitResult hit = m_41435_(level, player, Fluid.SOURCE_ONLY);
-      if (hit.m_6662_() == Type.BLOCK && level.m_6425_(hit.m_82425_()).m_205070_(FluidTags.f_13131_)) {
-         if (!level.f_46443_) {
-            this.spawnBoat(level, hit.m_82425_(), stack, player, player.m_146908_());
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+      ItemStack stack = player.getItemInHand(hand);
+      BlockHitResult hit = getPlayerPOVHitResult(level, player, Fluid.SOURCE_ONLY);
+      if (hit.getType() == Type.BLOCK && level.getFluidState(hit.getBlockPos()).is(FluidTags.WATER)) {
+         if (!level.isClientSide) {
+            this.spawnBoat(level, hit.getBlockPos(), stack, player, player.getYRot());
          }
 
-         return InteractionResultHolder.m_19092_(stack, level.f_46443_);
+         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
       } else {
-         return InteractionResultHolder.m_19100_(stack);
+         return InteractionResultHolder.fail(stack);
       }
    }
 
    private void spawnBoat(Level level, BlockPos waterPos, ItemStack stack, Player player, float rotation) {
-      TransportBoatEntity boat = (TransportBoatEntity)AWCoreRegistryAccess.entityType(AWCoreIds.TRANSPORT_BOAT).m_20615_(level);
+      TransportBoatEntity boat = (TransportBoatEntity)AWCoreRegistryAccess.entityType(AWCoreIds.TRANSPORT_BOAT).create(level);
       if (boat != null) {
          boat.setMaterialLevel(this.materialLevel);
-         CompoundTag tag = stack.m_41783_();
-         if (tag != null && tag.m_128441_("TransportBoatData")) {
-            boat.loadCartData(tag.m_128469_("TransportBoatData"));
+         CompoundTag tag = stack.getTag();
+         if (tag != null && tag.contains("TransportBoatData")) {
+            boat.loadCartData(tag.getCompound("TransportBoatData"));
          } else {
             boat.setHealth(boat.getMaxHealth());
          }
 
-         boat.m_7678_((double)waterPos.m_123341_() + 0.5, (double)waterPos.m_123342_() + 0.05, (double)waterPos.m_123343_() + 0.5, rotation, 0.0F);
-         level.m_7967_(boat);
-         if (player == null || !player.m_150110_().f_35937_) {
-            stack.m_41774_(1);
+         boat.moveTo((double)waterPos.getX() + 0.5, (double)waterPos.getY() + 0.05, (double)waterPos.getZ() + 0.5, rotation, 0.0F);
+         level.addFreshEntity(boat);
+         if (player == null || !player.getAbilities().instabuild) {
+            stack.shrink(1);
          }
       }
    }

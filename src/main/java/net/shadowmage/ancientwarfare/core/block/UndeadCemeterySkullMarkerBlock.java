@@ -18,16 +18,16 @@ public class UndeadCemeterySkullMarkerBlock extends Block {
       super(properties);
    }
 
-   public void m_6402_(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-      super.m_6402_(level, pos, state, placer, stack);
-      if (!level.f_46443_) {
+   public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+      super.setPlacedBy(level, pos, state, placer, stack);
+      if (!level.isClientSide) {
          String template;
          Direction facing;
          boolean var10000;
          label25: {
             template = AwsTemplateBlockItem.template(stack);
-            facing = placer == null ? Direction.NORTH : placer.m_6350_();
-            if (placer instanceof Player player && player.m_150110_().f_35937_) {
+            facing = placer == null ? Direction.NORTH : placer.getDirection();
+            if (placer instanceof Player player && player.getAbilities().instabuild) {
                var10000 = true;
                break label25;
             }
@@ -40,7 +40,7 @@ public class UndeadCemeterySkullMarkerBlock extends Block {
             ? AwsTemplatePlacer.place(level, pos, template, facing)
             : AwsTemplatePlacer.placePlayerBuilt(level, pos, template, facing);
          if (!placed) {
-            level.m_7471_(pos, false);
+            level.removeBlock(pos, false);
          }
       }
    }

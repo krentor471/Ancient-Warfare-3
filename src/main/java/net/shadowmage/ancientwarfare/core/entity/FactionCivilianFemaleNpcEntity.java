@@ -13,11 +13,11 @@ public class FactionCivilianFemaleNpcEntity extends FactionNpcEntity {
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 18.0).m_22268_(Attributes.f_22279_, 0.25).m_22268_(Attributes.f_22277_, 20.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 18.0).add(Attributes.MOVEMENT_SPEED, 0.25).add(Attributes.FOLLOW_RANGE, 20.0);
    }
 
-   protected void m_8099_() {
+   protected void registerGoals() {
       this.addSharedGoals();
-      this.f_21345_.m_25352_(1, new PanicGoal(this, 1.25));
+      this.goalSelector.addGoal(1, new PanicGoal(this, 1.25));
    }
 }

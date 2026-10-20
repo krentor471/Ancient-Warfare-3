@@ -39,54 +39,54 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
    public WarehouseInterfaceMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.WAREHOUSE_INTERFACE), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      this.warehouseInterface = this.level.m_7702_(pos) instanceof WarehouseInterfaceBlockEntity iface ? iface : null;
+      this.level = playerInventory.player.level();
+      this.warehouseInterface = this.level.getBlockEntity(pos) instanceof WarehouseInterfaceBlockEntity iface ? iface : null;
       this.inventoryContainer = (Container)(this.warehouseInterface == null ? new SimpleContainer(9) : this.warehouseInterface);
       this.refreshFilters();
-      this.inventoryContainer.m_5856_(playerInventory.f_35978_);
+      this.inventoryContainer.startOpen(playerInventory.player);
       this.addSlotGrid(this.inventoryContainer, 0, 62, 96, 3, 3);
       this.addPlayerInventory(playerInventory, 8, 158);
 
       for (DataSlot slot : WarehouseDataSlots.intValue(() -> this.mode, value -> this.mode = value)) {
-         this.m_38895_(slot);
+         this.addDataSlot(slot);
       }
 
       for (DataSlot slot : WarehouseDataSlots.intValue(() -> this.connectionStatus, value -> this.connectionStatus = value)) {
-         this.m_38895_(slot);
+         this.addDataSlot(slot);
       }
 
       for (DataSlot slot : WarehouseDataSlots.intValue(() -> this.workStatus, value -> this.workStatus = value)) {
-         this.m_38895_(slot);
+         this.addDataSlot(slot);
       }
 
       for (DataSlot slot : WarehouseDataSlots.intValue(() -> this.controllerX, value -> this.controllerX = value)) {
-         this.m_38895_(slot);
+         this.addDataSlot(slot);
       }
 
       for (DataSlot slot : WarehouseDataSlots.intValue(() -> this.controllerY, value -> this.controllerY = value)) {
-         this.m_38895_(slot);
+         this.addDataSlot(slot);
       }
 
       for (DataSlot slot : WarehouseDataSlots.intValue(() -> this.controllerZ, value -> this.controllerZ = value)) {
-         this.m_38895_(slot);
+         this.addDataSlot(slot);
       }
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (this.level.f_46443_ || player != null && !player.m_5833_() && player.f_36096_ == this && this.m_6875_(player)) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (this.level.isClientSide || player != null && !player.isSpectator() && player.containerMenu == this && this.stillValid(player)) {
          if (id == 20) {
-            if (this.level.f_46443_) {
+            if (this.level.isClientSide) {
                this.mode = (this.mode + 1) % WarehouseInterfaceBlockEntity.Mode.values().length;
             } else if (this.warehouseInterface != null) {
                this.warehouseInterface.cycleMode();
-               this.m_38946_();
+               this.broadcastChanges();
             }
 
             return true;
          } else if (id == 21) {
-            if (!this.level.f_46443_ && this.warehouseInterface != null) {
+            if (!this.level.isClientSide && this.warehouseInterface != null) {
                this.warehouseInterface.cycleController();
-               this.m_38946_();
+               this.broadcastChanges();
             }
 
             return true;
@@ -95,19 +95,19 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
             if (offset >= 0 && offset < 18) {
                int index = offset / 2;
                int delta = offset % 2 == 0 ? -1 : 1;
-               if (this.level.f_46443_) {
+               if (this.level.isClientSide) {
                   this.filterQuantities[index] = (int)Math.max(0L, Math.min(2147483647L, (long)this.filterQuantities[index] + (long)delta));
                   return true;
                } else if (this.warehouseInterface != null) {
                   this.warehouseInterface.adjustFilterQuantity(index, delta);
                   this.refreshFilters();
-                  this.m_38946_();
+                  this.broadcastChanges();
                   return true;
                } else {
                   return false;
                }
             } else {
-               return super.m_6366_(player, id);
+               return super.clickMenuButton(player, id);
             }
          }
       } else {
@@ -116,13 +116,13 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
    }
 
    public void previewQuantityButton(int id) {
-      this.m_6366_(null, id);
+      this.clickMenuButton(null, id);
    }
 
    public void previewFilterItem(int index, ItemStack stack) {
       if (index >= 0 && index < 9) {
-         this.filterItems[index] = stack.m_41619_() ? ItemStack.f_41583_ : stack.m_255036_(1);
-         if (stack.m_41619_()) {
+         this.filterItems[index] = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
+         if (stack.isEmpty()) {
             this.filterQuantities[index] = 0;
          } else if (this.filterQuantities[index] <= 0) {
             this.filterQuantities[index] = 64;
@@ -131,7 +131,7 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
    }
 
    public ItemStack getFilterItem(int index) {
-      return index >= 0 && index < this.filterItems.length ? this.filterItems[index] : ItemStack.f_41583_;
+      return index >= 0 && index < this.filterItems.length ? this.filterItems[index] : ItemStack.EMPTY;
    }
 
    public int getFilterQuantity(int index) {
@@ -144,14 +144,14 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
 
    public void previewSetFilter(int index, ItemStack stack, int quantity) {
       if (index >= 0 && index < this.filterCount) {
-         this.filterItems[index] = stack.m_41619_() ? ItemStack.f_41583_ : stack.m_255036_(1);
+         this.filterItems[index] = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
          this.filterQuantities[index] = Math.max(0, quantity);
       }
    }
 
    public void previewAddFilter() {
       if (this.filterCount < 9) {
-         this.filterItems[this.filterCount] = ItemStack.f_41583_;
+         this.filterItems[this.filterCount] = ItemStack.EMPTY;
          this.filterQuantities[this.filterCount] = 64;
          this.filterCount++;
       }
@@ -165,7 +165,7 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
          }
 
          this.filterCount--;
-         this.filterItems[this.filterCount] = ItemStack.f_41583_;
+         this.filterItems[this.filterCount] = ItemStack.EMPTY;
          this.filterQuantities[this.filterCount] = 0;
       }
    }
@@ -193,17 +193,17 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
    }
 
    public void refreshClientFilters() {
-      if (this.level.f_46443_ && this.warehouseInterface != null && this.lastConfigurationRevision != this.warehouseInterface.getConfigurationRevision()) {
+      if (this.level.isClientSide && this.warehouseInterface != null && this.lastConfigurationRevision != this.warehouseInterface.getConfigurationRevision()) {
          this.refreshFilterContents();
       }
    }
 
-   public void m_38946_() {
-      if (!this.level.f_46443_) {
+   public void broadcastChanges() {
+      if (!this.level.isClientSide) {
          this.refreshFilters();
       }
 
-      super.m_38946_();
+      super.broadcastChanges();
    }
 
    private void refreshFilters() {
@@ -212,9 +212,9 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
       this.connectionStatus = this.warehouseInterface == null ? 0 : this.warehouseInterface.getConnectionStatus();
       this.workStatus = this.warehouseInterface == null ? 0 : this.warehouseInterface.getWorkStatus();
       BlockPos controller = this.warehouseInterface == null ? null : this.warehouseInterface.getControllerPos();
-      this.controllerX = controller == null ? 0 : controller.m_123341_();
-      this.controllerY = controller == null ? 0 : controller.m_123342_();
-      this.controllerZ = controller == null ? 0 : controller.m_123343_();
+      this.controllerX = controller == null ? 0 : controller.getX();
+      this.controllerY = controller == null ? 0 : controller.getY();
+      this.controllerZ = controller == null ? 0 : controller.getZ();
    }
 
    private void refreshFilterContents() {
@@ -223,7 +223,7 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
 
       for (int i = 0; i < 9; i++) {
          WarehouseInterfaceFilter filter = this.warehouseInterface == null ? null : this.warehouseInterface.getFilter(i);
-         this.filterItems[i] = filter == null ? ItemStack.f_41583_ : filter.item().m_41777_();
+         this.filterItems[i] = filter == null ? ItemStack.EMPTY : filter.item().copy();
          this.filterQuantities[i] = filter == null ? 0 : filter.quantity();
       }
    }
@@ -232,7 +232,7 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
       for (int row = 0; row < rows; row++) {
          for (int col = 0; col < columns; col++) {
             int index = firstSlot + row * columns + col;
-            this.m_38897_(new Slot(container, index, x + col * 18, y + row * 18));
+            this.addSlot(new Slot(container, index, x + col * 18, y + row * 18));
          }
       }
    }
@@ -240,51 +240,51 @@ public class WarehouseInterfaceMenu extends AbstractContainerMenu {
    private void addPlayerInventory(Inventory playerInventory, int x, int y) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(playerInventory, col + row * 9 + 9, x + col * 18, y + row * 18));
+            this.addSlot(new Slot(playerInventory, col + row * 9 + 9, x + col * 18, y + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(playerInventory, col, x + col * 18, y + 58));
+         this.addSlot(new Slot(playerInventory, col, x + col * 18, y + 58));
       }
    }
 
-   public boolean m_6875_(Player player) {
+   public boolean stillValid(Player player) {
       return this.warehouseInterface != null
-         && this.level.m_7702_(this.pos) == this.warehouseInterface
-         && m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_INTERFACE));
+         && this.level.getBlockEntity(this.pos) == this.warehouseInterface
+         && stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.WAREHOUSE_INTERFACE));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      if (index >= 0 && index < this.f_38839_.size()) {
-         ItemStack copy = ItemStack.f_41583_;
-         Slot slot = (Slot)this.f_38839_.get(index);
-         if (slot != null && slot.m_6657_()) {
-            ItemStack stack = slot.m_7993_();
-            copy = stack.m_41777_();
+   public ItemStack quickMoveStack(Player player, int index) {
+      if (index >= 0 && index < this.slots.size()) {
+         ItemStack copy = ItemStack.EMPTY;
+         Slot slot = (Slot)this.slots.get(index);
+         if (slot != null && slot.hasItem()) {
+            ItemStack stack = slot.getItem();
+            copy = stack.copy();
             if (index < 9) {
-               if (!this.m_38903_(stack, 9, this.f_38839_.size(), true)) {
-                  return ItemStack.f_41583_;
+               if (!this.moveItemStackTo(stack, 9, this.slots.size(), true)) {
+                  return ItemStack.EMPTY;
                }
-            } else if (!this.m_38903_(stack, 0, 9, false)) {
-               return ItemStack.f_41583_;
+            } else if (!this.moveItemStackTo(stack, 0, 9, false)) {
+               return ItemStack.EMPTY;
             }
 
-            if (stack.m_41619_()) {
-               slot.m_269060_(ItemStack.f_41583_);
+            if (stack.isEmpty()) {
+               slot.setByPlayer(ItemStack.EMPTY);
             } else {
-               slot.m_6654_();
+               slot.setChanged();
             }
          }
 
          return copy;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
-   public void m_6877_(Player player) {
-      super.m_6877_(player);
-      this.inventoryContainer.m_5785_(player);
+   public void removed(Player player) {
+      super.removed(player);
+      this.inventoryContainer.stopOpen(player);
    }
 }

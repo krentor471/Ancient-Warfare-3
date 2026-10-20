@@ -38,70 +38,70 @@ public final class HippocampusRiderController {
    }
 
    public static boolean isHippocampusRider(CombatNpcEntity rider) {
-      return rider != null && IceAndFireHippocampusCompat.isHippocampus(rider.m_20202_());
+      return rider != null && IceAndFireHippocampusCompat.isHippocampus(rider.getVehicle());
    }
 
    public static void tick(CombatNpcEntity rider) {
-      if (!rider.m_9236_().f_46443_ && rider.m_9236_() instanceof ServerLevel) {
-         Entity mount = rider.m_20202_();
+      if (!rider.level().isClientSide && rider.level() instanceof ServerLevel) {
+         Entity mount = rider.getVehicle();
          if (!IceAndFireHippocampusCompat.isHippocampus(mount)) {
-            ACTIVE.remove(rider.m_20148_());
+            ACTIVE.remove(rider.getUUID());
          } else {
             IceAndFireHippocampusCompat.prepareForRider(mount);
-            rider.m_21573_().m_26573_();
-            rider.m_20256_(Vec3.f_82478_);
+            rider.getNavigation().stop();
+            rider.setDeltaMovement(Vec3.ZERO);
             HippocampusRiderController.State state = ACTIVE.computeIfAbsent(
-               rider.m_20148_(), id -> new HippocampusRiderController.State(rider.m_217043_().m_188500_() * Math.PI * 2.0)
+               rider.getUUID(), id -> new HippocampusRiderController.State(rider.getRandom().nextDouble() * Math.PI * 2.0)
             );
             PlayerOwnedNpcEntity commander = rider.getCombatGroupCommander().orElse(null);
             boolean groupMember = commander != null && commander.isHippocampusCombatGroupCommander();
-            LivingEntity target = groupMember ? commander.m_5448_() : rider.m_5448_();
-            if (rider.getCurrentCommand() != NpcCommandType.MOVE && (!NpcTargeting.canHarm(rider, target) || rider.m_20280_(target) > 1225.0) && !groupMember) {
+            LivingEntity target = groupMember ? commander.getTarget() : rider.getTarget();
+            if (rider.getCurrentCommand() != NpcCommandType.MOVE && (!NpcTargeting.canHarm(rider, target) || rider.distanceToSqr(target) > 1225.0) && !groupMember) {
                target = findTarget(rider);
                if (target != null) {
-                  rider.m_6710_(target);
+                  rider.setTarget(target);
                }
             }
 
-            if (rider.getCurrentCommand() != NpcCommandType.MOVE && NpcTargeting.canHarm(rider, target) && (groupMember || !(rider.m_20280_(target) > 1225.0))) {
-               boolean trident = rider.m_21205_().m_150930_(Items.f_42713_);
-               boolean ranged = trident || rider.m_21205_().m_41720_() instanceof BowItem || rider.m_21205_().m_41720_() instanceof CrossbowItem;
-               if (ranged && !target.m_20148_().equals(state.orbitTarget)) {
-                  state.orbitTarget = target.m_20148_();
-                  state.angle = Math.atan2(mount.m_20189_() - target.m_20189_(), mount.m_20185_() - target.m_20185_());
-                  state.clockwise = rider.m_217043_().m_188499_();
+            if (rider.getCurrentCommand() != NpcCommandType.MOVE && NpcTargeting.canHarm(rider, target) && (groupMember || !(rider.distanceToSqr(target) > 1225.0))) {
+               boolean trident = rider.getMainHandItem().is(Items.TRIDENT);
+               boolean ranged = trident || rider.getMainHandItem().getItem() instanceof BowItem || rider.getMainHandItem().getItem() instanceof CrossbowItem;
+               if (ranged && !target.getUUID().equals(state.orbitTarget)) {
+                  state.orbitTarget = target.getUUID();
+                  state.angle = Math.atan2(mount.getZ() - target.getZ(), mount.getX() - target.getX());
+                  state.clockwise = rider.getRandom().nextBoolean();
                }
 
                if (trident) {
                   Vec3 point = rangedSurfaceOrbitPoint(mount, target, state);
                   moveSurface(mount, point);
-                  face(mount, target.m_20182_());
-                  if (rider.m_9236_().m_46467_() >= state.nextShot) {
+                  face(mount, target.position());
+                  if (rider.level().getGameTime() >= state.nextShot) {
                      throwTrident(rider, target);
-                     state.nextShot = rider.m_9236_().m_46467_() + 35L + (long)rider.m_217043_().m_188503_(20);
+                     state.nextShot = rider.level().getGameTime() + 35L + (long)rider.getRandom().nextInt(20);
                   }
                } else if (ranged) {
                   Vec3 point = rangedSurfaceOrbitPoint(mount, target, state);
                   moveSurface(mount, point);
-                  face(mount, target.m_20182_());
-                  if (rider.m_9236_().m_46467_() >= state.nextShot) {
-                     rider.m_6504_(target, 1.0F);
-                     state.nextShot = rider.m_9236_().m_46467_() + 30L + (long)rider.m_217043_().m_188503_(20);
+                  face(mount, target.position());
+                  if (rider.level().getGameTime() >= state.nextShot) {
+                     rider.performRangedAttack(target, 1.0F);
+                     state.nextShot = rider.level().getGameTime() + 30L + (long)rider.getRandom().nextInt(20);
                   }
                } else {
                   state.angle = state.angle + (state.clockwise ? 0.07 : -0.07);
-                  if (state.mode == HippocampusRiderController.Mode.SURFACE && rider.m_9236_().m_46467_() >= state.nextDive) {
+                  if (state.mode == HippocampusRiderController.Mode.SURFACE && rider.level().getGameTime() >= state.nextDive) {
                      state.mode = HippocampusRiderController.Mode.DIVE;
                      state.phaseTicks = 0;
-                     state.divePoint = new Vec3(target.m_20185_(), target.m_20186_() - 1.35, target.m_20189_());
+                     state.divePoint = new Vec3(target.getX(), target.getY() - 1.35, target.getZ());
                   }
 
                   if (state.mode == HippocampusRiderController.Mode.DIVE) {
                      state.phaseTicks++;
                      moveTo(mount, state.divePoint, 0.42);
-                     face(mount, target.m_20182_());
-                     if (state.phaseTicks >= 36 || mount.m_20182_().m_82557_(state.divePoint) < 9.0) {
-                        rider.m_7327_(target);
+                     face(mount, target.position());
+                     if (state.phaseTicks >= 36 || mount.position().distanceToSqr(state.divePoint) < 9.0) {
+                        rider.doHurtTarget(target);
                         state.mode = HippocampusRiderController.Mode.RETURN;
                         state.phaseTicks = 0;
                      }
@@ -109,21 +109,21 @@ public final class HippocampusRiderController {
                      state.phaseTicks++;
                      Vec3 point = surfaceOrbitPoint(mount, target, state.angle);
                      moveTo(mount, point, 0.38);
-                     face(mount, target.m_20182_());
-                     if (state.phaseTicks >= 36 || mount.m_20182_().m_82557_(point) < 6.0) {
+                     face(mount, target.position());
+                     if (state.phaseTicks >= 36 || mount.position().distanceToSqr(point) < 6.0) {
                         state.mode = HippocampusRiderController.Mode.SURFACE;
-                        state.nextDive = rider.m_9236_().m_46467_() + 120L + (long)rider.m_217043_().m_188503_(160);
+                        state.nextDive = rider.level().getGameTime() + 120L + (long)rider.getRandom().nextInt(160);
                      }
                   } else {
                      moveSurface(mount, surfaceOrbitPoint(mount, target, state.angle));
-                     face(mount, target.m_20182_());
+                     face(mount, target.position());
                   }
                }
 
                syncSeat(rider, mount);
-               ACTIVE.put(rider.m_20148_(), state);
+               ACTIVE.put(rider.getUUID(), state);
             } else {
-               rider.m_6710_(null);
+               rider.setTarget(null);
                if (groupMember) {
                   followFormation(rider, mount, commander);
                } else if (rider.getCurrentCommand() == NpcCommandType.MOVE) {
@@ -146,38 +146,38 @@ public final class HippocampusRiderController {
    }
 
    private static void throwTrident(CombatNpcEntity rider, LivingEntity target) {
-      ItemStack stack = rider.m_21205_().m_41777_();
-      Map<Enchantment, Integer> enchants = EnchantmentHelper.m_44831_(stack);
-      enchants.remove(Enchantments.f_44955_);
-      enchants.remove(Enchantments.f_44957_);
-      EnchantmentHelper.m_44865_(enchants, stack);
-      ThrownTrident projectile = new ThrownTrident(rider.m_9236_(), rider, stack);
-      Vec3 aim = target.m_20182_().m_82520_(0.0, (double)target.m_20206_() * 0.55, 0.0);
-      Vec3 origin = rider.m_20182_().m_82520_(0.0, (double)rider.m_20206_() * 0.62, 0.0);
-      projectile.m_6034_(origin.f_82479_, origin.f_82480_, origin.f_82481_);
-      Vec3 direction = aim.m_82546_(origin);
-      double horizontal = Math.sqrt(direction.f_82479_ * direction.f_82479_ + direction.f_82481_ * direction.f_82481_);
-      projectile.m_6686_(direction.f_82479_, direction.f_82480_ + horizontal * 0.08, direction.f_82481_, 2.5F, 1.0F);
-      projectile.f_36705_ = Pickup.DISALLOWED;
-      rider.m_9236_().m_7967_(projectile);
-      rider.m_21011_(InteractionHand.MAIN_HAND, true);
+      ItemStack stack = rider.getMainHandItem().copy();
+      Map<Enchantment, Integer> enchants = EnchantmentHelper.getEnchantments(stack);
+      enchants.remove(Enchantments.LOYALTY);
+      enchants.remove(Enchantments.RIPTIDE);
+      EnchantmentHelper.setEnchantments(enchants, stack);
+      ThrownTrident projectile = new ThrownTrident(rider.level(), rider, stack);
+      Vec3 aim = target.position().add(0.0, (double)target.getBbHeight() * 0.55, 0.0);
+      Vec3 origin = rider.position().add(0.0, (double)rider.getBbHeight() * 0.62, 0.0);
+      projectile.setPos(origin.x, origin.y, origin.z);
+      Vec3 direction = aim.subtract(origin);
+      double horizontal = Math.sqrt(direction.x * direction.x + direction.z * direction.z);
+      projectile.shoot(direction.x, direction.y + horizontal * 0.08, direction.z, 2.5F, 1.0F);
+      projectile.pickup = Pickup.DISALLOWED;
+      rider.level().addFreshEntity(projectile);
+      rider.swing(InteractionHand.MAIN_HAND, true);
    }
 
    public static void detach(CombatNpcEntity rider) {
-      ACTIVE.remove(rider.m_20148_());
+      ACTIVE.remove(rider.getUUID());
       if (isHippocampusRider(rider)) {
-         Entity mount = rider.m_20202_();
-         rider.m_8127_();
+         Entity mount = rider.getVehicle();
+         rider.stopRiding();
          IceAndFireHippocampusCompat.restoreAfterRider(mount);
       }
    }
 
    public static void postServerTick(ServerLevel level) {
-      for (Entity entity : level.m_8583_()) {
+      for (Entity entity : level.getAllEntities()) {
          if (entity instanceof CombatNpcEntity) {
             CombatNpcEntity rider = (CombatNpcEntity)entity;
             if (isHippocampusRider(rider)) {
-               syncSeat(rider, rider.m_20202_());
+               syncSeat(rider, rider.getVehicle());
             }
          }
       }
@@ -187,9 +187,9 @@ public final class HippocampusRiderController {
       Vec3 destination = rider.getCombatGroupFormationPosition().orElse(null);
       if (destination != null) {
          moveSurface(mount, destination);
-         mount.m_146922_(commander.m_146908_());
-         mount.m_5618_(commander.m_146908_());
-         mount.m_5616_(commander.m_146908_());
+         mount.setYRot(commander.getYRot());
+         mount.setYBodyRot(commander.getYRot());
+         mount.setYHeadRot(commander.getYRot());
       }
    }
 
@@ -198,10 +198,10 @@ public final class HippocampusRiderController {
       if (player == null) {
          holdSurface(mount);
       } else {
-         if (mount.m_20280_(player) > 100.0) {
-            Vec3 destination = new Vec3(player.m_20185_(), waterSurfaceY(mount) + -0.55, player.m_20189_());
+         if (mount.distanceToSqr(player) > 100.0) {
+            Vec3 destination = new Vec3(player.getX(), waterSurfaceY(mount) + -0.55, player.getZ());
             moveSurface(mount, destination);
-            face(mount, player.m_20182_());
+            face(mount, player.position());
          } else {
             holdSurface(mount);
          }
@@ -210,12 +210,12 @@ public final class HippocampusRiderController {
 
    private static void moveToCommand(CombatNpcEntity rider, Entity mount) {
       BlockPos target = rider.getCommandTarget();
-      if (BlockPos.f_121853_.equals(target)) {
+      if (BlockPos.ZERO.equals(target)) {
          rider.clearCommand();
          holdSurface(mount);
       } else {
-         Vec3 destination = new Vec3((double)target.m_123341_() + 0.5, waterSurfaceY(mount) + -0.55, (double)target.m_123343_() + 0.5);
-         if (mount.m_20238_(destination) > 16.0) {
+         Vec3 destination = new Vec3((double)target.getX() + 0.5, waterSurfaceY(mount) + -0.55, (double)target.getZ() + 0.5);
+         if (mount.distanceToSqr(destination) > 16.0) {
             moveSurface(mount, destination);
             face(mount, destination);
          } else {
@@ -231,8 +231,8 @@ public final class HippocampusRiderController {
 
    private static void holdSurface(Entity mount) {
       double surface = waterSurfaceY(mount);
-      double y = Double.isNaN(surface) ? mount.m_20186_() : surface + -0.55;
-      moveTo(mount, new Vec3(mount.m_20185_(), y, mount.m_20189_()));
+      double y = Double.isNaN(surface) ? mount.getY() : surface + -0.55;
+      moveTo(mount, new Vec3(mount.getX(), y, mount.getZ()));
    }
 
    private static void moveTo(Entity mount, Vec3 point) {
@@ -240,33 +240,33 @@ public final class HippocampusRiderController {
    }
 
    private static void moveTo(Entity mount, Vec3 point, double maxSpeed) {
-      Vec3 delta = point.m_82546_(mount.m_20182_());
-      if (delta.m_82556_() < 0.15) {
-         mount.m_20256_(Vec3.f_82478_);
+      Vec3 delta = point.subtract(mount.position());
+      if (delta.lengthSqr() < 0.15) {
+         mount.setDeltaMovement(Vec3.ZERO);
       } else {
-         Vec3 velocity = delta.m_82541_().m_82490_(Math.min(maxSpeed, delta.m_82553_()));
-         mount.m_20256_(velocity);
-         mount.m_6478_(MoverType.SELF, velocity);
-         mount.m_20256_(Vec3.f_82478_);
+         Vec3 velocity = delta.normalize().scale(Math.min(maxSpeed, delta.length()));
+         mount.setDeltaMovement(velocity);
+         mount.move(MoverType.SELF, velocity);
+         mount.setDeltaMovement(Vec3.ZERO);
       }
    }
 
    private static void syncSeat(CombatNpcEntity rider, Entity mount) {
-      rider.m_146922_(mount.m_146908_());
-      rider.m_5618_(mount.m_146908_());
-      rider.m_5616_(mount.m_6080_());
-      rider.f_19789_ = 0.0F;
+      rider.setYRot(mount.getYRot());
+      rider.setYBodyRot(mount.getYRot());
+      rider.setYHeadRot(mount.getYHeadRot());
+      rider.fallDistance = 0.0F;
    }
 
    private static Vec3 surfaceOrbitPoint(Entity mount, LivingEntity target, double angle) {
-      double x = target.m_20185_() + Math.cos(angle) * 18.0;
-      double z = target.m_20189_() + Math.sin(angle) * 18.0;
+      double x = target.getX() + Math.cos(angle) * 18.0;
+      double z = target.getZ() + Math.sin(angle) * 18.0;
       Vec3 local = waterPointNear(mount, x, z, 10);
       if (local != null) {
          return local;
       } else {
          Vec3 nearest = findNearestWater(mount, 32);
-         return nearest != null ? nearest : new Vec3(mount.m_20185_(), mount.m_20186_(), mount.m_20189_());
+         return nearest != null ? nearest : new Vec3(mount.getX(), mount.getY(), mount.getZ());
       }
    }
 
@@ -286,27 +286,27 @@ public final class HippocampusRiderController {
             return point;
          } else {
             double surface = waterSurfaceY(mount);
-            double y = Double.isNaN(surface) ? mount.m_20186_() : surface + -0.55;
-            return new Vec3(mount.m_20185_(), y, mount.m_20189_());
+            double y = Double.isNaN(surface) ? mount.getY() : surface + -0.55;
+            return new Vec3(mount.getX(), y, mount.getZ());
          }
       }
    }
 
    private static Vec3 strictSurfaceOrbitPoint(Entity mount, LivingEntity target, double angle) {
-      double x = target.m_20185_() + Math.cos(angle) * 18.0;
-      double z = target.m_20189_() + Math.sin(angle) * 18.0;
+      double x = target.getX() + Math.cos(angle) * 18.0;
+      double z = target.getZ() + Math.sin(angle) * 18.0;
       return waterPointNear(mount, x, z, 0);
    }
 
    private static boolean hasWaterRoute(Entity mount, Vec3 destination) {
-      Vec3 start = mount.m_20182_();
-      double horizontalDistance = Math.sqrt(destination.m_82531_(start.f_82479_, destination.f_82480_, start.f_82481_));
+      Vec3 start = mount.position();
+      double horizontalDistance = Math.sqrt(destination.distanceToSqr(start.x, destination.y, start.z));
       int samples = Math.max(1, (int)Math.ceil(horizontalDistance / 0.5));
 
       for (int i = 1; i <= samples; i++) {
          double progress = (double)i / (double)samples;
-         double x = start.f_82479_ + (destination.f_82479_ - start.f_82479_) * progress;
-         double z = start.f_82481_ + (destination.f_82481_ - start.f_82481_) * progress;
+         double x = start.x + (destination.x - start.x) * progress;
+         double z = start.z + (destination.z - start.z) * progress;
          if (waterPointNear(mount, x, z, 0) == null) {
             return false;
          }
@@ -320,7 +320,7 @@ public final class HippocampusRiderController {
          state.waterGoal = null;
          return null;
       } else {
-         long time = mount.m_9236_().m_46467_();
+         long time = mount.level().getGameTime();
          if (state.waterGoal == null || time >= state.nextWaterSearch) {
             state.waterGoal = findNearestWater(mount, 32);
             state.nextWaterSearch = time + 20L;
@@ -333,24 +333,24 @@ public final class HippocampusRiderController {
    private static Vec3 findNearestWater(Entity mount, int radius) {
       Vec3 best = null;
       double bestDistance = Double.MAX_VALUE;
-      BlockPos center = BlockPos.m_274561_(mount.m_20185_(), mount.m_20186_(), mount.m_20189_());
+      BlockPos center = BlockPos.containing(mount.getX(), mount.getY(), mount.getZ());
 
       for (int dx = -radius; dx <= radius; dx++) {
          for (int dz = -radius; dz <= radius; dz++) {
-            BlockPos column = center.m_7918_(dx, 0, dz);
+            BlockPos column = center.offset(dx, 0, dz);
 
             for (int dy = 4; dy >= -6; dy--) {
-               BlockPos pos = column.m_7918_(0, dy, 0);
-               FluidState fluid = mount.m_9236_().m_6425_(pos);
-               if (fluid.m_205070_(FluidTags.f_13131_)) {
-                  BlockPos above = pos.m_7494_();
-                  if (mount.m_9236_().m_6425_(above).m_76178_()) {
+               BlockPos pos = column.offset(0, dy, 0);
+               FluidState fluid = mount.level().getFluidState(pos);
+               if (fluid.is(FluidTags.WATER)) {
+                  BlockPos above = pos.above();
+                  if (mount.level().getFluidState(above).isEmpty()) {
                      Vec3 point = new Vec3(
-                        (double)pos.m_123341_() + 0.5,
-                        (double)((float)pos.m_123342_() + fluid.m_76155_(mount.m_9236_(), pos)) + -0.55,
-                        (double)pos.m_123343_() + 0.5
+                        (double)pos.getX() + 0.5,
+                        (double)((float)pos.getY() + fluid.getHeight(mount.level(), pos)) + -0.55,
+                        (double)pos.getZ() + 0.5
                      );
-                     double distance = mount.m_20182_().m_82557_(point);
+                     double distance = mount.position().distanceToSqr(point);
                      if (distance < bestDistance) {
                         bestDistance = distance;
                         best = point;
@@ -366,22 +366,22 @@ public final class HippocampusRiderController {
    }
 
    private static Vec3 waterPointNear(Entity mount, double x, double z, int radius) {
-      BlockPos center = BlockPos.m_274561_(x, mount.m_20186_(), z);
+      BlockPos center = BlockPos.containing(x, mount.getY(), z);
       Vec3 best = null;
       double bestDistance = Double.MAX_VALUE;
 
       for (int dx = -radius; dx <= radius; dx++) {
          for (int dz = -radius; dz <= radius; dz++) {
             for (int dy = 4; dy >= -6; dy--) {
-               BlockPos pos = center.m_7918_(dx, dy, dz);
-               FluidState fluid = mount.m_9236_().m_6425_(pos);
-               if (fluid.m_205070_(FluidTags.f_13131_) && mount.m_9236_().m_6425_(pos.m_7494_()).m_76178_()) {
+               BlockPos pos = center.offset(dx, dy, dz);
+               FluidState fluid = mount.level().getFluidState(pos);
+               if (fluid.is(FluidTags.WATER) && mount.level().getFluidState(pos.above()).isEmpty()) {
                   Vec3 point = new Vec3(
-                     (double)pos.m_123341_() + 0.5,
-                     (double)((float)pos.m_123342_() + fluid.m_76155_(mount.m_9236_(), pos)) + -0.55,
-                     (double)pos.m_123343_() + 0.5
+                     (double)pos.getX() + 0.5,
+                     (double)((float)pos.getY() + fluid.getHeight(mount.level(), pos)) + -0.55,
+                     (double)pos.getZ() + 0.5
                   );
-                  double distance = point.m_82531_(x, point.f_82480_, z);
+                  double distance = point.distanceToSqr(x, point.y, z);
                   if (distance < bestDistance) {
                      bestDistance = distance;
                      best = point;
@@ -396,13 +396,13 @@ public final class HippocampusRiderController {
    }
 
    private static double waterSurfaceY(Entity mount) {
-      BlockPos base = BlockPos.m_274561_(mount.m_20185_(), mount.m_20186_(), mount.m_20189_());
+      BlockPos base = BlockPos.containing(mount.getX(), mount.getY(), mount.getZ());
 
       for (int dy = 1; dy >= -2; dy--) {
-         BlockPos pos = base.m_7918_(0, dy, 0);
-         FluidState fluid = mount.m_9236_().m_6425_(pos);
-         if (fluid.m_205070_(FluidTags.f_13131_)) {
-            return (double)((float)pos.m_123342_() + fluid.m_76155_(mount.m_9236_(), pos));
+         BlockPos pos = base.offset(0, dy, 0);
+         FluidState fluid = mount.level().getFluidState(pos);
+         if (fluid.is(FluidTags.WATER)) {
+            return (double)((float)pos.getY() + fluid.getHeight(mount.level(), pos));
          }
       }
 
@@ -410,24 +410,24 @@ public final class HippocampusRiderController {
    }
 
    private static void face(Entity mount, Vec3 point) {
-      Vec3 delta = point.m_82546_(mount.m_20182_());
-      if (delta.m_165925_() > 0.001) {
-         float yaw = (float)Math.toDegrees(Math.atan2(-delta.f_82479_, delta.f_82481_));
-         mount.m_146922_(yaw);
-         mount.m_5618_(yaw);
-         mount.m_5616_(yaw);
+      Vec3 delta = point.subtract(mount.position());
+      if (delta.horizontalDistanceSqr() > 0.001) {
+         float yaw = (float)Math.toDegrees(Math.atan2(-delta.x, delta.z));
+         mount.setYRot(yaw);
+         mount.setYBodyRot(yaw);
+         mount.setYHeadRot(yaw);
       }
    }
 
    private static LivingEntity findTarget(CombatNpcEntity rider) {
-      return rider.m_9236_()
-         .m_6443_(
+      return rider.level()
+         .getEntitiesOfClass(
             LivingEntity.class,
-            rider.m_20191_().m_82377_(35.0, 18.0, 35.0),
-            candidate -> candidate != rider && candidate.m_6084_() && isHostile(rider, candidate)
+            rider.getBoundingBox().inflate(35.0, 18.0, 35.0),
+            candidate -> candidate != rider && candidate.isAlive() && isHostile(rider, candidate)
          )
          .stream()
-         .min(Comparator.comparingDouble(rider::m_20280_))
+         .min(Comparator.comparingDouble(rider::distanceToSqr))
          .orElse(null);
    }
 
@@ -452,7 +452,7 @@ public final class HippocampusRiderController {
       private long nextShot = 20L;
       private long nextWaterSearch;
       private Vec3 waterGoal;
-      private Vec3 divePoint = Vec3.f_82478_;
+      private Vec3 divePoint = Vec3.ZERO;
 
       private State(double angle) {
          this.angle = angle;

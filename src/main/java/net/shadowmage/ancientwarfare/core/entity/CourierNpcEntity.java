@@ -47,29 +47,29 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 20.0).m_22268_(Attributes.f_22279_, 0.27).m_22268_(Attributes.f_22277_, 24.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.27).add(Attributes.FOLLOW_RANGE, 24.0);
    }
 
-   protected void m_8099_() {
-      this.f_21345_.m_25352_(0, new FloatGoal(this));
-      this.f_21345_.m_25352_(2, new CourierNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
-      this.f_21345_.m_25352_(4, new CourierNpcEntity.CourierRouteGoal(this, 1.0, 2.0));
-      this.f_21345_.m_25352_(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
-      this.f_21345_.m_25352_(7, new RandomLookAroundGoal(this));
-   }
-
-   @Override
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
-      tag.m_128405_("RouteIndex", this.routeIndex);
-      tag.m_128405_("CourierWorkTicks", this.workTicks);
+   protected void registerGoals() {
+      this.goalSelector.addGoal(0, new FloatGoal(this));
+      this.goalSelector.addGoal(2, new CourierNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(4, new CourierNpcEntity.CourierRouteGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+      this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
    }
 
    @Override
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
-      this.routeIndex = tag.m_128451_("RouteIndex");
-      this.workTicks = tag.m_128451_("CourierWorkTicks");
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
+      tag.putInt("RouteIndex", this.routeIndex);
+      tag.putInt("CourierWorkTicks", this.workTicks);
+   }
+
+   @Override
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
+      this.routeIndex = tag.getInt("RouteIndex");
+      this.workTicks = tag.getInt("CourierWorkTicks");
    }
 
    @Override
@@ -79,25 +79,25 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       this.workTicks = 0;
    }
 
-   protected InteractionResult m_6071_(Player player, InteractionHand hand) {
+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
       if (this.tryAcceptFood(player, hand)) {
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
-      } else if (player.m_21120_(hand).m_41720_() instanceof CommandBatonItem) {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.m_21120_(hand), player, this);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
+            CommandBatonItem.toggleNpcSelection(player.getItemInHand(hand), player, this);
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
             AWCorePlatform.openMenu(
                player,
-               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.m_5446_()),
-               buffer -> buffer.writeInt(this.m_19879_())
+               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.getDisplayName()),
+               buffer -> buffer.writeInt(this.getId())
             );
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
    }
 
@@ -112,8 +112,8 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    @Override
-   public Component m_5677_() {
-      return Component.m_237115_("entity.ancientwarfare.courier");
+   public Component getTypeName() {
+      return Component.translatable("entity.ancientwarfare.courier");
    }
 
    private static class CourierRouteGoal extends Goal {
@@ -127,13 +127,13 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
          this.courier = courier;
          this.speedModifier = speedModifier;
          this.stopDistanceSq = stopDistance * stopDistance;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.courier.getCurrentCommand() == NpcCommandType.NONE
             && AWCoreRegistryAccess.is(this.courier.getOrdersStack(), AWCoreIds.ROUTING_ORDER)
-            && AWCoreRegistryAccess.is(this.courier.m_21205_(), AWCoreIds.BACKPACK)) {
+            && AWCoreRegistryAccess.is(this.courier.getMainHandItem(), AWCoreIds.BACKPACK)) {
             List<RoutingOrderData.RouteEntry> entries = RoutingOrderData.getEntries(this.courier.getOrdersStack());
             if (entries.isEmpty()) {
                return false;
@@ -150,49 +150,49 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.courier.getCurrentCommand() == NpcCommandType.NONE
             && AWCoreRegistryAccess.is(this.courier.getOrdersStack(), AWCoreIds.ROUTING_ORDER)
-            && AWCoreRegistryAccess.is(this.courier.m_21205_(), AWCoreIds.BACKPACK)
+            && AWCoreRegistryAccess.is(this.courier.getMainHandItem(), AWCoreIds.BACKPACK)
             && !RoutingOrderData.getEntries(this.courier.getOrdersStack()).isEmpty();
       }
 
-      public void m_8037_() {
+      public void tick() {
          if (this.target == null) {
             this.advanceRoute();
-         } else if (this.courier.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_() + 0.5, (double)this.target.m_123343_() + 0.5)
+         } else if (this.courier.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY() + 0.5, (double)this.target.getZ() + 0.5)
             > this.stopDistanceSq) {
             this.courier.workTicks = 0;
-            this.courier.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+            this.courier.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
             this.courier
-               .m_21573_()
-               .m_26519_(
-                  (double)this.target.m_123341_() + 0.5,
-                  (double)this.target.m_123342_(),
-                  (double)this.target.m_123343_() + 0.5,
+               .getNavigation()
+               .moveTo(
+                  (double)this.target.getX() + 0.5,
+                  (double)this.target.getY(),
+                  (double)this.target.getZ() + 0.5,
                   this.courier.playerWalkNavigationSpeed()
                );
          } else {
-            this.courier.m_21573_().m_26573_();
+            this.courier.getNavigation().stop();
             if (++this.courier.workTicks >= 10) {
-               this.courier.m_6674_(InteractionHand.MAIN_HAND);
+               this.courier.swing(InteractionHand.MAIN_HAND);
                this.transferAtRoutePoint();
                this.advanceRoute();
             }
          }
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.target = null;
          this.courier.workTicks = 0;
-         this.courier.m_21573_().m_26573_();
+         this.courier.getNavigation().stop();
       }
 
       private void transferAtRoutePoint() {
          List<RoutingOrderData.RouteEntry> entries = RoutingOrderData.getEntries(this.courier.getOrdersStack());
          if (!entries.isEmpty() && this.courier.routeIndex >= 0 && this.courier.routeIndex < entries.size()) {
             RoutingOrderData.RouteEntry entry = entries.get(this.courier.routeIndex);
-            BlockEntity blockEntity = this.courier.m_9236_().m_7702_(entry.pos());
+            BlockEntity blockEntity = this.courier.level().getBlockEntity(entry.pos());
             if (blockEntity != null) {
                if (blockEntity instanceof BasicWorksiteBlockEntity worksite) {
                   this.transferWithWorksite(entry, worksite);
@@ -207,7 +207,7 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private void transferWithHandler(RoutingOrderData.RouteEntry entry, ItemHandlerAccess targetInventory) {
-         SimpleContainer backpackInventory = BackpackInventoryAccess.load(this.courier.m_21205_());
+         SimpleContainer backpackInventory = BackpackInventoryAccess.load(this.courier.getMainHandItem());
          switch (entry.routeType()) {
             case FILL_TARGET_TO:
                fillTo(backpackInventory, targetInventory, entry);
@@ -246,7 +246,7 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
                fillCourierMinimum(targetInventory, backpackInventory, entry);
          }
 
-         BackpackInventoryAccess.save(this.courier.m_21205_(), backpackInventory);
+         BackpackInventoryAccess.save(this.courier.getMainHandItem(), backpackInventory);
       }
 
       private void transferWithWorksite(RoutingOrderData.RouteEntry entry, BasicWorksiteBlockEntity worksite) {
@@ -282,12 +282,12 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private static void moveContainerToHandler(Container from, ItemHandlerAccess to) {
-         for (int slot = 0; slot < from.m_6643_(); slot++) {
-            ItemStack stack = from.m_8020_(slot);
-            if (!stack.m_41619_()) {
+         for (int slot = 0; slot < from.getContainerSize(); slot++) {
+            ItemStack stack = from.getItem(slot);
+            if (!stack.isEmpty()) {
                ItemStack remaining = insertIntoHandler(to, stack);
-               from.m_6836_(slot, remaining);
-               if (remaining.m_41613_() != stack.m_41613_()) {
+               from.setItem(slot, remaining);
+               if (remaining.getCount() != stack.getCount()) {
                   return;
                }
             }
@@ -297,9 +297,9 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       private static void moveHandlerToContainer(ItemHandlerAccess from, Container to) {
          for (int slot = 0; slot < from.getSlots(); slot++) {
             ItemStack simulated = from.extractItem(slot, 64, true);
-            if (!simulated.m_41619_()) {
+            if (!simulated.isEmpty()) {
                ItemStack remaining = insertIntoContainer(to, simulated);
-               int moved = simulated.m_41613_() - remaining.m_41613_();
+               int moved = simulated.getCount() - remaining.getCount();
                if (moved > 0) {
                   from.extractItem(slot, moved, false);
                   return;
@@ -309,9 +309,9 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private static ItemStack insertIntoHandler(ItemHandlerAccess handler, ItemStack stack) {
-         ItemStack remaining = stack.m_41777_();
+         ItemStack remaining = stack.copy();
 
-         for (int slot = 0; slot < handler.getSlots() && !remaining.m_41619_(); slot++) {
+         for (int slot = 0; slot < handler.getSlots() && !remaining.isEmpty(); slot++) {
             remaining = handler.insertItem(slot, remaining, false);
          }
 
@@ -320,8 +320,8 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
       private static void fillTo(Container from, ItemHandlerAccess to, RoutingOrderData.RouteEntry entry) {
          for (ItemStack filter : entry.filters()) {
-            if (!filter.m_41619_()) {
-               int missing = filter.m_41613_() - countMatching(to, filter, entry);
+            if (!filter.isEmpty()) {
+               int missing = filter.getCount() - countMatching(to, filter, entry);
                if (missing > 0) {
                   moveMatchingContainerToHandler(from, to, filter, missing, entry);
                }
@@ -331,8 +331,8 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
       private static void fillTo(ItemHandlerAccess from, Container to, RoutingOrderData.RouteEntry entry) {
          for (ItemStack filter : entry.filters()) {
-            if (!filter.m_41619_()) {
-               int missing = filter.m_41613_() - countMatching(to, filter, entry);
+            if (!filter.isEmpty()) {
+               int missing = filter.getCount() - countMatching(to, filter, entry);
                if (missing > 0) {
                   moveMatchingHandlerToContainer(from, to, filter, missing, entry);
                }
@@ -341,28 +341,28 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private static void transferMatching(Container from, ItemHandlerAccess to, RoutingOrderData.RouteEntry entry, boolean except) {
-         for (int slot = 0; slot < from.m_6643_(); slot++) {
-            ItemStack source = from.m_8020_(slot);
-            if (!source.m_41619_() && (except || matchesAny(source, entry)) && (!except || !matchesAny(source, entry))) {
-               ItemStack remaining = insertIntoHandler(to, source.m_41777_());
-               int moved = source.m_41613_() - remaining.m_41613_();
+         for (int slot = 0; slot < from.getContainerSize(); slot++) {
+            ItemStack source = from.getItem(slot);
+            if (!source.isEmpty() && (except || matchesAny(source, entry)) && (!except || !matchesAny(source, entry))) {
+               ItemStack remaining = insertIntoHandler(to, source.copy());
+               int moved = source.getCount() - remaining.getCount();
                if (moved > 0) {
-                  source.m_41774_(moved);
-                  from.m_6836_(slot, source);
+                  source.shrink(moved);
+                  from.setItem(slot, source);
                }
             }
          }
 
-         from.m_6596_();
+         from.setChanged();
       }
 
       private static void transferMatching(ItemHandlerAccess from, Container to, RoutingOrderData.RouteEntry entry, boolean except) {
          for (int slot = 0; slot < from.getSlots(); slot++) {
             ItemStack source = from.getStackInSlot(slot);
-            if (!source.m_41619_() && (except || matchesAny(source, entry)) && (!except || !matchesAny(source, entry))) {
-               ItemStack extracted = from.extractItem(slot, source.m_41613_(), true);
+            if (!source.isEmpty() && (except || matchesAny(source, entry)) && (!except || !matchesAny(source, entry))) {
+               ItemStack extracted = from.extractItem(slot, source.getCount(), true);
                ItemStack remaining = insertIntoContainer(to, extracted);
-               int moved = extracted.m_41613_() - remaining.m_41613_();
+               int moved = extracted.getCount() - remaining.getCount();
                if (moved > 0) {
                   from.extractItem(slot, moved, false);
                }
@@ -372,9 +372,9 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
       private static void transferRatio(Container from, ItemHandlerAccess to, RoutingOrderData.RouteEntry entry) {
          for (ItemStack filter : entry.filters()) {
-            if (!filter.m_41619_() && filter.m_41613_() > 0) {
+            if (!filter.isEmpty() && filter.getCount() > 0) {
                int available = countMatching(from, filter, entry);
-               int amount = available / filter.m_41613_();
+               int amount = available / filter.getCount();
                if (amount > 0) {
                   moveMatchingContainerToHandler(from, to, filter, amount, entry);
                }
@@ -384,9 +384,9 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
       private static void transferRatio(ItemHandlerAccess from, Container to, RoutingOrderData.RouteEntry entry) {
          for (ItemStack filter : entry.filters()) {
-            if (!filter.m_41619_() && filter.m_41613_() > 0) {
+            if (!filter.isEmpty() && filter.getCount() > 0) {
                int available = countMatching(from, filter, entry);
-               int amount = available / filter.m_41613_();
+               int amount = available / filter.getCount();
                if (amount > 0) {
                   moveMatchingHandlerToContainer(from, to, filter, amount, entry);
                }
@@ -401,21 +401,21 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       private static void moveMatchingContainerToHandler(Container from, ItemHandlerAccess to, ItemStack filter, int amount, RoutingOrderData.RouteEntry entry) {
          int remaining = amount;
 
-         for (int slot = 0; slot < from.m_6643_() && remaining > 0; slot++) {
-            ItemStack source = from.m_8020_(slot);
+         for (int slot = 0; slot < from.getContainerSize() && remaining > 0; slot++) {
+            ItemStack source = from.getItem(slot);
             if (matchesFilter(source, filter, entry)) {
-               ItemStack moving = source.m_255036_(Math.min(remaining, source.m_41613_()));
+               ItemStack moving = source.copyWithCount(Math.min(remaining, source.getCount()));
                ItemStack rejected = insertIntoHandler(to, moving);
-               int moved = moving.m_41613_() - rejected.m_41613_();
+               int moved = moving.getCount() - rejected.getCount();
                if (moved > 0) {
-                  source.m_41774_(moved);
-                  from.m_6836_(slot, source);
+                  source.shrink(moved);
+                  from.setItem(slot, source);
                   remaining -= moved;
                }
             }
          }
 
-         from.m_6596_();
+         from.setChanged();
       }
 
       private static void moveMatchingHandlerToContainer(ItemHandlerAccess from, Container to, ItemStack filter, int amount, RoutingOrderData.RouteEntry entry) {
@@ -424,9 +424,9 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
          for (int slot = 0; slot < from.getSlots() && remaining > 0; slot++) {
             ItemStack source = from.getStackInSlot(slot);
             if (matchesFilter(source, filter, entry)) {
-               ItemStack extracted = from.extractItem(slot, Math.min(remaining, source.m_41613_()), true);
+               ItemStack extracted = from.extractItem(slot, Math.min(remaining, source.getCount()), true);
                ItemStack rejected = insertIntoContainer(to, extracted);
-               int moved = extracted.m_41613_() - rejected.m_41613_();
+               int moved = extracted.getCount() - rejected.getCount();
                if (moved > 0) {
                   from.extractItem(slot, moved, false);
                   remaining -= moved;
@@ -436,34 +436,34 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private static ItemStack insertIntoContainer(Container container, ItemStack stack) {
-         ItemStack remaining = stack.m_41777_();
+         ItemStack remaining = stack.copy();
 
-         for (int slot = 0; slot < container.m_6643_() && !remaining.m_41619_(); slot++) {
-            ItemStack current = container.m_8020_(slot);
-            if (current.m_41619_()) {
-               int moved = Math.min(remaining.m_41613_(), remaining.m_41741_());
-               ItemStack placed = remaining.m_41777_();
-               placed.m_41764_(moved);
-               container.m_6836_(slot, placed);
-               remaining.m_41774_(moved);
-            } else if (ItemStack.m_150942_(current, remaining) && current.m_41613_() < current.m_41741_()) {
-               int moved = Math.min(remaining.m_41613_(), current.m_41741_() - current.m_41613_());
-               current.m_41769_(moved);
-               remaining.m_41774_(moved);
-               container.m_6836_(slot, current);
+         for (int slot = 0; slot < container.getContainerSize() && !remaining.isEmpty(); slot++) {
+            ItemStack current = container.getItem(slot);
+            if (current.isEmpty()) {
+               int moved = Math.min(remaining.getCount(), remaining.getMaxStackSize());
+               ItemStack placed = remaining.copy();
+               placed.setCount(moved);
+               container.setItem(slot, placed);
+               remaining.shrink(moved);
+            } else if (ItemStack.isSameItemSameTags(current, remaining) && current.getCount() < current.getMaxStackSize()) {
+               int moved = Math.min(remaining.getCount(), current.getMaxStackSize() - current.getCount());
+               current.grow(moved);
+               remaining.shrink(moved);
+               container.setItem(slot, current);
             }
          }
 
-         container.m_6596_();
+         container.setChanged();
          return remaining;
       }
 
       private static void depositExact(Container from, ItemHandlerAccess to, RoutingOrderData.RouteEntry entry) {
          for (ItemStack filter : entry.filters()) {
-            int amount = filter.m_41613_();
-            if (!filter.m_41619_() && amount > 0) {
+            int amount = filter.getCount();
+            if (!filter.isEmpty() && amount > 0) {
                ItemStack candidate = findContainerCandidate(from, filter, amount, entry);
-               if (!candidate.m_41619_() && handlerInsertCapacity(to, candidate) >= amount) {
+               if (!candidate.isEmpty() && handlerInsertCapacity(to, candidate) >= amount) {
                   moveExactContainerToHandler(from, to, candidate, amount);
                }
             }
@@ -472,10 +472,10 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
       private static void withdrawExact(ItemHandlerAccess from, Container to, RoutingOrderData.RouteEntry entry) {
          for (ItemStack filter : entry.filters()) {
-            int amount = filter.m_41613_();
-            if (!filter.m_41619_() && amount > 0) {
+            int amount = filter.getCount();
+            if (!filter.isEmpty() && amount > 0) {
                ItemStack candidate = findHandlerCandidate(from, filter, amount, entry);
-               if (!candidate.m_41619_() && containerInsertCapacity(to, candidate) >= amount) {
+               if (!candidate.isEmpty() && containerInsertCapacity(to, candidate) >= amount) {
                   moveExactHandlerToContainer(from, to, candidate, amount);
                }
             }
@@ -484,11 +484,11 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
       private static void fillTargetMinimum(Container from, ItemHandlerAccess to, RoutingOrderData.RouteEntry entry) {
          for (ItemStack filter : entry.filters()) {
-            if (!filter.m_41619_()) {
-               int missing = filter.m_41613_() - countMatching(to, filter, entry);
+            if (!filter.isEmpty()) {
+               int missing = filter.getCount() - countMatching(to, filter, entry);
                if (missing > 0) {
                   ItemStack candidate = findContainerCandidate(from, filter, missing, entry);
-                  if (!candidate.m_41619_() && handlerInsertCapacity(to, candidate) >= missing) {
+                  if (!candidate.isEmpty() && handlerInsertCapacity(to, candidate) >= missing) {
                      moveExactContainerToHandler(from, to, candidate, missing);
                   }
                }
@@ -498,11 +498,11 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
       private static void fillCourierMinimum(ItemHandlerAccess from, Container to, RoutingOrderData.RouteEntry entry) {
          for (ItemStack filter : entry.filters()) {
-            if (!filter.m_41619_()) {
-               int missing = filter.m_41613_() - countMatching(to, filter, entry);
+            if (!filter.isEmpty()) {
+               int missing = filter.getCount() - countMatching(to, filter, entry);
                if (missing > 0) {
                   ItemStack candidate = findHandlerCandidate(from, filter, missing, entry);
-                  if (!candidate.m_41619_() && containerInsertCapacity(to, candidate) >= missing) {
+                  if (!candidate.isEmpty() && containerInsertCapacity(to, candidate) >= missing) {
                      moveExactHandlerToContainer(from, to, candidate, missing);
                   }
                }
@@ -511,25 +511,25 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private static ItemStack findContainerCandidate(Container container, ItemStack filter, int amount, RoutingOrderData.RouteEntry entry) {
-         for (int slot = 0; slot < container.m_6643_(); slot++) {
-            ItemStack candidate = container.m_8020_(slot);
+         for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack candidate = container.getItem(slot);
             if (matchesFilter(candidate, filter, entry) && countExact(container, candidate) >= amount) {
-               return candidate.m_255036_(amount);
+               return candidate.copyWithCount(amount);
             }
          }
 
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
 
       private static ItemStack findHandlerCandidate(ItemHandlerAccess handler, ItemStack filter, int amount, RoutingOrderData.RouteEntry entry) {
          for (int slot = 0; slot < handler.getSlots(); slot++) {
             ItemStack candidate = handler.getStackInSlot(slot);
             if (matchesFilter(candidate, filter, entry) && countExtractableExact(handler, candidate, amount) >= amount) {
-               return candidate.m_255036_(amount);
+               return candidate.copyWithCount(amount);
             }
          }
 
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
 
       private static int countMatching(ItemHandlerAccess handler, ItemStack filter, RoutingOrderData.RouteEntry entry) {
@@ -538,7 +538,7 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
          for (int slot = 0; slot < handler.getSlots(); slot++) {
             ItemStack stack = handler.getStackInSlot(slot);
             if (matchesFilter(stack, filter, entry)) {
-               count += stack.m_41613_();
+               count += stack.getCount();
             }
          }
 
@@ -548,10 +548,10 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       private static int countMatching(Container container, ItemStack filter, RoutingOrderData.RouteEntry entry) {
          int count = 0;
 
-         for (int slot = 0; slot < container.m_6643_(); slot++) {
-            ItemStack stack = container.m_8020_(slot);
+         for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack stack = container.getItem(slot);
             if (matchesFilter(stack, filter, entry)) {
-               count += stack.m_41613_();
+               count += stack.getCount();
             }
          }
 
@@ -561,10 +561,10 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       private static int countExact(Container container, ItemStack filter) {
          int count = 0;
 
-         for (int slot = 0; slot < container.m_6643_(); slot++) {
-            ItemStack stack = container.m_8020_(slot);
-            if (ItemStack.m_150942_(stack, filter)) {
-               count += stack.m_41613_();
+         for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack stack = container.getItem(slot);
+            if (ItemStack.isSameItemSameTags(stack, filter)) {
+               count += stack.getCount();
             }
          }
 
@@ -576,8 +576,8 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
          for (int slot = 0; slot < handler.getSlots() && count < limit; slot++) {
             ItemStack stack = handler.getStackInSlot(slot);
-            if (ItemStack.m_150942_(stack, filter)) {
-               count += handler.extractItem(slot, limit - count, true).m_41613_();
+            if (ItemStack.isSameItemSameTags(stack, filter)) {
+               count += handler.extractItem(slot, limit - count, true).getCount();
             }
          }
 
@@ -585,27 +585,27 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private static int handlerInsertCapacity(ItemHandlerAccess handler, ItemStack stack) {
-         ItemStack remaining = stack.m_41777_();
+         ItemStack remaining = stack.copy();
 
-         for (int slot = 0; slot < handler.getSlots() && !remaining.m_41619_(); slot++) {
+         for (int slot = 0; slot < handler.getSlots() && !remaining.isEmpty(); slot++) {
             remaining = handler.insertItem(slot, remaining, true);
          }
 
-         return stack.m_41613_() - remaining.m_41613_();
+         return stack.getCount() - remaining.getCount();
       }
 
       private static int containerInsertCapacity(Container container, ItemStack stack) {
          int capacity = 0;
 
-         for (int slot = 0; slot < container.m_6643_(); slot++) {
-            ItemStack current = container.m_8020_(slot);
-            if (current.m_41619_()) {
-               capacity += Math.min(stack.m_41741_(), container.m_6893_());
-            } else if (ItemStack.m_150942_(current, stack)) {
-               capacity += Math.max(0, Math.min(current.m_41741_(), container.m_6893_()) - current.m_41613_());
+         for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack current = container.getItem(slot);
+            if (current.isEmpty()) {
+               capacity += Math.min(stack.getMaxStackSize(), container.getMaxStackSize());
+            } else if (ItemStack.isSameItemSameTags(current, stack)) {
+               capacity += Math.max(0, Math.min(current.getMaxStackSize(), container.getMaxStackSize()) - current.getCount());
             }
 
-            if (capacity >= stack.m_41613_()) {
+            if (capacity >= stack.getCount()) {
                return capacity;
             }
          }
@@ -616,22 +616,22 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       private static void moveExactContainerToHandler(Container from, ItemHandlerAccess to, ItemStack filter, int amount) {
          int remaining = amount;
 
-         for (int slot = 0; slot < from.m_6643_() && remaining > 0; slot++) {
-            ItemStack source = from.m_8020_(slot);
-            if (ItemStack.m_150942_(source, filter)) {
-               int requested = Math.min(remaining, source.m_41613_());
-               ItemStack moving = source.m_255036_(requested);
+         for (int slot = 0; slot < from.getContainerSize() && remaining > 0; slot++) {
+            ItemStack source = from.getItem(slot);
+            if (ItemStack.isSameItemSameTags(source, filter)) {
+               int requested = Math.min(remaining, source.getCount());
+               ItemStack moving = source.copyWithCount(requested);
                ItemStack rejected = insertIntoHandler(to, moving);
-               int moved = requested - rejected.m_41613_();
+               int moved = requested - rejected.getCount();
                if (moved > 0) {
-                  source.m_41774_(moved);
-                  from.m_6836_(slot, source);
+                  source.shrink(moved);
+                  from.setItem(slot, source);
                   remaining -= moved;
                }
             }
          }
 
-         from.m_6596_();
+         from.setChanged();
       }
 
       private static void moveExactHandlerToContainer(ItemHandlerAccess from, Container to, ItemStack filter, int amount) {
@@ -639,14 +639,14 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
          for (int slot = 0; slot < from.getSlots() && remaining > 0; slot++) {
             ItemStack source = from.getStackInSlot(slot);
-            if (ItemStack.m_150942_(source, filter)) {
+            if (ItemStack.isSameItemSameTags(source, filter)) {
                ItemStack extracted = from.extractItem(slot, remaining, false);
-               if (!extracted.m_41619_()) {
+               if (!extracted.isEmpty()) {
                   ItemStack rejected = insertIntoContainer(to, extracted);
-                  int moved = extracted.m_41613_() - rejected.m_41613_();
+                  int moved = extracted.getCount() - rejected.getCount();
                   remaining -= moved;
-                  if (!rejected.m_41619_()) {
-                     for (int restoreSlot = 0; restoreSlot < from.getSlots() && !rejected.m_41619_(); restoreSlot++) {
+                  if (!rejected.isEmpty()) {
+                     for (int restoreSlot = 0; restoreSlot < from.getSlots() && !rejected.isEmpty(); restoreSlot++) {
                         rejected = from.insertItem(restoreSlot, rejected, false);
                      }
                   }
@@ -656,9 +656,9 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private static boolean matchesFilter(ItemStack stack, ItemStack filter, RoutingOrderData.RouteEntry entry) {
-         if (stack.m_41619_() || filter.m_41619_() || stack.m_41720_() != filter.m_41720_()) {
+         if (stack.isEmpty() || filter.isEmpty() || stack.getItem() != filter.getItem()) {
             return false;
-         } else if (!entry.ignoreDamage() && stack.m_41773_() != filter.m_41773_()) {
+         } else if (!entry.ignoreDamage() && stack.getDamageValue() != filter.getDamageValue()) {
             return false;
          } else if (entry.ignoreTag()) {
             return true;
@@ -670,16 +670,16 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
       }
 
       private static CompoundTag comparableTag(ItemStack stack, boolean ignoreDamage) {
-         CompoundTag tag = stack.m_41783_();
+         CompoundTag tag = stack.getTag();
          if (tag == null) {
             return null;
          } else {
-            CompoundTag copy = tag.m_6426_();
+            CompoundTag copy = tag.copy();
             if (ignoreDamage) {
-               copy.m_128473_("Damage");
+               copy.remove("Damage");
             }
 
-            return copy.m_128456_() ? null : copy;
+            return copy.isEmpty() ? null : copy;
          }
       }
    }
@@ -694,45 +694,45 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
          this.courier = courier;
          this.speedModifier = speedModifier;
          this.stopDistanceSq = stopDistance * stopDistance;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.courier.getCurrentCommand() != NpcCommandType.MOVE) {
             return false;
          } else {
             this.target = this.courier.getCommandTarget();
-            return !BlockPos.f_121853_.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
+            return !BlockPos.ZERO.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.courier.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() > this.stopDistanceSq;
       }
 
-      public void m_8037_() {
-         this.courier.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+      public void tick() {
+         this.courier.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
          this.courier
-            .m_21573_()
-            .m_26519_(
-               (double)this.target.m_123341_() + 0.5,
-               (double)this.target.m_123342_(),
-               (double)this.target.m_123343_() + 0.5,
+            .getNavigation()
+            .moveTo(
+               (double)this.target.getX() + 0.5,
+               (double)this.target.getY(),
+               (double)this.target.getZ() + 0.5,
                this.courier.playerWalkNavigationSpeed()
             );
       }
 
-      public void m_8041_() {
+      public void stop() {
          if (this.courier.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
             this.courier.clearCommand();
          }
 
          this.target = null;
-         this.courier.m_21573_().m_26573_();
+         this.courier.getNavigation().stop();
       }
 
       private double distanceToTargetSq() {
-         return this.courier.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+         return this.courier.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
       }
    }
 }

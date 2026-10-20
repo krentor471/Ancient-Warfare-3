@@ -74,41 +74,41 @@ public final class ForgeClientEvents {
    public static void clientSetup(FMLClientSetupEvent event) {
       event.enqueueWork(
          () -> {
-            AWCoreClientEntityRenderers.setRendererRegistrar(EntityRenderers::m_174036_);
+            AWCoreClientEntityRenderers.setRendererRegistrar(EntityRenderers::register);
             AWCoreClientScreens.registerScreens();
-            MenuScreens.m_96206_((MenuType)AWCoreMenuTypes.STRUCTURE_SCANNER.get(), StructureScannerScreen::new);
-            MenuScreens.m_96206_((MenuType)AWCoreMenuTypes.DRAFTING_STATION.get(), DraftingStationScreen::new);
+            MenuScreens.register((MenuType)AWCoreMenuTypes.STRUCTURE_SCANNER.get(), StructureScannerScreen::new);
+            MenuScreens.register((MenuType)AWCoreMenuTypes.DRAFTING_STATION.get(), DraftingStationScreen::new);
             AWCoreClientEntityRenderers.registerRenderers();
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.ADVANCED_SPAWNER.get(), AdvancedSpawnerRenderer::new);
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.TORQUE_TRANSPORT.get(), TorqueTransportMixedRenderer::new);
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.FLYWHEEL_STORAGE.get(), FlywheelStorageRenderer::new);
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.FLYWHEEL_CONTROLLER.get(), context -> new FlywheelControllerGeoRenderer());
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.TORQUE_GENERATOR.get(), context -> new TorqueGeneratorGeoRenderer());
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.HAND_CRANKED_GENERATOR.get(), context -> new HandCrankedGeneratorGeoRenderer());
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.WINDMILL_BLADE.get(), context -> new WindmillBladeGeoRenderer());
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.PROTECTION_FLAG.get(), ProtectionFlagRenderer::new);
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.STRUCTURE_CONTAINER.get(), LegacyCoffinRenderer::new);
-            BlockEntityRenderers.m_173590_((BlockEntityType)AWCoreBlockEntities.ADVANCED_LOOT_CHEST.get(), ChestRenderer::new);
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.ADVANCED_SPAWNER.get(), AdvancedSpawnerRenderer::new);
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.TORQUE_TRANSPORT.get(), TorqueTransportMixedRenderer::new);
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.FLYWHEEL_STORAGE.get(), FlywheelStorageRenderer::new);
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.FLYWHEEL_CONTROLLER.get(), context -> new FlywheelControllerGeoRenderer());
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.TORQUE_GENERATOR.get(), context -> new TorqueGeneratorGeoRenderer());
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.HAND_CRANKED_GENERATOR.get(), context -> new HandCrankedGeneratorGeoRenderer());
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.WINDMILL_BLADE.get(), context -> new WindmillBladeGeoRenderer());
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.PROTECTION_FLAG.get(), ProtectionFlagRenderer::new);
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.STRUCTURE_CONTAINER.get(), LegacyCoffinRenderer::new);
+            BlockEntityRenderers.register((BlockEntityType)AWCoreBlockEntities.ADVANCED_LOOT_CHEST.get(), ChestRenderer::new);
             BardMusicLibrary.musicFolder();
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOWN_HALL.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.IRON_CAGE.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.GIBBET.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.FIRE_PIT.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.FIRE_PIT_LOG.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.FIRE_PIT_SQUARE.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.BRAZIER_FLAME.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.BRAZIER_EMBER.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.STRETCHING_RACK.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.ALTAR_SHORT_CLOTH.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.ALTAR_LONG_CLOTH.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.ALTAR_CANDLE.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.STAKE.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_WINGS.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_IRMINSUL_SIDE.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_ELEPHANT_BODY.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_ELEPHANT_LEFT.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_ELEPHANT_RIGHT.get(), RenderType.m_110463_());
-            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.ADVANCED_SPAWNER.get(), RenderType.m_110463_());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOWN_HALL.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.IRON_CAGE.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.GIBBET.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.FIRE_PIT.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.FIRE_PIT_LOG.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.FIRE_PIT_SQUARE.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.BRAZIER_FLAME.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.BRAZIER_EMBER.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.STRETCHING_RACK.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.ALTAR_SHORT_CLOTH.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.ALTAR_LONG_CLOTH.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.ALTAR_CANDLE.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.STAKE.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_WINGS.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_IRMINSUL_SIDE.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_ELEPHANT_BODY.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_ELEPHANT_LEFT.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.TOTEM_PART_ELEPHANT_RIGHT.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer((Block)AWCoreBlocks.ADVANCED_SPAWNER.get(), RenderType.cutout());
             registerShieldProperties();
             registerCoinStackProperties();
             ItemProperties.register((Item)AWCoreItems.BARD_INSTRUMENT.get(), AWCoreIds.id("instrument"), (stack, level, entity, seed) -> {
@@ -168,10 +168,10 @@ public final class ForgeClientEvents {
          ItemProperties.register(shield, blocking, (stack, level, entity, seed) -> {
             if (entity == null) {
                return 0.0F;
-            } else if (entity.m_6117_() && entity.m_21211_() == stack) {
+            } else if (entity.isUsingItem() && entity.getUseItem() == stack) {
                return 1.0F;
             } else {
-               if (entity instanceof NpcBaseEntity npc && npc.isShielding() && npc.m_21206_() == stack) {
+               if (entity instanceof NpcBaseEntity npc && npc.isShielding() && npc.getOffhandItem() == stack) {
                   return 1.0F;
                }
 
@@ -184,10 +184,10 @@ public final class ForgeClientEvents {
    private static void registerCoinStackProperties() {
       ResourceLocation sizeProperty = AWCoreIds.id("coin_stack_size");
       Item[] coinStacks = new Item[]{
-         ((Block)AWCoreBlocks.COIN_STACK_COPPER.get()).m_5456_(),
-         ((Block)AWCoreBlocks.COIN_STACK_SILVER.get()).m_5456_(),
-         ((Block)AWCoreBlocks.COIN_STACK_GOLD.get()).m_5456_(),
-         ((Block)AWCoreBlocks.COIN_STACK_ANCIENT.get()).m_5456_()
+         ((Block)AWCoreBlocks.COIN_STACK_COPPER.get()).asItem(),
+         ((Block)AWCoreBlocks.COIN_STACK_SILVER.get()).asItem(),
+         ((Block)AWCoreBlocks.COIN_STACK_GOLD.get()).asItem(),
+         ((Block)AWCoreBlocks.COIN_STACK_ANCIENT.get()).asItem()
       };
 
       for (Item item : coinStacks) {

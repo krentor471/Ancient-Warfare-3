@@ -11,7 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import net.shadowmage.ancientwarfare.core.item.BallistaTurretStandItem;
 
 public class BallistaTurretStandEntity extends BallistaMobileEntity {
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.ballista_turret_stand");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.ballista_turret_stand");
    private static final float MIN_PITCH = -15.0F;
    private static final float MAX_PITCH = 15.0F;
    private static final float MAX_YAW = 45.0F;
@@ -20,7 +20,7 @@ public class BallistaTurretStandEntity extends BallistaMobileEntity {
 
    public BallistaTurretStandEntity(EntityType<? extends BallistaTurretStandEntity> type, Level level) {
       super(type, level);
-      this.m_20242_(true);
+      this.setNoGravity(true);
    }
 
    @Override
@@ -30,19 +30,19 @@ public class BallistaTurretStandEntity extends BallistaMobileEntity {
    }
 
    @Override
-   public void m_8119_() {
-      this.m_20242_(true);
-      double fixedX = this.m_20185_();
-      double fixedY = this.m_20186_();
-      double fixedZ = this.m_20189_();
-      this.m_20256_(Vec3.f_82478_);
-      super.m_8119_();
-      if (!this.m_9236_().f_46443_ && (Math.abs(this.inputPitch) > 1.0E-4F || Math.abs(this.inputYaw) > 1.0E-4F)) {
+   public void tick() {
+      this.setNoGravity(true);
+      double fixedX = this.getX();
+      double fixedY = this.getY();
+      double fixedZ = this.getZ();
+      this.setDeltaMovement(Vec3.ZERO);
+      super.tick();
+      if (!this.level().isClientSide && (Math.abs(this.inputPitch) > 1.0E-4F || Math.abs(this.inputYaw) > 1.0E-4F)) {
          this.adjustTurret(this.inputPitch, this.inputYaw * 2.0F);
       }
 
-      this.m_20256_(Vec3.f_82478_);
-      this.m_7678_(fixedX, fixedY, fixedZ, this.m_146908_(), this.m_146909_());
+      this.setDeltaMovement(Vec3.ZERO);
+      this.moveTo(fixedX, fixedY, fixedZ, this.getYRot(), this.getXRot());
    }
 
    @Override
@@ -76,10 +76,10 @@ public class BallistaTurretStandEntity extends BallistaMobileEntity {
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         Vec3 offset = this.getPassengerOffset().m_82524_(-(this.m_146908_() + this.getTurretYaw()) * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         Vec3 offset = this.getPassengerOffset().yRot(-(this.getYRot() + this.getTurretYaw()) * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -88,7 +88,7 @@ public class BallistaTurretStandEntity extends BallistaMobileEntity {
       ItemStack stack = new ItemStack(BallistaTurretStandItem.itemForMaterialLevel(this.getMaterialLevel()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("BallistaTurretStandData", tag);
+      stack.getOrCreateTag().put("BallistaTurretStandData", tag);
       return stack;
    }
 }

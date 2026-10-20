@@ -18,7 +18,7 @@ public class FlywheelControllerGeoModel extends GeoModel<FlywheelControllerBlock
    }
 
    public ResourceLocation getTextureResource(FlywheelControllerBlockEntity animatable) {
-      TorqueTier tier = animatable.m_58900_().m_60734_() instanceof FlywheelControllerBlock block ? block.getTier() : TorqueTier.LIGHT;
+      TorqueTier tier = animatable.getBlockState().getBlock() instanceof FlywheelControllerBlock block ? block.getTier() : TorqueTier.LIGHT;
       return AWCoreIds.id("textures/block/automation/flywheel_controller_" + tier.getId() + ".png");
    }
 
@@ -28,9 +28,9 @@ public class FlywheelControllerGeoModel extends GeoModel<FlywheelControllerBlock
 
    public void handleAnimations(FlywheelControllerBlockEntity animatable, long instanceId, AnimationState<FlywheelControllerBlockEntity> animationState) {
       super.handleAnimations(animatable, instanceId, animationState);
-      if (animatable.m_58904_() != null) {
+      if (animatable.getLevel() != null) {
          float angle = animatable.isVisualActive()
-            ? (float)Math.toRadians((double)(((float)animatable.m_58904_().m_46467_() + animationState.getPartialTick()) * 9.0F))
+            ? (float)Math.toRadians((double)(((float)animatable.getLevel().getGameTime() + animationState.getPartialTick()) * 9.0F))
             : 0.0F;
          this.setRotZ("inputGear", angle);
          this.setRotZ("outputGear", angle);

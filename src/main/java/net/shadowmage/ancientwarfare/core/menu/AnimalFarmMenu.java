@@ -28,14 +28,14 @@ public class AnimalFarmMenu extends AbstractContainerMenu {
    public AnimalFarmMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.ANIMAL_FARM), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      if (this.level.m_7702_(pos) instanceof AnimalFarmBlockEntity animalFarm) {
+      this.level = playerInventory.player.level();
+      if (this.level.getBlockEntity(pos) instanceof AnimalFarmBlockEntity animalFarm) {
          this.container = animalFarm;
       } else {
          this.container = new SimpleContainer(38);
       }
 
-      this.container.m_5856_(playerInventory.f_35978_);
+      this.container.startOpen(playerInventory.player);
       this.addSlotGrid(this.container, 0, 8, 18, 9, 3, Slot::new);
       this.addSlotGrid(this.container, 27, 8, 84, 3, 1, (x$0, x$1, x$2, x$3) -> new AnimalFarmMenu.FoodSlot(x$0, x$1, x$2, x$3));
       this.addSlotGrid(this.container, 30, 8, 114, 3, 1, (x$0, x$1, x$2, x$3) -> new AnimalFarmMenu.ToolSlot(x$0, x$1, x$2, x$3));
@@ -43,39 +43,39 @@ public class AnimalFarmMenu extends AbstractContainerMenu {
       this.addPlayerInventory(playerInventory, 8, 140);
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (id == 0 && !this.level.f_46443_) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (id == 0 && !this.level.isClientSide) {
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(
                (containerId, inventory, p) -> new WorksiteSideConfigMenu(containerId, inventory, this.pos),
-               Component.m_237115_("container.ancientwarfare.worksite_side_config")
+               Component.translatable("container.ancientwarfare.worksite_side_config")
             ),
-            buffer -> buffer.m_130064_(this.pos)
+            buffer -> buffer.writeBlockPos(this.pos)
          );
          return true;
-      } else if (id == 1 && !this.level.f_46443_ && this.level.m_7702_(this.pos) instanceof AnimalFarmBlockEntity animalFarm) {
+      } else if (id == 1 && !this.level.isClientSide && this.level.getBlockEntity(this.pos) instanceof AnimalFarmBlockEntity animalFarm) {
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(
                (containerId, inventory, p) -> animalFarm.createBoundsMenu(containerId, inventory),
-               Component.m_237115_("container.ancientwarfare.animal_farm_bounds")
+               Component.translatable("container.ancientwarfare.animal_farm_bounds")
             ),
-            buffer -> buffer.m_130064_(this.pos)
+            buffer -> buffer.writeBlockPos(this.pos)
          );
          return true;
-      } else if (id == 2 && !this.level.f_46443_ && this.level.m_7702_(this.pos) instanceof AnimalFarmBlockEntity animalFarm) {
+      } else if (id == 2 && !this.level.isClientSide && this.level.getBlockEntity(this.pos) instanceof AnimalFarmBlockEntity animalFarm) {
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(
                (containerId, inventory, p) -> animalFarm.createControlMenu(containerId, inventory),
-               Component.m_237115_("container.ancientwarfare.animal_farm_control")
+               Component.translatable("container.ancientwarfare.animal_farm_control")
             ),
-            buffer -> buffer.m_130064_(this.pos)
+            buffer -> buffer.writeBlockPos(this.pos)
          );
          return true;
       } else {
-         return super.m_6366_(player, id);
+         return super.clickMenuButton(player, id);
       }
    }
 
@@ -83,7 +83,7 @@ public class AnimalFarmMenu extends AbstractContainerMenu {
       for (int row = 0; row < rows; row++) {
          for (int col = 0; col < columns; col++) {
             int index = firstSlot + row * columns + col;
-            this.m_38897_(factory.create(container, index, x + col * 18, y + row * 18));
+            this.addSlot(factory.create(container, index, x + col * 18, y + row * 18));
          }
       }
    }
@@ -91,26 +91,26 @@ public class AnimalFarmMenu extends AbstractContainerMenu {
    private void addPlayerInventory(Inventory playerInventory, int x, int y) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(playerInventory, col + row * 9 + 9, x + col * 18, y + row * 18));
+            this.addSlot(new Slot(playerInventory, col + row * 9 + 9, x + col * 18, y + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(playerInventory, col, x + col * 18, y + 58));
+         this.addSlot(new Slot(playerInventory, col, x + col * 18, y + 58));
       }
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.ANIMAL_FARM));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.ANIMAL_FARM));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 
-   public void m_6877_(Player player) {
-      super.m_6877_(player);
-      this.container.m_5785_(player);
+   public void removed(Player player) {
+      super.removed(player);
+      this.container.stopOpen(player);
    }
 
    private class FoodSlot extends Slot {
@@ -118,8 +118,8 @@ public class AnimalFarmMenu extends AbstractContainerMenu {
          super(container, index, x, y);
       }
 
-      public boolean m_5857_(ItemStack stack) {
-         if (this.f_40218_ instanceof AnimalFarmBlockEntity animalFarm && animalFarm.isFoodItem(stack)) {
+      public boolean mayPlace(ItemStack stack) {
+         if (this.container instanceof AnimalFarmBlockEntity animalFarm && animalFarm.isFoodItem(stack)) {
             return true;
          }
 
@@ -136,8 +136,8 @@ public class AnimalFarmMenu extends AbstractContainerMenu {
          super(container, index, x, y);
       }
 
-      public boolean m_5857_(ItemStack stack) {
-         if (this.f_40218_ instanceof AnimalFarmBlockEntity animalFarm && animalFarm.isToolItem(stack)) {
+      public boolean mayPlace(ItemStack stack) {
+         if (this.container instanceof AnimalFarmBlockEntity animalFarm && animalFarm.isToolItem(stack)) {
             return true;
          }
 

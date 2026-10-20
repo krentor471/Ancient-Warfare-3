@@ -38,15 +38,15 @@ public final class IceAndFireHippocampusCompat {
 
    public static boolean canBeMountedBy(Entity mount, UUID owner) {
       if (isHippocampus(mount) && owner != null) {
-         Boolean tame = mount instanceof TamableAnimal tamable ? tamable.m_21824_() : invokeBoolean(mount, "isTame");
-         Boolean saddled = mount instanceof Saddleable saddleable ? saddleable.m_6254_() : invokeBoolean(mount, "isSaddled");
-         UUID mountOwner = mount instanceof TamableAnimal tamablex ? tamablex.m_21805_() : invokeUuid(mount, "getOwnerUUID");
-         boolean valid = Boolean.TRUE.equals(tame) && Boolean.TRUE.equals(saddled) && owner.equals(mountOwner) && mount.m_20197_().isEmpty();
+         Boolean tame = mount instanceof TamableAnimal tamable ? tamable.isTame() : invokeBoolean(mount, "isTame");
+         Boolean saddled = mount instanceof Saddleable saddleable ? saddleable.isSaddled() : invokeBoolean(mount, "isSaddled");
+         UUID mountOwner = mount instanceof TamableAnimal tamablex ? tamablex.getOwnerUUID() : invokeUuid(mount, "getOwnerUUID");
+         boolean valid = Boolean.TRUE.equals(tame) && Boolean.TRUE.equals(saddled) && owner.equals(mountOwner) && mount.getPassengers().isEmpty();
          if (!valid) {
             AncientWarfareCore.LOG
                .info(
                   "Hippocampus mount rejected: tame={}, saddled={}, mountOwner={}, commandOwner={}, passengers={}",
-                  new Object[]{tame, saddled, mountOwner, owner, mount.m_20197_()}
+                  new Object[]{tame, saddled, mountOwner, owner, mount.getPassengers()}
                );
          }
 
@@ -71,16 +71,16 @@ public final class IceAndFireHippocampusCompat {
    public static void prepareForRider(Entity mount) {
       if (isHippocampus(mount)) {
          if (mount instanceof Mob mob) {
-            mob.m_21557_(true);
-            mob.m_21573_().m_26573_();
-            mob.m_6710_(null);
+            mob.setNoAi(true);
+            mob.getNavigation().stop();
+            mob.setTarget(null);
          } else {
             invoke(mount, "setNoAi", boolean.class, true);
             invoke(mount, "setTarget", LivingEntity.class, null);
          }
 
-         mount.m_20256_(Vec3.f_82478_);
-         mount.m_20242_(true);
+         mount.setDeltaMovement(Vec3.ZERO);
+         mount.setNoGravity(true);
          setControlState(mount, (byte)0);
          setAttack(mount, false);
       }
@@ -89,14 +89,14 @@ public final class IceAndFireHippocampusCompat {
    public static void restoreAfterRider(Entity mount) {
       if (isHippocampus(mount)) {
          if (mount instanceof Mob mob) {
-            mob.m_21557_(false);
-            mob.m_21573_().m_26573_();
+            mob.setNoAi(false);
+            mob.getNavigation().stop();
          } else {
             invoke(mount, "setNoAi", boolean.class, false);
          }
 
-         mount.m_20242_(false);
-         mount.m_20256_(Vec3.f_82478_);
+         mount.setNoGravity(false);
+         mount.setDeltaMovement(Vec3.ZERO);
       }
    }
 

@@ -14,7 +14,7 @@ final class NpcOpenDoorGoal extends Goal {
    private static final double DOOR_LOOKAHEAD_DISTANCE_SQR = 2.25;
    private final NpcBaseEntity npc;
    private final PathNavigation navigation;
-   private BlockPos doorPos = BlockPos.f_121853_;
+   private BlockPos doorPos = BlockPos.ZERO;
    private boolean hasDoor;
    private boolean passed;
    private boolean openedByNpc;
@@ -24,37 +24,37 @@ final class NpcOpenDoorGoal extends Goal {
 
    NpcOpenDoorGoal(NpcBaseEntity npc) {
       this.npc = npc;
-      this.navigation = npc.m_21573_();
+      this.navigation = npc.getNavigation();
    }
 
-   public boolean m_8036_() {
-      return !this.npc.m_9236_().f_46443_ && this.navigation.m_26572_() && this.navigation.m_26575_().m_77360_() ? this.findDoorOnPath() : false;
+   public boolean canUse() {
+      return !this.npc.level().isClientSide && this.navigation.isInProgress() && this.navigation.getNodeEvaluator().canOpenDoors() ? this.findDoorOnPath() : false;
    }
 
-   public boolean m_8045_() {
+   public boolean canContinueToUse() {
       return this.hasDoor && !this.passed && this.forgetTicks > 0;
    }
 
-   public void m_8056_() {
+   public void start() {
       this.passed = false;
       this.forgetTicks = 40;
-      this.doorOpenDirX = (float)((double)this.doorPos.m_123341_() + 0.5 - this.npc.m_20185_());
-      this.doorOpenDirZ = (float)((double)this.doorPos.m_123343_() + 0.5 - this.npc.m_20189_());
+      this.doorOpenDirX = (float)((double)this.doorPos.getX() + 0.5 - this.npc.getX());
+      this.doorOpenDirZ = (float)((double)this.doorPos.getZ() + 0.5 - this.npc.getZ());
       this.openedByNpc = !this.isOpen();
       this.setOpen(true);
    }
 
-   public void m_8037_() {
+   public void tick() {
       this.forgetTicks--;
       this.setOpen(true);
-      float currentDoorX = (float)((double)this.doorPos.m_123341_() + 0.5 - this.npc.m_20185_());
-      float currentDoorZ = (float)((double)this.doorPos.m_123343_() + 0.5 - this.npc.m_20189_());
+      float currentDoorX = (float)((double)this.doorPos.getX() + 0.5 - this.npc.getX());
+      float currentDoorZ = (float)((double)this.doorPos.getZ() + 0.5 - this.npc.getZ());
       if (this.doorOpenDirX * currentDoorX + this.doorOpenDirZ * currentDoorZ < 0.0F) {
          this.passed = true;
       }
    }
 
-   public void m_8041_() {
+   public void stop() {
       if (this.openedByNpc) {
          this.setOpen(false);
       }
@@ -65,21 +65,21 @@ final class NpcOpenDoorGoal extends Goal {
       this.forgetTicks = 0;
    }
 
-   public boolean m_183429_() {
+   public boolean requiresUpdateEveryTick() {
       return true;
    }
 
    private boolean findDoorOnPath() {
-      Path path = this.navigation.m_26570_();
-      if (path != null && !path.m_77392_()) {
-         int start = path.m_77399_();
-         int end = Math.min(path.m_77398_(), start + 3);
+      Path path = this.navigation.getPath();
+      if (path != null && !path.isDone()) {
+         int start = path.getNextNodeIndex();
+         int end = Math.min(path.getNodeCount(), start + 3);
 
          for (int index = start; index < end; index++) {
-            Node node = path.m_77375_(index);
-            BlockPos candidate = new BlockPos(node.f_77271_, node.f_77272_ + 1, node.f_77273_);
-            if (this.npc.m_20275_((double)candidate.m_123341_(), this.npc.m_20186_(), (double)candidate.m_123343_()) <= 2.25
-               && DoorBlock.m_52745_(this.npc.m_9236_(), candidate)) {
+            Node node = path.getNode(index);
+            BlockPos candidate = new BlockPos(node.x, node.y + 1, node.z);
+            if (this.npc.distanceToSqr((double)candidate.getX(), this.npc.getY(), (double)candidate.getZ()) <= 2.25
+               && DoorBlock.isWoodenDoor(this.npc.level(), candidate)) {
                this.doorPos = candidate;
                this.hasDoor = true;
                return true;
@@ -95,15 +95,15 @@ final class NpcOpenDoorGoal extends Goal {
 
    private boolean isOpen() {
       return this.hasDoor
-         && this.npc.m_9236_().m_8055_(this.doorPos).m_60734_() instanceof DoorBlock
-         && (Boolean)this.npc.m_9236_().m_8055_(this.doorPos).m_61143_(DoorBlock.f_52727_);
+         && this.npc.level().getBlockState(this.doorPos).getBlock() instanceof DoorBlock
+         && (Boolean)this.npc.level().getBlockState(this.doorPos).getValue(DoorBlock.OPEN);
    }
 
    private void setOpen(boolean open) {
       if (this.hasDoor) {
-         BlockState state = this.npc.m_9236_().m_8055_(this.doorPos);
-         if (state.m_60734_() instanceof DoorBlock door && state.m_61138_(DoorBlock.f_52727_) && (Boolean)state.m_61143_(DoorBlock.f_52727_) != open) {
-            door.m_153165_(this.npc, this.npc.m_9236_(), state, this.doorPos, open);
+         BlockState state = this.npc.level().getBlockState(this.doorPos);
+         if (state.getBlock() instanceof DoorBlock door && state.hasProperty(DoorBlock.OPEN) && (Boolean)state.getValue(DoorBlock.OPEN) != open) {
+            door.setOpen(this.npc, this.npc.level(), state, this.doorPos, open);
          }
       }
    }

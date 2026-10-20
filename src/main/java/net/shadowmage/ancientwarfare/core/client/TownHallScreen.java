@@ -15,40 +15,40 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
 
    public TownHallScreen(TownHallMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title);
-      this.f_97726_ = 230;
-      this.f_97727_ = 174;
-      this.f_97728_ = 8;
-      this.f_97729_ = 6;
-      this.f_97731_ = 80;
+      this.imageWidth = 230;
+      this.imageHeight = 174;
+      this.titleLabelX = 8;
+      this.titleLabelY = 6;
+      this.inventoryLabelY = 80;
    }
 
-   protected void m_7856_() {
-      super.m_7856_();
-      this.m_142416_(
+   protected void init() {
+      super.init();
+      this.addRenderableWidget(
          new LegacyTexturedButton(
-            this.f_97735_ + 176, this.f_97736_ + 22, 46, 24, Component.m_237115_("gui.ancientwarfare.town_hall.open_records"), button -> {
+            this.leftPos + 176, this.topPos + 22, 46, 24, Component.translatable("gui.ancientwarfare.town_hall.open_records"), button -> {
                this.openingDeathRecords = true;
-               this.f_96541_.m_91152_(new TownHallDeathScreen(this));
+               this.minecraft.setScreen(new TownHallDeathScreen(this));
             }
          )
       );
    }
 
-   protected void m_7286_(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      graphics.m_280218_(BACKGROUND, this.f_97735_, this.f_97736_, 0, 0, this.f_97726_, this.f_97727_);
+   protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+      graphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
       this.drawSlotGrid(graphics, 8, 22, 9, 3);
       this.drawSlotGrid(graphics, 8, 92, 9, 3);
       this.drawSlotGrid(graphics, 8, 150, 9, 1);
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      graphics.m_280614_(this.f_96547_, this.f_96539_, this.f_97728_, this.f_97729_, 16777215, false);
-      graphics.m_280614_(this.f_96547_, this.f_169604_, 8, this.f_97731_, 16777215, false);
-      graphics.m_280056_(
-         this.f_96547_,
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 16777215, false);
+      graphics.drawString(this.font, this.playerInventoryTitle, 8, this.inventoryLabelY, 16777215, false);
+      graphics.drawString(
+         this.font,
          DraftingStationScreen.fittedText(
-            this.f_96547_,
-            Component.m_237110_("gui.ancientwarfare.town_hall.record_count", new Object[]{((TownHallMenu)this.f_97732_).getDeathNotices().size()}).getString(),
+            this.font,
+            Component.translatable("gui.ancientwarfare.town_hall.record_count", new Object[]{((TownHallMenu)this.menu).getDeathNotices().size()}).getString(),
             44
          ),
          178,
@@ -58,32 +58,32 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
       );
    }
 
-   public void m_7861_() {
+   public void removed() {
       if (this.openingDeathRecords) {
          this.openingDeathRecords = false;
       } else {
-         super.m_7861_();
+         super.removed();
       }
    }
 
    void deathRecordsRemoved() {
-      super.m_7861_();
+      super.removed();
    }
 
    public TownHallMenu getMenu() {
-      return (TownHallMenu)this.f_97732_;
+      return (TownHallMenu)this.menu;
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
-      this.m_280072_(graphics, mouseX, mouseY);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
+      super.render(graphics, mouseX, mouseY, partialTick);
+      this.renderTooltip(graphics, mouseX, mouseY);
    }
 
    private void drawSlotGrid(GuiGraphics graphics, int x, int y, int columns, int rows) {
       for (int row = 0; row < rows; row++) {
          for (int col = 0; col < columns; col++) {
-            graphics.m_280218_(WIDGETS, this.f_97735_ + x + col * 18 - 1, this.f_97736_ + y + row * 18 - 1, 152, 120, 18, 18);
+            graphics.blit(WIDGETS, this.leftPos + x + col * 18 - 1, this.topPos + y + row * 18 - 1, 152, 120, 18, 18);
          }
       }
    }

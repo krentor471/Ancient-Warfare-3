@@ -35,18 +35,18 @@ public final class IceAndFireHippogryphCompat {
 
    public static boolean canBeMountedBy(Entity mount, UUID owner) {
       if (isHippogryph(mount) && owner != null) {
-         Boolean tame = mount instanceof TamableAnimal tamable ? tamable.m_21824_() : invokeBoolean(mount, "isTame");
-         Boolean saddled = mount instanceof Saddleable saddleable ? saddleable.m_6254_() : invokeBoolean(mount, "isSaddled");
+         Boolean tame = mount instanceof TamableAnimal tamable ? tamable.isTame() : invokeBoolean(mount, "isTame");
+         Boolean saddled = mount instanceof Saddleable saddleable ? saddleable.isSaddled() : invokeBoolean(mount, "isSaddled");
          UUID mountOwner = null;
          if (mount instanceof TamableAnimal tamablex) {
-            mountOwner = tamablex.m_21805_();
+            mountOwner = tamablex.getOwnerUUID();
          }
 
          if (mountOwner == null) {
             mountOwner = invokeUuid(mount, "getOwnerUUID");
          }
 
-         return Boolean.TRUE.equals(tame) && Boolean.TRUE.equals(saddled) && owner.equals(mountOwner) && mount.m_20197_().isEmpty();
+         return Boolean.TRUE.equals(tame) && Boolean.TRUE.equals(saddled) && owner.equals(mountOwner) && mount.getPassengers().isEmpty();
       } else {
          return false;
       }

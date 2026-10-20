@@ -29,27 +29,27 @@ public class CoinItem extends Item {
 
    public static ItemStack create(CoinMetal metal, int count) {
       ItemStack stack = create(metal);
-      stack.m_41764_(Math.max(1, count));
+      stack.setCount(Math.max(1, count));
       return stack;
    }
 
    public static CoinMetal getMetal(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag == null ? CoinMetal.COPPER : CoinMetal.byId(tag.m_128461_("metal"));
+      CompoundTag tag = stack.getTag();
+      return tag == null ? CoinMetal.COPPER : CoinMetal.byId(tag.getString("metal"));
    }
 
    public static void setMetal(ItemStack stack, CoinMetal metal) {
-      stack.m_41784_().m_128359_("metal", metal.id());
+      stack.getOrCreateTag().putString("metal", metal.id());
    }
 
-   public Component m_7626_(ItemStack stack) {
-      return Component.m_237115_("item.ancientwarfare.coin." + getMetal(stack).id());
+   public Component getName(ItemStack stack) {
+      return Component.translatable("item.ancientwarfare.coin." + getMetal(stack).id());
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
       if (getMetal(stack) == CoinMetal.ANCIENT) {
          tooltip.add(
-            Component.m_237115_("item.ancientwarfare.coin.ancient.tooltip").m_130944_(new ChatFormatting[]{ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC})
+            Component.translatable("item.ancientwarfare.coin.ancient.tooltip").withStyle(new ChatFormatting[]{ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC})
          );
       }
    }

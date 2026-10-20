@@ -9,16 +9,16 @@ public final class HammerModeData {
    }
 
    public static boolean isWorkMode(ItemStack stack) {
-      return stack.m_41782_() && stack.m_41784_().m_128471_("workMode");
+      return stack.hasTag() && stack.getOrCreateTag().getBoolean("workMode");
    }
 
    public static boolean toggleWorkMode(ItemStack stack) {
       boolean workMode = !isWorkMode(stack);
-      stack.m_41784_().m_128379_("workMode", workMode);
+      stack.getOrCreateTag().putBoolean("workMode", workMode);
       return workMode;
    }
 
    public static void setWorkMode(ItemStack stack, boolean workMode) {
-      stack.m_41784_().m_128379_("workMode", workMode);
+      stack.getOrCreateTag().putBoolean("workMode", workMode);
    }
 }

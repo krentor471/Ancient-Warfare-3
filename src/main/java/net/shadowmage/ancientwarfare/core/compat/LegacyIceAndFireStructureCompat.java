@@ -43,8 +43,8 @@ public final class LegacyIceAndFireStructureCompat {
    }
 
    public static ResourceLocation remapEntity(ResourceLocation legacyId) {
-      if (legacyId != null && "iceandfire".equals(legacyId.m_135827_())) {
-         String path = ENTITY_ALIASES.getOrDefault(legacyId.m_135815_(), legacyId.m_135815_());
+      if (legacyId != null && "iceandfire".equals(legacyId.getNamespace())) {
+         String path = ENTITY_ALIASES.getOrDefault(legacyId.getPath(), legacyId.getPath());
          return new ResourceLocation("iceandfire", path);
       } else {
          return legacyId;
@@ -52,13 +52,13 @@ public final class LegacyIceAndFireStructureCompat {
    }
 
    public static String remapBlock(String legacyName) {
-      ResourceLocation legacyId = ResourceLocation.m_135820_(legacyName);
-      if (legacyId != null && "iceandfire".equals(legacyId.m_135827_())) {
-         String aliasPath = BLOCK_ALIASES.getOrDefault(legacyId.m_135815_(), legacyId.m_135815_());
+      ResourceLocation legacyId = ResourceLocation.tryParse(legacyName);
+      if (legacyId != null && "iceandfire".equals(legacyId.getNamespace())) {
+         String aliasPath = BLOCK_ALIASES.getOrDefault(legacyId.getPath(), legacyId.getPath());
          ResourceLocation iceAndFireId = new ResourceLocation("iceandfire", aliasPath);
-         return BuiltInRegistries.f_256975_.m_7804_(iceAndFireId)
+         return BuiltInRegistries.BLOCK.containsKey(iceAndFireId)
             ? iceAndFireId.toString()
-            : VANILLA_BLOCK_FALLBACKS.getOrDefault(legacyId.m_135815_(), "minecraft:air");
+            : VANILLA_BLOCK_FALLBACKS.getOrDefault(legacyId.getPath(), "minecraft:air");
       } else {
          return legacyName;
       }

@@ -29,7 +29,7 @@ public final class ResearchRegistry {
    }
 
    private static ResearchResource stack(Item item, int count) {
-      return stack(BuiltInRegistries.f_257033_.m_7981_(item).toString(), count);
+      return stack(BuiltInRegistries.ITEM.getKey(item).toString(), count);
    }
 
    private static ResearchResource stack(String itemId, int count) {
@@ -75,15 +75,15 @@ public final class ResearchRegistry {
    }
 
    static {
-      register(goal("agriculture", 200, deps(), res(stack(Items.f_42398_, 24), stack(Items.f_42401_, 3), stack(Items.f_42405_, 4), stack(Items.f_42000_, 4))));
-      register(goal("invention", 200, deps(), res(stack(Items.f_42398_, 12), stack(Items.f_42401_, 3), stack(Items.f_42413_, 4), stack(Items.f_42000_, 4))));
-      register(goal("leadership", 200, deps(), res(stack(Items.f_42516_, 10), stack(Items.f_42398_, 24), stack(Items.f_42401_, 3), stack(Items.f_42000_, 4))));
+      register(goal("agriculture", 200, deps(), res(stack(Items.STICK, 24), stack(Items.STRING, 3), stack(Items.WHEAT, 4), stack(Items.TORCH, 4))));
+      register(goal("invention", 200, deps(), res(stack(Items.STICK, 12), stack(Items.STRING, 3), stack(Items.COAL, 4), stack(Items.TORCH, 4))));
+      register(goal("leadership", 200, deps(), res(stack(Items.PAPER, 10), stack(Items.STICK, 24), stack(Items.STRING, 3), stack(Items.TORCH, 4))));
       register(
          goal(
             "animal_husbandry",
             200,
             deps("agriculture"),
-            res(stack(Items.f_42405_, 12), stack(Items.f_42454_, 4), stack(Items.f_42401_, 12), stack(Items.f_42000_, 4))
+            res(stack(Items.WHEAT, 12), stack(Items.LEATHER, 4), stack(Items.STRING, 12), stack(Items.TORCH, 4))
          )
       );
       register(
@@ -91,7 +91,7 @@ public final class ResearchRegistry {
             "engineering",
             200,
             deps("invention"),
-            res(stack(Items.f_42516_, 20), stack(Items.f_42398_, 12), stack(Items.f_42413_, 4), stack(Items.f_42000_, 4))
+            res(stack(Items.PAPER, 20), stack(Items.STICK, 12), stack(Items.COAL, 4), stack(Items.TORCH, 4))
          )
       );
       register(
@@ -99,23 +99,23 @@ public final class ResearchRegistry {
             "farming",
             200,
             deps("invention", "agriculture"),
-            res(stack(Items.f_42405_, 12), stack(Items.f_42398_, 24), stack(Items.f_42401_, 3), stack(Items.f_42000_, 4))
+            res(stack(Items.WHEAT, 12), stack(Items.STICK, 24), stack(Items.STRING, 3), stack(Items.TORCH, 4))
          )
       );
       register(
          goal(
-            "fishing", 200, deps("agriculture"), res(stack(Items.f_42526_, 5), stack(Items.f_42401_, 24), stack(Items.f_42398_, 12), stack(Items.f_42000_, 4))
+            "fishing", 200, deps("agriculture"), res(stack(Items.COD, 5), stack(Items.STRING, 24), stack(Items.STICK, 12), stack(Items.TORCH, 4))
          )
       );
       register(
-         goal("command", 200, deps("leadership"), res(stack(Items.f_42468_, 1), stack(Items.f_42469_, 1), stack(Items.f_42470_, 1), stack(Items.f_42471_, 1)))
+         goal("command", 200, deps("leadership"), res(stack(Items.IRON_HELMET, 1), stack(Items.IRON_CHESTPLATE, 1), stack(Items.IRON_LEGGINGS, 1), stack(Items.IRON_BOOTS, 1)))
       );
       register(
          goal(
             "conscription",
             200,
             deps("leadership"),
-            res(stack(Items.f_42516_, 12), stack(Items.f_42417_, 4), stack(Items.f_42383_, 1), stack(Items.f_42436_, 1))
+            res(stack(Items.PAPER, 12), stack(Items.GOLD_INGOT, 4), stack(Items.IRON_SWORD, 1), stack(Items.GOLDEN_APPLE, 1))
          )
       );
       register(
@@ -123,7 +123,7 @@ public final class ResearchRegistry {
             "construction",
             200,
             deps("engineering"),
-            res(stack(Items.f_42385_, 1), stack(Items.f_42401_, 4), stack(Items.f_42398_, 12), stack(Items.f_42416_, 4))
+            res(stack(Items.IRON_PICKAXE, 1), stack(Items.STRING, 4), stack(Items.STICK, 12), stack(Items.IRON_INGOT, 4))
          )
       );
       register(
@@ -131,26 +131,26 @@ public final class ResearchRegistry {
             "mathematics",
             200,
             deps("engineering"),
-            res(stack(Items.f_42517_, 3), stack(Items.f_42451_, 5), stack(Items.f_41859_, 1), stack(Items.f_42413_, 4))
+            res(stack(Items.BOOK, 3), stack(Items.REDSTONE, 5), stack(Items.NOTE_BLOCK, 1), stack(Items.COAL, 4))
          )
       );
       register(
-         goal("mining", 200, deps("engineering"), res(stack(Items.f_42385_, 1), stack(Items.f_42520_, 1), stack(Items.f_42594_, 16), stack(Items.f_42000_, 8)))
+         goal("mining", 200, deps("engineering"), res(stack(Items.IRON_PICKAXE, 1), stack(Items.FURNACE_MINECART, 1), stack(Items.COBBLESTONE, 16), stack(Items.TORCH, 8)))
       );
       register(
          goal(
-            "the_wheel", 200, deps("engineering"), res(stack(Items.f_42155_, 1), stack(Items.f_42162_, 1), stack(Items.f_41905_, 4), stack(Items.f_42647_, 4))
+            "the_wheel", 200, deps("engineering"), res(stack(Items.HOPPER, 1), stack(Items.DROPPER, 1), stack(Items.STONE, 4), stack(Items.OAK_PLANKS, 4))
          )
       );
       register(
-         goal("chemistry", 200, deps("mining"), res(stack(Items.f_42451_, 32), stack(Items.f_42534_, 16), stack(Items.f_42417_, 2), stack(Items.f_42048_, 8)))
+         goal("chemistry", 200, deps("mining"), res(stack(Items.REDSTONE, 32), stack(Items.LAPIS_LAZULI, 16), stack(Items.GOLD_INGOT, 2), stack(Items.NETHERRACK, 8)))
       );
       register(
          goal(
             "combustion",
             200,
             deps("mining", "the_wheel"),
-            res(stack(Items.f_42413_, 10), stack(Items.f_42414_, 8), stack(Items.f_42416_, 5), stack(Items.f_42048_, 10))
+            res(stack(Items.COAL, 10), stack(Items.CHARCOAL, 8), stack(Items.IRON_INGOT, 5), stack(Items.NETHERRACK, 10))
          )
       );
       register(
@@ -158,7 +158,7 @@ public final class ResearchRegistry {
             "tactics",
             200,
             deps("conscription", "command"),
-            res(stack(Items.f_42516_, 8), stack(Items.f_42413_, 4), stack(Items.f_42517_, 1), stack(Items.f_42401_, 4))
+            res(stack(Items.PAPER, 8), stack(Items.COAL, 4), stack(Items.BOOK, 1), stack(Items.STRING, 4))
          )
       );
       register(
@@ -166,7 +166,7 @@ public final class ResearchRegistry {
             "theory_of_gravity",
             200,
             deps("the_wheel", "construction", "mathematics"),
-            res(stack(Items.f_42416_, 8), stack(Items.f_42401_, 8), stack(Items.f_42517_, 1), stack(Items.f_42410_, 1))
+            res(stack(Items.IRON_INGOT, 8), stack(Items.STRING, 8), stack(Items.BOOK, 1), stack(Items.APPLE, 1))
          )
       );
       register(
@@ -174,7 +174,7 @@ public final class ResearchRegistry {
             "trade",
             200,
             deps("fishing", "command"),
-            res(stack(Items.f_42417_, 8), stack(Items.f_42415_, 3), stack(Items.f_42616_, 1), stack(Items.f_42517_, 4))
+            res(stack(Items.GOLD_INGOT, 8), stack(Items.DIAMOND, 3), stack(Items.EMERALD, 1), stack(Items.BOOK, 4))
          )
       );
       register(
@@ -182,7 +182,7 @@ public final class ResearchRegistry {
             "ballistics",
             200,
             deps("theory_of_gravity"),
-            res(stack(Items.f_42401_, 6), stack(Items.f_42498_, 6), stack(Items.f_42516_, 12), stack(Items.f_42000_, 6))
+            res(stack(Items.STRING, 6), stack(Items.BLACK_DYE, 6), stack(Items.PAPER, 12), stack(Items.TORCH, 6))
          )
       );
       register(
@@ -190,7 +190,7 @@ public final class ResearchRegistry {
             "explosives",
             200,
             deps("combustion", "chemistry"),
-            res(stack(Items.f_42413_, 12), stack(Items.f_42414_, 8), stack(Items.f_41830_, 10), stack(Items.f_42048_, 10))
+            res(stack(Items.COAL, 12), stack(Items.CHARCOAL, 8), stack(Items.SAND, 10), stack(Items.NETHERRACK, 10))
          )
       );
       register(
@@ -198,7 +198,7 @@ public final class ResearchRegistry {
             "machinery",
             200,
             deps("theory_of_gravity"),
-            res(stack("ancientwarfare:iron_gear", 3), stack(Items.f_42416_, 8), stack("ancientwarfare:iron_bearings", 2), stack(Items.f_42749_, 8))
+            res(stack("ancientwarfare:iron_gear", 3), stack(Items.IRON_INGOT, 8), stack("ancientwarfare:iron_bearings", 2), stack(Items.IRON_NUGGET, 8))
          )
       );
       register(
@@ -206,12 +206,12 @@ public final class ResearchRegistry {
             "navigation",
             200,
             deps("theory_of_gravity", "seafaring"),
-            res(stack(Items.f_42522_, 1), stack(Items.f_42676_, 1), stack(Items.f_42516_, 12), stack(Items.f_42526_, 4))
+            res(stack(Items.COMPASS, 1), stack(Items.MAP, 1), stack(Items.PAPER, 12), stack(Items.COD, 4))
          )
       );
       register(
          goal(
-            "refining", 200, deps("chemistry"), res(stack(Items.f_42416_, 12), stack(Items.f_42516_, 10), stack(Items.f_42417_, 2), stack(Items.f_42413_, 12))
+            "refining", 200, deps("chemistry"), res(stack(Items.IRON_INGOT, 12), stack(Items.PAPER, 10), stack(Items.GOLD_INGOT, 2), stack(Items.COAL, 12))
          )
       );
       register(
@@ -219,7 +219,7 @@ public final class ResearchRegistry {
             "rocketry",
             200,
             deps("gunpowder", "ballistics"),
-            res(stack(Items.f_42403_, 12), stack(Items.f_42416_, 6), stack(Items.f_42398_, 18), stack(Items.f_42516_, 12), stack(Items.f_42000_, 6))
+            res(stack(Items.GUNPOWDER, 12), stack(Items.IRON_INGOT, 6), stack(Items.STICK, 18), stack(Items.PAPER, 12), stack(Items.TORCH, 6))
          )
       );
       register(
@@ -227,7 +227,7 @@ public final class ResearchRegistry {
             "seafaring",
             200,
             deps("the_wheel", "mathematics", "trade"),
-            res(stack(Items.f_42647_, 12), stack(Items.f_42416_, 8), tag("minecraft:wool", 10), stack(Items.f_42401_, 12))
+            res(stack(Items.OAK_PLANKS, 12), stack(Items.IRON_INGOT, 8), tag("minecraft:wool", 10), stack(Items.STRING, 12))
          )
       );
       register(
@@ -235,7 +235,7 @@ public final class ResearchRegistry {
             "siege_warfare",
             200,
             deps("tactics", "the_wheel"),
-            res(stack("ancientwarfare:treated_wood", 8), stack("ancientwarfare:mobility_unit", 1), stack(Items.f_42401_, 12), stack(Items.f_42516_, 6))
+            res(stack("ancientwarfare:treated_wood", 8), stack("ancientwarfare:mobility_unit", 1), stack(Items.STRING, 12), stack(Items.PAPER, 6))
          )
       );
       register(
@@ -256,7 +256,7 @@ public final class ResearchRegistry {
             "gunpowder",
             200,
             deps("explosives", "refining"),
-            res(stack("ancientwarfare:explosive_charge", 4), stack("ancientwarfare:iron_casing", 4), stack(Items.f_42413_, 12), stack(Items.f_42516_, 8))
+            res(stack("ancientwarfare:explosive_charge", 4), stack("ancientwarfare:iron_casing", 4), stack(Items.COAL, 12), stack(Items.PAPER, 8))
          )
       );
       register(
@@ -264,7 +264,7 @@ public final class ResearchRegistry {
             "mass_production",
             200,
             deps("refining", "machinery"),
-            res(stack("ancientwarfare:steel_ingot", 12), stack("ancientwarfare:steel_ingot", 6), stack(Items.f_42749_, 3), stack(Items.f_42416_, 3))
+            res(stack("ancientwarfare:steel_ingot", 12), stack("ancientwarfare:steel_ingot", 6), stack(Items.IRON_NUGGET, 3), stack(Items.IRON_INGOT, 3))
          )
       );
       register(
@@ -276,7 +276,7 @@ public final class ResearchRegistry {
                stack("ancientwarfare:treated_wood", 12),
                stack("ancientwarfare:mobility_unit", 2),
                stack("ancientwarfare:turret_components", 1),
-               stack(Items.f_42516_, 8)
+               stack(Items.PAPER, 8)
             )
          )
       );

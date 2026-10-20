@@ -24,7 +24,7 @@ public class WarehouseStockLinkerBlockEntity extends WarehouseStockViewerBlockEn
          boolean configured = false;
 
          for (WarehouseStockFilter filter : this.filters) {
-            if (!filter.item().m_41619_()) {
+            if (!filter.item().isEmpty()) {
                configured = true;
                if (this.requiresAll() && !filter.passes()) {
                   return false;
@@ -43,18 +43,18 @@ public class WarehouseStockLinkerBlockEntity extends WarehouseStockViewerBlockEn
    @Override
    protected void recount() {
       super.recount();
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         BlockState state = this.m_58900_();
-         if (state.m_61138_(WarehouseStockLinkerBlock.LIT) && (Boolean)state.m_61143_(WarehouseStockLinkerBlock.LIT) != this.isActive()) {
-            this.f_58857_.m_7731_(this.f_58858_, (BlockState)state.m_61124_(WarehouseStockLinkerBlock.LIT, this.isActive()), 3);
-            this.f_58857_.m_46672_(this.f_58858_, state.m_60734_());
+      if (this.level != null && !this.level.isClientSide) {
+         BlockState state = this.getBlockState();
+         if (state.hasProperty(WarehouseStockLinkerBlock.LIT) && (Boolean)state.getValue(WarehouseStockLinkerBlock.LIT) != this.isActive()) {
+            this.level.setBlock(this.worldPosition, (BlockState)state.setValue(WarehouseStockLinkerBlock.LIT, this.isActive()), 3);
+            this.level.updateNeighborsAt(this.worldPosition, state.getBlock());
          }
       }
    }
 
    @Nullable
    @Override
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new WarehouseStockViewerMenu(containerId, playerInventory, this.f_58858_, true);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new WarehouseStockViewerMenu(containerId, playerInventory, this.worldPosition, true);
    }
 }

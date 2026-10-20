@@ -25,7 +25,7 @@ public class FlywheelStorageBlockEntity extends BlockEntity implements GeoBlockE
    }
 
    public TorqueTier getTier() {
-      return this.m_58900_().m_60734_() instanceof FlywheelStorageBlock block ? block.getTier() : TorqueTier.LIGHT;
+      return this.getBlockState().getBlock() instanceof FlywheelStorageBlock block ? block.getTier() : TorqueTier.LIGHT;
    }
 
    public double getStoredTorque() {
@@ -34,25 +34,25 @@ public class FlywheelStorageBlockEntity extends BlockEntity implements GeoBlockE
 
    public void setStoredTorque(double storedTorque) {
       this.storedTorque = Math.max(0.0, storedTorque);
-      this.m_6596_();
+      this.setChanged();
    }
 
    public FlywheelStorageBlockEntity.StorageRenderState getStorageRenderState() {
-      Level level = this.m_58904_();
+      Level level = this.getLevel();
       if (level == null) {
          return new FlywheelStorageBlockEntity.StorageRenderState(
             FlywheelStorageBlockEntity.StorageSize.SMALL, FlywheelStorageBlockEntity.StorageLayer.SINGLE, true
          );
-      } else if (!this.isStorage(level, this.f_58858_)) {
+      } else if (!this.isStorage(level, this.worldPosition)) {
          return new FlywheelStorageBlockEntity.StorageRenderState(
             FlywheelStorageBlockEntity.StorageSize.SMALL, FlywheelStorageBlockEntity.StorageLayer.SINGLE, false
          );
       } else {
-         for (int centerX = this.f_58858_.m_123341_() - 1; centerX <= this.f_58858_.m_123341_() + 1; centerX++) {
-            for (int centerZ = this.f_58858_.m_123343_() - 1; centerZ <= this.f_58858_.m_123343_() + 1; centerZ++) {
-               BlockPos center = new BlockPos(centerX, this.f_58858_.m_123342_(), centerZ);
+         for (int centerX = this.worldPosition.getX() - 1; centerX <= this.worldPosition.getX() + 1; centerX++) {
+            for (int centerZ = this.worldPosition.getZ() - 1; centerZ <= this.worldPosition.getZ() + 1; centerZ++) {
+               BlockPos center = new BlockPos(centerX, this.worldPosition.getY(), centerZ);
                if (this.isFullLargeLayer(level, center)) {
-                  if (!center.equals(this.f_58858_)) {
+                  if (!center.equals(this.worldPosition)) {
                      return new FlywheelStorageBlockEntity.StorageRenderState(
                         FlywheelStorageBlockEntity.StorageSize.LARGE, FlywheelStorageBlockEntity.StorageLayer.MIDDLE, false
                      );
@@ -60,7 +60,7 @@ public class FlywheelStorageBlockEntity extends BlockEntity implements GeoBlockE
 
                   return new FlywheelStorageBlockEntity.StorageRenderState(
                      FlywheelStorageBlockEntity.StorageSize.LARGE,
-                     this.layerState(this.isFullLargeLayer(level, center.m_7495_()), this.isFullLargeLayer(level, center.m_7494_())),
+                     this.layerState(this.isFullLargeLayer(level, center.below()), this.isFullLargeLayer(level, center.above())),
                      true
                   );
                }
@@ -69,7 +69,7 @@ public class FlywheelStorageBlockEntity extends BlockEntity implements GeoBlockE
 
          return new FlywheelStorageBlockEntity.StorageRenderState(
             FlywheelStorageBlockEntity.StorageSize.SMALL,
-            this.layerState(this.isStorage(level, this.f_58858_.m_7495_()), this.isStorage(level, this.f_58858_.m_7494_())),
+            this.layerState(this.isStorage(level, this.worldPosition.below()), this.isStorage(level, this.worldPosition.above())),
             true
          );
       }
@@ -78,8 +78,8 @@ public class FlywheelStorageBlockEntity extends BlockEntity implements GeoBlockE
    public AABB getRenderBoundingBox() {
       FlywheelStorageBlockEntity.StorageRenderState state = this.getStorageRenderState();
       return state.size() == FlywheelStorageBlockEntity.StorageSize.LARGE && state.visible()
-         ? new AABB(this.f_58858_).m_82377_(2.0, 1.0, 2.0)
-         : new AABB(this.f_58858_);
+         ? new AABB(this.worldPosition).inflate(2.0, 1.0, 2.0)
+         : new AABB(this.worldPosition);
    }
 
    private FlywheelStorageBlockEntity.StorageLayer layerState(boolean below, boolean above) {
@@ -95,7 +95,7 @@ public class FlywheelStorageBlockEntity extends BlockEntity implements GeoBlockE
    private boolean isFullLargeLayer(Level level, BlockPos center) {
       for (int x = -1; x <= 1; x++) {
          for (int z = -1; z <= 1; z++) {
-            if (!this.isStorage(level, center.m_7918_(x, 0, z))) {
+            if (!this.isStorage(level, center.offset(x, 0, z))) {
                return false;
             }
          }
@@ -105,7 +105,7 @@ public class FlywheelStorageBlockEntity extends BlockEntity implements GeoBlockE
    }
 
    private boolean isStorage(Level level, BlockPos pos) {
-      if (level.m_8055_(pos).m_60734_() instanceof FlywheelStorageBlock block && block.getTier() == this.getTier()) {
+      if (level.getBlockState(pos).getBlock() instanceof FlywheelStorageBlock block && block.getTier() == this.getTier()) {
          return true;
       }
 
@@ -119,14 +119,14 @@ public class FlywheelStorageBlockEntity extends BlockEntity implements GeoBlockE
       return this.animationCache;
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128347_("StoredTorque", this.storedTorque);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.putDouble("StoredTorque", this.storedTorque);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.storedTorque = Math.max(0.0, tag.m_128459_("StoredTorque"));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.storedTorque = Math.max(0.0, tag.getDouble("StoredTorque"));
    }
 
    public static enum StorageLayer {

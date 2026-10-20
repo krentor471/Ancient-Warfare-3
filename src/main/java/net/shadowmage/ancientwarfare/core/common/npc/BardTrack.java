@@ -27,37 +27,37 @@ public record BardTrack(String fileName, String displayName, int durationSeconds
    }
 
    public static BardTrack fromNetwork(FriendlyByteBuf buffer) {
-      return new BardTrack(buffer.m_130136_(128), buffer.m_130136_(128), buffer.m_130242_(), buffer.m_130242_(), buffer.m_130242_(), buffer.m_130242_());
+      return new BardTrack(buffer.readUtf(128), buffer.readUtf(128), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt());
    }
 
    public void toNetwork(FriendlyByteBuf buffer) {
-      buffer.m_130072_(this.fileName, 128);
-      buffer.m_130072_(this.displayName, 128);
-      buffer.m_130130_(this.durationSeconds);
-      buffer.m_130130_(this.introSilenceSeconds);
-      buffer.m_130130_(this.outroSilenceSeconds);
-      buffer.m_130130_(this.loops);
+      buffer.writeUtf(this.fileName, 128);
+      buffer.writeUtf(this.displayName, 128);
+      buffer.writeVarInt(this.durationSeconds);
+      buffer.writeVarInt(this.introSilenceSeconds);
+      buffer.writeVarInt(this.outroSilenceSeconds);
+      buffer.writeVarInt(this.loops);
    }
 
    public static BardTrack load(CompoundTag tag) {
       return new BardTrack(
-         tag.m_128461_("File"),
-         tag.m_128461_("Name"),
-         tag.m_128441_("Duration") ? tag.m_128451_("Duration") : 120,
-         tag.m_128441_("Intro") ? tag.m_128451_("Intro") : 2,
-         tag.m_128441_("Outro") ? tag.m_128451_("Outro") : 2,
-         tag.m_128441_("Loops") ? tag.m_128451_("Loops") : 1
+         tag.getString("File"),
+         tag.getString("Name"),
+         tag.contains("Duration") ? tag.getInt("Duration") : 120,
+         tag.contains("Intro") ? tag.getInt("Intro") : 2,
+         tag.contains("Outro") ? tag.getInt("Outro") : 2,
+         tag.contains("Loops") ? tag.getInt("Loops") : 1
       );
    }
 
    public CompoundTag save() {
       CompoundTag tag = new CompoundTag();
-      tag.m_128359_("File", this.fileName);
-      tag.m_128359_("Name", this.displayName);
-      tag.m_128405_("Duration", this.durationSeconds);
-      tag.m_128405_("Intro", this.introSilenceSeconds);
-      tag.m_128405_("Outro", this.outroSilenceSeconds);
-      tag.m_128405_("Loops", this.loops);
+      tag.putString("File", this.fileName);
+      tag.putString("Name", this.displayName);
+      tag.putInt("Duration", this.durationSeconds);
+      tag.putInt("Intro", this.introSilenceSeconds);
+      tag.putInt("Outro", this.outroSilenceSeconds);
+      tag.putInt("Loops", this.loops);
       return tag;
    }
 

@@ -8,8 +8,8 @@ public final class WorksiteBoundsGeometry {
 
    public static boolean isValid(BlockPos worksite, BlockPos min, BlockPos max, int maxWidth) {
       if (worksite != null && hasValidSize(min, max, maxWidth)) {
-         long distanceX = distanceToInterval(worksite.m_123341_(), min.m_123341_(), max.m_123341_());
-         long distanceZ = distanceToInterval(worksite.m_123343_(), min.m_123343_(), max.m_123343_());
+         long distanceX = distanceToInterval(worksite.getX(), min.getX(), max.getX());
+         long distanceZ = distanceToInterval(worksite.getZ(), min.getZ(), max.getZ());
          return Math.max(distanceX, distanceZ) == 1L;
       } else {
          return false;
@@ -18,8 +18,8 @@ public final class WorksiteBoundsGeometry {
 
    public static boolean hasValidSize(BlockPos min, BlockPos max, int maxWidth) {
       if (min != null && max != null && maxWidth >= 1) {
-         long widthX = (long)max.m_123341_() - (long)min.m_123341_() + 1L;
-         long widthZ = (long)max.m_123343_() - (long)min.m_123343_() + 1L;
+         long widthX = (long)max.getX() - (long)min.getX() + 1L;
+         long widthZ = (long)max.getZ() - (long)min.getZ() + 1L;
          return widthX >= 1L && widthZ >= 1L && widthX <= (long)maxWidth && widthZ <= (long)maxWidth;
       } else {
          return false;
@@ -59,8 +59,8 @@ public final class WorksiteBoundsGeometry {
             } else {
                min = basis.min();
                max = basis.max();
-               boolean changeMinX = min.m_123341_() < worksite.m_123341_();
-               boolean changeMinZ = min.m_123343_() < worksite.m_123343_();
+               boolean changeMinX = min.getX() < worksite.getX();
+               boolean changeMinZ = min.getZ() < worksite.getZ();
 
                WorksiteBoundsGeometry.Bounds result = switch (buttonId) {
                   case 0 -> adjust(worksite, min, max, maxWidth, 0, 0, -1, -1);
@@ -83,15 +83,15 @@ public final class WorksiteBoundsGeometry {
 
    public static WorksiteBoundsGeometry.Bounds clampSize(BlockPos worksite, BlockPos min, BlockPos max, int maxWidth) {
       if (worksite != null && min != null && max != null && maxWidth >= 1) {
-         long minX = (long)min.m_123341_();
-         long maxX = (long)max.m_123341_();
-         long minZ = (long)min.m_123343_();
-         long maxZ = (long)max.m_123343_();
+         long minX = (long)min.getX();
+         long maxX = (long)max.getX();
+         long minZ = (long)min.getZ();
+         long maxZ = (long)max.getZ();
          long widthX = maxX - minX + 1L;
          long widthZ = maxZ - minZ + 1L;
          if (widthX >= 1L && widthZ >= 1L) {
             if (widthX > (long)maxWidth) {
-               if (minX < (long)worksite.m_123341_()) {
+               if (minX < (long)worksite.getX()) {
                   minX = maxX - (long)maxWidth + 1L;
                } else {
                   maxX = minX + (long)maxWidth - 1L;
@@ -99,15 +99,15 @@ public final class WorksiteBoundsGeometry {
             }
 
             if (widthZ > (long)maxWidth) {
-               if (minZ < (long)worksite.m_123343_()) {
+               if (minZ < (long)worksite.getZ()) {
                   minZ = maxZ - (long)maxWidth + 1L;
                } else {
                   maxZ = minZ + (long)maxWidth - 1L;
                }
             }
 
-            BlockPos candidateMin = position(minX, min.m_123342_(), minZ);
-            BlockPos candidateMax = position(maxX, max.m_123342_(), maxZ);
+            BlockPos candidateMin = position(minX, min.getY(), minZ);
+            BlockPos candidateMax = position(maxX, max.getY(), maxZ);
             return candidateMin != null && candidateMax != null ? new WorksiteBoundsGeometry.Bounds(candidateMin, candidateMax) : null;
          } else {
             return null;
@@ -123,13 +123,13 @@ public final class WorksiteBoundsGeometry {
       } else if (isValid(worksite, min, max, maxWidth)) {
          return new WorksiteBoundsGeometry.Bounds(min, max);
       } else {
-         long deltaX = towardInterval(worksite.m_123341_(), min.m_123341_(), max.m_123341_());
-         long deltaZ = towardInterval(worksite.m_123343_(), min.m_123343_(), max.m_123343_());
+         long deltaX = towardInterval(worksite.getX(), min.getX(), max.getX());
+         long deltaZ = towardInterval(worksite.getZ(), min.getZ(), max.getZ());
          if (deltaX == 0L && deltaZ == 0L) {
-            long west = (long)worksite.m_123341_() - 1L - (long)max.m_123341_();
-            long east = (long)worksite.m_123341_() + 1L - (long)min.m_123341_();
-            long north = (long)worksite.m_123343_() - 1L - (long)max.m_123343_();
-            long south = (long)worksite.m_123343_() + 1L - (long)min.m_123343_();
+            long west = (long)worksite.getX() - 1L - (long)max.getX();
+            long east = (long)worksite.getX() + 1L - (long)min.getX();
+            long north = (long)worksite.getZ() - 1L - (long)max.getZ();
+            long south = (long)worksite.getZ() + 1L - (long)min.getZ();
             deltaX = Math.abs(west) <= Math.abs(east) ? west : east;
             long preferredZ = Math.abs(north) <= Math.abs(south) ? north : south;
             if (Math.abs(preferredZ) < Math.abs(deltaX)) {
@@ -153,7 +153,7 @@ public final class WorksiteBoundsGeometry {
    }
 
    private static BlockPos offset(BlockPos pos, long deltaX, long deltaZ) {
-      return position((long)pos.m_123341_() + deltaX, pos.m_123342_(), (long)pos.m_123343_() + deltaZ);
+      return position((long)pos.getX() + deltaX, pos.getY(), (long)pos.getZ() + deltaZ);
    }
 
    private static BlockPos position(long x, int y, long z) {
@@ -162,8 +162,8 @@ public final class WorksiteBoundsGeometry {
 
    public static record Bounds(BlockPos min, BlockPos max) {
       public Bounds(BlockPos min, BlockPos max) {
-         min = min.m_7949_();
-         max = max.m_7949_();
+         min = min.immutable();
+         max = max.immutable();
          this.min = min;
          this.max = max;
       }

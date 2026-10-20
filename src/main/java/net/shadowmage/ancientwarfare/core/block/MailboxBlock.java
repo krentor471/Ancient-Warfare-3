@@ -30,62 +30,62 @@ import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
 import net.shadowmage.ancientwarfare.core.tile.MailboxBlockEntity;
 
 public class MailboxBlock extends BaseEntityBlock {
-   public static final DirectionProperty FACING = HorizontalDirectionalBlock.f_54117_;
+   public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
    public MailboxBlock(Properties p) {
       super(p);
-      this.m_49959_((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH));
+      this.registerDefaultState((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH));
    }
 
-   public BlockEntity m_142194_(BlockPos p, BlockState s) {
+   public BlockEntity newBlockEntity(BlockPos p, BlockState s) {
       return new MailboxBlockEntity(p, s);
    }
 
-   protected void m_7926_(Builder<Block, BlockState> b) {
-      b.m_61104_(new Property[]{FACING});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> b) {
+      b.add(new Property[]{FACING});
    }
 
-   public BlockState m_5573_(BlockPlaceContext c) {
-      return (BlockState)this.m_49966_().m_61124_(FACING, c.m_8125_().m_122424_());
+   public BlockState getStateForPlacement(BlockPlaceContext c) {
+      return (BlockState)this.defaultBlockState().setValue(FACING, c.getHorizontalDirection().getOpposite());
    }
 
-   public void m_6402_(Level l, BlockPos p, BlockState s, LivingEntity e, ItemStack st) {
-      super.m_6402_(l, p, s, e, st);
-      if (l.m_7702_(p) instanceof MailboxBlockEntity b && e instanceof Player pl) {
-         b.setOwnerName(pl.m_36316_().getName());
+   public void setPlacedBy(Level l, BlockPos p, BlockState s, LivingEntity e, ItemStack st) {
+      super.setPlacedBy(l, p, s, e, st);
+      if (l.getBlockEntity(p) instanceof MailboxBlockEntity b && e instanceof Player pl) {
+         b.setOwnerName(pl.getGameProfile().getName());
       }
    }
 
-   public InteractionResult m_6227_(BlockState s, Level l, BlockPos p, Player pl, InteractionHand h, BlockHitResult hit) {
-      if (!l.f_46443_ && l.m_7702_(p) instanceof MailboxBlockEntity b) {
+   public InteractionResult use(BlockState s, Level l, BlockPos p, Player pl, InteractionHand h, BlockHitResult hit) {
+      if (!l.isClientSide && l.getBlockEntity(p) instanceof MailboxBlockEntity b) {
          AWCorePlatform.openBlockMenu(pl, b, p);
       }
 
-      return InteractionResult.m_19078_(l.f_46443_);
+      return InteractionResult.sidedSuccess(l.isClientSide);
    }
 
-   public RenderShape m_7514_(BlockState s) {
+   public RenderShape getRenderShape(BlockState s) {
       return RenderShape.MODEL;
    }
 
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level l, BlockState s, BlockEntityType<T> t) {
-      return l.f_46443_ ? null : m_152132_(t, AWCoreRegistryAccess.blockEntityType(AWCoreIds.MAILBOX), MailboxBlockEntity::serverTick);
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level l, BlockState s, BlockEntityType<T> t) {
+      return l.isClientSide ? null : createTickerHelper(t, AWCoreRegistryAccess.blockEntityType(AWCoreIds.MAILBOX), MailboxBlockEntity::serverTick);
    }
 
-   public void m_6810_(BlockState s, Level l, BlockPos p, BlockState n, boolean m) {
-      if (!s.m_60713_(n.m_60734_()) && l.m_7702_(p) instanceof MailboxBlockEntity b) {
+   public void onRemove(BlockState s, Level l, BlockPos p, BlockState n, boolean m) {
+      if (!s.is(n.getBlock()) && l.getBlockEntity(p) instanceof MailboxBlockEntity b) {
          drop(l, p, b.sendContainer());
          drop(l, p, b.receivedContainer());
       }
 
-      super.m_6810_(s, l, p, n, m);
+      super.onRemove(s, l, p, n, m);
    }
 
    private static void drop(Level l, BlockPos p, Container c) {
-      for (int i = 0; i < c.m_6643_(); i++) {
-         ItemStack s = c.m_8020_(i);
-         if (!s.m_41619_()) {
-            Containers.m_18992_(l, (double)p.m_123341_() + 0.5, (double)p.m_123342_() + 0.5, (double)p.m_123343_() + 0.5, s);
+      for (int i = 0; i < c.getContainerSize(); i++) {
+         ItemStack s = c.getItem(i);
+         if (!s.isEmpty()) {
+            Containers.dropItemStack(l, (double)p.getX() + 0.5, (double)p.getY() + 0.5, (double)p.getZ() + 0.5, s);
          }
       }
    }

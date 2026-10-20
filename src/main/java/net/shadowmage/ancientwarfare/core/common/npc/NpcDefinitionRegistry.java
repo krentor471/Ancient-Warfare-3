@@ -86,15 +86,15 @@ public final class NpcDefinitionRegistry {
    }
 
    private static final class BuiltInItemIds {
-      private static final ResourceLocation IRON_PICKAXE = resourceId(Items.f_42385_);
-      private static final ResourceLocation IRON_HOE = resourceId(Items.f_42387_);
-      private static final ResourceLocation IRON_AXE = resourceId(Items.f_42386_);
-      private static final ResourceLocation IRON_SWORD = resourceId(Items.f_42383_);
-      private static final ResourceLocation BOW = resourceId(Items.f_42411_);
-      private static final ResourceLocation APPLE = resourceId(Items.f_42410_);
+      private static final ResourceLocation IRON_PICKAXE = resourceId(Items.IRON_PICKAXE);
+      private static final ResourceLocation IRON_HOE = resourceId(Items.IRON_HOE);
+      private static final ResourceLocation IRON_AXE = resourceId(Items.IRON_AXE);
+      private static final ResourceLocation IRON_SWORD = resourceId(Items.IRON_SWORD);
+      private static final ResourceLocation BOW = resourceId(Items.BOW);
+      private static final ResourceLocation APPLE = resourceId(Items.APPLE);
 
       private static ResourceLocation resourceId(Item item) {
-         return BuiltInRegistries.f_257033_.m_7981_(item);
+         return BuiltInRegistries.ITEM.getKey(item);
       }
    }
 }

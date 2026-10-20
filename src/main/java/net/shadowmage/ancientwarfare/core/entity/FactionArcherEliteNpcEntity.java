@@ -12,6 +12,6 @@ public class FactionArcherEliteNpcEntity extends FactionArcherNpcEntity {
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 30.0).m_22268_(Attributes.f_22279_, 0.27).m_22268_(Attributes.f_22277_, 80.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 30.0).add(Attributes.MOVEMENT_SPEED, 0.27).add(Attributes.FOLLOW_RANGE, 80.0);
    }
 }

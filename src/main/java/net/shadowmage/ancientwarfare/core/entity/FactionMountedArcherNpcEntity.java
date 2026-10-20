@@ -23,7 +23,7 @@ public class FactionMountedArcherNpcEntity extends FactionArcherNpcEntity {
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 24.0).m_22268_(Attributes.f_22279_, 0.3).m_22268_(Attributes.f_22277_, 40.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 24.0).add(Attributes.MOVEMENT_SPEED, 0.3).add(Attributes.FOLLOW_RANGE, 40.0);
    }
 
    @Override
@@ -32,29 +32,29 @@ public class FactionMountedArcherNpcEntity extends FactionArcherNpcEntity {
    }
 
    @Override
-   public void m_8107_() {
-      super.m_8107_();
+   public void aiStep() {
+      super.aiStep();
       this.tickMountedOrbit();
    }
 
    private void tickMountedOrbit() {
-      if (this.m_20202_() instanceof Mob mount) {
+      if (this.getVehicle() instanceof Mob mount) {
          if (!NpcWaterEscape.isRecoveryActive(this)) {
-            LivingEntity target = this.m_5448_();
-            if (target != null && target.m_6084_()) {
+            LivingEntity target = this.getTarget();
+            if (target != null && target.isAlive()) {
                if (this.orbitTarget != target) {
                   this.orbitTarget = target;
-                  this.orbitClockwise = this.m_217043_().m_188499_();
+                  this.orbitClockwise = this.getRandom().nextBoolean();
                }
 
-               Vec3 offset = mount.m_20182_().m_82546_(target.m_20182_());
-               Vec3 radial = new Vec3(offset.f_82479_, 0.0, offset.f_82481_);
-               double distance = radial.m_82553_();
+               Vec3 offset = mount.position().subtract(target.position());
+               Vec3 radial = new Vec3(offset.x, 0.0, offset.z);
+               double distance = radial.length();
                if (distance < 0.001) {
                   radial = new Vec3(1.0, 0.0, 0.0);
                   distance = 1.0;
                } else {
-                  radial = radial.m_82490_(1.0 / distance);
+                  radial = radial.scale(1.0 / distance);
                }
 
                double radialCorrection = 0.0;
@@ -71,50 +71,50 @@ public class FactionMountedArcherNpcEntity extends FactionArcherNpcEntity {
                   this.orbitClockwise = !this.orbitClockwise;
                   direction = this.orbitDirection(radial, radialCorrection, this.orbitClockwise);
                   if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
-                     mount.m_21573_().m_26573_();
-                     mount.m_20256_(mount.m_20184_().m_82542_(0.35, 1.0, 0.35));
+                     mount.getNavigation().stop();
+                     mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.35, 1.0, 0.35));
                      return;
                   }
                }
 
-               AttributeInstance movement = mount.m_21051_(Attributes.f_22279_);
+               AttributeInstance movement = mount.getAttribute(Attributes.MOVEMENT_SPEED);
                if (movement != null) {
-                  movement.m_22100_(Math.max(movement.m_22115_(), 0.45));
+                  movement.setBaseValue(Math.max(movement.getBaseValue(), 0.45));
                }
 
-               Vec3 current = mount.m_20184_();
-               mount.m_20334_(direction.f_82479_ * 0.45, current.f_82480_, direction.f_82481_ * 0.45);
-               mount.m_21573_().m_26573_();
+               Vec3 current = mount.getDeltaMovement();
+               mount.setDeltaMovement(direction.x * 0.45, current.y, direction.z * 0.45);
+               mount.getNavigation().stop();
                this.faceDirection(mount, direction);
-               this.faceDirection(this, target.m_20182_().m_82546_(this.m_20182_()));
+               this.faceDirection(this, target.position().subtract(this.position()));
             } else {
                this.orbitTarget = null;
-               mount.m_21573_().m_26573_();
-               mount.m_20256_(mount.m_20184_().m_82542_(0.45, 1.0, 0.45));
+               mount.getNavigation().stop();
+               mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.45, 1.0, 0.45));
             }
          }
       }
    }
 
    private Vec3 orbitDirection(Vec3 radial, double radialCorrection, boolean clockwise) {
-      Vec3 tangent = clockwise ? new Vec3(-radial.f_82481_, 0.0, radial.f_82479_) : new Vec3(radial.f_82481_, 0.0, -radial.f_82479_);
-      return tangent.m_82549_(radial.m_82490_(radialCorrection)).m_82541_();
+      Vec3 tangent = clockwise ? new Vec3(-radial.z, 0.0, radial.x) : new Vec3(radial.z, 0.0, -radial.x);
+      return tangent.add(radial.scale(radialCorrection)).normalize();
    }
 
    private void faceDirection(Mob mount, Vec3 direction) {
-      float yaw = (float)(Math.atan2(direction.f_82481_, direction.f_82479_) * 180.0F / (float)Math.PI) - 90.0F;
-      mount.m_146922_(yaw);
-      mount.m_5618_(yaw);
-      mount.m_5616_(yaw);
+      float yaw = (float)(Math.atan2(direction.z, direction.x) * 180.0F / (float)Math.PI) - 90.0F;
+      mount.setYRot(yaw);
+      mount.setYBodyRot(yaw);
+      mount.setYHeadRot(yaw);
    }
 
    private void faceDirection(FactionMountedArcherNpcEntity rider, Vec3 direction) {
-      Vec3 horizontal = new Vec3(direction.f_82479_, 0.0, direction.f_82481_);
-      if (!(horizontal.m_82556_() < 1.0E-4)) {
-         float yaw = (float)(Math.atan2(horizontal.f_82481_, horizontal.f_82479_) * 180.0F / (float)Math.PI) - 90.0F;
-         rider.m_146922_(yaw);
-         rider.m_5618_(yaw);
-         rider.m_5616_(yaw);
+      Vec3 horizontal = new Vec3(direction.x, 0.0, direction.z);
+      if (!(horizontal.lengthSqr() < 1.0E-4)) {
+         float yaw = (float)(Math.atan2(horizontal.z, horizontal.x) * 180.0F / (float)Math.PI) - 90.0F;
+         rider.setYRot(yaw);
+         rider.setYBodyRot(yaw);
+         rider.setYHeadRot(yaw);
       }
    }
 }

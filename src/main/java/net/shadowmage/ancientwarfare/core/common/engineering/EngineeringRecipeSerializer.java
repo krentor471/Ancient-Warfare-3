@@ -23,12 +23,12 @@ import net.shadowmage.ancientwarfare.core.common.backpack.BackpackData;
 
 public final class EngineeringRecipeSerializer implements RecipeSerializer<EngineeringRecipe> {
    public EngineeringRecipe fromJson(ResourceLocation id, JsonObject object) {
-      boolean shapeless = GsonHelper.m_13855_(object, "shapeless", false);
+      boolean shapeless = GsonHelper.getAsBoolean(object, "shapeless", false);
       EngineeringIngredient[] ingredients = shapeless
-         ? readShapeless(GsonHelper.m_13933_(object, "ingredients"))
-         : readPattern(GsonHelper.m_13933_(object, "pattern"), readKey(GsonHelper.m_13841_(object, "key", new JsonObject())));
-      ItemStack result = readResult(GsonHelper.m_13930_(object, "result"));
-      String requiredResearch = GsonHelper.m_13851_(object, "required_research", null);
+         ? readShapeless(GsonHelper.getAsJsonArray(object, "ingredients"))
+         : readPattern(GsonHelper.getAsJsonArray(object, "pattern"), readKey(GsonHelper.getAsJsonObject(object, "key", new JsonObject())));
+      ItemStack result = readResult(GsonHelper.getAsJsonObject(object, "result"));
+      String requiredResearch = GsonHelper.getAsString(object, "required_research", null);
       return new EngineeringRecipe(id, ingredients, shapeless, result, requiredResearch);
    }
 
@@ -41,8 +41,8 @@ public final class EngineeringRecipeSerializer implements RecipeSerializer<Engin
       }
 
       boolean shapeless = buffer.readBoolean();
-      ItemStack result = buffer.m_130267_();
-      String requiredResearch = buffer.readBoolean() ? buffer.m_130136_(128) : null;
+      ItemStack result = buffer.readItem();
+      String requiredResearch = buffer.readBoolean() ? buffer.readUtf(128) : null;
       return new EngineeringRecipe(id, ingredients, shapeless, result, requiredResearch);
    }
 
@@ -52,10 +52,10 @@ public final class EngineeringRecipeSerializer implements RecipeSerializer<Engin
       }
 
       buffer.writeBoolean(recipe.shapeless());
-      buffer.m_130055_(recipe.result());
+      buffer.writeItem(recipe.result());
       buffer.writeBoolean(recipe.requiredResearch() != null);
       if (recipe.requiredResearch() != null) {
-         buffer.m_130072_(recipe.requiredResearch(), 128);
+         buffer.writeUtf(recipe.requiredResearch(), 128);
       }
    }
 
@@ -80,7 +80,7 @@ public final class EngineeringRecipeSerializer implements RecipeSerializer<Engin
          EngineeringIngredient[] ingredients = new EngineeringIngredient[9];
 
          for (int row = 0; row < 3; row++) {
-            String line = GsonHelper.m_13805_(pattern.get(row), "pattern row");
+            String line = GsonHelper.convertToString(pattern.get(row), "pattern row");
             if (line.length() != 3) {
                throw new JsonSyntaxException("Engineering recipe pattern rows must be exactly 3 characters");
             }
@@ -118,13 +118,13 @@ public final class EngineeringRecipeSerializer implements RecipeSerializer<Engin
    static EngineeringIngredient readIngredient(JsonElement element) {
       if (element.isJsonObject() && element.getAsJsonObject().has("ingredient")) {
          JsonObject wrapper = element.getAsJsonObject();
-         Ingredient ingredient = Ingredient.m_43917_(wrapper.get("ingredient"));
-         int count = GsonHelper.m_13824_(wrapper, "count", 1);
+         Ingredient ingredient = Ingredient.fromJson(wrapper.get("ingredient"));
+         int count = GsonHelper.getAsInt(wrapper, "count", 1);
          CompoundTag tag = null;
          if (wrapper.has("nbt")) {
             try {
                JsonElement nbt = wrapper.get("nbt");
-               tag = TagParser.m_129359_(nbt.isJsonPrimitive() ? nbt.getAsString() : nbt.toString());
+               tag = TagParser.parseTag(nbt.isJsonPrimitive() ? nbt.getAsString() : nbt.toString());
             } catch (Exception var6) {
                throw new JsonSyntaxException("Invalid engineering ingredient NBT", var6);
             }
@@ -132,25 +132,25 @@ public final class EngineeringRecipeSerializer implements RecipeSerializer<Engin
 
          return new EngineeringIngredient(ingredient, count, tag);
       } else {
-         return new EngineeringIngredient(Ingredient.m_43917_(element), 1, null);
+         return new EngineeringIngredient(Ingredient.fromJson(element), 1, null);
       }
    }
 
    static ItemStack readResult(JsonObject resultObject) {
-      ResourceLocation itemId = new ResourceLocation(GsonHelper.m_13906_(resultObject, "item"));
-      if (!BuiltInRegistries.f_257033_.m_7804_(itemId)) {
+      ResourceLocation itemId = new ResourceLocation(GsonHelper.getAsString(resultObject, "item"));
+      if (!BuiltInRegistries.ITEM.containsKey(itemId)) {
          throw new JsonSyntaxException("Unknown result item " + itemId);
       } else {
-         Item item = (Item)BuiltInRegistries.f_257033_.m_7745_(itemId);
-         ItemStack result = new ItemStack(item, GsonHelper.m_13824_(resultObject, "count", 1));
+         Item item = (Item)BuiltInRegistries.ITEM.get(itemId);
+         ItemStack result = new ItemStack(item, GsonHelper.getAsInt(resultObject, "count", 1));
          if (resultObject.has("backpack_level")) {
-            BackpackData.setLevel(result, GsonHelper.m_13927_(resultObject, "backpack_level"));
+            BackpackData.setLevel(result, GsonHelper.getAsInt(resultObject, "backpack_level"));
          }
 
          if (resultObject.has("tag")) {
             try {
                JsonElement tag = resultObject.get("tag");
-               result.m_41751_(TagParser.m_129359_(tag.isJsonPrimitive() ? tag.getAsString() : tag.toString()));
+               result.setTag(TagParser.parseTag(tag.isJsonPrimitive() ? tag.getAsString() : tag.toString()));
             } catch (Exception var5) {
                throw new JsonSyntaxException("Invalid result tag", var5);
             }

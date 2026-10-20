@@ -321,7 +321,7 @@ public final class AwsWorldGenTemplateRegistry {
       }
 
       public boolean fitsBuildHeight(BlockPos min, int minimumY, int maximumYExclusive) {
-         return min.m_123342_() >= minimumY && (long)min.m_123342_() + (long)this.sizeY <= (long)maximumYExclusive;
+         return min.getY() >= minimumY && (long)min.getY() + (long)this.sizeY <= (long)maximumYExclusive;
       }
 
       public boolean overworldAllowed() {
@@ -330,7 +330,7 @@ public final class AwsWorldGenTemplateRegistry {
       }
 
       public boolean acceptsBiome(Holder<Biome> biome) {
-         ResourceLocation key = biome.m_203543_().map(value -> value.m_135782_()).orElse(null);
+         ResourceLocation key = biome.unwrapKey().map(value -> value.location()).orElse(null);
          boolean listed = key != null && (this.biomes.contains(key.toString()) || this.matchesLegacyOceanFamily(key));
          if (!listed) {
             listed = BiomeFamilyMatcher.matchesAny(biome, this.biomes);
@@ -340,10 +340,10 @@ public final class AwsWorldGenTemplateRegistry {
       }
 
       private boolean matchesLegacyOceanFamily(ResourceLocation key) {
-         if (!key.m_135827_().equals("minecraft")) {
+         if (!key.getNamespace().equals("minecraft")) {
             return false;
          } else {
-            String path = key.m_135815_();
+            String path = key.getPath();
             if (this.biomes.contains("minecraft:deep_ocean") && path.contains("deep_") && path.endsWith("ocean")) {
                return true;
             } else {
@@ -355,19 +355,19 @@ public final class AwsWorldGenTemplateRegistry {
       }
 
       public BlockPos minFor(BlockPos origin, Direction facing) {
-         BlockPos first = origin.m_5484_(facing.m_122428_(), this.offsetX).m_5484_(facing, this.offsetZ).m_6625_(this.offsetY);
-         BlockPos second = first.m_5484_(facing.m_122427_(), this.sizeX - 1).m_5484_(facing, -(this.sizeZ - 1)).m_6630_(this.sizeY - 1);
+         BlockPos first = origin.relative(facing.getCounterClockWise(), this.offsetX).relative(facing, this.offsetZ).below(this.offsetY);
+         BlockPos second = first.relative(facing.getClockWise(), this.sizeX - 1).relative(facing, -(this.sizeZ - 1)).above(this.sizeY - 1);
          return new BlockPos(
-            Math.min(first.m_123341_(), second.m_123341_()), Math.min(first.m_123342_(), second.m_123342_()), Math.min(first.m_123343_(), second.m_123343_())
+            Math.min(first.getX(), second.getX()), Math.min(first.getY(), second.getY()), Math.min(first.getZ(), second.getZ())
          );
       }
 
       public int rotatedSizeX(Direction facing) {
-         return facing.m_122434_() == Axis.X ? this.sizeZ : this.sizeX;
+         return facing.getAxis() == Axis.X ? this.sizeZ : this.sizeX;
       }
 
       public int rotatedSizeZ(Direction facing) {
-         return facing.m_122434_() == Axis.X ? this.sizeX : this.sizeZ;
+         return facing.getAxis() == Axis.X ? this.sizeX : this.sizeZ;
       }
    }
 }

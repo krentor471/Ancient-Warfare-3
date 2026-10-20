@@ -15,7 +15,7 @@ public record EngineeringRecipeMatch(@Nullable EngineeringRecipe recipe) {
    }
 
    public ItemStack result() {
-      return this.recipe == null ? ItemStack.f_41583_ : this.recipe.assemble();
+      return this.recipe == null ? ItemStack.EMPTY : this.recipe.assemble();
    }
 
    @Nullable

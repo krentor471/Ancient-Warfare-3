@@ -29,10 +29,10 @@ public final class TradeOrderData {
       if (orders == null) {
          return trades;
       } else {
-         ListTag list = orders.m_128437_("tradeList", 10);
+         ListTag list = orders.getList("tradeList", 10);
 
          for (int i = 0; i < list.size(); i++) {
-            CompoundTag trade = list.m_128728_(i);
+            CompoundTag trade = list.getCompound(i);
             trades.add(new TradeOrderData.TradeEntry(readStacks(trade, "inputs", "input"), readStacks(trade, "outputs", "output")));
          }
 
@@ -82,9 +82,9 @@ public final class TradeOrderData {
             TradeOrderData.TradeEntry entry = trades.get(tradeIndex);
             List<ItemStack> inputs = copyStacks(entry.inputs());
             List<ItemStack> outputs = copyStacks(entry.outputs());
-            ItemStack ghost = value != null && !value.m_41619_() ? value.m_41777_() : ItemStack.f_41583_;
-            if (!ghost.m_41619_()) {
-               ghost.m_41764_(Math.min(ghost.m_41613_(), ghost.m_41741_()));
+            ItemStack ghost = value != null && !value.isEmpty() ? value.copy() : ItemStack.EMPTY;
+            if (!ghost.isEmpty()) {
+               ghost.setCount(Math.min(ghost.getCount(), ghost.getMaxStackSize()));
             }
 
             (output ? outputs : inputs).set(slot, ghost);
@@ -116,21 +116,21 @@ public final class TradeOrderData {
 
    public static Optional<BlockPos> getRouteTarget(ItemStack stack) {
       CompoundTag orders = getOrdersTag(stack);
-      return orders != null && orders.m_128425_("routeTarget", 4) ? Optional.of(BlockPos.m_122022_(orders.m_128454_("routeTarget"))) : Optional.empty();
+      return orders != null && orders.contains("routeTarget", 4) ? Optional.of(BlockPos.of(orders.getLong("routeTarget"))) : Optional.empty();
    }
 
    public static void setRouteTarget(ItemStack stack, BlockPos target) {
-      if (stack != null && !stack.m_41619_() && target != null) {
-         CompoundTag root = stack.m_41784_();
-         CompoundTag orders = root.m_128425_("orders", 10) ? root.m_128469_("orders").m_6426_() : new CompoundTag();
-         orders.m_128356_("routeTarget", target.m_121878_());
-         root.m_128365_("orders", orders);
+      if (stack != null && !stack.isEmpty() && target != null) {
+         CompoundTag root = stack.getOrCreateTag();
+         CompoundTag orders = root.contains("orders", 10) ? root.getCompound("orders").copy() : new CompoundTag();
+         orders.putLong("routeTarget", target.asLong());
+         root.put("orders", orders);
       }
    }
 
    private static void setTrades(ItemStack stack, List<TradeOrderData.TradeEntry> trades) {
-      CompoundTag root = stack.m_41784_();
-      CompoundTag orders = root.m_128425_("orders", 10) ? root.m_128469_("orders").m_6426_() : new CompoundTag();
+      CompoundTag root = stack.getOrCreateTag();
+      CompoundTag orders = root.contains("orders", 10) ? root.getCompound("orders").copy() : new CompoundTag();
       ListTag list = new ListTag();
       trades.stream().limit(8L).forEach(entry -> {
          CompoundTag trade = new CompoundTag();
@@ -138,24 +138,24 @@ public final class TradeOrderData {
          writeStacks(trade, "outputs", entry.outputs());
          list.add(trade);
       });
-      orders.m_128365_("tradeList", list);
-      root.m_128365_("orders", orders);
+      orders.put("tradeList", list);
+      root.put("orders", orders);
    }
 
    private static List<ItemStack> readStacks(CompoundTag trade, String listKey, String legacyKey) {
       List<ItemStack> stacks = emptyStacks();
-      if (trade.m_128425_(listKey, 9)) {
-         ListTag list = trade.m_128437_(listKey, 10);
+      if (trade.contains(listKey, 9)) {
+         ListTag list = trade.getList(listKey, 10);
 
          for (int i = 0; i < list.size(); i++) {
-            CompoundTag stackTag = list.m_128728_(i);
-            int slot = stackTag.m_128451_("slot");
+            CompoundTag stackTag = list.getCompound(i);
+            int slot = stackTag.getInt("slot");
             if (slot >= 0 && slot < 9) {
-               stacks.set(slot, ItemStack.m_41712_(stackTag));
+               stacks.set(slot, ItemStack.of(stackTag));
             }
          }
-      } else if (trade.m_128425_(legacyKey, 10)) {
-         stacks.set(0, ItemStack.m_41712_(trade.m_128469_(legacyKey)));
+      } else if (trade.contains(legacyKey, 10)) {
+         stacks.set(0, ItemStack.of(trade.getCompound(legacyKey)));
       }
 
       return stacks;
@@ -166,21 +166,21 @@ public final class TradeOrderData {
 
       for (int i = 0; i < Math.min(9, stacks.size()); i++) {
          ItemStack stack = stacks.get(i);
-         if (!stack.m_41619_()) {
-            CompoundTag stackTag = stack.m_41739_(new CompoundTag());
-            stackTag.m_128405_("slot", i);
+         if (!stack.isEmpty()) {
+            CompoundTag stackTag = stack.save(new CompoundTag());
+            stackTag.putInt("slot", i);
             list.add(stackTag);
          }
       }
 
-      trade.m_128365_(listKey, list);
+      trade.put(listKey, list);
    }
 
    private static List<ItemStack> emptyStacks() {
       List<ItemStack> stacks = new ArrayList<>();
 
       for (int i = 0; i < 9; i++) {
-         stacks.add(ItemStack.f_41583_);
+         stacks.add(ItemStack.EMPTY);
       }
 
       return stacks;
@@ -190,15 +190,15 @@ public final class TradeOrderData {
       List<ItemStack> stacks = emptyStacks();
 
       for (int i = 0; i < Math.min(9, source.size()); i++) {
-         stacks.set(i, source.get(i).m_41777_());
+         stacks.set(i, source.get(i).copy());
       }
 
       return stacks;
    }
 
    private static CompoundTag getOrdersTag(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag != null && tag.m_128425_("orders", 10) ? tag.m_128469_("orders") : null;
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("orders", 10) ? tag.getCompound("orders") : null;
    }
 
    public static record TradeEntry(List<ItemStack> inputs, List<ItemStack> outputs) {
@@ -207,7 +207,7 @@ public final class TradeOrderData {
       }
 
       public boolean isValid() {
-         return this.inputs.stream().anyMatch(stack -> !stack.m_41619_()) && this.outputs.stream().anyMatch(stack -> !stack.m_41619_());
+         return this.inputs.stream().anyMatch(stack -> !stack.isEmpty()) && this.outputs.stream().anyMatch(stack -> !stack.isEmpty());
       }
    }
 }

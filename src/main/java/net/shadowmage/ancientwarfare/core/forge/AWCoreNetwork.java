@@ -209,11 +209,11 @@ public final class AWCoreNetwork {
    }
 
    public static void sendAddWarehouseInterfaceFilter(BlockPos pos) {
-      CHANNEL.sendToServer(new AWCoreNetwork.SetWarehouseInterfaceFilterPacket(pos, 1, 0, ItemStack.f_41583_, 0));
+      CHANNEL.sendToServer(new AWCoreNetwork.SetWarehouseInterfaceFilterPacket(pos, 1, 0, ItemStack.EMPTY, 0));
    }
 
    public static void sendRemoveWarehouseInterfaceFilter(BlockPos pos, int index) {
-      CHANNEL.sendToServer(new AWCoreNetwork.SetWarehouseInterfaceFilterPacket(pos, 2, index, ItemStack.f_41583_, 0));
+      CHANNEL.sendToServer(new AWCoreNetwork.SetWarehouseInterfaceFilterPacket(pos, 2, index, ItemStack.EMPTY, 0));
    }
 
    public static void sendSetWarehouseSearch(String search) {
@@ -314,12 +314,12 @@ public final class AWCoreNetwork {
 
    public static record AddWorkOrderPointPacket(BlockPos pos, Direction side) {
       private static void encode(AWCoreNetwork.AddWorkOrderPointPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130064_(packet.pos);
-         buffer.m_130068_(packet.side);
+         buffer.writeBlockPos(packet.pos);
+         buffer.writeEnum(packet.side);
       }
 
       private static AWCoreNetwork.AddWorkOrderPointPacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.AddWorkOrderPointPacket(buffer.m_130135_(), (Direction)buffer.m_130066_(Direction.class));
+         return new AWCoreNetwork.AddWorkOrderPointPacket(buffer.readBlockPos(), (Direction)buffer.readEnum(Direction.class));
       }
 
       private static void handle(AWCoreNetwork.AddWorkOrderPointPacket packet, Supplier<Context> contextSupplier) {
@@ -352,11 +352,11 @@ public final class AWCoreNetwork {
          Context context = contextSupplier.get();
          context.enqueueWork(() -> {
             if (context.getSender() != null) {
-               if (context.getSender().m_20202_() instanceof CannonMobileEntity cannonMobile) {
+               if (context.getSender().getVehicle() instanceof CannonMobileEntity cannonMobile) {
                   cannonMobile.applyStandInput(packet.pitchDelta, 0.0F);
-               } else if (context.getSender().m_20202_() instanceof BallistaMobileEntity ballista) {
+               } else if (context.getSender().getVehicle() instanceof BallistaMobileEntity ballista) {
                   ballista.adjustTurret(packet.pitchDelta, packet.yawDelta);
-               } else if (context.getSender().m_20202_() instanceof CatapultMobileEntity catapult) {
+               } else if (context.getSender().getVehicle() instanceof CatapultMobileEntity catapult) {
                   catapult.adjustTurret(packet.yawDelta);
                   catapult.adjustLaunchVelocity(packet.pitchDelta * 0.01F);
                }
@@ -370,17 +370,17 @@ public final class AWCoreNetwork {
       int containerId, int action, int index, int expectedCount, ItemStack expectedFilter, ItemStack expectedCarried
    ) {
       public static void encode(AWCoreNetwork.ChangeWarehouseStorageFilterPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(packet.containerId);
-         buffer.m_130130_(packet.action);
-         buffer.m_130130_(packet.index);
-         buffer.m_130130_(packet.expectedCount);
-         buffer.m_130055_(packet.expectedFilter.m_41619_() ? ItemStack.f_41583_ : packet.expectedFilter.m_255036_(1));
-         buffer.m_130055_(packet.expectedCarried);
+         buffer.writeVarInt(packet.containerId);
+         buffer.writeVarInt(packet.action);
+         buffer.writeVarInt(packet.index);
+         buffer.writeVarInt(packet.expectedCount);
+         buffer.writeItem(packet.expectedFilter.isEmpty() ? ItemStack.EMPTY : packet.expectedFilter.copyWithCount(1));
+         buffer.writeItem(packet.expectedCarried);
       }
 
       public static AWCoreNetwork.ChangeWarehouseStorageFilterPacket decode(FriendlyByteBuf buffer) {
          return new AWCoreNetwork.ChangeWarehouseStorageFilterPacket(
-            buffer.m_130242_(), buffer.m_130242_(), buffer.m_130242_(), buffer.m_130242_(), buffer.m_130267_(), buffer.m_130267_()
+            buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readItem(), buffer.readItem()
          );
       }
 
@@ -389,10 +389,10 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null
-                  && !context.getSender().m_5833_()
-                  && context.getSender().f_36096_ instanceof WarehouseStorageMenu menu
-                  && menu.f_38840_ == packet.containerId
-                  && menu.m_6875_(context.getSender())) {
+                  && !context.getSender().isSpectator()
+                  && context.getSender().containerMenu instanceof WarehouseStorageMenu menu
+                  && menu.containerId == packet.containerId
+                  && menu.stillValid(context.getSender())) {
                   menu.handleFilterAction(context.getSender(), packet.action, packet.index, packet.expectedCount, packet.expectedFilter, packet.expectedCarried);
                }
             }
@@ -403,17 +403,17 @@ public final class AWCoreNetwork {
 
    public static record ClickWarehouseEntryPacket(int containerId, int slot, int button, ClickType clickType, ItemStack expectedItem, ItemStack expectedCarried) {
       public static void encode(AWCoreNetwork.ClickWarehouseEntryPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(packet.containerId);
-         buffer.m_130130_(packet.slot);
-         buffer.m_130130_(packet.button);
-         buffer.m_130068_(packet.clickType);
-         buffer.m_130055_(packet.expectedItem.m_41619_() ? ItemStack.f_41583_ : packet.expectedItem.m_255036_(1));
-         buffer.m_130055_(packet.expectedCarried);
+         buffer.writeVarInt(packet.containerId);
+         buffer.writeVarInt(packet.slot);
+         buffer.writeVarInt(packet.button);
+         buffer.writeEnum(packet.clickType);
+         buffer.writeItem(packet.expectedItem.isEmpty() ? ItemStack.EMPTY : packet.expectedItem.copyWithCount(1));
+         buffer.writeItem(packet.expectedCarried);
       }
 
       public static AWCoreNetwork.ClickWarehouseEntryPacket decode(FriendlyByteBuf buffer) {
          return new AWCoreNetwork.ClickWarehouseEntryPacket(
-            buffer.m_130242_(), buffer.m_130242_(), buffer.m_130242_(), (ClickType)buffer.m_130066_(ClickType.class), buffer.m_130267_(), buffer.m_130267_()
+            buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), (ClickType)buffer.readEnum(ClickType.class), buffer.readItem(), buffer.readItem()
          );
       }
 
@@ -422,10 +422,10 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null
-                  && !context.getSender().m_5833_()
-                  && context.getSender().f_36096_ instanceof WarehouseControlMenu menu
-                  && menu.f_38840_ == packet.containerId
-                  && menu.m_6875_(context.getSender())) {
+                  && !context.getSender().isSpectator()
+                  && context.getSender().containerMenu instanceof WarehouseControlMenu menu
+                  && menu.containerId == packet.containerId
+                  && menu.stillValid(context.getSender())) {
                   menu.handleVirtualClick(context.getSender(), packet.slot, packet.button, packet.clickType, packet.expectedItem, packet.expectedCarried);
                }
             }
@@ -438,17 +438,17 @@ public final class AWCoreNetwork {
       int containerId, int entry, int button, ClickType clickType, ItemStack expectedItem, ItemStack expectedCarried
    ) {
       public static void encode(AWCoreNetwork.ClickWarehouseStorageEntryPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(packet.containerId);
-         buffer.m_130130_(packet.entry);
-         buffer.m_130130_(packet.button);
-         buffer.m_130068_(packet.clickType);
-         buffer.m_130055_(packet.expectedItem.m_41619_() ? ItemStack.f_41583_ : packet.expectedItem.m_255036_(1));
-         buffer.m_130055_(packet.expectedCarried);
+         buffer.writeVarInt(packet.containerId);
+         buffer.writeVarInt(packet.entry);
+         buffer.writeVarInt(packet.button);
+         buffer.writeEnum(packet.clickType);
+         buffer.writeItem(packet.expectedItem.isEmpty() ? ItemStack.EMPTY : packet.expectedItem.copyWithCount(1));
+         buffer.writeItem(packet.expectedCarried);
       }
 
       public static AWCoreNetwork.ClickWarehouseStorageEntryPacket decode(FriendlyByteBuf buffer) {
          return new AWCoreNetwork.ClickWarehouseStorageEntryPacket(
-            buffer.m_130242_(), buffer.m_130242_(), buffer.m_130242_(), (ClickType)buffer.m_130066_(ClickType.class), buffer.m_130267_(), buffer.m_130267_()
+            buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), (ClickType)buffer.readEnum(ClickType.class), buffer.readItem(), buffer.readItem()
          );
       }
 
@@ -457,10 +457,10 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null
-                  && !context.getSender().m_5833_()
-                  && context.getSender().f_36096_ instanceof WarehouseStorageMenu menu
-                  && menu.f_38840_ == packet.containerId
-                  && menu.m_6875_(context.getSender())) {
+                  && !context.getSender().isSpectator()
+                  && context.getSender().containerMenu instanceof WarehouseStorageMenu menu
+                  && menu.containerId == packet.containerId
+                  && menu.stillValid(context.getSender())) {
                   menu.handleVirtualClick(context.getSender(), packet.entry, packet.button, packet.clickType, packet.expectedItem, packet.expectedCarried);
                }
             }
@@ -482,9 +482,9 @@ public final class AWCoreNetwork {
          context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player != null) {
-               ItemStack stack = player.m_21205_();
-               if (!(stack.m_41720_() instanceof CommandBatonItem)) {
-                  stack = player.m_21206_();
+               ItemStack stack = player.getMainHandItem();
+               if (!(stack.getItem() instanceof CommandBatonItem)) {
+                  stack = player.getOffhandItem();
                }
 
                CommandBatonItem.clearSelections(stack, player);
@@ -497,11 +497,11 @@ public final class AWCoreNetwork {
    public static record DraftingPreviewPacket(int containerId, int templateIndex, int requestId, int chunkIndex, int chunkCount, DraftingPreviewData data) {
       private static void encode(AWCoreNetwork.DraftingPreviewPacket packet, FriendlyByteBuf buffer) {
          DraftingPreviewData.requireChunkMetadata(packet.chunkIndex, packet.chunkCount);
-         buffer.m_130130_(packet.containerId);
-         buffer.m_130130_(packet.templateIndex);
-         buffer.m_130130_(packet.requestId);
-         buffer.m_130130_(packet.chunkIndex);
-         buffer.m_130130_(packet.chunkCount);
+         buffer.writeVarInt(packet.containerId);
+         buffer.writeVarInt(packet.templateIndex);
+         buffer.writeVarInt(packet.requestId);
+         buffer.writeVarInt(packet.chunkIndex);
+         buffer.writeVarInt(packet.chunkCount);
          DraftingPreviewData.writeChunk(buffer, packet.data);
       }
 
@@ -509,11 +509,11 @@ public final class AWCoreNetwork {
          if (buffer.readableBytes() >= 30000) {
             throw new IllegalArgumentException("Preview packet too large");
          } else {
-            int containerId = buffer.m_130242_();
-            int templateIndex = buffer.m_130242_();
-            int requestId = buffer.m_130242_();
-            int chunkIndex = buffer.m_130242_();
-            int chunkCount = buffer.m_130242_();
+            int containerId = buffer.readVarInt();
+            int templateIndex = buffer.readVarInt();
+            int requestId = buffer.readVarInt();
+            int chunkIndex = buffer.readVarInt();
+            int chunkCount = buffer.readVarInt();
             DraftingPreviewData.requireChunkMetadata(chunkIndex, chunkCount);
             return new AWCoreNetwork.DraftingPreviewPacket(containerId, templateIndex, requestId, chunkIndex, chunkCount, DraftingPreviewData.readChunk(buffer));
          }
@@ -523,8 +523,8 @@ public final class AWCoreNetwork {
          Context context = supplier.get();
          context.enqueueWork(() -> {
             if (context.getSender() == null) {
-               LocalPlayer player = Minecraft.m_91087_().f_91074_;
-               if (player != null && player.f_36096_ instanceof DraftingStationMenu menu) {
+               LocalPlayer player = Minecraft.getInstance().player;
+               if (player != null && player.containerMenu instanceof DraftingStationMenu menu) {
                   menu.acceptPreview(packet.containerId, packet.templateIndex, packet.requestId, packet.chunkIndex, packet.chunkCount, packet.data);
                }
             }
@@ -544,15 +544,15 @@ public final class AWCoreNetwork {
       private static void handle(AWCoreNetwork.FireBallistaPacket packet, Supplier<Context> contextSupplier) {
          Context context = contextSupplier.get();
          context.enqueueWork(() -> {
-            if (context.getSender() != null && context.getSender().m_20202_() instanceof BallistaMobileEntity ballista) {
+            if (context.getSender() != null && context.getSender().getVehicle() instanceof BallistaMobileEntity ballista) {
                ballista.tryFire();
-            } else if (context.getSender() != null && context.getSender().m_20202_() instanceof CatapultMobileEntity catapult) {
+            } else if (context.getSender() != null && context.getSender().getVehicle() instanceof CatapultMobileEntity catapult) {
                catapult.tryFire();
-            } else if (context.getSender() != null && context.getSender().m_20202_() instanceof CannonTurretStandEntity cannon) {
+            } else if (context.getSender() != null && context.getSender().getVehicle() instanceof CannonTurretStandEntity cannon) {
                cannon.tryFire();
-            } else if (context.getSender() != null && context.getSender().m_20202_() instanceof HwachaEntity hwacha) {
+            } else if (context.getSender() != null && context.getSender().getVehicle() instanceof HwachaEntity hwacha) {
                hwacha.tryFire();
-            } else if (context.getSender() != null && context.getSender().m_20202_() instanceof BatteringRamEntity ram) {
+            } else if (context.getSender() != null && context.getSender().getVehicle() instanceof BatteringRamEntity ram) {
                ram.tryAttack();
             }
          });
@@ -562,22 +562,22 @@ public final class AWCoreNetwork {
 
    public static record MailboxConfigPacket(BlockPos pos, int action, String value, boolean flag) {
       private static void encode(AWCoreNetwork.MailboxConfigPacket p, FriendlyByteBuf b) {
-         b.m_130064_(p.pos);
-         b.m_130130_(p.action);
-         b.m_130072_(p.value, 128);
+         b.writeBlockPos(p.pos);
+         b.writeVarInt(p.action);
+         b.writeUtf(p.value, 128);
          b.writeBoolean(p.flag);
       }
 
       private static AWCoreNetwork.MailboxConfigPacket decode(FriendlyByteBuf b) {
-         return new AWCoreNetwork.MailboxConfigPacket(b.m_130135_(), b.m_130242_(), b.m_130136_(128), b.readBoolean());
+         return new AWCoreNetwork.MailboxConfigPacket(b.readBlockPos(), b.readVarInt(), b.readUtf(128), b.readBoolean());
       }
 
       private static void handle(AWCoreNetwork.MailboxConfigPacket p, Supplier<Context> sup) {
          Context c = sup.get();
          c.enqueueWork(() -> {
-            if (c.getSender() != null && c.getSender().m_9236_().m_7702_(p.pos) instanceof MailboxBlockEntity box && box.stillValid(c.getSender())) {
-               String owner = c.getSender().m_36316_().getName();
-               MailboxData data = MailboxData.get((ServerLevel)c.getSender().m_9236_());
+            if (c.getSender() != null && c.getSender().level().getBlockEntity(p.pos) instanceof MailboxBlockEntity box && box.stillValid(c.getSender())) {
+               String owner = c.getSender().getGameProfile().getName();
+               MailboxData data = MailboxData.get((ServerLevel)c.getSender().level());
                switch (p.action) {
                   case 0:
                      box.setMailboxName(p.value);
@@ -599,8 +599,8 @@ public final class AWCoreNetwork {
                }
 
                data.register(box);
-               box.m_6596_();
-               box.m_6596_();
+               box.setChanged();
+               box.setChanged();
             }
          });
          c.setPacketHandled(true);
@@ -609,21 +609,21 @@ public final class AWCoreNetwork {
 
    public static record MailboxListPacket(BlockPos pos, List<String> entries) {
       private static void encode(AWCoreNetwork.MailboxListPacket p, FriendlyByteBuf b) {
-         b.m_130064_(p.pos);
-         b.m_130130_(Math.min(256, p.entries.size()));
+         b.writeBlockPos(p.pos);
+         b.writeVarInt(Math.min(256, p.entries.size()));
 
          for (String s : p.entries.stream().limit(256L).toList()) {
-            b.m_130072_(s, 256);
+            b.writeUtf(s, 256);
          }
       }
 
       private static AWCoreNetwork.MailboxListPacket decode(FriendlyByteBuf b) {
-         BlockPos pos = b.m_130135_();
-         int n = b.m_130242_();
+         BlockPos pos = b.readBlockPos();
+         int n = b.readVarInt();
          List<String> e = new ArrayList<>();
 
          for (int i = 0; i < n; i++) {
-            e.add(b.m_130136_(256));
+            e.add(b.readUtf(256));
          }
 
          return new AWCoreNetwork.MailboxListPacket(pos, e);
@@ -632,8 +632,8 @@ public final class AWCoreNetwork {
       private static void handle(AWCoreNetwork.MailboxListPacket p, Supplier<Context> sup) {
          Context c = sup.get();
          c.enqueueWork(() -> {
-            if (c.getSender() != null && p.entries.isEmpty() && c.getSender().m_9236_() instanceof ServerLevel sl) {
-               List<String> list = MailboxData.get(sl).knownMailboxes().stream().map(i -> i.name() + " @ " + i.pos().m_123344_()).toList();
+            if (c.getSender() != null && p.entries.isEmpty() && c.getSender().level() instanceof ServerLevel sl) {
+               List<String> list = MailboxData.get(sl).knownMailboxes().stream().map(i -> i.name() + " @ " + i.pos().toShortString()).toList();
                AWCoreNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(c::getSender), new AWCoreNetwork.MailboxListPacket(p.pos, list));
             } else if (c.getSender() == null) {
                MailboxTargetScreen.receive(p.entries);
@@ -645,13 +645,13 @@ public final class AWCoreNetwork {
 
    public static record ManageStructureTemplatePacket(BlockPos pos, String name, boolean delete) {
       private static void encode(AWCoreNetwork.ManageStructureTemplatePacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130064_(packet.pos);
-         buffer.m_130072_(packet.name, 48);
+         buffer.writeBlockPos(packet.pos);
+         buffer.writeUtf(packet.name, 48);
          buffer.writeBoolean(packet.delete);
       }
 
       private static AWCoreNetwork.ManageStructureTemplatePacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.ManageStructureTemplatePacket(buffer.m_130135_(), buffer.m_130136_(48), buffer.readBoolean());
+         return new AWCoreNetwork.ManageStructureTemplatePacket(buffer.readBlockPos(), buffer.readUtf(48), buffer.readBoolean());
       }
 
       private static void handle(AWCoreNetwork.ManageStructureTemplatePacket packet, Supplier<Context> supplier) {
@@ -659,23 +659,23 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                ServerPlayer player = context.getSender();
-               if (player != null && player.f_36096_ instanceof StructureScannerMenu menu && menu.pos().equals(packet.pos)) {
-                  ItemStack scanner = player.m_21205_().m_150930_((Item)AWCoreItems.STRUCTURE_SCANNER.get()) ? player.m_21205_() : player.m_21206_();
-                  if (scanner.m_150930_((Item)AWCoreItems.STRUCTURE_SCANNER.get())) {
+               if (player != null && player.containerMenu instanceof StructureScannerMenu menu && menu.pos().equals(packet.pos)) {
+                  ItemStack scanner = player.getMainHandItem().is((Item)AWCoreItems.STRUCTURE_SCANNER.get()) ? player.getMainHandItem() : player.getOffhandItem();
+                  if (scanner.is((Item)AWCoreItems.STRUCTURE_SCANNER.get())) {
                      if (packet.delete) {
-                        boolean removed = PlayerStructureTemplateData.get(player.m_284548_()).remove(packet.name);
-                        player.m_5661_(
-                           Component.m_237110_(
+                        boolean removed = PlayerStructureTemplateData.get(player.serverLevel()).remove(packet.name);
+                        player.displayClientMessage(
+                           Component.translatable(
                               removed ? "message.ancientwarfare.structure_scan.deleted" : "message.ancientwarfare.structure_scan.not_found",
                               new Object[]{packet.name}
                            ),
                            false
                         );
                      } else {
-                        scanner.m_41784_().m_128473_("FirstPos");
-                        scanner.m_41783_().m_128473_("SecondPos");
-                        scanner.m_41783_().m_128473_("BuildOrigin");
-                        player.m_5661_(Component.m_237115_("message.ancientwarfare.structure_scan.reset"), false);
+                        scanner.getOrCreateTag().remove("FirstPos");
+                        scanner.getTag().remove("SecondPos");
+                        scanner.getTag().remove("BuildOrigin");
+                        player.displayClientMessage(Component.translatable("message.ancientwarfare.structure_scan.reset"), false);
                      }
                   }
                }
@@ -687,9 +687,9 @@ public final class AWCoreNetwork {
 
    public static record RequestDraftingPreviewPacket(int containerId, int templateIndex, int requestId) {
       private static void encode(AWCoreNetwork.RequestDraftingPreviewPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(packet.containerId);
-         buffer.m_130130_(packet.templateIndex);
-         buffer.m_130130_(packet.requestId);
+         buffer.writeVarInt(packet.containerId);
+         buffer.writeVarInt(packet.templateIndex);
+         buffer.writeVarInt(packet.requestId);
       }
 
       private static AWCoreNetwork.RequestDraftingPreviewPacket decode(FriendlyByteBuf buffer) {
@@ -697,7 +697,7 @@ public final class AWCoreNetwork {
             throw new IllegalArgumentException("Preview request too large");
          } else {
             AWCoreNetwork.RequestDraftingPreviewPacket packet = new AWCoreNetwork.RequestDraftingPreviewPacket(
-               buffer.m_130242_(), buffer.m_130242_(), buffer.m_130242_()
+               buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt()
             );
             if (!buffer.isReadable() && packet.containerId >= 0 && packet.templateIndex >= 0 && packet.requestId >= 1) {
                return packet;
@@ -712,7 +712,7 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                ServerPlayer player = context.getSender();
-               if (player != null && player.f_36096_ instanceof DraftingStationMenu menu) {
+               if (player != null && player.containerMenu instanceof DraftingStationMenu menu) {
                   menu.requestServerPreview(
                      player,
                      packet.containerId,
@@ -741,12 +741,12 @@ public final class AWCoreNetwork {
 
    public static record SaveStructureScanPacket(BlockPos pos, String name) {
       private static void encode(AWCoreNetwork.SaveStructureScanPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130064_(packet.pos);
-         buffer.m_130072_(packet.name, 48);
+         buffer.writeBlockPos(packet.pos);
+         buffer.writeUtf(packet.name, 48);
       }
 
       private static AWCoreNetwork.SaveStructureScanPacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.SaveStructureScanPacket(buffer.m_130135_(), buffer.m_130136_(48));
+         return new AWCoreNetwork.SaveStructureScanPacket(buffer.readBlockPos(), buffer.readUtf(48));
       }
 
       private static void handle(AWCoreNetwork.SaveStructureScanPacket packet, Supplier<Context> supplier) {
@@ -754,28 +754,28 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                ServerPlayer player = context.getSender();
-               if (player != null && player.f_36096_ instanceof StructureScannerMenu menu && menu.pos().equals(packet.pos)) {
-                  ItemStack scanner = player.m_21205_().m_150930_((Item)AWCoreItems.STRUCTURE_SCANNER.get()) ? player.m_21205_() : player.m_21206_();
-                  if (scanner.m_150930_((Item)AWCoreItems.STRUCTURE_SCANNER.get())
-                     && scanner.m_41782_()
-                     && scanner.m_41783_().m_128441_("FirstPos")
-                     && scanner.m_41783_().m_128441_("SecondPos")) {
-                     BlockPos first = BlockPos.m_122022_(scanner.m_41783_().m_128454_("FirstPos"));
-                     BlockPos second = BlockPos.m_122022_(scanner.m_41783_().m_128454_("SecondPos"));
-                     BlockPos origin = scanner.m_41783_().m_128441_("BuildOrigin")
-                        ? BlockPos.m_122022_(scanner.m_41783_().m_128454_("BuildOrigin"))
-                        : packet.pos.m_7494_();
-                     PlayerStructureTemplateData.CaptureResult result = PlayerStructureTemplateData.get(player.m_284548_())
-                        .capture(player.m_284548_(), packet.name, first, second, origin);
+               if (player != null && player.containerMenu instanceof StructureScannerMenu menu && menu.pos().equals(packet.pos)) {
+                  ItemStack scanner = player.getMainHandItem().is((Item)AWCoreItems.STRUCTURE_SCANNER.get()) ? player.getMainHandItem() : player.getOffhandItem();
+                  if (scanner.is((Item)AWCoreItems.STRUCTURE_SCANNER.get())
+                     && scanner.hasTag()
+                     && scanner.getTag().contains("FirstPos")
+                     && scanner.getTag().contains("SecondPos")) {
+                     BlockPos first = BlockPos.of(scanner.getTag().getLong("FirstPos"));
+                     BlockPos second = BlockPos.of(scanner.getTag().getLong("SecondPos"));
+                     BlockPos origin = scanner.getTag().contains("BuildOrigin")
+                        ? BlockPos.of(scanner.getTag().getLong("BuildOrigin"))
+                        : packet.pos.above();
+                     PlayerStructureTemplateData.CaptureResult result = PlayerStructureTemplateData.get(player.serverLevel())
+                        .capture(player.serverLevel(), packet.name, first, second, origin);
                      if (result.success()) {
-                        scanner.m_41783_().m_128473_("FirstPos");
-                        scanner.m_41783_().m_128473_("SecondPos");
-                        scanner.m_41783_().m_128473_("BuildOrigin");
+                        scanner.getTag().remove("FirstPos");
+                        scanner.getTag().remove("SecondPos");
+                        scanner.getTag().remove("BuildOrigin");
                      }
 
-                     player.m_5661_(Component.m_237110_(result.messageKey(), new Object[]{result.blockCount()}), false);
+                     player.displayClientMessage(Component.translatable(result.messageKey(), new Object[]{result.blockCount()}), false);
                   } else {
-                     player.m_5661_(Component.m_237115_("message.ancientwarfare.structure_scan.incomplete"), false);
+                     player.displayClientMessage(Component.translatable("message.ancientwarfare.structure_scan.incomplete"), false);
                   }
                }
             }
@@ -786,20 +786,20 @@ public final class AWCoreNetwork {
 
    public static record SelectDraftingTemplatePacket(BlockPos pos, String name, boolean start) {
       private static void encode(AWCoreNetwork.SelectDraftingTemplatePacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130064_(packet.pos);
-         buffer.m_130072_(packet.name, 48);
+         buffer.writeBlockPos(packet.pos);
+         buffer.writeUtf(packet.name, 48);
          buffer.writeBoolean(packet.start);
       }
 
       private static AWCoreNetwork.SelectDraftingTemplatePacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.SelectDraftingTemplatePacket(buffer.m_130135_(), buffer.m_130136_(48), buffer.readBoolean());
+         return new AWCoreNetwork.SelectDraftingTemplatePacket(buffer.readBlockPos(), buffer.readUtf(48), buffer.readBoolean());
       }
 
       private static void handle(AWCoreNetwork.SelectDraftingTemplatePacket packet, Supplier<Context> supplier) {
          Context context = supplier.get();
          context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
-            if (player != null && player.m_9236_().m_7702_(packet.pos) instanceof DraftingStationBlockEntity station) {
+            if (player != null && player.level().getBlockEntity(packet.pos) instanceof DraftingStationBlockEntity station) {
                station.selectTemplate(packet.name);
                if (packet.start) {
                   station.start();
@@ -812,17 +812,17 @@ public final class AWCoreNetwork {
 
    public static record SetAdvancedSpawnerConfigPacket(BlockPos pos, AdvancedSpawnerConfig config) {
       private static void encode(AWCoreNetwork.SetAdvancedSpawnerConfigPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130064_(packet.pos);
-         buffer.m_130072_(packet.config.entityId(), 128);
-         buffer.m_130072_(packet.config.factionName(), 64);
-         buffer.m_130072_(packet.config.entityNbt(), 2048);
-         buffer.m_130130_(packet.config.minToSpawn());
-         buffer.m_130130_(packet.config.maxToSpawn());
-         buffer.m_130130_(packet.config.spawnDelay());
-         buffer.m_130130_(packet.config.playerRange());
-         buffer.m_130130_(packet.config.mobRange());
-         buffer.m_130130_(packet.config.spawnRange());
-         buffer.m_130130_(packet.config.maxNearby());
+         buffer.writeBlockPos(packet.pos);
+         buffer.writeUtf(packet.config.entityId(), 128);
+         buffer.writeUtf(packet.config.factionName(), 64);
+         buffer.writeUtf(packet.config.entityNbt(), 2048);
+         buffer.writeVarInt(packet.config.minToSpawn());
+         buffer.writeVarInt(packet.config.maxToSpawn());
+         buffer.writeVarInt(packet.config.spawnDelay());
+         buffer.writeVarInt(packet.config.playerRange());
+         buffer.writeVarInt(packet.config.mobRange());
+         buffer.writeVarInt(packet.config.spawnRange());
+         buffer.writeVarInt(packet.config.maxNearby());
          buffer.writeInt(packet.config.spawnYOffset());
          buffer.writeBoolean(packet.config.lightSensitive());
          buffer.writeBoolean(packet.config.redstoneSensitive());
@@ -832,18 +832,18 @@ public final class AWCoreNetwork {
       }
 
       private static AWCoreNetwork.SetAdvancedSpawnerConfigPacket decode(FriendlyByteBuf buffer) {
-         BlockPos pos = buffer.m_130135_();
+         BlockPos pos = buffer.readBlockPos();
          AdvancedSpawnerConfig config = new AdvancedSpawnerConfig(
-            buffer.m_130136_(128),
-            buffer.m_130136_(64),
-            buffer.m_130136_(2048),
-            buffer.m_130242_(),
-            buffer.m_130242_(),
-            buffer.m_130242_(),
-            buffer.m_130242_(),
-            buffer.m_130242_(),
-            buffer.m_130242_(),
-            buffer.m_130242_(),
+            buffer.readUtf(128),
+            buffer.readUtf(64),
+            buffer.readUtf(2048),
+            buffer.readVarInt(),
+            buffer.readVarInt(),
+            buffer.readVarInt(),
+            buffer.readVarInt(),
+            buffer.readVarInt(),
+            buffer.readVarInt(),
+            buffer.readVarInt(),
             buffer.readInt(),
             buffer.readBoolean(),
             buffer.readBoolean(),
@@ -857,9 +857,9 @@ public final class AWCoreNetwork {
       private static void handle(AWCoreNetwork.SetAdvancedSpawnerConfigPacket packet, Supplier<Context> contextSupplier) {
          Context context = contextSupplier.get();
          context.enqueueWork(() -> {
-            if (context.getSender() != null && context.getSender().m_9236_().m_7702_(packet.pos) instanceof AdvancedSpawnerBlockEntity spawner) {
+            if (context.getSender() != null && context.getSender().level().getBlockEntity(packet.pos) instanceof AdvancedSpawnerBlockEntity spawner) {
                spawner.applyConfig(packet.config);
-               context.getSender().m_5661_(spawner.statusMessage(), true);
+               context.getSender().displayClientMessage(spawner.statusMessage(), true);
             }
          });
          context.setPacketHandled(true);
@@ -868,8 +868,8 @@ public final class AWCoreNetwork {
 
    public static record SetBardTracksPacket(int entityId, List<BardTrack> tracks) {
       private static void encode(AWCoreNetwork.SetBardTracksPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(packet.entityId);
-         buffer.m_130130_(Math.min(32, packet.tracks.size()));
+         buffer.writeVarInt(packet.entityId);
+         buffer.writeVarInt(Math.min(32, packet.tracks.size()));
 
          for (BardTrack track : packet.tracks.stream().limit(32L).toList()) {
             track.toNetwork(buffer);
@@ -877,8 +877,8 @@ public final class AWCoreNetwork {
       }
 
       private static AWCoreNetwork.SetBardTracksPacket decode(FriendlyByteBuf buffer) {
-         int entityId = buffer.m_130242_();
-         int count = Math.min(32, buffer.m_130242_());
+         int entityId = buffer.readVarInt();
+         int count = Math.min(32, buffer.readVarInt());
          List<BardTrack> tracks = new ArrayList<>(count);
 
          for (int i = 0; i < count; i++) {
@@ -892,7 +892,7 @@ public final class AWCoreNetwork {
          Context context = contextSupplier.get();
          context.enqueueWork(() -> {
             if (context.getSender() != null) {
-               if (context.getSender().m_9236_().m_6815_(packet.entityId) instanceof BardNpcEntity bard && bard.hasCommandPermission(context.getSender())) {
+               if (context.getSender().level().getEntity(packet.entityId) instanceof BardNpcEntity bard && bard.hasCommandPermission(context.getSender())) {
                   bard.setBardTracks(packet.tracks);
                }
             }
@@ -903,13 +903,13 @@ public final class AWCoreNetwork {
 
    public static record SetNpcSkinPacket(int entityId, String skinName, boolean alexModel) {
       private static void encode(AWCoreNetwork.SetNpcSkinPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(packet.entityId);
-         buffer.m_130072_(packet.skinName, 128);
+         buffer.writeVarInt(packet.entityId);
+         buffer.writeUtf(packet.skinName, 128);
          buffer.writeBoolean(packet.alexModel);
       }
 
       private static AWCoreNetwork.SetNpcSkinPacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.SetNpcSkinPacket(buffer.m_130242_(), buffer.m_130136_(128), buffer.readBoolean());
+         return new AWCoreNetwork.SetNpcSkinPacket(buffer.readVarInt(), buffer.readUtf(128), buffer.readBoolean());
       }
 
       private static void handle(AWCoreNetwork.SetNpcSkinPacket packet, Supplier<Context> contextSupplier) {
@@ -917,7 +917,7 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null) {
-                  if (context.getSender().m_9236_().m_6815_(packet.entityId) instanceof PlayerOwnedNpcEntity npc
+                  if (context.getSender().level().getEntity(packet.entityId) instanceof PlayerOwnedNpcEntity npc
                      && npc.hasCommandPermission(context.getSender())) {
                      npc.setSkinName(packet.skinName);
                      npc.setAlexModel(packet.alexModel);
@@ -931,16 +931,16 @@ public final class AWCoreNetwork {
 
    public static record SetWarehouseInterfaceFilterPacket(BlockPos pos, int action, int index, ItemStack stack, int quantity) {
       private static void encode(AWCoreNetwork.SetWarehouseInterfaceFilterPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130064_(packet.pos);
-         buffer.m_130130_(packet.action);
-         buffer.m_130130_(packet.index);
-         buffer.m_130055_(packet.stack);
-         buffer.m_130130_(packet.quantity);
+         buffer.writeBlockPos(packet.pos);
+         buffer.writeVarInt(packet.action);
+         buffer.writeVarInt(packet.index);
+         buffer.writeItem(packet.stack);
+         buffer.writeVarInt(packet.quantity);
       }
 
       private static AWCoreNetwork.SetWarehouseInterfaceFilterPacket decode(FriendlyByteBuf buffer) {
          return new AWCoreNetwork.SetWarehouseInterfaceFilterPacket(
-            buffer.m_130135_(), buffer.m_130242_(), buffer.m_130242_(), buffer.m_130267_(), buffer.m_130242_()
+            buffer.readBlockPos(), buffer.readVarInt(), buffer.readVarInt(), buffer.readItem(), buffer.readVarInt()
          );
       }
 
@@ -949,12 +949,12 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null
-                  && !context.getSender().m_5833_()
-                  && context.getSender().f_36096_ instanceof WarehouseInterfaceMenu menu
+                  && !context.getSender().isSpectator()
+                  && context.getSender().containerMenu instanceof WarehouseInterfaceMenu menu
                   && menu.getPos().equals(packet.pos)
-                  && menu.m_6875_(context.getSender())
-                  && context.getSender().m_9236_().m_46805_(packet.pos)
-                  && context.getSender().m_9236_().m_7702_(packet.pos) instanceof WarehouseInterfaceBlockEntity warehouseInterface
+                  && menu.stillValid(context.getSender())
+                  && context.getSender().level().hasChunkAt(packet.pos)
+                  && context.getSender().level().getBlockEntity(packet.pos) instanceof WarehouseInterfaceBlockEntity warehouseInterface
                   && packet.action >= 0
                   && packet.action <= 2
                   && (packet.action == 1 || packet.index >= 0 && packet.index < warehouseInterface.getFilterCount())
@@ -964,7 +964,7 @@ public final class AWCoreNetwork {
                   } else if (packet.action == 2) {
                      warehouseInterface.removeFilter(packet.index);
                   } else {
-                     warehouseInterface.setFilter(packet.index, packet.stack.m_41619_() ? ItemStack.f_41583_ : packet.stack.m_255036_(1), packet.quantity);
+                     warehouseInterface.setFilter(packet.index, packet.stack.isEmpty() ? ItemStack.EMPTY : packet.stack.copyWithCount(1), packet.quantity);
                   }
                }
             }
@@ -975,11 +975,11 @@ public final class AWCoreNetwork {
 
    public static record SetWarehouseScrollPacket(int row) {
       private static void encode(AWCoreNetwork.SetWarehouseScrollPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(Math.max(0, packet.row));
+         buffer.writeVarInt(Math.max(0, packet.row));
       }
 
       private static AWCoreNetwork.SetWarehouseScrollPacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.SetWarehouseScrollPacket(Math.max(0, buffer.m_130242_()));
+         return new AWCoreNetwork.SetWarehouseScrollPacket(Math.max(0, buffer.readVarInt()));
       }
 
       private static void handle(AWCoreNetwork.SetWarehouseScrollPacket packet, Supplier<Context> contextSupplier) {
@@ -987,9 +987,9 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null
-                  && !context.getSender().m_5833_()
-                  && context.getSender().f_36096_ instanceof WarehouseControlMenu menu
-                  && menu.m_6875_(context.getSender())) {
+                  && !context.getSender().isSpectator()
+                  && context.getSender().containerMenu instanceof WarehouseControlMenu menu
+                  && menu.stillValid(context.getSender())) {
                   menu.scrollToRow(packet.row);
                }
             }
@@ -1000,11 +1000,11 @@ public final class AWCoreNetwork {
 
    public static record SetWarehouseSearchPacket(String search) {
       private static void encode(AWCoreNetwork.SetWarehouseSearchPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130072_(packet.search, 64);
+         buffer.writeUtf(packet.search, 64);
       }
 
       private static AWCoreNetwork.SetWarehouseSearchPacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.SetWarehouseSearchPacket(buffer.m_130136_(64));
+         return new AWCoreNetwork.SetWarehouseSearchPacket(buffer.readUtf(64));
       }
 
       private static void handle(AWCoreNetwork.SetWarehouseSearchPacket packet, Supplier<Context> contextSupplier) {
@@ -1012,9 +1012,9 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null
-                  && !context.getSender().m_5833_()
-                  && context.getSender().f_36096_ instanceof WarehouseControlMenu menu
-                  && menu.m_6875_(context.getSender())) {
+                  && !context.getSender().isSpectator()
+                  && context.getSender().containerMenu instanceof WarehouseControlMenu menu
+                  && menu.stillValid(context.getSender())) {
                   menu.setSearch(packet.search);
                }
             }
@@ -1025,13 +1025,13 @@ public final class AWCoreNetwork {
 
    public static record SetWarehouseStockFilterPacket(BlockPos pos, int index, ItemStack stack) {
       private static void encode(AWCoreNetwork.SetWarehouseStockFilterPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130064_(packet.pos);
-         buffer.m_130130_(packet.index);
-         buffer.m_130055_(packet.stack);
+         buffer.writeBlockPos(packet.pos);
+         buffer.writeVarInt(packet.index);
+         buffer.writeItem(packet.stack);
       }
 
       private static AWCoreNetwork.SetWarehouseStockFilterPacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.SetWarehouseStockFilterPacket(buffer.m_130135_(), buffer.m_130242_(), buffer.m_130267_());
+         return new AWCoreNetwork.SetWarehouseStockFilterPacket(buffer.readBlockPos(), buffer.readVarInt(), buffer.readItem());
       }
 
       private static void handle(AWCoreNetwork.SetWarehouseStockFilterPacket packet, Supplier<Context> contextSupplier) {
@@ -1039,15 +1039,15 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null
-                  && !context.getSender().m_5833_()
-                  && context.getSender().f_36096_ instanceof WarehouseStockViewerMenu menu
+                  && !context.getSender().isSpectator()
+                  && context.getSender().containerMenu instanceof WarehouseStockViewerMenu menu
                   && menu.getPos().equals(packet.pos)
-                  && menu.m_6875_(context.getSender())
-                  && context.getSender().m_9236_().m_46805_(packet.pos)
+                  && menu.stillValid(context.getSender())
+                  && context.getSender().level().hasChunkAt(packet.pos)
                   && packet.index >= 0
                   && packet.index < 4
-                  && context.getSender().m_9236_().m_7702_(packet.pos) instanceof WarehouseStockViewerBlockEntity viewer) {
-                  viewer.setFilterItem(packet.index, packet.stack.m_41619_() ? ItemStack.f_41583_ : packet.stack.m_255036_(1));
+                  && context.getSender().level().getBlockEntity(packet.pos) instanceof WarehouseStockViewerBlockEntity viewer) {
+                  viewer.setFilterItem(packet.index, packet.stack.isEmpty() ? ItemStack.EMPTY : packet.stack.copyWithCount(1));
                }
             }
          );
@@ -1057,12 +1057,12 @@ public final class AWCoreNetwork {
 
    public static record SetWarehouseStorageScrollPacket(int containerId, int pixels) {
       public static void encode(AWCoreNetwork.SetWarehouseStorageScrollPacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(packet.containerId);
-         buffer.m_130130_(Math.max(0, packet.pixels));
+         buffer.writeVarInt(packet.containerId);
+         buffer.writeVarInt(Math.max(0, packet.pixels));
       }
 
       public static AWCoreNetwork.SetWarehouseStorageScrollPacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.SetWarehouseStorageScrollPacket(buffer.m_130242_(), Math.max(0, buffer.m_130242_()));
+         return new AWCoreNetwork.SetWarehouseStorageScrollPacket(buffer.readVarInt(), Math.max(0, buffer.readVarInt()));
       }
 
       private static void handle(AWCoreNetwork.SetWarehouseStorageScrollPacket packet, Supplier<Context> supplier) {
@@ -1070,10 +1070,10 @@ public final class AWCoreNetwork {
          context.enqueueWork(
             () -> {
                if (context.getSender() != null
-                  && !context.getSender().m_5833_()
-                  && context.getSender().f_36096_ instanceof WarehouseStorageMenu menu
-                  && menu.f_38840_ == packet.containerId
-                  && menu.m_6875_(context.getSender())) {
+                  && !context.getSender().isSpectator()
+                  && context.getSender().containerMenu instanceof WarehouseStorageMenu menu
+                  && menu.containerId == packet.containerId
+                  && menu.stillValid(context.getSender())) {
                   menu.scrollToPixel(packet.pixels);
                }
             }
@@ -1084,12 +1084,12 @@ public final class AWCoreNetwork {
 
    public static record TraderRoutePacket(int traderEntityId, BlockPos target) {
       private static void encode(AWCoreNetwork.TraderRoutePacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130130_(packet.traderEntityId);
-         buffer.m_130064_(packet.target);
+         buffer.writeVarInt(packet.traderEntityId);
+         buffer.writeBlockPos(packet.target);
       }
 
       private static AWCoreNetwork.TraderRoutePacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.TraderRoutePacket(buffer.m_130242_(), buffer.m_130135_());
+         return new AWCoreNetwork.TraderRoutePacket(buffer.readVarInt(), buffer.readBlockPos());
       }
 
       private static void handle(AWCoreNetwork.TraderRoutePacket packet, Supplier<Context> supplier) {
@@ -1098,33 +1098,33 @@ public final class AWCoreNetwork {
             () -> {
                ServerPlayer player = context.getSender();
                if (player != null
-                  && player.f_36096_ instanceof TradeOrderMenu menu
+                  && player.containerMenu instanceof TradeOrderMenu menu
                   && menu.isTraderBound()
                   && menu.getTraderEntityId() == packet.traderEntityId) {
-                  if (player.m_9236_().m_6815_(packet.traderEntityId) instanceof TraderNpcEntity trader
-                     && trader.m_6084_()
+                  if (player.level().getEntity(packet.traderEntityId) instanceof TraderNpcEntity trader
+                     && trader.isAlive()
                      && trader.hasCommandPermission(player)
                      && AWCoreRegistryAccess.is(trader.getOrdersStack(), AWCoreIds.TRADE_ORDER)) {
                      BlockPos target = packet.target;
-                     ServerLevel level = player.m_284548_();
-                     if (target.m_123342_() >= level.m_141937_() && target.m_123342_() < level.m_151558_() && level.m_6857_().m_61937_(target)) {
-                        ItemStack order = trader.getOrdersStack().m_41777_();
+                     ServerLevel level = player.serverLevel();
+                     if (target.getY() >= level.getMinBuildHeight() && target.getY() < level.getMaxBuildHeight() && level.getWorldBorder().isWithinBounds(target)) {
+                        ItemStack order = trader.getOrdersStack().copy();
                         TradeOrderData.setRouteTarget(order, target);
                         trader.setOrdersStack(order);
                         trader.clearCommand();
-                        trader.m_8127_();
-                        trader.m_21573_().m_26573_();
-                        trader.m_20256_(Vec3.f_82478_);
-                        level.m_46865_(target);
-                        trader.m_6021_((double)target.m_123341_() + 0.5, (double)target.m_123342_(), (double)target.m_123343_() + 0.5);
-                        player.m_5661_(
-                           Component.m_237110_("guistrings.npc.trade_order.departed", new Object[]{target.m_123341_(), target.m_123342_(), target.m_123343_()}),
+                        trader.stopRiding();
+                        trader.getNavigation().stop();
+                        trader.setDeltaMovement(Vec3.ZERO);
+                        level.getChunk(target);
+                        trader.teleportTo((double)target.getX() + 0.5, (double)target.getY(), (double)target.getZ() + 0.5);
+                        player.displayClientMessage(
+                           Component.translatable("guistrings.npc.trade_order.departed", new Object[]{target.getX(), target.getY(), target.getZ()}),
                            true
                         );
                         return;
                      }
 
-                     player.m_5661_(Component.m_237115_("guistrings.npc.trade_order.destination_invalid"), true);
+                     player.displayClientMessage(Component.translatable("guistrings.npc.trade_order.destination_invalid"), true);
                      return;
                   }
                }
@@ -1136,11 +1136,11 @@ public final class AWCoreNetwork {
 
    public static record TransferEngineeringRecipePacket(ResourceLocation recipeId) {
       private static void encode(AWCoreNetwork.TransferEngineeringRecipePacket packet, FriendlyByteBuf buffer) {
-         buffer.m_130085_(packet.recipeId);
+         buffer.writeResourceLocation(packet.recipeId);
       }
 
       private static AWCoreNetwork.TransferEngineeringRecipePacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.TransferEngineeringRecipePacket(buffer.m_130281_());
+         return new AWCoreNetwork.TransferEngineeringRecipePacket(buffer.readResourceLocation());
       }
 
       private static void handle(AWCoreNetwork.TransferEngineeringRecipePacket packet, Supplier<Context> supplier) {
@@ -1149,16 +1149,16 @@ public final class AWCoreNetwork {
             ServerPlayer player = context.getSender();
             if (player != null) {
                boolean transferred = false;
-               if (player.f_36096_ instanceof EngineeringStationMenu menu) {
+               if (player.containerMenu instanceof EngineeringStationMenu menu) {
                   transferred = menu.transferEngineeringRecipe(player, packet.recipeId);
-               } else if (player.f_36096_ instanceof AutoCraftingMenu menu) {
+               } else if (player.containerMenu instanceof AutoCraftingMenu menu) {
                   transferred = menu.transferEngineeringRecipe(player, packet.recipeId);
-               } else if (player.f_36096_ instanceof WarehouseCraftingStationMenu menu) {
+               } else if (player.containerMenu instanceof WarehouseCraftingStationMenu menu) {
                   transferred = menu.transferEngineeringRecipe(player, packet.recipeId);
                }
 
                if (!transferred) {
-                  player.m_5661_(Component.m_237115_("jei.ancientwarfare.transfer_failed"), true);
+                  player.displayClientMessage(Component.translatable("jei.ancientwarfare.transfer_failed"), true);
                }
             }
          });
@@ -1179,13 +1179,13 @@ public final class AWCoreNetwork {
       private static void handle(AWCoreNetwork.VehicleInputPacket packet, Supplier<Context> contextSupplier) {
          Context context = contextSupplier.get();
          context.enqueueWork(() -> {
-            if (context.getSender() != null && context.getSender().m_20202_() instanceof CannonMobileEntity cannonMobile) {
+            if (context.getSender() != null && context.getSender().getVehicle() instanceof CannonMobileEntity cannonMobile) {
                cannonMobile.setVehicleInput(packet.forward, packet.turn);
-            } else if (context.getSender() != null && context.getSender().m_20202_() instanceof CatapultTurretStandEntity catapult) {
+            } else if (context.getSender() != null && context.getSender().getVehicle() instanceof CatapultTurretStandEntity catapult) {
                catapult.applyStandInput(packet.forward, packet.turn);
-            } else if (context.getSender() != null && context.getSender().m_20202_() instanceof CannonTurretStandEntity cannon) {
+            } else if (context.getSender() != null && context.getSender().getVehicle() instanceof CannonTurretStandEntity cannon) {
                cannon.applyStandInput(packet.forward, packet.turn);
-            } else if (context.getSender() != null && context.getSender().m_20202_() instanceof ChestPushcartEntity cart) {
+            } else if (context.getSender() != null && context.getSender().getVehicle() instanceof ChestPushcartEntity cart) {
                cart.setVehicleInput(packet.forward, packet.turn);
             }
          });

@@ -9,10 +9,10 @@ public final class AdvancedSpawnerWorldData extends SavedData {
    private boolean creativePlayersActivateSpawners;
 
    public static AdvancedSpawnerWorldData get(ServerLevel level) {
-      return (AdvancedSpawnerWorldData)level.m_7654_()
-         .m_129783_()
-         .m_8895_()
-         .m_164861_(AdvancedSpawnerWorldData::load, AdvancedSpawnerWorldData::new, "ancientwarfare_advanced_spawner_settings");
+      return (AdvancedSpawnerWorldData)level.getServer()
+         .overworld()
+         .getDataStorage()
+         .computeIfAbsent(AdvancedSpawnerWorldData::load, AdvancedSpawnerWorldData::new, "ancientwarfare_advanced_spawner_settings");
    }
 
    public boolean creativePlayersActivateSpawners() {
@@ -22,18 +22,18 @@ public final class AdvancedSpawnerWorldData extends SavedData {
    public void setCreativePlayersActivateSpawners(boolean enabled) {
       if (this.creativePlayersActivateSpawners != enabled) {
          this.creativePlayersActivateSpawners = enabled;
-         this.m_77762_();
+         this.setDirty();
       }
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
-      tag.m_128379_("CreativePlayersActivateSpawners", this.creativePlayersActivateSpawners);
+   public CompoundTag save(CompoundTag tag) {
+      tag.putBoolean("CreativePlayersActivateSpawners", this.creativePlayersActivateSpawners);
       return tag;
    }
 
    private static AdvancedSpawnerWorldData load(CompoundTag tag) {
       AdvancedSpawnerWorldData data = new AdvancedSpawnerWorldData();
-      data.creativePlayersActivateSpawners = tag.m_128471_("CreativePlayersActivateSpawners");
+      data.creativePlayersActivateSpawners = tag.getBoolean("CreativePlayersActivateSpawners");
       return data;
    }
 }

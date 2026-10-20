@@ -23,7 +23,7 @@ import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegis
 import software.bernie.geckolib.core.object.PlayState;
 
 public class HwachaEntity extends ChestPushcartEntity implements SiegeWeaponControl {
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.hwacha");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.hwacha");
    private static final RawAnimation WHEEL_ROLL = RawAnimation.begin().thenLoop("animation.ancientwarfare.legacy.hwacha.wheel_rotations");
    private static final int FIRE_INTERVAL_TICKS = 5;
    private static final int RACK_COLUMNS = 9;
@@ -55,8 +55,8 @@ public class HwachaEntity extends ChestPushcartEntity implements SiegeWeaponCont
    }
 
    @Override
-   public void m_8119_() {
-      super.m_8119_();
+   public void tick() {
+      super.tick();
       if (this.fireCooldown > 0) {
          this.fireCooldown--;
       }
@@ -67,36 +67,36 @@ public class HwachaEntity extends ChestPushcartEntity implements SiegeWeaponCont
    }
 
    public boolean tryFire() {
-      if (!this.m_9236_().f_46443_ && this.fireCooldown <= 0) {
+      if (!this.level().isClientSide && this.fireCooldown <= 0) {
          HwachaEntity.AmmoSlot ammoSlot = this.findLoadedAmmo();
          if (ammoSlot == null) {
             return false;
          } else {
-            ItemStack stack = this.m_8020_(ammoSlot.slot());
-            stack.m_41774_(1);
-            this.m_6836_(ammoSlot.slot(), stack);
-            this.m_6596_();
-            LivingEntity shooter = this.m_6688_();
-            HwachaRocketEntity rocket = new HwachaRocketEntity(this.m_9236_(), shooter, ammoSlot.ammoType());
+            ItemStack stack = this.getItem(ammoSlot.slot());
+            stack.shrink(1);
+            this.setItem(ammoSlot.slot(), stack);
+            this.setChanged();
+            LivingEntity shooter = this.getControllingPassenger();
+            HwachaRocketEntity rocket = new HwachaRocketEntity(this.level(), shooter, ammoSlot.ammoType());
             int rocketIndex = this.nextRocketIndex;
             this.nextRocketIndex = (this.nextRocketIndex + 1) % 36;
             int row = rocketIndex / 9;
             int column = rocketIndex % 9;
-            float yawSpread = (this.f_19796_.m_188501_() - this.f_19796_.m_188501_()) * 4.5F;
-            float pitchSpread = (this.f_19796_.m_188501_() - this.f_19796_.m_188501_()) * 2.0F;
-            double yaw = Math.toRadians((double)(this.m_146908_() + yawSpread));
+            float yawSpread = (this.random.nextFloat() - this.random.nextFloat()) * 4.5F;
+            float pitchSpread = (this.random.nextFloat() - this.random.nextFloat()) * 2.0F;
+            double yaw = Math.toRadians((double)(this.getYRot() + yawSpread));
             double pitch = Math.toRadians((double)(39.0F + pitchSpread));
             double cosPitch = Math.cos(pitch);
-            Vec3 direction = new Vec3(-Math.sin(yaw) * cosPitch, Math.sin(pitch), Math.cos(yaw) * cosPitch).m_82541_();
-            Vec3 side = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw)).m_82541_();
-            Vec3 muzzle = this.m_20182_()
-               .m_82549_(direction.m_82490_(2.0))
-               .m_82549_(side.m_82490_((double)(column - 4) * 0.12))
-               .m_82520_(0.0, 1.15 + (double)row * 0.1, 0.0);
-            rocket.m_7678_(muzzle.f_82479_, muzzle.f_82480_, muzzle.f_82481_, this.m_146908_() + yawSpread, -(39.0F + pitchSpread));
+            Vec3 direction = new Vec3(-Math.sin(yaw) * cosPitch, Math.sin(pitch), Math.cos(yaw) * cosPitch).normalize();
+            Vec3 side = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw)).normalize();
+            Vec3 muzzle = this.position()
+               .add(direction.scale(2.0))
+               .add(side.scale((double)(column - 4) * 0.12))
+               .add(0.0, 1.15 + (double)row * 0.1, 0.0);
+            rocket.moveTo(muzzle.x, muzzle.y, muzzle.z, this.getYRot() + yawSpread, -(39.0F + pitchSpread));
             rocket.setBlockCollisionGraceOrigin(muzzle);
-            rocket.m_6686_(direction.f_82479_, direction.f_82480_, direction.f_82481_, 1.9F, 0.45F);
-            this.m_9236_().m_7967_(rocket);
+            rocket.shoot(direction.x, direction.y, direction.z, 1.9F, 0.45F);
+            this.level().addFreshEntity(rocket);
             this.fireCooldown = 5;
             return true;
          }
@@ -123,7 +123,7 @@ public class HwachaEntity extends ChestPushcartEntity implements SiegeWeaponCont
    @Override
    public boolean canAttackTarget(LivingEntity target) {
       return SiegeWeaponNpcControl.canAttack(this, target, 10.0, 80.0)
-         && SiegeWeaponNpcControl.hasClearBallisticPath(this.m_9236_(), this, target, 1.15, 2.0, 1.9F, 0.045, this.m_146908_(), 39.0F, 6.0);
+         && SiegeWeaponNpcControl.hasClearBallisticPath(this.level(), this, target, 1.15, 2.0, 1.9F, 0.045, this.getYRot(), 39.0F, 6.0);
    }
 
    @Override
@@ -180,8 +180,8 @@ public class HwachaEntity extends ChestPushcartEntity implements SiegeWeaponCont
    }
 
    private HwachaEntity.AmmoSlot findLoadedAmmo() {
-      for (int i = 0; i < this.m_6643_(); i++) {
-         ItemStack stack = this.m_8020_(i);
+      for (int i = 0; i < this.getContainerSize(); i++) {
+         ItemStack stack = this.getItem(i);
          HwachaAmmoType ammoType = HwachaAmmoItem.ammoType(stack);
          if (ammoType != null) {
             return new HwachaEntity.AmmoSlot(i, ammoType);
@@ -197,7 +197,7 @@ public class HwachaEntity extends ChestPushcartEntity implements SiegeWeaponCont
    }
 
    private PlayState wheelAnimation(AnimationState<HwachaEntity> state) {
-      if (this.m_20184_().m_165925_() > 4.0E-4) {
+      if (this.getDeltaMovement().horizontalDistanceSqr() > 4.0E-4) {
          state.setAnimation(WHEEL_ROLL);
          return PlayState.CONTINUE;
       } else {
@@ -211,10 +211,10 @@ public class HwachaEntity extends ChestPushcartEntity implements SiegeWeaponCont
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         Vec3 offset = this.getPassengerOffset().m_82524_(-this.m_146908_() * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         Vec3 offset = this.getPassengerOffset().yRot(-this.getYRot() * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -223,7 +223,7 @@ public class HwachaEntity extends ChestPushcartEntity implements SiegeWeaponCont
       ItemStack stack = new ItemStack(HwachaItem.itemForMaterialLevel(this.getMaterialLevel()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("HwachaData", tag);
+      stack.getOrCreateTag().put("HwachaData", tag);
       return stack;
    }
 

@@ -36,28 +36,28 @@ public final class OwnedNpcSpawnEggItem extends ForgeSpawnEggItem {
       super(type, background, highlight, properties);
    }
 
-   public int m_43211_(int tintIndex) {
+   public int getColor(int tintIndex) {
       return 16777215;
    }
 
-   public InteractionResult m_6225_(UseOnContext context) {
-      if (!(context.m_43725_() instanceof ServerLevel level)) {
+   public InteractionResult useOn(UseOnContext context) {
+      if (!(context.getLevel() instanceof ServerLevel level)) {
          return InteractionResult.SUCCESS;
       } else {
-         BlockPos var9 = context.m_8083_();
-         BlockState state = level.m_8055_(var9);
-         if (state.m_60713_(Blocks.f_50085_)) {
-            return super.m_6225_(context);
+         BlockPos var9 = context.getClickedPos();
+         BlockState state = level.getBlockState(var9);
+         if (state.is(Blocks.SPAWNER)) {
+            return super.useOn(context);
          } else {
-            ItemStack stack = context.m_43722_();
-            Direction face = context.m_43719_();
-            BlockPos position = state.m_60812_(level, var9).m_83281_() ? var9 : var9.m_121945_(face);
+            ItemStack stack = context.getItemInHand();
+            Direction face = context.getClickedFace();
+            BlockPos position = state.getCollisionShape(level, var9).isEmpty() ? var9 : var9.relative(face);
             Entity spawned = spawnOwned(
-               this.m_43228_(stack.m_41783_()), level, stack, context.m_43723_(), position, true, !var9.equals(position) && face == Direction.UP
+               this.getType(stack.getTag()), level, stack, context.getPlayer(), position, true, !var9.equals(position) && face == Direction.UP
             );
             if (spawned != null) {
-               stack.m_41774_(1);
-               level.m_142346_(context.m_43723_(), GameEvent.f_157810_, var9);
+               stack.shrink(1);
+               level.gameEvent(context.getPlayer(), GameEvent.ENTITY_PLACE, var9);
             }
 
             return InteractionResult.CONSUME;
@@ -65,38 +65,38 @@ public final class OwnedNpcSpawnEggItem extends ForgeSpawnEggItem {
       }
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
-      ItemStack stack = player.m_21120_(hand);
-      BlockHitResult hit = m_41435_(level, player, Fluid.SOURCE_ONLY);
-      if (hit.m_6662_() != Type.BLOCK) {
-         return InteractionResultHolder.m_19098_(stack);
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+      ItemStack stack = player.getItemInHand(hand);
+      BlockHitResult hit = getPlayerPOVHitResult(level, player, Fluid.SOURCE_ONLY);
+      if (hit.getType() != Type.BLOCK) {
+         return InteractionResultHolder.pass(stack);
       } else if (level instanceof ServerLevel server) {
-         BlockPos position = hit.m_82425_();
-         if (!(level.m_8055_(position).m_60734_() instanceof LiquidBlock)) {
-            return InteractionResultHolder.m_19098_(stack);
-         } else if (level.m_7966_(player, position) && player.m_36204_(position, hit.m_82434_(), stack)) {
-            Entity spawned = spawnOwned(this.m_43228_(stack.m_41783_()), server, stack, player, position, false, false);
+         BlockPos position = hit.getBlockPos();
+         if (!(level.getBlockState(position).getBlock() instanceof LiquidBlock)) {
+            return InteractionResultHolder.pass(stack);
+         } else if (level.mayInteract(player, position) && player.mayUseItemAt(position, hit.getDirection(), stack)) {
+            Entity spawned = spawnOwned(this.getType(stack.getTag()), server, stack, player, position, false, false);
             if (spawned == null) {
-               return InteractionResultHolder.m_19098_(stack);
+               return InteractionResultHolder.pass(stack);
             } else {
-               if (!player.m_150110_().f_35937_) {
-                  stack.m_41774_(1);
+               if (!player.getAbilities().instabuild) {
+                  stack.shrink(1);
                }
 
-               player.m_36246_(Stats.f_12982_.m_12902_(this));
-               level.m_220400_(player, GameEvent.f_157810_, spawned.m_20182_());
-               return InteractionResultHolder.m_19096_(stack);
+               player.awardStat(Stats.ITEM_USED.get(this));
+               level.gameEvent(player, GameEvent.ENTITY_PLACE, spawned.position());
+               return InteractionResultHolder.consume(stack);
             }
          } else {
-            return InteractionResultHolder.m_19100_(stack);
+            return InteractionResultHolder.fail(stack);
          }
       } else {
-         return InteractionResultHolder.m_19090_(stack);
+         return InteractionResultHolder.success(stack);
       }
    }
 
-   public Optional<Mob> m_43215_(Player player, Mob parent, EntityType<? extends Mob> type, ServerLevel level, Vec3 position, ItemStack stack) {
-      Optional<Mob> offspring = super.m_43215_(player, parent, type, level, position, stack);
+   public Optional<Mob> spawnOffspringFromSpawnEgg(Player player, Mob parent, EntityType<? extends Mob> type, ServerLevel level, Vec3 position, ItemStack stack) {
+      Optional<Mob> offspring = super.spawnOffspringFromSpawnEgg(player, parent, type, level, position, stack);
       offspring.ifPresent(entity -> assignOwner(entity, player));
       return offspring;
    }
@@ -104,21 +104,21 @@ public final class OwnedNpcSpawnEggItem extends ForgeSpawnEggItem {
    private static <T extends Entity> T spawnOwned(
       EntityType<T> type, ServerLevel level, ItemStack stack, Player player, BlockPos position, boolean alignToSurface, boolean invertYOffset
    ) {
-      Consumer<T> configure = EntityType.m_263562_(level, stack, player).andThen(entity -> assignOwner(entity, player));
-      if (type.m_20615_(level) instanceof ModernSoldierNpcEntity owned) {
+      Consumer<T> configure = EntityType.createDefaultStackConfig(level, stack, player).andThen(entity -> assignOwner(entity, player));
+      if (type.create(level) instanceof ModernSoldierNpcEntity owned) {
          Entity extended = NpcSpawnerItem.createNpcFromStack(level, NpcSpawnerItem.create(owned.getNpcType(), owned.getNpcSubtype()));
          if (extended instanceof Mob) {
-            type = extended.m_6095_();
+            type = extended.getType();
          }
       }
 
-      return (T)type.m_262455_(level, stack.m_41783_(), configure, position, MobSpawnType.SPAWN_EGG, alignToSurface, invertYOffset);
+      return (T)type.spawn(level, stack.getTag(), configure, position, MobSpawnType.SPAWN_EGG, alignToSurface, invertYOffset);
    }
 
    private static void assignOwner(Entity entity, Player player) {
-      if (player != null && !entity.m_9236_().f_46443_ && entity instanceof PlayerOwnedNpcEntity npc) {
-         npc.setOwner(player.m_20148_());
-         npc.m_21530_();
+      if (player != null && !entity.level().isClientSide && entity instanceof PlayerOwnedNpcEntity npc) {
+         npc.setOwner(player.getUUID());
+         npc.setPersistenceRequired();
       }
    }
 }

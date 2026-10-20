@@ -57,9 +57,9 @@ public class TorqueGeneratorGeoModel extends GeoModel<TorqueGeneratorBlockEntity
 
    public void handleAnimations(TorqueGeneratorBlockEntity animatable, long instanceId, AnimationState<TorqueGeneratorBlockEntity> animationState) {
       super.handleAnimations(animatable, instanceId, animationState);
-      if (animatable.m_58904_() != null) {
+      if (animatable.getLevel() != null) {
          TorqueGeneratorKind kind = this.kind(animatable);
-         float ticks = (float)animatable.m_58904_().m_46467_() + animationState.getPartialTick();
+         float ticks = (float)animatable.getLevel().getGameTime() + animationState.getPartialTick();
          if (kind == TorqueGeneratorKind.WATERWHEEL) {
             if (!animatable.hasValidWaterwheelStructureForRender()) {
                this.setRotZ("waterwheelSpindle", 0.0F);
@@ -84,6 +84,6 @@ public class TorqueGeneratorGeoModel extends GeoModel<TorqueGeneratorBlockEntity
    }
 
    private TorqueGeneratorKind kind(TorqueGeneratorBlockEntity animatable) {
-      return animatable.m_58900_().m_60734_() instanceof TorqueGeneratorBlock block ? block.getKind() : TorqueGeneratorKind.WATERWHEEL;
+      return animatable.getBlockState().getBlock() instanceof TorqueGeneratorBlock block ? block.getKind() : TorqueGeneratorKind.WATERWHEEL;
    }
 }

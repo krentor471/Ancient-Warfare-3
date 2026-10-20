@@ -16,20 +16,20 @@ public final class NpcMovementSafety {
    }
 
    public static boolean canMoveSafely(Entity entity, Vec3 horizontalDirection) {
-      Vec3 horizontal = new Vec3(horizontalDirection.f_82479_, 0.0, horizontalDirection.f_82481_);
-      if (!(horizontal.m_82556_() < 1.0E-6) && entity.m_20096_() && !entity.m_20072_() && !entity.m_20077_()) {
-         Vec3 direction = horizontal.m_82541_();
-         double lookAhead = Math.max(0.75, (double)entity.m_20205_() * 0.6 + horizontal.m_82553_());
-         Vec3 side = new Vec3(-direction.f_82481_, 0.0, direction.f_82479_).m_82490_(Math.max(0.15, (double)entity.m_20205_() * 0.32));
-         Vec3 front = entity.m_20182_().m_82549_(direction.m_82490_(lookAhead));
-         double footY = entity.m_20186_();
+      Vec3 horizontal = new Vec3(horizontalDirection.x, 0.0, horizontalDirection.z);
+      if (!(horizontal.lengthSqr() < 1.0E-6) && entity.onGround() && !entity.isInWaterOrBubble() && !entity.isInLava()) {
+         Vec3 direction = horizontal.normalize();
+         double lookAhead = Math.max(0.75, (double)entity.getBbWidth() * 0.6 + horizontal.length());
+         Vec3 side = new Vec3(-direction.z, 0.0, direction.x).scale(Math.max(0.15, (double)entity.getBbWidth() * 0.32));
+         Vec3 front = entity.position().add(direction.scale(lookAhead));
+         double footY = entity.getY();
          if (!combatNpcMayEnterWater(entity)
-            || !isWaterAt(entity, front.f_82479_, footY, front.f_82481_)
-               && !isWaterAt(entity, front.f_82479_ + side.f_82479_, footY, front.f_82481_ + side.f_82481_)
-               && !isWaterAt(entity, front.f_82479_ - side.f_82479_, footY, front.f_82481_ - side.f_82481_)) {
-            boolean centreSupported = hasSafeSupport(entity, front.f_82479_, footY, front.f_82481_);
-            boolean leftSupported = hasSafeSupport(entity, front.f_82479_ + side.f_82479_, footY, front.f_82481_ + side.f_82481_);
-            boolean rightSupported = hasSafeSupport(entity, front.f_82479_ - side.f_82479_, footY, front.f_82481_ - side.f_82481_);
+            || !isWaterAt(entity, front.x, footY, front.z)
+               && !isWaterAt(entity, front.x + side.x, footY, front.z + side.z)
+               && !isWaterAt(entity, front.x - side.x, footY, front.z - side.z)) {
+            boolean centreSupported = hasSafeSupport(entity, front.x, footY, front.z);
+            boolean leftSupported = hasSafeSupport(entity, front.x + side.x, footY, front.z + side.z);
+            boolean rightSupported = hasSafeSupport(entity, front.x - side.x, footY, front.z - side.z);
             return centreSupported && (leftSupported || rightSupported);
          } else {
             return true;
@@ -40,26 +40,26 @@ public final class NpcMovementSafety {
    }
 
    public static boolean canMoveMountedSafely(Entity entity, Vec3 horizontalDirection) {
-      Vec3 horizontal = new Vec3(horizontalDirection.f_82479_, 0.0, horizontalDirection.f_82481_);
-      if (!(horizontal.m_82556_() < 1.0E-6) && entity.m_20096_() && !entity.m_20072_() && !entity.m_20077_()) {
-         Vec3 direction = horizontal.m_82541_();
-         double lookAhead = Math.max(0.75, (double)entity.m_20205_() * 0.6 + horizontal.m_82553_());
-         Vec3 front = entity.m_20182_().m_82549_(direction.m_82490_(lookAhead));
-         double footY = entity.m_20186_();
-         if (isWaterAt(entity, front.f_82479_, footY, front.f_82481_)) {
+      Vec3 horizontal = new Vec3(horizontalDirection.x, 0.0, horizontalDirection.z);
+      if (!(horizontal.lengthSqr() < 1.0E-6) && entity.onGround() && !entity.isInWaterOrBubble() && !entity.isInLava()) {
+         Vec3 direction = horizontal.normalize();
+         double lookAhead = Math.max(0.75, (double)entity.getBbWidth() * 0.6 + horizontal.length());
+         Vec3 front = entity.position().add(direction.scale(lookAhead));
+         double footY = entity.getY();
+         if (isWaterAt(entity, front.x, footY, front.z)) {
             return false;
          } else {
-            Double landingY = findSupportTop(entity, front.f_82479_, footY, front.f_82481_, 1.35);
+            Double landingY = findSupportTop(entity, front.x, footY, front.z, 1.35);
             if (landingY == null) {
-               AABB falling = entity.m_20191_().m_82386_(direction.f_82479_ * lookAhead, 0.0, direction.f_82481_ * lookAhead).m_82406_(1.0E-4);
-               return entity.m_9236_().m_45756_(entity, falling);
+               AABB falling = entity.getBoundingBox().move(direction.x * lookAhead, 0.0, direction.z * lookAhead).deflate(1.0E-4);
+               return entity.level().noCollision(entity, falling);
             } else {
                double verticalOffset = landingY - footY;
                if (verticalOffset > 1.0) {
                   return false;
                } else {
-                  AABB projected = entity.m_20191_().m_82386_(direction.f_82479_ * lookAhead, verticalOffset, direction.f_82481_ * lookAhead).m_82406_(1.0E-4);
-                  return entity.m_9236_().m_45756_(entity, projected);
+                  AABB projected = entity.getBoundingBox().move(direction.x * lookAhead, verticalOffset, direction.z * lookAhead).deflate(1.0E-4);
+                  return entity.level().noCollision(entity, projected);
                }
             }
          }
@@ -69,18 +69,18 @@ public final class NpcMovementSafety {
    }
 
    public static boolean canContinueMountedOrbit(Entity entity, Vec3 horizontalDirection) {
-      Vec3 horizontal = new Vec3(horizontalDirection.f_82479_, 0.0, horizontalDirection.f_82481_);
-      if (!(horizontal.m_82556_() < 1.0E-6) && !entity.m_20072_() && !entity.m_20077_()) {
-         Vec3 direction = horizontal.m_82541_();
-         double lookAhead = Math.max(0.9, (double)entity.m_20205_() * 0.65 + horizontal.m_82553_());
-         Vec3 forward = direction.m_82490_(lookAhead);
-         Vec3 destination = entity.m_20182_().m_82549_(forward);
-         double sideDistance = Math.max(0.18, (double)entity.m_20205_() * 0.32);
-         Vec3 side = new Vec3(-direction.f_82481_, 0.0, direction.f_82479_).m_82490_(sideDistance);
-         double footY = entity.m_20186_();
-         return !isWaterAt(entity, destination.f_82479_, footY, destination.f_82481_)
-               && !isWaterAt(entity, destination.f_82479_ + side.f_82479_, footY, destination.f_82481_ + side.f_82481_)
-               && !isWaterAt(entity, destination.f_82479_ - side.f_82479_, footY, destination.f_82481_ - side.f_82481_)
+      Vec3 horizontal = new Vec3(horizontalDirection.x, 0.0, horizontalDirection.z);
+      if (!(horizontal.lengthSqr() < 1.0E-6) && !entity.isInWaterOrBubble() && !entity.isInLava()) {
+         Vec3 direction = horizontal.normalize();
+         double lookAhead = Math.max(0.9, (double)entity.getBbWidth() * 0.65 + horizontal.length());
+         Vec3 forward = direction.scale(lookAhead);
+         Vec3 destination = entity.position().add(forward);
+         double sideDistance = Math.max(0.18, (double)entity.getBbWidth() * 0.32);
+         Vec3 side = new Vec3(-direction.z, 0.0, direction.x).scale(sideDistance);
+         double footY = entity.getY();
+         return !isWaterAt(entity, destination.x, footY, destination.z)
+               && !isWaterAt(entity, destination.x + side.x, footY, destination.z + side.z)
+               && !isWaterAt(entity, destination.x - side.x, footY, destination.z - side.z)
             ? canMoveMountedSafely(entity, direction)
             : false;
       } else {
@@ -93,8 +93,8 @@ public final class NpcMovementSafety {
    }
 
    private static boolean isWaterAt(Entity entity, double x, double y, double z) {
-      BlockPos pos = BlockPos.m_274561_(x, y, z);
-      return entity.m_9236_().m_6425_(pos).m_205070_(FluidTags.f_13131_) || entity.m_9236_().m_6425_(pos.m_7495_()).m_205070_(FluidTags.f_13131_);
+      BlockPos pos = BlockPos.containing(x, y, z);
+      return entity.level().getFluidState(pos).is(FluidTags.WATER) || entity.level().getFluidState(pos.below()).is(FluidTags.WATER);
    }
 
    private static boolean hasSafeSupport(Entity entity, double x, double footY, double z) {
@@ -103,11 +103,11 @@ public final class NpcMovementSafety {
 
    private static Double findSupportTop(Entity entity, double x, double footY, double z, double maxDrop) {
       for (int drop = 0; drop <= 2; drop++) {
-         BlockPos pos = BlockPos.m_274561_(x, footY - 0.05 - (double)drop, z);
-         BlockState state = entity.m_9236_().m_8055_(pos);
-         VoxelShape shape = state.m_60812_(entity.m_9236_(), pos);
-         if (!shape.m_83281_()) {
-            double supportTop = (double)pos.m_123342_() + shape.m_83297_(Axis.Y);
+         BlockPos pos = BlockPos.containing(x, footY - 0.05 - (double)drop, z);
+         BlockState state = entity.level().getBlockState(pos);
+         VoxelShape shape = state.getCollisionShape(entity.level(), pos);
+         if (!shape.isEmpty()) {
+            double supportTop = (double)pos.getY() + shape.max(Axis.Y);
             double dropDistance = footY - supportTop;
             if (dropDistance >= -0.6 && dropDistance <= maxDrop) {
                return supportTop;

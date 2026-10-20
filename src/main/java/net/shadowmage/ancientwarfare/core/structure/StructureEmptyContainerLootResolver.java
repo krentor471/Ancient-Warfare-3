@@ -147,10 +147,10 @@ public final class StructureEmptyContainerLootResolver {
       for (int dx = -4; dx <= 4; dx++) {
          for (int dy = -3; dy <= 3; dy++) {
             for (int dz = -4; dz <= 4; dz++) {
-               cursor.m_122178_(pos.m_123341_() + dx, pos.m_123342_() + dy, pos.m_123343_() + dz);
-               BlockState state = level.m_8055_(cursor);
-               ResourceLocation id = BuiltInRegistries.f_256975_.m_7981_(state.m_60734_());
-               String name = id == null ? "" : id.m_135815_();
+               cursor.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
+               BlockState state = level.getBlockState(cursor);
+               ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+               String name = id == null ? "" : id.getPath();
                if (has(name, "bookshelf", "lectern")) {
                   counts.books++;
                }

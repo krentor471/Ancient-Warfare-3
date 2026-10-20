@@ -45,10 +45,10 @@ public class HammerItem extends Item implements NpcProfessionTool {
    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
 
    public HammerItem(Tier tier) {
-      super(new Properties().m_41503_(tier.m_6609_()));
+      super(new Properties().durability(tier.getUses()));
       Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-      builder.put(Attributes.f_22281_, new AttributeModifier(f_41374_, "Tool modifier", 4.0 + (double)tier.m_6631_(), Operation.ADDITION));
-      builder.put(Attributes.f_22283_, new AttributeModifier(f_41375_, "Tool modifier", -3.1, Operation.ADDITION));
+      builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Tool modifier", 4.0 + (double)tier.getAttackDamageBonus(), Operation.ADDITION));
+      builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Tool modifier", -3.1, Operation.ADDITION));
       this.defaultModifiers = builder.build();
    }
 
@@ -57,119 +57,119 @@ public class HammerItem extends Item implements NpcProfessionTool {
       return NpcProfessionTool.ToolRole.CRAFTSMAN;
    }
 
-   public Multimap<Attribute, AttributeModifier> m_7167_(EquipmentSlot slot) {
-      return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.m_7167_(slot);
+   public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
+      return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.getDefaultAttributeModifiers(slot);
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
-      ItemStack stack = player.m_21120_(hand);
-      if (player.m_6144_()) {
-         if (!level.f_46443_) {
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+      ItemStack stack = player.getItemInHand(hand);
+      if (player.isShiftKeyDown()) {
+         if (!level.isClientSide) {
             boolean workMode = HammerModeData.toggleWorkMode(stack);
-            level.m_5594_(null, player.m_20183_(), (SoundEvent)SoundEvents.f_12490_.m_203334_(), SoundSource.PLAYERS, 0.3F, 0.6F);
-            player.m_5661_(Component.m_237115_(workMode ? "tooltip.ancientwarfare.hammer.work_mode" : "tooltip.ancientwarfare.hammer.rotate_mode"), true);
+            level.playSound(null, player.blockPosition(), (SoundEvent)SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.3F, 0.6F);
+            player.displayClientMessage(Component.translatable(workMode ? "tooltip.ancientwarfare.hammer.work_mode" : "tooltip.ancientwarfare.hammer.rotate_mode"), true);
          }
 
-         return InteractionResultHolder.m_19092_(stack, level.f_46443_);
+         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
       } else {
-         return InteractionResultHolder.m_19098_(stack);
+         return InteractionResultHolder.pass(stack);
       }
    }
 
-   public InteractionResult m_6225_(UseOnContext context) {
-      Level level = context.m_43725_();
-      BlockPos pos = context.m_8083_();
-      ItemStack stack = context.m_43722_();
-      BlockState state = level.m_8055_(pos);
-      if (state.m_60734_() instanceof TorqueTransportBlock torqueTransport
+   public InteractionResult useOn(UseOnContext context) {
+      Level level = context.getLevel();
+      BlockPos pos = context.getClickedPos();
+      ItemStack stack = context.getItemInHand();
+      BlockState state = level.getBlockState(pos);
+      if (state.getBlock() instanceof TorqueTransportBlock torqueTransport
          && torqueTransport.getKind() != TorqueTransportKind.SHAFT
-         && context.m_43723_() != null
-         && context.m_43723_().m_6144_()) {
-         if (!level.f_46443_) {
-            BlockState toggled = torqueTransport.toggleConnection(state, context.m_43719_());
-            level.m_7731_(pos, toggled, 3);
-            level.m_5594_(null, pos, SoundEvents.f_12312_, SoundSource.BLOCKS, 0.2F, 0.6F + level.f_46441_.m_188501_() * 0.15F);
-            if (context.m_43723_() != null) {
-               stack.m_41622_(1, context.m_43723_(), player -> player.m_21190_(context.m_43724_()));
+         && context.getPlayer() != null
+         && context.getPlayer().isShiftKeyDown()) {
+         if (!level.isClientSide) {
+            BlockState toggled = torqueTransport.toggleConnection(state, context.getClickedFace());
+            level.setBlock(pos, toggled, 3);
+            level.playSound(null, pos, SoundEvents.PISTON_EXTEND, SoundSource.BLOCKS, 0.2F, 0.6F + level.random.nextFloat() * 0.15F);
+            if (context.getPlayer() != null) {
+               stack.hurtAndBreak(1, context.getPlayer(), player -> player.broadcastBreakEvent(context.getHand()));
             }
          }
 
-         return InteractionResult.m_19078_(level.f_46443_);
+         return InteractionResult.sidedSuccess(level.isClientSide);
       }
 
-      if (context.m_43723_() != null && context.m_43723_().m_6144_()) {
+      if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
          return InteractionResult.PASS;
       } else if (!HammerModeData.isWorkMode(stack)) {
          BlockState rotated = this.rotateState(state);
-         if (state.m_60734_() instanceof TorqueTransportBlock torqueTransport && torqueTransport.getKind() != TorqueTransportKind.SHAFT) {
+         if (state.getBlock() instanceof TorqueTransportBlock torqueTransport && torqueTransport.getKind() != TorqueTransportKind.SHAFT) {
             rotated = torqueTransport.updateConnections(level, pos, rotated);
          }
 
          if (rotated == state) {
             this.playBlockFeedback(level, pos, state);
-            return InteractionResult.m_19078_(level.f_46443_);
+            return InteractionResult.sidedSuccess(level.isClientSide);
          } else {
-            if (!level.f_46443_) {
-               level.m_7731_(pos, rotated, 3);
-               level.m_5594_(null, pos, SoundEvents.f_12312_, SoundSource.BLOCKS, 0.2F, 0.6F + level.f_46441_.m_188501_() * 0.15F);
-               if (context.m_43723_() != null) {
-                  stack.m_41622_(1, context.m_43723_(), player -> player.m_21190_(context.m_43724_()));
+            if (!level.isClientSide) {
+               level.setBlock(pos, rotated, 3);
+               level.playSound(null, pos, SoundEvents.PISTON_EXTEND, SoundSource.BLOCKS, 0.2F, 0.6F + level.random.nextFloat() * 0.15F);
+               if (context.getPlayer() != null) {
+                  stack.hurtAndBreak(1, context.getPlayer(), player -> player.broadcastBreakEvent(context.getHand()));
                }
             }
 
-            return InteractionResult.m_19078_(level.f_46443_);
+            return InteractionResult.sidedSuccess(level.isClientSide);
          }
       } else {
-         if (!level.f_46443_) {
-            level.m_5594_(null, pos, SoundEvents.f_12311_, SoundSource.BLOCKS, 0.2F, 0.6F + level.f_46441_.m_188501_() * 0.15F);
-            if (context.m_43723_() != null) {
-               if (level.m_7702_(pos) instanceof SurvivalStructureBuilderBlockEntity builder && builder.addPlayerWork()) {
-                  stack.m_41622_(1, context.m_43723_(), player -> player.m_21190_(context.m_43724_()));
-                  context.m_43723_().m_21011_(context.m_43724_(), true);
-                  context.m_43723_().m_5661_(builder.progressMessage(), true);
-                  return InteractionResult.m_19078_(level.f_46443_);
+         if (!level.isClientSide) {
+            level.playSound(null, pos, SoundEvents.PISTON_CONTRACT, SoundSource.BLOCKS, 0.2F, 0.6F + level.random.nextFloat() * 0.15F);
+            if (context.getPlayer() != null) {
+               if (level.getBlockEntity(pos) instanceof SurvivalStructureBuilderBlockEntity builder && builder.addPlayerWork()) {
+                  stack.hurtAndBreak(1, context.getPlayer(), player -> player.broadcastBreakEvent(context.getHand()));
+                  context.getPlayer().swing(context.getHand(), true);
+                  context.getPlayer().displayClientMessage(builder.progressMessage(), true);
+                  return InteractionResult.sidedSuccess(level.isClientSide);
                }
 
-               context.m_43723_().m_5661_(Component.m_237115_("tooltip.ancientwarfare.hammer.work_mode_pending"), true);
+               context.getPlayer().displayClientMessage(Component.translatable("tooltip.ancientwarfare.hammer.work_mode_pending"), true);
             }
          }
 
-         return InteractionResult.m_19078_(level.f_46443_);
+         return InteractionResult.sidedSuccess(level.isClientSide);
       }
    }
 
    private void playBlockFeedback(Level level, BlockPos pos, BlockState state) {
-      if (!level.f_46443_) {
-         SoundType sound = state.m_60827_();
-         level.m_5594_(null, pos, sound.m_56777_(), SoundSource.BLOCKS, sound.m_56773_() * 0.5F, sound.m_56774_() * 0.8F);
+      if (!level.isClientSide) {
+         SoundType sound = state.getSoundType();
+         level.playSound(null, pos, sound.getPlaceSound(), SoundSource.BLOCKS, sound.getVolume() * 0.5F, sound.getPitch() * 0.8F);
       }
    }
 
    private BlockState rotateState(BlockState state) {
-      if (state.m_60734_() instanceof TorqueTransportBlock && state.m_61138_(TorqueTransportBlock.FACING)) {
-         return (BlockState)state.m_61124_(
-            TorqueTransportBlock.FACING, this.rotateTorqueTransportDirection((Direction)state.m_61143_(TorqueTransportBlock.FACING))
+      if (state.getBlock() instanceof TorqueTransportBlock && state.hasProperty(TorqueTransportBlock.FACING)) {
+         return (BlockState)state.setValue(
+            TorqueTransportBlock.FACING, this.rotateTorqueTransportDirection((Direction)state.getValue(TorqueTransportBlock.FACING))
          );
-      } else if (state.m_61138_(HorizontalDirectionalBlock.f_54117_)) {
-         Direction facing = (Direction)state.m_61143_(HorizontalDirectionalBlock.f_54117_);
-         return (BlockState)state.m_61124_(HorizontalDirectionalBlock.f_54117_, facing.m_122427_());
-      } else if (state.m_61138_(BlockStateProperties.f_61372_)) {
-         Direction facing = (Direction)state.m_61143_(BlockStateProperties.f_61372_);
-         return (BlockState)state.m_61124_(BlockStateProperties.f_61372_, this.rotateDirection(facing));
+      } else if (state.hasProperty(HorizontalDirectionalBlock.FACING)) {
+         Direction facing = (Direction)state.getValue(HorizontalDirectionalBlock.FACING);
+         return (BlockState)state.setValue(HorizontalDirectionalBlock.FACING, facing.getClockWise());
+      } else if (state.hasProperty(BlockStateProperties.FACING)) {
+         Direction facing = (Direction)state.getValue(BlockStateProperties.FACING);
+         return (BlockState)state.setValue(BlockStateProperties.FACING, this.rotateDirection(facing));
       } else {
-         for (Property<?> property : state.m_61147_()) {
-            if (property instanceof DirectionProperty directionProperty && state.m_61138_(directionProperty)) {
-               Direction facing = (Direction)state.m_61143_(directionProperty);
-               return (BlockState)state.m_61124_(directionProperty, this.rotateDirection(facing));
+         for (Property<?> property : state.getProperties()) {
+            if (property instanceof DirectionProperty directionProperty && state.hasProperty(directionProperty)) {
+               Direction facing = (Direction)state.getValue(directionProperty);
+               return (BlockState)state.setValue(directionProperty, this.rotateDirection(facing));
             }
          }
 
-         return state.m_60717_(Rotation.CLOCKWISE_90);
+         return state.rotate(Rotation.CLOCKWISE_90);
       }
    }
 
    private Direction rotateDirection(Direction direction) {
-      return direction.m_122434_().m_122479_() ? direction.m_122427_() : direction;
+      return direction.getAxis().isHorizontal() ? direction.getClockWise() : direction;
    }
 
    private Direction rotateTorqueTransportDirection(Direction direction) {
@@ -184,27 +184,27 @@ public class HammerItem extends Item implements NpcProfessionTool {
       };
    }
 
-   public boolean m_7579_(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-      stack.m_41622_(1, attacker, entity -> entity.m_21166_(EquipmentSlot.MAINHAND));
+   public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+      stack.hurtAndBreak(1, attacker, entity -> entity.broadcastBreakEvent(EquipmentSlot.MAINHAND));
       return true;
    }
 
-   public boolean m_6813_(ItemStack stack, Level level, BlockState state, BlockPos pos, LivingEntity entity) {
-      if (!level.f_46443_ && state.m_60800_(level, pos) != 0.0F) {
-         stack.m_41622_(2, entity, living -> living.m_21166_(EquipmentSlot.MAINHAND));
+   public boolean mineBlock(ItemStack stack, Level level, BlockState state, BlockPos pos, LivingEntity entity) {
+      if (!level.isClientSide && state.getDestroySpeed(level, pos) != 0.0F) {
+         stack.hurtAndBreak(2, entity, living -> living.broadcastBreakEvent(EquipmentSlot.MAINHAND));
       }
 
       return true;
    }
 
-   public boolean m_8120_(ItemStack stack) {
+   public boolean isEnchantable(ItemStack stack) {
       return true;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.hammer.toggle_mode"));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.hammer.toggle_mode"));
       tooltip.add(
-         Component.m_237115_(HammerModeData.isWorkMode(stack) ? "tooltip.ancientwarfare.hammer.work_mode" : "tooltip.ancientwarfare.hammer.rotate_mode")
+         Component.translatable(HammerModeData.isWorkMode(stack) ? "tooltip.ancientwarfare.hammer.work_mode" : "tooltip.ancientwarfare.hammer.rotate_mode")
       );
    }
 }

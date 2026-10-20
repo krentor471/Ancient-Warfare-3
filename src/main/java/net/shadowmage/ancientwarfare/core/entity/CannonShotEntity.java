@@ -20,8 +20,8 @@ import net.shadowmage.ancientwarfare.core.item.CannonAmmoType;
 import net.shadowmage.ancientwarfare.core.tile.GateProxyBlockEntity;
 
 public class CannonShotEntity extends BlockGraceSiegeProjectileEntity {
-   private static final EntityDataAccessor<Integer> AMMO_TYPE = SynchedEntityData.m_135353_(CannonShotEntity.class, EntityDataSerializers.f_135028_);
-   private static final EntityDataAccessor<Boolean> PELLET = SynchedEntityData.m_135353_(CannonShotEntity.class, EntityDataSerializers.f_135035_);
+   private static final EntityDataAccessor<Integer> AMMO_TYPE = SynchedEntityData.defineId(CannonShotEntity.class, EntityDataSerializers.INT);
+   private static final EntityDataAccessor<Boolean> PELLET = SynchedEntityData.defineId(CannonShotEntity.class, EntityDataSerializers.BOOLEAN);
 
    public CannonShotEntity(EntityType<? extends CannonShotEntity> type, Level level) {
       super(type, level);
@@ -33,57 +33,57 @@ public class CannonShotEntity extends BlockGraceSiegeProjectileEntity {
       this.setPellet(pellet);
    }
 
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(AMMO_TYPE, CannonAmmoType.IRON_10.ordinal());
-      this.f_19804_.m_135372_(PELLET, false);
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(AMMO_TYPE, CannonAmmoType.IRON_10.ordinal());
+      this.entityData.define(PELLET, false);
    }
 
    public CannonAmmoType getAmmoType() {
-      int index = (Integer)this.f_19804_.m_135370_(AMMO_TYPE);
+      int index = (Integer)this.entityData.get(AMMO_TYPE);
       CannonAmmoType[] values = CannonAmmoType.values();
       return values[Math.max(0, Math.min(values.length - 1, index))];
    }
 
    public void setAmmoType(CannonAmmoType ammoType) {
-      this.f_19804_.m_135381_(AMMO_TYPE, ammoType.ordinal());
+      this.entityData.set(AMMO_TYPE, ammoType.ordinal());
    }
 
    public boolean isPellet() {
-      return (Boolean)this.f_19804_.m_135370_(PELLET);
+      return (Boolean)this.entityData.get(PELLET);
    }
 
    public void setPellet(boolean pellet) {
-      this.f_19804_.m_135381_(PELLET, pellet);
+      this.entityData.set(PELLET, pellet);
    }
 
-   protected Item m_7881_() {
+   protected Item getDefaultItem() {
       return AWCoreRegistryAccess.item(AWCoreIds.AMMO_IRON_SHOT_10);
    }
 
-   protected void m_5790_(EntityHitResult result) {
-      super.m_5790_(result);
-      if (!this.m_9236_().f_46443_) {
-         Entity target = result.m_82443_();
+   protected void onHitEntity(EntityHitResult result) {
+      super.onHitEntity(result);
+      if (!this.level().isClientSide) {
+         Entity target = result.getEntity();
          CannonAmmoType ammoType = this.getAmmoType();
          float damage = this.isPellet() ? Math.max(3.0F, ammoType.damage() * 0.35F) : ammoType.damage();
          if (damage > 0.0F) {
-            target.m_6469_(this.m_269291_().m_269390_(this, this.m_19749_()), damage);
+            target.hurt(this.damageSources().thrown(this, this.getOwner()), damage);
          }
 
-         this.applyImpactEffects(this.m_20183_(), result);
-         this.m_146870_();
+         this.applyImpactEffects(this.blockPosition(), result);
+         this.discard();
       }
    }
 
-   protected void m_8060_(BlockHitResult result) {
+   protected void onHitBlock(BlockHitResult result) {
       if (!this.ignoresBlockHit(result)) {
-         super.m_8060_(result);
-         if (!this.m_9236_().f_46443_) {
+         super.onHitBlock(result);
+         if (!this.level().isClientSide) {
             float damage = this.isPellet() ? Math.max(3.0F, this.getAmmoType().damage() * 0.35F) : this.getAmmoType().damage();
-            GateProxyBlockEntity.damageGate(this.m_9236_(), result.m_82425_(), this.m_269291_().m_269390_(this, this.m_19749_()), damage);
-            this.applyImpactEffects(result.m_82425_().m_121945_(result.m_82434_()), result);
-            this.m_146870_();
+            GateProxyBlockEntity.damageGate(this.level(), result.getBlockPos(), this.damageSources().thrown(this, this.getOwner()), damage);
+            this.applyImpactEffects(result.getBlockPos().relative(result.getDirection()), result);
+            this.discard();
          }
       }
    }
@@ -98,49 +98,49 @@ public class CannonShotEntity extends BlockGraceSiegeProjectileEntity {
    }
 
    private void spawnImpactPellets(CannonAmmoType ammoType) {
-      LivingEntity shooter = this.m_19749_() instanceof LivingEntity living ? living : null;
+      LivingEntity shooter = this.getOwner() instanceof LivingEntity living ? living : null;
       int count = Math.min(32, Math.max(1, ammoType.pelletCount()));
 
       for (int i = 0; i < count; i++) {
-         CannonShotEntity pellet = new CannonShotEntity(this.m_9236_(), shooter, ammoType, true);
-         pellet.m_7678_(this.m_20185_(), this.m_20186_(), this.m_20189_(), this.m_146908_(), this.m_146909_());
-         double x = (this.f_19796_.m_188500_() - 0.5) * 0.9;
-         double y = this.f_19796_.m_188500_() * 0.55;
-         double z = (this.f_19796_.m_188500_() - 0.5) * 0.9;
-         pellet.m_6686_(x, y, z, 2.0F, 0.45F);
-         this.m_9236_().m_7967_(pellet);
+         CannonShotEntity pellet = new CannonShotEntity(this.level(), shooter, ammoType, true);
+         pellet.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+         double x = (this.random.nextDouble() - 0.5) * 0.9;
+         double y = this.random.nextDouble() * 0.55;
+         double z = (this.random.nextDouble() - 0.5) * 0.9;
+         pellet.shoot(x, y, z, 2.0F, 0.45F);
+         this.level().addFreshEntity(pellet);
       }
    }
 
    private void breakSoftBlocks(BlockPos center, int radius) {
-      for (BlockPos pos : BlockPos.m_121940_(center.m_7918_(-radius, -radius, -radius), center.m_7918_(radius, radius, radius))) {
-         BlockPos target = new BlockPos(pos.m_123341_(), pos.m_123342_(), pos.m_123343_());
-         BlockState state = this.m_9236_().m_8055_(target);
-         float destroySpeed = state.m_60800_(this.m_9236_(), target);
-         if (!state.m_60795_() && destroySpeed >= 0.0F && destroySpeed <= 3.0F) {
-            this.m_9236_().m_46953_(target, true, this);
+      for (BlockPos pos : BlockPos.betweenClosed(center.offset(-radius, -radius, -radius), center.offset(radius, radius, radius))) {
+         BlockPos target = new BlockPos(pos.getX(), pos.getY(), pos.getZ());
+         BlockState state = this.level().getBlockState(target);
+         float destroySpeed = state.getDestroySpeed(this.level(), target);
+         if (!state.isAir() && destroySpeed >= 0.0F && destroySpeed <= 3.0F) {
+            this.level().destroyBlock(target, true, this);
          }
       }
    }
 
    @Override
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
-      tag.m_128359_("AmmoType", this.getAmmoType().name());
-      tag.m_128379_("Pellet", this.isPellet());
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
+      tag.putString("AmmoType", this.getAmmoType().name());
+      tag.putBoolean("Pellet", this.isPellet());
    }
 
    @Override
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
-      if (tag.m_128441_("AmmoType")) {
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
+      if (tag.contains("AmmoType")) {
          try {
-            this.setAmmoType(CannonAmmoType.valueOf(tag.m_128461_("AmmoType")));
+            this.setAmmoType(CannonAmmoType.valueOf(tag.getString("AmmoType")));
          } catch (IllegalArgumentException var3) {
             this.setAmmoType(CannonAmmoType.IRON_10);
          }
       }
 
-      this.setPellet(tag.m_128471_("Pellet"));
+      this.setPellet(tag.getBoolean("Pellet"));
    }
 }

@@ -39,6 +39,6 @@ public enum WorksiteUpgrade {
    }
 
    public static WorksiteUpgrade fromStack(ItemStack stack) {
-      return stack.m_41720_() instanceof WorksiteUpgradeItem upgradeItem ? upgradeItem.getUpgrade() : null;
+      return stack.getItem() instanceof WorksiteUpgradeItem upgradeItem ? upgradeItem.getUpgrade() : null;
    }
 }
