@@ -15,7 +15,6 @@ public enum FactionNpcRole {
    LEADER_ELITE("leader.elite", false),
    SIEGE_ENGINEER("siege_engineer", false),
    PRIEST("priest", false),
-   SPELLCASTER("spellcaster", false),
    BARD("bard", true),
    TRADER("trader", true),
    CIVILIAN_MALE("civilian.male", true),
@@ -35,7 +34,6 @@ public enum FactionNpcRole {
       CIVILIAN_MALE,
       CIVILIAN_FEMALE,
       PRIEST,
-      SPELLCASTER,
       BARD,
       TRADER
    );

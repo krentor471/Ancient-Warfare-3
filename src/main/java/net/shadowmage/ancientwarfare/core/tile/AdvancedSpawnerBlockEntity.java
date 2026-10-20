@@ -36,7 +36,6 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
 import net.shadowmage.ancientwarfare.core.common.structure.AdvancedSpawnerConfig;
-import net.shadowmage.ancientwarfare.core.compat.LegacyIceAndFireStructureCompat;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 import net.shadowmage.ancientwarfare.core.menu.AdvancedSpawnerMenu;
 import net.shadowmage.ancientwarfare.core.structure.AdvancedSpawnerWorldData;
@@ -318,8 +317,7 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
             if (id == null) {
                return null;
             } else {
-               ResourceLocation currentId = LegacyIceAndFireStructureCompat.remapEntity(id);
-               return BuiltInRegistries.ENTITY_TYPE.containsKey(currentId) ? currentId : this.legacyFallback(id);
+               return BuiltInRegistries.ENTITY_TYPE.containsKey(id) ? id : this.legacyFallback(id);
             }
          }
       } else {
@@ -571,7 +569,7 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
       LEGACY_ENTITY_IDS.put("ancientwarfarenpc:faction.civilian.male", AWCoreIds.FACTION_CIVILIAN_MALE_NPC);
       LEGACY_ENTITY_IDS.put("ancientwarfarenpc:faction.civilian.female", AWCoreIds.FACTION_CIVILIAN_FEMALE_NPC);
       LEGACY_ENTITY_IDS.put("ancientwarfarenpc:faction.priest", AWCoreIds.FACTION_PRIEST_NPC);
-      LEGACY_ENTITY_IDS.put("ancientwarfarenpc:faction.spellcaster", AWCoreIds.FACTION_SPELLCASTER_NPC);
+      LEGACY_ENTITY_IDS.put("ancientwarfarenpc:faction.spellcaster", AWCoreIds.FACTION_PRIEST_NPC);
       LEGACY_ENTITY_IDS.put("ancientwarfarenpc:faction.bard", AWCoreIds.FACTION_BARD_NPC);
       LEGACY_ENTITY_IDS.put("ancientwarfarenpc:faction.trader", AWCoreIds.FACTION_TRADER_NPC);
       LEGACY_ENTITY_IDS.put("ancientwarfarenpc:aw_npc_worker", AWCoreIds.WORKER_NPC);

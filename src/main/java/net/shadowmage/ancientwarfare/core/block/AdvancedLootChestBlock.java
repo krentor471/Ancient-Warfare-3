@@ -36,8 +36,6 @@ import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireStructureLootCompat;
-import net.shadowmage.ancientwarfare.core.compat.SlashBladeStructureLootCompat;
 import net.shadowmage.ancientwarfare.core.structure.LootRewardHelper;
 import net.shadowmage.ancientwarfare.core.structure.StructureLootTierResolver;
 import org.slf4j.Logger;
@@ -56,7 +54,6 @@ public class AdvancedLootChestBlock extends ChestBlock {
 
    public static void configureLoot(ChestBlockEntity chest, ResourceLocation table, int rolls, long seed) {
       configureLootData(chest, table, rolls, seed);
-      SlashBladeStructureLootCompat.configure(chest, seed ^ 6002244229328424001L);
    }
 
    public static void configureBasicLoot(ChestBlockEntity chest, ResourceLocation table, long seed) {
@@ -100,7 +97,7 @@ public class AdvancedLootChestBlock extends ChestBlock {
          BlockEntity var10 = level.getBlockEntity(chestPos);
          if (var10 instanceof ChestBlockEntity) {
             ChestBlockEntity chest = (ChestBlockEntity)var10;
-            if (hasConfiguredLoot(chest) || IceAndFireStructureLootCompat.hasPendingLoot(chest) || SlashBladeStructureLootCompat.hasPendingLoot(chest)) {
+            if (hasConfiguredLoot(chest)) {
                generateLoot(chest, player);
                generated = true;
             }
@@ -205,9 +202,7 @@ public class AdvancedLootChestBlock extends ChestBlock {
       for (BlockPos chestPos : positions) {
          BlockState chestState = level.getBlockState(chestPos);
          if (level.getBlockEntity(chestPos) instanceof ChestBlockEntity chest) {
-            boolean pending = hasConfiguredLoot(chest)
-               || IceAndFireStructureLootCompat.hasPendingLoot(chest)
-               || SlashBladeStructureLootCompat.hasPendingLoot(chest);
+            boolean pending = hasConfiguredLoot(chest);
             generateLoot(chest, player);
             generated |= pending;
          }
@@ -357,24 +352,6 @@ public class AdvancedLootChestBlock extends ChestBlock {
             data.remove("AWStructureLootTable");
             data.remove("AWStructureLootRolls");
             data.remove("AWStructureLootSeed");
-         }
-
-         List<ItemStack> iceAndFireLoot = IceAndFireStructureLootCompat.consumeChestLoot(chest);
-         if (AWCorePlatform.gameplayConfig().iceAndFireBonusLoot()) {
-            for (ItemStack stack : LootRewardHelper.scaleItemCounts(
-               iceAndFireLoot, AWCorePlatform.gameplayConfig().lootItemCountMultiplier(), configuredSeed ^ 5279139334996641353L
-            )) {
-               insertIntoEmptySlot(chest, stack);
-            }
-         }
-
-         List<ItemStack> slashBladeLoot = SlashBladeStructureLootCompat.consumeChestLoot(chest);
-         if (AWCorePlatform.gameplayConfig().slashBladeBonusLoot()) {
-            for (ItemStack stack : LootRewardHelper.scaleItemCounts(
-               slashBladeLoot, AWCorePlatform.gameplayConfig().lootItemCountMultiplier(), configuredSeed ^ 6002244229328424001L
-            )) {
-               insertIntoEmptySlot(chest, stack);
-            }
          }
 
          chest.setChanged();

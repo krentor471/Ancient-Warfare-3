@@ -16,20 +16,16 @@ public final class NpcDefinitionRegistry {
    public static final String BARD = "bard";
    public static final String PRIEST = "priest";
    public static final String SIEGE_ENGINEER = "siege_engineer";
-   public static final String MODERN_SOLDIER = "modern_soldier";
-   public static final String SHIP_CAPTAIN = "ship_captain";
    public static final String MINER = "miner";
    public static final String FARMER = "farmer";
    public static final String LUMBERJACK = "lumberjack";
    public static final String RESEARCHER = "researcher";
    public static final String CRAFTSMAN = "craftsman";
    public static final String SOLDIER = "soldier";
-   public static final String SWORDSMAN = "swordsman";
    public static final String ARCHER = "archer";
    public static final String COMMANDER = "commander";
    public static final String MEDIC = "medic";
    public static final String ENGINEER = "engineer";
-   public static final String MAGE = "mage";
    private static final NpcDefinition WORKER_DEFINITION = new NpcDefinition(
       "worker",
       List.of(
@@ -44,7 +40,6 @@ public final class NpcDefinitionRegistry {
       "combat",
       List.of(
          new NpcSubtype("soldier", NpcDefinitionRegistry.BuiltInItemIds.IRON_SWORD, NpcWorkType.NONE),
-         new NpcSubtype("swordsman", new ResourceLocation("slashblade", "slashblade"), NpcWorkType.NONE),
          new NpcSubtype("archer", NpcDefinitionRegistry.BuiltInItemIds.BOW, NpcWorkType.NONE),
          new NpcSubtype("commander", AWCoreIds.IRON_COMMAND_BATON, NpcWorkType.NONE),
          new NpcSubtype("medic", NpcDefinitionRegistry.BuiltInItemIds.APPLE, NpcWorkType.NONE),
@@ -56,8 +51,6 @@ public final class NpcDefinitionRegistry {
    private static final NpcDefinition BARD_DEFINITION = new NpcDefinition("bard", List.of());
    private static final NpcDefinition PRIEST_DEFINITION = new NpcDefinition("priest", List.of());
    private static final NpcDefinition SIEGE_ENGINEER_DEFINITION = new NpcDefinition("siege_engineer", List.of());
-   private static final NpcDefinition MODERN_SOLDIER_DEFINITION = new NpcDefinition("modern_soldier", List.of());
-   private static final NpcDefinition SHIP_CAPTAIN_DEFINITION = new NpcDefinition("ship_captain", List.of());
    private static final List<NpcDefinition> DEFINITIONS = List.of(
       WORKER_DEFINITION,
       COMBAT_DEFINITION,
@@ -65,9 +58,7 @@ public final class NpcDefinitionRegistry {
       TRADER_DEFINITION,
       BARD_DEFINITION,
       PRIEST_DEFINITION,
-      SIEGE_ENGINEER_DEFINITION,
-      MODERN_SOLDIER_DEFINITION,
-      SHIP_CAPTAIN_DEFINITION
+      SIEGE_ENGINEER_DEFINITION
    );
 
    private NpcDefinitionRegistry() {

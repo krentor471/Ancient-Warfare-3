@@ -31,8 +31,6 @@ import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireStructureLootCompat;
-import net.shadowmage.ancientwarfare.core.compat.SlashBladeStructureLootCompat;
 import net.shadowmage.ancientwarfare.core.menu.StructureContainerMenu;
 import net.shadowmage.ancientwarfare.core.structure.LootRewardHelper;
 import net.shadowmage.ancientwarfare.core.structure.StructureLootTierResolver;
@@ -48,11 +46,6 @@ public class StructureContainerBlockEntity extends BlockEntity implements Contai
    private static final String LOOT_SEED_TAG = "LootTableSeed";
    private static final String LOOT_ROLLS_TAG = "LootRolls";
    private static final String LEGACY_SETTINGS_TAG = "LegacyLootSettings";
-   private static final String ICE_AND_FIRE_THEME_TAG = "IceAndFireLootTheme";
-   private static final String ICE_AND_FIRE_TIER_TAG = "IceAndFireLootTier";
-   private static final String ICE_AND_FIRE_SEED_TAG = "IceAndFireLootSeed";
-   private static final String SLASH_BLADE_PENDING_TAG = "SlashBladeLootPending";
-   private static final String SLASH_BLADE_SEED_TAG = "SlashBladeLootSeed";
    private int size;
    private NonNullList<ItemStack> items;
    @Nullable
@@ -60,11 +53,6 @@ public class StructureContainerBlockEntity extends BlockEntity implements Contai
    private CompoundTag legacyLootSettings = new CompoundTag();
    private long lootSeed;
    private int lootRolls = 1;
-   private String iceAndFireLootTheme = "";
-   private int iceAndFireLootTier;
-   private long iceAndFireLootSeed;
-   private boolean slashBladeLootPending;
-   private long slashBladeLootSeed;
    private int openCount;
    private float lidProgress;
    private float previousLidProgress;
@@ -103,17 +91,6 @@ public class StructureContainerBlockEntity extends BlockEntity implements Contai
          tag.put("LegacyLootSettings", this.legacyLootSettings.copy());
       }
 
-      if (!this.iceAndFireLootTheme.isBlank()) {
-         tag.putString("IceAndFireLootTheme", this.iceAndFireLootTheme);
-         tag.putInt("IceAndFireLootTier", this.iceAndFireLootTier);
-         tag.putLong("IceAndFireLootSeed", this.iceAndFireLootSeed);
-      }
-
-      if (this.slashBladeLootPending) {
-         tag.putBoolean("SlashBladeLootPending", true);
-         tag.putLong("SlashBladeLootSeed", this.slashBladeLootSeed);
-      }
-
       ContainerHelper.saveAllItems(tag, this.items);
    }
 
@@ -124,11 +101,6 @@ public class StructureContainerBlockEntity extends BlockEntity implements Contai
       this.legacyLootSettings = tag.contains("LegacyLootSettings") ? tag.getCompound("LegacyLootSettings").copy() : new CompoundTag();
       this.lootSeed = tag.getLong("LootTableSeed");
       this.lootRolls = Math.max(1, tag.getInt("LootRolls"));
-      this.iceAndFireLootTheme = tag.getString("IceAndFireLootTheme");
-      this.iceAndFireLootTier = tag.getInt("IceAndFireLootTier");
-      this.iceAndFireLootSeed = tag.getLong("IceAndFireLootSeed");
-      this.slashBladeLootPending = tag.getBoolean("SlashBladeLootPending");
-      this.slashBladeLootSeed = tag.getLong("SlashBladeLootSeed");
       ContainerHelper.loadAllItems(tag, this.items);
       if (this.level instanceof ServerLevel) {
          AncientWarfareCore.LOG
@@ -285,27 +257,12 @@ public class StructureContainerBlockEntity extends BlockEntity implements Contai
       return !this.legacyLootSettings.isEmpty();
    }
 
-   public void configureIceAndFireLoot(IceAndFireStructureLootCompat.Settings settings, long seed) {
-      if (settings != null) {
-         this.iceAndFireLootTheme = settings.theme();
-         this.iceAndFireLootTier = settings.tier();
-         this.iceAndFireLootSeed = seed;
-         this.setChanged();
-      }
-   }
-
-   public void configureSlashBladeLoot(long seed) {
-      this.slashBladeLootPending = true;
-      this.slashBladeLootSeed = seed;
-      this.setChanged();
-   }
-
    public void unpackLootForDestruction() {
       this.unpackLoot(null);
    }
 
    private void unpackLoot(@Nullable Player player) {
-      if (this.level instanceof ServerLevel serverLevel && (this.lootTable != null || !this.iceAndFireLootTheme.isBlank() || this.slashBladeLootPending)) {
+      if (this.level instanceof ServerLevel serverLevel && this.lootTable != null) {
          AncientWarfareCore.LOG
             .debug(
                "Structure container loot generation start: pos={}, block={}, table={}, rolls={}, itemsBefore={}, player={}",
@@ -341,29 +298,6 @@ public class StructureContainerBlockEntity extends BlockEntity implements Contai
             }
          }
 
-         if (!this.iceAndFireLootTheme.isBlank() && AWCorePlatform.gameplayConfig().iceAndFireBonusLoot()) {
-            List<ItemStack> bonus = IceAndFireStructureLootCompat.roll(serverLevel, this.iceAndFireLootTheme, this.iceAndFireLootTier, this.iceAndFireLootSeed);
-            generated.addAll(
-               LootRewardHelper.scaleItemCounts(
-                  bonus, AWCorePlatform.gameplayConfig().lootItemCountMultiplier(), this.iceAndFireLootSeed ^ 5279139334996641353L
-               )
-            );
-         }
-
-         this.iceAndFireLootTheme = "";
-         this.iceAndFireLootTier = 0;
-         this.iceAndFireLootSeed = 0L;
-         if (this.slashBladeLootPending && AWCorePlatform.gameplayConfig().slashBladeBonusLoot()) {
-            List<ItemStack> bonus = SlashBladeStructureLootCompat.roll(serverLevel, this.slashBladeLootSeed);
-            generated.addAll(
-               LootRewardHelper.scaleItemCounts(
-                  bonus, AWCorePlatform.gameplayConfig().lootItemCountMultiplier(), this.slashBladeLootSeed ^ 6002244229328424001L
-               )
-            );
-         }
-
-         this.slashBladeLootPending = false;
-         this.slashBladeLootSeed = 0L;
          List<Integer> slots = new ArrayList<>();
 
          for (int slot = 0; slot < this.items.size(); slot++) {

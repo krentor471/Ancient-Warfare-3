@@ -34,10 +34,7 @@ final class CombatGroupController {
             List<UUID> selected = CommandBatonItem.getCombatGroupNpcs(baton);
             if (!selected.isEmpty()) {
                List<CombatGroupController.GroupMember> members = resolveMembers(level, commander, selected);
-               boolean dragonGroup = commander.isDragonRiderCombatGroupCommander();
-               boolean hippogryphGroup = commander.isHippogryphCombatGroupCommander();
-               boolean hippocampusGroup = commander.isHippocampusCombatGroupCommander();
-               assignFormation(commander, members, dragonGroup || hippogryphGroup);
+               assignFormation(commander, members);
                coordinateEngagement(commander, members);
             }
          }
@@ -46,10 +43,6 @@ final class CombatGroupController {
 
    private static List<CombatGroupController.GroupMember> resolveMembers(ServerLevel level, PlayerOwnedNpcEntity commander, List<UUID> selected) {
       List<CombatGroupController.GroupMember> members = new ArrayList<>();
-      boolean dragonGroup = commander.isDragonRiderCombatGroupCommander();
-      boolean hippogryphGroup = commander.isHippogryphCombatGroupCommander();
-      boolean hippocampusGroup = commander.isHippocampusCombatGroupCommander();
-
       for (int order = 0; order < selected.size(); order++) {
          Entity entity = level.getEntity(selected.get(order));
          if (entity instanceof PlayerOwnedNpcEntity) {
@@ -58,19 +51,6 @@ final class CombatGroupController {
                && npc.isAlive()
                && npc.getOwner().equals(commander.getOwner())
                && npc.isCombatGroupEligible()
-               && (
-                  dragonGroup
-                     ? npc instanceof CombatNpcEntity && npc.isLogicalDragonRider()
-                     : (
-                        hippogryphGroup
-                           ? npc instanceof CombatNpcEntity && npc.isHippogryphRider()
-                           : (
-                              hippocampusGroup
-                                 ? npc instanceof CombatNpcEntity && npc.isHippocampusRider()
-                                 : !npc.isLogicalDragonRider() && !npc.isHippogryphRider()
-                           )
-                     )
-               )
                && (!commander.isSiegeEngineerProfession() || npc.isSiegeEngineerProfession())
                && !npc.isCombatGroupCommander()
                && npc.canJoinCombatGroup(commander)) {
@@ -83,32 +63,22 @@ final class CombatGroupController {
       return members;
    }
 
-   private static void assignFormation(PlayerOwnedNpcEntity commander, List<CombatGroupController.GroupMember> members, boolean dragonGroup) {
-      if (dragonGroup) {
-         for (int index = 0; index < members.size(); index++) {
-            int row = index / 4 + 1;
-            int columnCount = Math.min(4, members.size() - (row - 1) * 4);
-            int column = index % 4;
-            double lateral = ((double)column - (double)(columnCount - 1) / 2.0) * 5.0;
-            members.get(index).npc().assignCombatGroupFormation(commander, lateral, (double)row * 5.0);
-         }
-      } else {
-         int rearRow = 1;
+   private static void assignFormation(PlayerOwnedNpcEntity commander, List<CombatGroupController.GroupMember> members) {
+      int rearRow = 1;
 
-         for (int rank = 0; rank <= 2; rank++) {
-            int formationRank = rank;
-            List<CombatGroupController.GroupMember> roleMembers = members.stream().filter(member -> member.rank() == formationRank).toList();
+      for (int rank = 0; rank <= 2; rank++) {
+         int formationRank = rank;
+         List<CombatGroupController.GroupMember> roleMembers = members.stream().filter(member -> member.rank() == formationRank).toList();
 
-            for (int start = 0; start < roleMembers.size(); start += 4) {
-               int rowSize = Math.min(4, roleMembers.size() - start);
+         for (int start = 0; start < roleMembers.size(); start += 4) {
+            int rowSize = Math.min(4, roleMembers.size() - start);
 
-               for (int column = 0; column < rowSize; column++) {
-                  double lateral = ((double)column - (double)(rowSize - 1) / 2.0) * 3.25;
-                  roleMembers.get(start + column).npc().assignCombatGroupFormation(commander, lateral, (double)rearRow * 3.25);
-               }
-
-               rearRow++;
+            for (int column = 0; column < rowSize; column++) {
+               double lateral = ((double)column - (double)(rowSize - 1) / 2.0) * 3.25;
+               roleMembers.get(start + column).npc().assignCombatGroupFormation(commander, lateral, (double)rearRow * 3.25);
             }
+
+            rearRow++;
          }
       }
    }
@@ -137,35 +107,18 @@ final class CombatGroupController {
                }
             } else {
                double range = member.isSiegeEngineerProfession() ? 96.0 : Math.max(24.0, member.getAttributeValue(Attributes.FOLLOW_RANGE));
-               if (commander.isDragonRiderCombatGroupCommander()) {
-                  if (validTargetFor(member, commanderTarget, true)) {
-                     member.setTarget(commanderTarget);
-                     assignments.merge(commanderTarget.getUUID(), 1, Integer::sum);
-                  }
-               } else if (commander.isHippogryphCombatGroupCommander()) {
-                  if (validTargetFor(member, commanderTarget, true)) {
-                     member.setTarget(commanderTarget);
-                     assignments.merge(commanderTarget.getUUID(), 1, Integer::sum);
-                  }
-               } else if (commander.isHippocampusCombatGroupCommander()) {
-                  if (validTargetFor(member, commanderTarget, true)) {
-                     member.setTarget(commanderTarget);
-                     assignments.merge(commanderTarget.getUUID(), 1, Integer::sum);
-                  }
-               } else {
-                  LivingEntity chosen = nearbyEnemies.stream()
-                     .filter(target -> validTargetFor(member, target, target == commanderTarget))
-                     .filter(target -> member.distanceToSqr(target) <= range * range)
-                     .min(
-                        Comparator.comparingDouble(
-                           target -> member.distanceToSqr(target) + (double)assignments.getOrDefault(target.getUUID(), 0).intValue() * 144.0
-                        )
+               LivingEntity chosen = nearbyEnemies.stream()
+                  .filter(target -> validTargetFor(member, target, target == commanderTarget))
+                  .filter(target -> member.distanceToSqr(target) <= range * range)
+                  .min(
+                     Comparator.comparingDouble(
+                        target -> member.distanceToSqr(target) + (double)assignments.getOrDefault(target.getUUID(), 0).intValue() * 144.0
                      )
-                     .orElse(null);
-                  if (chosen != null) {
-                     member.setTarget(chosen);
-                     assignments.merge(chosen.getUUID(), 1, Integer::sum);
-                  }
+                  )
+                  .orElse(null);
+               if (chosen != null) {
+                  member.setTarget(chosen);
+                  assignments.merge(chosen.getUUID(), 1, Integer::sum);
                }
             }
          }

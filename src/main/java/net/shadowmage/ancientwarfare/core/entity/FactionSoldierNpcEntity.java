@@ -16,7 +16,6 @@ import net.minecraft.world.level.Level;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcShielding;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireEquipmentCompat;
 
 public class FactionSoldierNpcEntity extends FactionNpcEntity {
    public FactionSoldierNpcEntity(EntityType<? extends FactionSoldierNpcEntity> entityType, Level level) {
@@ -63,10 +62,6 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
       this.triggerMeleeAttackAnimation();
       this.swing(InteractionHand.MAIN_HAND, true);
       boolean hit = super.doHurtTarget(target);
-      if (hit && target instanceof LivingEntity livingTarget) {
-         IceAndFireEquipmentCompat.applySupportedMeleeHit(this.getMainHandItem(), livingTarget, this);
-      }
-
       if (hit) {
          this.recordCombatAttack();
       }

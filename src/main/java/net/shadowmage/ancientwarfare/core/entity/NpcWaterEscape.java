@@ -18,9 +18,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcCommandType;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireDragonCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippocampusCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippogryphCompat;
 
 final class NpcWaterEscape {
    private static final int SEARCH_RADIUS = 18;
@@ -101,12 +98,6 @@ final class NpcWaterEscape {
    private static boolean isEligible(NpcBaseEntity npc) {
       Entity vehicle = npc.getVehicle();
       if (vehicle instanceof Mob) {
-         if (IceAndFireHippocampusCompat.isHippocampus(vehicle) || IceAndFireHippogryphCompat.isHippogryph(vehicle) || IceAndFireDragonCompat.isDragon(vehicle)
-            )
-          {
-            return false;
-         }
-
          if (npc instanceof CombatNpcEntity) {
             return true;
          }

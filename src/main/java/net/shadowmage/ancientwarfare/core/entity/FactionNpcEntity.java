@@ -292,7 +292,7 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    protected static boolean isFactionCombatRole(FactionNpcEntity npc) {
       return FactionNpcRole.byId(npc.getNpcSubtype()).map(role -> {
          return switch (role) {
-            case SOLDIER, ARCHER, CAVALRY, MOUNTED_ARCHER, LEADER, SIEGE_ENGINEER, SPELLCASTER, SOLDIER_ELITE, ARCHER_ELITE, LEADER_ELITE -> true;
+            case SOLDIER, ARCHER, CAVALRY, MOUNTED_ARCHER, LEADER, SIEGE_ENGINEER, SOLDIER_ELITE, ARCHER_ELITE, LEADER_ELITE -> true;
             default -> false;
          };
       }).orElse(false);
@@ -301,7 +301,7 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    public int getExperienceReward() {
       return this.lastHurtByPlayer != null && this.isHostileTowards(this.lastHurtByPlayer) ? FactionNpcRole.byId(this.getNpcSubtype()).map(role -> {
          return switch (role) {
-            case SOLDIER, ARCHER, CAVALRY, MOUNTED_ARCHER, LEADER, SIEGE_ENGINEER, SPELLCASTER -> 20;
+            case SOLDIER, ARCHER, CAVALRY, MOUNTED_ARCHER, LEADER, SIEGE_ENGINEER -> 20;
             case SOLDIER_ELITE, ARCHER_ELITE, LEADER_ELITE -> 40;
             default -> 0;
          };

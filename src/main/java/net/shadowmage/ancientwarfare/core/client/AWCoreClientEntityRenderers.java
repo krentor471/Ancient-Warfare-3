@@ -38,12 +38,9 @@ import net.shadowmage.ancientwarfare.core.entity.FactionPriestNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSiegeEngineerNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSoldierEliteNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSoldierNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.FactionSpellcasterNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionTraderNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.ModernSoldierNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.NpcBaseEntity;
 import net.shadowmage.ancientwarfare.core.entity.PriestNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.ShipCaptainNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.SiegeEngineerNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.TraderNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.WorkerNpcEntity;
@@ -123,12 +120,6 @@ public final class AWCoreClientEntityRenderers {
          AWCoreRegistryAccess.entityType(AWCoreIds.SIEGE_ENGINEER_NPC), AWCoreClientEntityRenderers.SiegeEngineerRenderer::new
       );
       AWCoreClientEntityRenderers.EntityRenderers.register(
-         AWCoreRegistryAccess.entityType(AWCoreIds.MODERN_SOLDIER_NPC), AWCoreClientEntityRenderers.ModernSoldierRenderer::new
-      );
-      AWCoreClientEntityRenderers.EntityRenderers.register(
-         AWCoreRegistryAccess.entityType(AWCoreIds.SHIP_CAPTAIN_NPC), AWCoreClientEntityRenderers.ShipCaptainRenderer::new
-      );
-      AWCoreClientEntityRenderers.EntityRenderers.register(
          AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SOLDIER_NPC), AWCoreClientEntityRenderers.FactionSoldierRenderer::new
       );
       AWCoreClientEntityRenderers.EntityRenderers.register(
@@ -163,9 +154,6 @@ public final class AWCoreClientEntityRenderers {
       );
       AWCoreClientEntityRenderers.EntityRenderers.register(
          AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_PRIEST_NPC), AWCoreClientEntityRenderers.FactionPriestRenderer::new
-      );
-      AWCoreClientEntityRenderers.EntityRenderers.register(
-         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SPELLCASTER_NPC), AWCoreClientEntityRenderers.FactionSpellcasterRenderer::new
       );
       AWCoreClientEntityRenderers.EntityRenderers.register(
          AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_BARD_NPC), AWCoreClientEntityRenderers.FactionBardRenderer::new
@@ -470,32 +458,12 @@ public final class AWCoreClientEntityRenderers {
       }
    }
 
-   private static class FactionSpellcasterRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionSpellcasterNpcEntity> {
-      private FactionSpellcasterRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
-      }
-
-      public ResourceLocation getTextureLocation(FactionSpellcasterNpcEntity entity) {
-         return NpcSkinRegistry.textureFor(entity);
-      }
-   }
-
    private static class FactionTraderRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionTraderNpcEntity> {
       private FactionTraderRenderer(Context context) {
          super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionTraderNpcEntity entity) {
-         return NpcSkinRegistry.textureFor(entity);
-      }
-   }
-
-   private static class ModernSoldierRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<ModernSoldierNpcEntity> {
-      private ModernSoldierRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
-      }
-
-      public ResourceLocation getTextureLocation(ModernSoldierNpcEntity entity) {
          return NpcSkinRegistry.textureFor(entity);
       }
    }
@@ -523,16 +491,6 @@ public final class AWCoreClientEntityRenderers {
       @Override
       public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
          super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
-      }
-   }
-
-   private static class ShipCaptainRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<ShipCaptainNpcEntity> {
-      private ShipCaptainRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
-      }
-
-      public ResourceLocation getTextureLocation(ShipCaptainNpcEntity entity) {
-         return NpcSkinRegistry.textureFor(entity);
       }
    }
 

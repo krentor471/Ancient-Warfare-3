@@ -143,10 +143,6 @@ public final class AWCoreIds {
    public static final ResourceLocation PRIEST_NPC_SPAWN_EGG = id("priest_npc_spawn_egg");
    public static final ResourceLocation SIEGE_ENGINEER_NPC = id("siege_engineer_npc");
    public static final ResourceLocation SIEGE_ENGINEER_NPC_SPAWN_EGG = id("siege_engineer_npc_spawn_egg");
-   public static final ResourceLocation MODERN_SOLDIER_NPC = id("modern_soldier_npc");
-   public static final ResourceLocation MODERN_SOLDIER_NPC_SPAWN_EGG = id("modern_soldier_npc_spawn_egg");
-   public static final ResourceLocation SHIP_CAPTAIN_NPC = id("ship_captain_npc");
-   public static final ResourceLocation SHIP_CAPTAIN_NPC_SPAWN_EGG = id("ship_captain_npc_spawn_egg");
    public static final ResourceLocation FACTION_SOLDIER_NPC = id("faction_soldier_npc");
    public static final ResourceLocation FACTION_SOLDIER_NPC_SPAWN_EGG = id("faction_soldier_npc_spawn_egg");
    public static final ResourceLocation FACTION_SOLDIER_ELITE_NPC = id("faction_soldier_elite_npc");
@@ -168,8 +164,6 @@ public final class AWCoreIds {
    public static final ResourceLocation FACTION_CIVILIAN_FEMALE_NPC_SPAWN_EGG = id("faction_civilian_female_npc_spawn_egg");
    public static final ResourceLocation FACTION_PRIEST_NPC = id("faction_priest_npc");
    public static final ResourceLocation FACTION_PRIEST_NPC_SPAWN_EGG = id("faction_priest_npc_spawn_egg");
-   public static final ResourceLocation FACTION_SPELLCASTER_NPC = id("faction_spellcaster_npc");
-   public static final ResourceLocation FACTION_SPELLCASTER_NPC_SPAWN_EGG = id("faction_spellcaster_npc_spawn_egg");
    public static final ResourceLocation FACTION_BARD_NPC = id("faction_bard_npc");
    public static final ResourceLocation FACTION_TRADER_NPC = id("faction_trader_npc");
    public static final ResourceLocation FACTION_TRADE_MENU = id("faction_trade");

@@ -2,12 +2,8 @@ package net.shadowmage.ancientwarfare.core.common.npc;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 
 public final class CombatProfessionResolver {
-   private static final String SLASH_BLADE_MOD_ID = "slashblade";
-   private static final String SLASH_BLADE_ITEM_CLASS = "mods.flammpfeil.slashblade.item.ItemSlashBlade";
-
    private CombatProfessionResolver() {
    }
 
@@ -16,9 +12,7 @@ public final class CombatProfessionResolver {
    }
 
    public static CombatProfessionResolver.Profession professionFor(ItemStack mainHand, ItemStack offHand) {
-      if (isSlashBlade(mainHand)) {
-         return CombatProfessionResolver.Profession.SWORDSMAN;
-      } else if (isRangedWeapon(mainHand)) {
+      if (isRangedWeapon(mainHand)) {
          return CombatProfessionResolver.Profession.ARCHER;
       } else if (isCommandBaton(mainHand)) {
          return CombatProfessionResolver.Profession.COMMANDER;
@@ -31,14 +25,6 @@ public final class CombatProfessionResolver {
 
    private static boolean isRangedWeapon(ItemStack stack) {
       return NpcEquipmentResolver.isRangedWeapon(stack);
-   }
-
-   private static boolean isSlashBlade(ItemStack stack) {
-      return stack != null
-         && !stack.isEmpty()
-         && AWCorePlatform.isModLoaded("slashblade")
-         && CombatProfessionResolver.SlashBladeItemClassHolder.TYPE != null
-         && CombatProfessionResolver.SlashBladeItemClassHolder.TYPE.isInstance(stack.getItem());
    }
 
    private static boolean isCommandBaton(ItemStack stack) {
@@ -59,7 +45,6 @@ public final class CombatProfessionResolver {
 
    public static enum Profession {
       SOLDIER("soldier"),
-      SWORDSMAN("swordsman"),
       ARCHER("archer"),
       COMMANDER("commander"),
       MEDIC("medic"),
@@ -73,18 +58,6 @@ public final class CombatProfessionResolver {
 
       public String subtype() {
          return this.subtype;
-      }
-   }
-
-   private static final class SlashBladeItemClassHolder {
-      private static final Class<?> TYPE = load();
-
-      private static Class<?> load() {
-         try {
-            return Class.forName("mods.flammpfeil.slashblade.item.ItemSlashBlade");
-         } catch (LinkageError | ClassNotFoundException var1) {
-            return null;
-         }
       }
    }
 }

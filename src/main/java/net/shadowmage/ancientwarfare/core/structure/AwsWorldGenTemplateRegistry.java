@@ -234,7 +234,7 @@ public final class AwsWorldGenTemplateRegistry {
          return true;
       } else {
          for (String requirement : requirements.toLowerCase(Locale.ROOT).split("[,; ]+")) {
-            if (!requirement.isBlank() && !"iceandfire".equals(requirement) && !AWCorePlatform.isModLoaded(requirement)) {
+            if (!requirement.isBlank() && !AWCorePlatform.isModLoaded(requirement)) {
                return false;
             }
          }

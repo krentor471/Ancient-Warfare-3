@@ -34,8 +34,6 @@ import net.shadowmage.ancientwarfare.core.common.npc.NpcOwnerAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
 import net.shadowmage.ancientwarfare.core.common.npc.UpkeepOrderData;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippocampusCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippogryphCompat;
 import net.shadowmage.ancientwarfare.core.item.CommandBatonItem;
 import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.TownHallDeathData;
@@ -56,9 +54,6 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private static final EntityDataAccessor<Boolean> GETTING_FOOD = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BOOLEAN);
    private static final EntityDataAccessor<Boolean> TOWN_HALL_SET = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BOOLEAN);
    private static final EntityDataAccessor<BlockPos> TOWN_HALL_POS = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BLOCK_POS);
-   private static final EntityDataAccessor<Integer> DRAGON_RIDER_MOUNT = SynchedEntityData.defineId(
-      PlayerOwnedNpcEntity.class, EntityDataSerializers.INT
-   );
    private static final String TAG_OWNER = "Owner";
    private static final String TAG_CURRENT_COMMAND = "CurrentCommand";
    private static final String TAG_COMMAND_TARGET = "CommandTarget";
@@ -70,7 +65,6 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private static final String TAG_FOOD_STACK = "FoodStack";
    private static final String TAG_TOWN_HALL_SET = "TownHallSet";
    private static final String TAG_TOWN_HALL_POS = "TownHallPos";
-   private static final String TAG_DRAGON_RIDER_MOUNT = "DragonRiderMount";
    private static final String TAG_FOOD_REMAINING = "FoodRemaining";
    private static final String TAG_ATTACK_COMMAND_TARGET = "AttackCommandTarget";
    private static final int FOOD_ACTION_RANGE = 3;
@@ -81,7 +75,6 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private UUID combatGroupCommanderId;
    private Vec3 combatGroupOffset = Vec3.ZERO;
    private long combatGroupRefreshTime = Long.MIN_VALUE;
-   private UUID dragonRiderMountUuid;
    private UUID attackCommandTargetUuid;
    private int foodSupplyRetryTicks;
    private boolean followCombatRecallActive;
@@ -108,7 +101,6 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       this.entityData.define(GETTING_FOOD, false);
       this.entityData.define(TOWN_HALL_SET, false);
       this.entityData.define(TOWN_HALL_POS, BlockPos.ZERO);
-      this.entityData.define(DRAGON_RIDER_MOUNT, -1);
    }
 
    @Override
@@ -124,9 +116,6 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       }
 
       this.getFollowTarget().ifPresent(uuid -> tag.putUUID("FollowTarget", uuid));
-      if (this.dragonRiderMountUuid != null) {
-         tag.putUUID("DragonRiderMount", this.dragonRiderMountUuid);
-      }
 
       if (!this.getOrdersStack().isEmpty()) {
          tag.put("OrdersStack", this.getOrdersStack().save(new CompoundTag()));
@@ -152,7 +141,6 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
          this.setOwner(tag.getUUID("Owner"));
       }
 
-      this.dragonRiderMountUuid = tag.hasUUID("DragonRiderMount") ? tag.getUUID("DragonRiderMount") : null;
       this.attackCommandTargetUuid = tag.hasUUID("AttackCommandTarget") ? tag.getUUID("AttackCommandTarget") : null;
       if (tag.contains("CurrentCommand")) {
          this.setCurrentCommand(parseCommand(tag.getString("CurrentCommand")));
@@ -424,9 +412,6 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
             && this.getOwner().equals(commander.getOwner())
             && CommandBatonItem.isCombatGroupMode(commander.getMainHandItem())
             && commander.isCombatGroupEligible()
-            && commander.isDragonRiderCombatGroupCommander() == this.isLogicalDragonRider()
-            && commander.isHippogryphCombatGroupCommander() == this.isHippogryphRider()
-            && commander.isHippocampusCombatGroupCommander() == this.isHippocampusRider()
             && CommandBatonItem.containsCombatGroupNpc(commander.getMainHandItem(), this.getUUID())) {
             return Optional.of(commander);
          }
@@ -443,45 +428,12 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
          Vec3 right = new Vec3(Math.cos(yaw), 0.0, Math.sin(yaw));
          Vec3 rear = new Vec3(Math.sin(yaw), 0.0, -Math.cos(yaw));
          Vec3 anchor = commander.position();
-         if (commander.isLogicalDragonRider()) {
-            Entity mount = DragonRiderController.getLogicalMount(commander);
-            if (mount != null) {
-               anchor = mount.position();
-            } else {
-               anchor = anchor.subtract(0.0, 2.35, 0.0);
-            }
-         } else if (commander instanceof CombatNpcEntity && IceAndFireHippogryphCompat.isHippogryph(commander.getVehicle())) {
-            anchor = commander.getVehicle().position();
-         } else if (commander instanceof CombatNpcEntity && IceAndFireHippocampusCompat.isHippocampus(commander.getVehicle())) {
-            anchor = commander.getVehicle().position();
-         }
-
          return anchor.add(right.scale(this.combatGroupOffset.x)).add(rear.scale(this.combatGroupOffset.z));
       });
    }
 
    public boolean isCombatGroupCommander() {
       return this.isCombatGroupEligible() && CommandBatonItem.isCombatGroupMode(this.getMainHandItem());
-   }
-
-   public boolean isDragonRiderCombatGroupCommander() {
-      return this instanceof CombatNpcEntity && this.isLogicalDragonRider() && this.isCombatGroupCommander();
-   }
-
-   public boolean isHippogryphRider() {
-      return this instanceof CombatNpcEntity && IceAndFireHippogryphCompat.isHippogryph(this.getVehicle());
-   }
-
-   public boolean isHippogryphCombatGroupCommander() {
-      return this.isHippogryphRider() && this.isCombatGroupCommander();
-   }
-
-   public boolean isHippocampusRider() {
-      return this instanceof CombatNpcEntity && IceAndFireHippocampusCompat.isHippocampus(this.getVehicle());
-   }
-
-   public boolean isHippocampusCombatGroupCommander() {
-      return this.isHippocampusRider() && this.isCombatGroupCommander();
    }
 
    public boolean shouldFollowCombatGroupFormation() {
@@ -855,32 +807,6 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       this.entityData.set(TOWN_HALL_POS, BlockPos.ZERO);
    }
 
-   public int getDragonRiderMountId() {
-      return (Integer)this.entityData.get(DRAGON_RIDER_MOUNT);
-   }
-
-   public void setDragonRiderMountId(int id) {
-      this.entityData.set(DRAGON_RIDER_MOUNT, id);
-   }
-
-   public UUID getDragonRiderMountUuid() {
-      return this.dragonRiderMountUuid;
-   }
-
-   public void setDragonRiderMount(Entity mount) {
-      this.dragonRiderMountUuid = mount == null ? null : mount.getUUID();
-      this.setDragonRiderMountId(mount == null ? -1 : mount.getId());
-   }
-
-   public void clearDragonRiderMount() {
-      this.dragonRiderMountUuid = null;
-      this.setDragonRiderMountId(-1);
-   }
-
-   public boolean isLogicalDragonRider() {
-      return this.getDragonRiderMountId() >= 0 || this.dragonRiderMountUuid != null;
-   }
-
    public void aiStep() {
       if (this.isGuiInteractionPaused()) {
          this.freezeForGui();
@@ -932,67 +858,63 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    private void updateOwnedMountedMovement() {
       Entity vehicle = this.getVehicle();
-      if (vehicle != null && IceAndFireHippocampusCompat.isHippocampus(vehicle)) {
-         this.getNavigation().stop();
-      } else {
-         if (this.shouldFollowCombatGroupFormation()) {
-            Optional<Vec3> formationPosition = this.getCombatGroupFormationPosition();
-            if (formationPosition.isPresent()) {
-               Vec3 destination = formationPosition.get();
-               if (vehicle instanceof ChestPushcartEntity cart) {
-                  this.driveCombatGroupCart(cart, destination);
-                  return;
+      if (this.shouldFollowCombatGroupFormation()) {
+         Optional<Vec3> formationPosition = this.getCombatGroupFormationPosition();
+         if (formationPosition.isPresent()) {
+            Vec3 destination = formationPosition.get();
+            if (vehicle instanceof ChestPushcartEntity cart) {
+               this.driveCombatGroupCart(cart, destination);
+               return;
+            }
+
+            label77: {
+               if (vehicle instanceof Mob mount && mount.position().distanceToSqr(destination) > 2.25) {
+                  this.driveMountToward(mount, destination);
+                  break label77;
                }
 
-               label77: {
-                  if (vehicle instanceof Mob mount && mount.position().distanceToSqr(destination) > 2.25) {
-                     this.driveMountToward(mount, destination);
-                     break label77;
-                  }
-
-                  if (vehicle instanceof Mob mount) {
-                     this.stopMount(mount, 0.5);
-                  }
-               }
-
-               if (vehicle instanceof Mob) {
-                  return;
+               if (vehicle instanceof Mob mount) {
+                  this.stopMount(mount, 0.5);
                }
             }
+
+            if (vehicle instanceof Mob) {
+               return;
+            }
          }
+      }
 
-         if (vehicle instanceof Mob mount) {
-            if (!this.usesCustomMountedMovement()) {
-               if (!this.followCombatRecallActive || !this.updateMountedFollowMovement()) {
-                  LivingEntity target = this.getTarget();
-                  if (target != null && target.isAlive()) {
-                     double stopDistance = "archer".equals(this.getNpcSubtype()) ? 12.0 : 2.5;
-                     if (mount.distanceToSqr(target) > stopDistance * stopDistance) {
-                        this.driveMountToward(mount, target.position());
-                     } else {
-                        this.stopMount(mount, 0.55);
-                        this.faceMountedTarget(mount, target.position());
-                     }
+      if (vehicle instanceof Mob mount) {
+         if (!this.usesCustomMountedMovement()) {
+            if (!this.followCombatRecallActive || !this.updateMountedFollowMovement()) {
+               LivingEntity target = this.getTarget();
+               if (target != null && target.isAlive()) {
+                  double stopDistance = "archer".equals(this.getNpcSubtype()) ? 12.0 : 2.5;
+                  if (mount.distanceToSqr(target) > stopDistance * stopDistance) {
+                     this.driveMountToward(mount, target.position());
                   } else {
-                     if (this.getCurrentCommand() == NpcCommandType.MOVE) {
-                        BlockPos targetPos = this.getCommandTarget();
-                        if (!BlockPos.ZERO.equals(targetPos)) {
-                           Vec3 destinationx = Vec3.atBottomCenterOf(targetPos);
-                           if (mount.distanceToSqr(destinationx) > 4.0) {
-                              this.driveMountToward(mount, destinationx);
-                           } else {
-                              this.stopMount(mount, 0.4);
-                              this.clearCommand();
-                           }
-
-                           return;
-                        }
-                     }
-
-                     if (!this.updateMountedFollowMovement()) {
-                        if (!this.shouldSkipIdleMountedStop()) {
+                     this.stopMount(mount, 0.55);
+                     this.faceMountedTarget(mount, target.position());
+                  }
+               } else {
+                  if (this.getCurrentCommand() == NpcCommandType.MOVE) {
+                     BlockPos targetPos = this.getCommandTarget();
+                     if (!BlockPos.ZERO.equals(targetPos)) {
+                        Vec3 destinationx = Vec3.atBottomCenterOf(targetPos);
+                        if (mount.distanceToSqr(destinationx) > 4.0) {
+                           this.driveMountToward(mount, destinationx);
+                        } else {
                            this.stopMount(mount, 0.4);
+                           this.clearCommand();
                         }
+
+                        return;
+                     }
+                  }
+
+                  if (!this.updateMountedFollowMovement()) {
+                     if (!this.shouldSkipIdleMountedStop()) {
+                        this.stopMount(mount, 0.4);
                      }
                   }
                }
@@ -1008,7 +930,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
             return false;
          } else {
             Entity vehicle = this.getVehicle();
-            if (vehicle instanceof Mob mount && !IceAndFireHippogryphCompat.isHippogryph(vehicle) && !IceAndFireHippocampusCompat.isHippocampus(vehicle)) {
+            if (vehicle instanceof Mob mount) {
                Player player = this.getFollowTargetPlayer().orElse(null);
                if (player == null) {
                   this.stopMount(mount, 0.4);
@@ -1039,7 +961,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
             return false;
          } else {
             Entity vehicle = this.getVehicle();
-            if (vehicle instanceof Mob mount && !IceAndFireHippogryphCompat.isHippogryph(vehicle) && !IceAndFireHippocampusCompat.isHippocampus(vehicle)) {
+            if (vehicle instanceof Mob mount) {
                BlockPos target = this.getCommandTarget();
                if (BlockPos.ZERO.equals(target)) {
                   this.clearCommand();

@@ -2,7 +2,6 @@ package net.shadowmage.ancientwarfare.core.item;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -33,9 +32,6 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireDragonCompat;
-import net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.DragonRiderController;
 import net.shadowmage.ancientwarfare.core.entity.FactionArcherEliteNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionArcherNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionBardNpcEntity;
@@ -50,7 +46,6 @@ import net.shadowmage.ancientwarfare.core.entity.FactionPriestNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSiegeEngineerNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSoldierEliteNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSoldierNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.FactionSpellcasterNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionTraderNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity;
 
@@ -63,7 +58,6 @@ public class NpcSpawnerItem extends Item {
    private static final String FACTION_ROLE_TAG = "factionRole";
    private static final String MOUNT_DATA_TAG = "mountData";
    private static final String MOUNT_TYPE_TAG = "mountType";
-   private static final String MOUNT_LOGICAL_TAG = "logicalMount";
    public static final String FACTION_TYPE = "faction";
 
    public NpcSpawnerItem() {
@@ -85,8 +79,6 @@ public class NpcSpawnerItem extends Item {
          case "bard" -> 0.4F;
          case "priest" -> 0.5F;
          case "siege_engineer" -> 1.2F;
-         case "modern_soldier" -> 1.3F;
-         case "ship_captain" -> 1.4F;
          default -> 0.0F;
       });
    }
@@ -137,18 +129,6 @@ public class NpcSpawnerItem extends Item {
    public static ItemStack createSiegeEngineer() {
       ItemStack stack = AWCoreRegistryAccess.stack(AWCoreIds.NPC_SPAWNER);
       stack.getOrCreateTag().putString("npcType", "siege_engineer");
-      return stack;
-   }
-
-   public static ItemStack createModernSoldier() {
-      ItemStack stack = AWCoreRegistryAccess.stack(AWCoreIds.NPC_SPAWNER);
-      stack.getOrCreateTag().putString("npcType", "modern_soldier");
-      return stack;
-   }
-
-   public static ItemStack createShipCaptain() {
-      ItemStack stack = AWCoreRegistryAccess.stack(AWCoreIds.NPC_SPAWNER);
-      stack.getOrCreateTag().putString("npcType", "ship_captain");
       return stack;
    }
 
@@ -220,12 +200,8 @@ public class NpcSpawnerItem extends Item {
          return (PlayerOwnedNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.BARD_NPC).create(level);
       } else if ("priest".equals(npcType)) {
          return (PlayerOwnedNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.PRIEST_NPC).create(level);
-      } else if ("siege_engineer".equals(npcType)) {
-         return (PlayerOwnedNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.SIEGE_ENGINEER_NPC).create(level);
-      } else if ("modern_soldier".equals(npcType)) {
-         return (PlayerOwnedNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.MODERN_SOLDIER_NPC).create(level);
       } else {
-         return "ship_captain".equals(npcType) ? (PlayerOwnedNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.SHIP_CAPTAIN_NPC).create(level) : null;
+         return "siege_engineer".equals(npcType) ? (PlayerOwnedNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.SIEGE_ENGINEER_NPC).create(level) : null;
       }
    }
 
@@ -243,7 +219,6 @@ public class NpcSpawnerItem extends Item {
          case CIVILIAN_MALE -> (FactionCivilianMaleNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_CIVILIAN_MALE_NPC).create(level);
          case CIVILIAN_FEMALE -> (FactionCivilianFemaleNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_CIVILIAN_FEMALE_NPC).create(level);
          case PRIEST -> (FactionPriestNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_PRIEST_NPC).create(level);
-         case SPELLCASTER -> (FactionSpellcasterNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SPELLCASTER_NPC).create(level);
          case BARD -> (FactionBardNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_BARD_NPC).create(level);
          case TRADER -> (FactionTraderNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_TRADER_NPC).create(level);
       });
@@ -265,24 +240,9 @@ public class NpcSpawnerItem extends Item {
       CompoundTag root = stack.getTag();
       if (root != null && root.contains("npcData", 10)) {
          CompoundTag npcData = root.getCompound("npcData");
-         if ("combat".equals(npcData.getString("NpcType"))) {
-            String mountType = storedMountType(stack);
-            if (isDragonMountType(mountType)) {
-               return Component.translatable("entity.ancientwarfare.combat.dragon_rider");
-            }
-
-            if (isHippocampusMountType(mountType)) {
-               return Component.translatable("entity.ancientwarfare.combat.hippocampus_rider");
-            }
-         }
-
          String npcType = npcData.getString("NpcType");
          String subtype = npcData.getString("NpcSubtype");
-         if ("modern_soldier".equals(npcType) || "ship_captain".equals(npcType)) {
-            return Component.translatable("entity.ancientwarfare." + npcType);
-         } else {
-            return !npcType.isBlank() && !subtype.isBlank() ? Component.translatable("entity.ancientwarfare." + npcType + "." + subtype) : null;
-         }
+         return !npcType.isBlank() && !subtype.isBlank() ? Component.translatable("entity.ancientwarfare." + npcType + "." + subtype) : null;
       } else {
          return null;
       }
@@ -307,19 +267,6 @@ public class NpcSpawnerItem extends Item {
       }
    }
 
-   private static String storedMountType(ItemStack stack) {
-      CompoundTag root = stack.getTag();
-      return root != null && root.contains("mountData", 10) ? root.getCompound("mountData").getString("mountType").toLowerCase(Locale.ROOT) : "";
-   }
-
-   private static boolean isDragonMountType(String type) {
-      return type.contains(":dragon_") || type.endsWith(":dragon") || type.contains("iceandfire:dragon");
-   }
-
-   private static boolean isHippocampusMountType(String type) {
-      return type.contains("hippocampus");
-   }
-
    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
       tooltip.add(Component.translatable("tooltip.ancientwarfare.npc_spawner.type", new Object[]{getNpcType(stack)}).withStyle(ChatFormatting.GRAY));
       if (isFactionSpawner(stack)) {
@@ -342,10 +289,6 @@ public class NpcSpawnerItem extends Item {
          tooltip.add(Component.translatable("tooltip.ancientwarfare.npc_spawner.priest").withStyle(ChatFormatting.DARK_GRAY));
       } else if ("siege_engineer".equals(getNpcType(stack))) {
          tooltip.add(Component.translatable("tooltip.ancientwarfare.npc_spawner.siege_engineer").withStyle(ChatFormatting.DARK_GRAY));
-      } else if ("modern_soldier".equals(getNpcType(stack))) {
-         tooltip.add(Component.translatable("tooltip.ancientwarfare.npc_spawner.modern_soldier").withStyle(ChatFormatting.DARK_GRAY));
-      } else if ("ship_captain".equals(getNpcType(stack))) {
-         tooltip.add(Component.translatable("tooltip.ancientwarfare.npc_spawner.ship_captain").withStyle(ChatFormatting.DARK_GRAY));
       } else {
          tooltip.add(Component.translatable("tooltip.ancientwarfare.npc_spawner.worker_tool").withStyle(ChatFormatting.DARK_GRAY));
       }
@@ -384,7 +327,7 @@ public class NpcSpawnerItem extends Item {
             case LEADER, LEADER_ELITE -> 0.8F;
             case SIEGE_ENGINEER -> 1.2F;
             case CIVILIAN_MALE, CIVILIAN_FEMALE -> 0.9F;
-            case PRIEST, SPELLCASTER -> 1.0F;
+            case PRIEST -> 1.0F;
             case BARD -> 1.1F;
             case TRADER -> 0.3F;
          };
@@ -398,14 +341,7 @@ public class NpcSpawnerItem extends Item {
       npcData.putString("id", BuiltInRegistries.ENTITY_TYPE.getKey(npc.getType()).toString());
       sanitizeStoredNpcData(npcData);
       stack.getOrCreateTag().put("npcData", npcData);
-      if (DragonRiderController.getLogicalMount(npc) instanceof Mob mount) {
-         CompoundTag mountData = new CompoundTag();
-         mount.saveWithoutId(mountData);
-         sanitizeStoredMountData(mountData);
-         mountData.putString("mountType", BuiltInRegistries.ENTITY_TYPE.getKey(mount.getType()).toString());
-         mountData.putBoolean("logicalMount", true);
-         stack.getOrCreateTag().put("mountData", mountData);
-      } else if (npc.getVehicle() instanceof Mob mount) {
+      if (npc.getVehicle() instanceof Mob mount) {
          CompoundTag mountData = new CompoundTag();
          mount.saveWithoutId(mountData);
          sanitizeStoredMountData(mountData);
@@ -528,17 +464,10 @@ public class NpcSpawnerItem extends Item {
             Entity mount = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.tryParse(typeId)).map(type -> type.create(level)).orElse(null);
             if (mount instanceof Mob mobMount) {
                mountData.remove("mountType");
-               boolean logicalMount = mountData.getBoolean("logicalMount");
-               mountData.remove("logicalMount");
                mobMount.load(mountData);
                mobMount.setPersistenceRequired();
                mobMount.moveTo(npc.getX(), npc.getY(), npc.getZ(), npc.getYRot(), 0.0F);
                level.addFreshEntity(mobMount);
-               if (logicalMount && npc instanceof CombatNpcEntity combatNpc && IceAndFireDragonCompat.isDragon(mobMount)) {
-                  DragonRiderController.attach(combatNpc, mobMount);
-                  return;
-               }
-
                npc.startRiding(mobMount, true);
             }
          }

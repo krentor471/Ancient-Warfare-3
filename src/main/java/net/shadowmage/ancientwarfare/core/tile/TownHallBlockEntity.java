@@ -34,7 +34,6 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
-import net.shadowmage.ancientwarfare.core.entity.DragonRiderController;
 import net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity;
 import net.shadowmage.ancientwarfare.core.item.NpcSpawnerItem;
 import net.shadowmage.ancientwarfare.core.menu.TownHallMenu;
@@ -207,10 +206,7 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
          details.putLong("TownHallPos", npc.getTownHallPos().asLong());
       }
 
-      Entity mount = DragonRiderController.getLogicalMount(npc);
-      if (mount == null) {
-         mount = npc.getVehicle();
-      }
+      Entity mount = npc.getVehicle();
 
       if (mount != null) {
          details.putString("MountType", mount.getType().getDescription().getString());

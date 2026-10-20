@@ -76,9 +76,6 @@ import net.shadowmage.ancientwarfare.core.block.TallStructureDecorBlock;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireStructureLootCompat;
-import net.shadowmage.ancientwarfare.core.compat.LegacyIceAndFireStructureCompat;
-import net.shadowmage.ancientwarfare.core.compat.SlashBladeStructureLootCompat;
 import net.shadowmage.ancientwarfare.core.entity.GateEntity;
 import net.shadowmage.ancientwarfare.core.tile.AdvancedSpawnerBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.GateProxyBlockEntity;
@@ -1058,13 +1055,6 @@ public final class AwsTemplatePlacer {
                      new Object[]{this.name, target, inferred.table(), inferred.reason()}
                   );
             }
-
-            if (loot != null || fixedRewardContents) {
-               IceAndFireStructureLootCompat.configure(
-                  chest, IceAndFireStructureLootCompat.settingsFor(this.path, this.name, this.unique, data), level.random.nextLong()
-               );
-               SlashBladeStructureLootCompat.configure(chest, level.random.nextLong());
-            }
          } else if (level.getBlockEntity(target) instanceof StructureContainerBlockEntity container) {
             if (!legacyLootSettings.isEmpty()) {
                container.storeLegacyLootSettings(legacyLootSettings);
@@ -1103,11 +1093,6 @@ public final class AwsTemplatePlacer {
                      "AWS empty structure container assigned inferred loot: template={}, pos={}, table={}, reason={}",
                      new Object[]{this.name, target, inferred.table(), inferred.reason()}
                   );
-            }
-
-            if (loot != null || fixedRewardContents) {
-               container.configureIceAndFireLoot(IceAndFireStructureLootCompat.settingsFor(this.path, this.name, this.unique, data), level.random.nextLong());
-               container.configureSlashBladeLoot(level.random.nextLong());
             }
          } else if (data.contains("lootSettings:") || data.contains("LootTable:\"")) {
             AncientWarfareCore.LOG
@@ -1620,8 +1605,6 @@ public final class AwsTemplatePlacer {
       private static String remapBlockName(String name, String properties, String data) {
          if (name.startsWith("ancientwarfarestructure:")) {
             return remapAncientWarfareBlock(name);
-         } else if (name.startsWith("iceandfire:")) {
-            return LegacyIceAndFireStructureCompat.remapBlock(name);
          } else {
             return switch (name) {
                case "minecraft:chest", "minecraft:trapped_chest" -> "minecraft:chest";

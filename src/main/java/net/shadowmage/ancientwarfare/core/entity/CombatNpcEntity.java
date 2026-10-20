@@ -1,16 +1,11 @@
 package net.shadowmage.ancientwarfare.core.entity;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.syncher.EntityDataAccessor;
-import net.minecraft.network.syncher.EntityDataSerializers;
-import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
@@ -37,7 +32,6 @@ import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
@@ -56,26 +50,12 @@ import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireDragonCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireEquipmentCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippocampusCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippogryphCompat;
-import net.shadowmage.ancientwarfare.core.compat.SlashBladeCompat;
 import net.shadowmage.ancientwarfare.core.item.CommandBatonItem;
 import net.shadowmage.ancientwarfare.core.menu.NpcInventoryMenu;
 
 public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttackMob {
-   private static final String TAG_SPELLBOOK_STACK = "SpellbookStack";
    private static final double MIN_RANGED_FOLLOW_RANGE = 48.0;
    private static final double RANGED_VERTICAL_TARGET_RANGE = 64.0;
-   private static final EntityDataAccessor<Integer> SWORDSMAN_COMBO = SynchedEntityData.defineId(CombatNpcEntity.class, EntityDataSerializers.INT);
-   private static final int SWORDSMAN_POSE_TICKS = 10;
-   private static final double SWORDSMAN_SKILL_START_RANGE_SQR = 1024.0;
-   private static final double SWORDSMAN_SKILL_CANCEL_RANGE_SQR = 1600.0;
-   private static final int SWORDSMAN_SLASH_ART_INITIAL_DELAY_TICKS = 200;
-   private static final int SWORDSMAN_SLASH_ART_COOLDOWN_TICKS = 600;
-   private static final int SWORDSMAN_SLASH_ART_MIN_CHARGE = 4;
-   private static final int SWORDSMAN_SLASH_ART_GUARANTEED_CHARGE = 7;
    private static final double MOUNT_CHARGE_SPEED = 0.45;
    private static final double MOUNT_ATTACK_DISTANCE = 3.2;
    private static final double MOUNT_PASS_DISTANCE = 10.0;
@@ -94,31 +74,6 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    private boolean mountAttackedThisCharge;
    private boolean mountedArcherClockwise;
    private LivingEntity mountedArcherTarget;
-   private int swordsmanComboStep;
-   private int swordsmanPoseTicks;
-   private LivingEntity swordsmanComboTarget;
-   private int swordsmanComboTicks;
-   private boolean swordsmanComboActive;
-   private CombatNpcEntity.SwordsmanTechnique swordsmanTechnique = CombatNpcEntity.SwordsmanTechnique.NONE;
-   private CombatNpcEntity.SwordsmanTechnique swordsmanLastTechnique = CombatNpcEntity.SwordsmanTechnique.NONE;
-   private CombatNpcEntity.SwordsmanTechnique swordsmanPreviousTechnique = CombatNpcEntity.SwordsmanTechnique.NONE;
-   private boolean swordsmanAerialCleaveActive;
-   private int swordsmanAerialCleaveTicks;
-   private boolean swordsmanTechniqueFinished;
-   private int swordsmanRapidHitCooldown;
-   private int swordsmanRapidHitCount;
-   private int swordsmanTechniqueRecoveryTicks;
-   private int swordsmanLastSummonedSwordArt;
-   private int swordsmanPreviousSummonedSwordArt;
-   private int swordsmanChargedArt = 0;
-   private int swordsmanChargeType = 1;
-   private int swordsmanChargeTicks;
-   private boolean swordsmanChargedArtReleased;
-   private int swordsmanLastChargeType;
-   private int swordsmanPreviousChargeType;
-   private int swordsmanSlashArtCooldown = 200;
-   private int swordsmanSlashArtCharge;
-   private ItemStack legacySpellContainerStack = ItemStack.EMPTY;
 
    protected void dropCustomDeathLoot(DamageSource source, int looting, boolean killedByPlayer) {
       if (AWCorePlatform.gameplayConfig().playerSoldierEquipmentDropChance() < 0.0) {
@@ -169,16 +124,9 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          .add(Attributes.FOLLOW_RANGE, 32.0);
    }
 
-   @Override
-   protected void defineSynchedData() {
-      super.defineSynchedData();
-      this.entityData.define(SWORDSMAN_COMBO, 0);
-   }
-
    protected void registerGoals() {
       this.goalSelector.addGoal(1, new CombatNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
       this.goalSelector.addGoal(1, new CombatNpcEntity.ShieldDefenseGoal(this));
-      this.goalSelector.addGoal(0, new CombatNpcEntity.SwordsmanProjectileGuardGoal(this));
       this.goalSelector.addGoal(2, new CombatNpcEntity.CombatRangedAttackGoal(this));
       this.goalSelector.addGoal(2, new CombatNpcEntity.CombatMeleeAttackGoal(this, this.playerSprintNavigationSpeed(), true));
       this.goalSelector.addGoal(3, new CombatNpcEntity.CommanderAuraGoal(this));
@@ -221,8 +169,6 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    public void setTarget(LivingEntity target) {
       if (target != null && this.isFollowCombatRecallActive()) {
          super.setTarget(null);
-      } else if (target != null && !DragonRiderController.canAcquireTarget(this, target)) {
-         super.setTarget(null);
       } else {
          super.setTarget(target);
       }
@@ -260,22 +206,12 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
    @Override
    public String getNpcSubtype() {
-      return this.isSpellcasterCombatant() ? "mage" : CombatProfessionResolver.subtypeFor(this.getMainHandItem(), this.getOffhandItem());
+      return CombatProfessionResolver.subtypeFor(this.getMainHandItem(), this.getOffhandItem());
    }
 
    @Override
    public Component getTypeName() {
-      Component baseName;
-      if (!this.isLogicalDragonRider() && (this.getVehicle() == null || !IceAndFireDragonCompat.isDragon(this.getVehicle()))) {
-         if (this.getVehicle() != null && IceAndFireHippocampusCompat.isHippocampus(this.getVehicle())) {
-            baseName = Component.translatable("entity.ancientwarfare.combat.hippocampus_rider");
-         } else {
-            baseName = Component.translatable("entity.ancientwarfare.combat." + this.getNpcSubtype());
-         }
-      } else {
-         baseName = Component.translatable("entity.ancientwarfare.combat.dragon_rider");
-      }
-
+      Component baseName = Component.translatable("entity.ancientwarfare.combat." + this.getNpcSubtype());
       return this.applyCombatRankName(baseName);
    }
 
@@ -300,19 +236,11 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private boolean isRangedCombatant() {
-      return !this.isSpellcasterCombatant() && NpcEquipmentResolver.isRangedWeapon(this.getMainHandItem());
-   }
-
-   protected boolean isSpellcasterCombatant() {
-      return false;
+      return NpcEquipmentResolver.isRangedWeapon(this.getMainHandItem());
    }
 
    protected boolean canUseMeleeCombatGoal() {
-      return !this.isSpellcasterCombatant() && !this.isRangedCombatant();
-   }
-
-   public boolean isSpellcastingAnimation() {
-      return false;
+      return !this.isRangedCombatant();
    }
 
    private void ensureRangedFollowRange() {
@@ -324,774 +252,20 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
    }
 
-   public boolean isSwordsman() {
-      return "swordsman".equals(this.getNpcSubtype());
-   }
-
-   public int getSwordsmanComboStep() {
-      return (Integer)this.entityData.get(SWORDSMAN_COMBO);
-   }
-
    @Override
    public boolean doHurtTarget(Entity target) {
       if (this.isRangedCombatant()) {
          return false;
-      } else if (this.isSwordsman()) {
-         boolean started = this.startSwordsmanCombo(target);
-         if (started) {
-            this.recordCombatAttack();
-         }
-
-         return started;
       } else {
          this.triggerMeleeAttackAnimation();
          this.swing(InteractionHand.MAIN_HAND, true);
          boolean hit = super.doHurtTarget(target);
-         if (hit && target instanceof LivingEntity livingTarget) {
-            IceAndFireEquipmentCompat.applySupportedMeleeHit(this.getMainHandItem(), livingTarget, this);
-         }
-
          if (hit) {
             this.recordCombatAttack();
          }
 
          return hit;
       }
-   }
-
-   private boolean startSwordsmanCombo(Entity target) {
-      if (this.swordsmanComboActive) {
-         return true;
-      } else if (this.swordsmanTechniqueRecoveryTicks > 0) {
-         return false;
-      } else {
-         if (target instanceof LivingEntity livingTarget && livingTarget.isAlive()) {
-            this.swordsmanComboTarget = livingTarget;
-            this.swordsmanComboTicks = 0;
-            this.swordsmanComboActive = true;
-            this.swordsmanAerialCleaveActive = false;
-            this.swordsmanAerialCleaveTicks = 0;
-            this.swordsmanTechniqueFinished = false;
-            this.swordsmanRapidHitCooldown = 0;
-            this.swordsmanRapidHitCount = 0;
-            this.swordsmanChargedArt = 0;
-            this.swordsmanChargeTicks = 0;
-            this.swordsmanChargedArtReleased = false;
-            this.swordsmanTechnique = this.chooseSwordsmanTechnique(livingTarget);
-            if (this.swordsmanTechnique != CombatNpcEntity.SwordsmanTechnique.NONE && this.executeSwordsmanTechniqueTick(0)) {
-               this.tryReleaseSwordsmanSummonedSword(livingTarget);
-               this.swordsmanPreviousTechnique = this.swordsmanLastTechnique;
-               this.swordsmanLastTechnique = this.swordsmanTechnique;
-               return true;
-            }
-
-            this.cancelSwordsmanCombo();
-            return false;
-         }
-
-         return false;
-      }
-   }
-
-   private void tryReleaseSwordsmanSummonedSword(LivingEntity target) {
-      if (SlashBladeCompat.canUseSummonedSwordArts(this)) {
-         int art = this.chooseSwordsmanSummonedSwordArt(target);
-         boolean released = SlashBladeCompat.performSummonedSwordArt(this, target, art);
-         if (!released && art != 1) {
-            art = 1;
-            released = SlashBladeCompat.performSummonedSwordArt(this, target, art);
-         }
-
-         if (released) {
-            this.swordsmanPreviousSummonedSwordArt = this.swordsmanLastSummonedSwordArt;
-            this.swordsmanLastSummonedSwordArt = art;
-         }
-      }
-   }
-
-   private int chooseSwordsmanSummonedSwordArt(LivingEntity target) {
-      double distance = Math.sqrt(this.distanceToSqr(target));
-      List<Integer> candidates = new ArrayList<>();
-      if (distance <= 5.5) {
-         candidates.add(2);
-         candidates.add(3);
-         candidates.add(4);
-         candidates.add(1);
-      } else if (distance <= 14.0) {
-         candidates.add(3);
-         candidates.add(4);
-         candidates.add(5);
-         candidates.add(1);
-      } else {
-         candidates.add(4);
-         candidates.add(5);
-         candidates.add(1);
-      }
-
-      if (candidates.size() > 1) {
-         candidates.removeIf(candidate -> candidate == this.swordsmanLastSummonedSwordArt);
-      }
-
-      int selected = candidates.get(this.getRandom().nextInt(candidates.size()));
-      if (candidates.size() > 1 && selected == this.swordsmanPreviousSummonedSwordArt && this.getRandom().nextFloat() < 0.7F) {
-         List<Integer> alternatives = candidates.stream().filter(candidate -> candidate != this.swordsmanPreviousSummonedSwordArt).toList();
-         if (!alternatives.isEmpty()) {
-            selected = alternatives.get(this.getRandom().nextInt(alternatives.size()));
-         }
-      }
-
-      return selected;
-   }
-
-   private CombatNpcEntity.SwordsmanTechnique chooseSwordsmanTechnique(LivingEntity target) {
-      double distance = Math.sqrt(this.distanceToSqr(target));
-      double heightDifference = target.getY() - this.getY();
-      List<CombatNpcEntity.SwordsmanTechnique> candidates = new ArrayList<>();
-      int heldArt = SlashBladeCompat.getHeldSlashArt(this);
-      if (this.shouldUseSwordsmanSlashArt(target, heldArt, distance)) {
-         this.swordsmanChargeType = this.chooseSwordsmanChargeType(distance);
-         this.swordsmanChargeTicks = this.chargeTicksForType(this.swordsmanChargeType);
-         return CombatNpcEntity.SwordsmanTechnique.SLASH_ART;
-      } else {
-         if (!this.onGround() && !this.isPassenger()) {
-            if (heightDifference < -1.5 || distance > 5.0) {
-               return CombatNpcEntity.SwordsmanTechnique.AERIAL_CLEAVE;
-            }
-
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_A);
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_B);
-         } else if (distance <= 3.6) {
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.COMBO_A);
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.COMBO_B);
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.COMBO_C);
-            if (this.canLaunchSwordsmanAerialCombo(target)) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_A);
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_B);
-               if (heightDifference > 1.25) {
-                  candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_A);
-                  candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_B);
-               }
-            } else if (!this.isPassenger()) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.UPPER_CHAIN);
-            }
-
-            if (!this.isPassenger() && distance >= 2.0) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.RAPID_SLASH);
-            }
-         } else {
-            if (!this.isPassenger()) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.RAPID_SLASH);
-            }
-
-            if (this.canLaunchSwordsmanAerialCombo(target) && distance <= 4.5 && heightDifference > 1.25) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_A);
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_B);
-            }
-         }
-
-         if (candidates.isEmpty()) {
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.COMBO_A);
-         }
-
-         if (candidates.size() > 1) {
-            candidates.removeIf(candidate -> candidate == this.swordsmanLastTechnique);
-         }
-
-         CombatNpcEntity.SwordsmanTechnique selected = candidates.get(this.getRandom().nextInt(candidates.size()));
-         if (candidates.size() > 1 && selected == this.swordsmanPreviousTechnique && this.getRandom().nextFloat() < 0.65F) {
-            List<CombatNpcEntity.SwordsmanTechnique> alternatives = candidates.stream()
-               .filter(candidate -> candidate != this.swordsmanPreviousTechnique)
-               .toList();
-            if (!alternatives.isEmpty()) {
-               selected = alternatives.get(this.getRandom().nextInt(alternatives.size()));
-            }
-         }
-
-         return selected;
-      }
-   }
-
-   private boolean isChargedArtSuitableAtDistance(int art, double distance) {
-      return switch (art) {
-         case 1 -> distance <= 28.0;
-         case 2, 3, 4 -> distance <= 7.0;
-         case 5, 6, 7 -> distance >= 4.0 && distance <= 32.0;
-         case 8 -> distance >= 2.0 && distance <= 18.0;
-         default -> false;
-      };
-   }
-
-   private boolean shouldUseSwordsmanSlashArt(LivingEntity target, int heldArt, double distance) {
-      if (!this.onGround()
-         || this.isPassenger()
-         || this.swordsmanSlashArtCooldown > 0
-         || this.swordsmanSlashArtCharge < 4
-         || heldArt == 0
-         || !this.isChargedArtSuitableAtDistance(heldArt, distance)
-         || target.getHealth() <= Math.max(8.0F, target.getMaxHealth() * 0.2F)) {
-         return false;
-      } else if (this.swordsmanSlashArtCharge >= 7) {
-         return true;
-      } else {
-         float chance = switch (this.swordsmanSlashArtCharge) {
-            case 4 -> 0.22F;
-            case 5 -> 0.38F;
-            default -> 0.6F;
-         };
-         return this.getRandom().nextFloat() < chance;
-      }
-   }
-
-   private int chooseSwordsmanChargeType(double distance) {
-      List<Integer> candidates = new ArrayList<>();
-      candidates.add(1);
-      candidates.add(2);
-      if (SlashBladeCompat.canUseChargedSlashArt(this, 3) && distance >= 5.0 && this.getRandom().nextFloat() < 0.22F) {
-         candidates.add(3);
-      }
-
-      if (candidates.size() > 1) {
-         candidates.removeIf(type -> type == this.swordsmanLastChargeType);
-      }
-
-      int selected = candidates.get(this.getRandom().nextInt(candidates.size()));
-      if (candidates.size() > 1 && selected == this.swordsmanPreviousChargeType && this.getRandom().nextFloat() < 0.7F) {
-         List<Integer> alternatives = candidates.stream().filter(type -> type != this.swordsmanPreviousChargeType).toList();
-         if (!alternatives.isEmpty()) {
-            selected = alternatives.get(this.getRandom().nextInt(alternatives.size()));
-         }
-      }
-
-      if (!SlashBladeCompat.canUseChargedSlashArt(this, selected)) {
-         selected = 1;
-      }
-
-      return selected;
-   }
-
-   private int chargeTicksForType(int chargeType) {
-      return switch (chargeType) {
-         case 2 -> 10;
-         case 3 -> 26;
-         default -> 16;
-      };
-   }
-
-   private boolean canLaunchSwordsmanAerialCombo(LivingEntity target) {
-      if (!this.isPassenger() && this.onGround() && target != null && target.isAlive()) {
-         if (this.distanceToSqr(target) > 20.25) {
-            return false;
-         } else {
-            AABB launchSpace = this.getBoundingBox().inflate(0.35, 0.0, 0.35).expandTowards(0.0, 3.75, 0.0);
-            return this.level().noCollision(this, launchSpace);
-         }
-      } else {
-         return false;
-      }
-   }
-
-   private boolean performSwordsmanTechniqueHit(int move, float damageRatio, int knockback) {
-      if (this.swordsmanComboTarget != null
-         && !(this.distanceToSqr(this.swordsmanComboTarget) > 27.5625)
-         && SlashBladeCompat.performTechniqueHit(this, this.swordsmanComboTarget, move, damageRatio, knockback)) {
-         this.swordsmanComboStep = move;
-         this.swordsmanPoseTicks = 10;
-         this.entityData.set(SWORDSMAN_COMBO, move);
-         this.swing(InteractionHand.MAIN_HAND, true);
-         return true;
-      } else {
-         return false;
-      }
-   }
-
-   private void setSwordsmanTechniquePose(int move) {
-      if (SlashBladeCompat.setTechniqueState(this, move)) {
-         this.swordsmanComboStep = move;
-         this.swordsmanPoseTicks = 10;
-         this.entityData.set(SWORDSMAN_COMBO, move);
-      }
-   }
-
-   private boolean executeSwordsmanTechniqueTick(int tick) {
-      return switch (this.swordsmanTechnique) {
-         case COMBO_A -> this.executeComboATick(tick);
-         case COMBO_B -> this.executeComboBTick(tick);
-         case COMBO_C -> this.executeComboCTick(tick);
-         case RAPID_SLASH -> this.executeRapidSlashTick(tick);
-         case UPPER_CHAIN -> this.executeUpperChainTick(tick);
-         case AERIAL_COMBO_A -> this.executeAerialComboATick(tick);
-         case AERIAL_COMBO_B -> this.executeAerialComboBTick(tick);
-         case AERIAL_CLEAVE -> this.executeAerialCleaveOnlyTick(tick);
-         case SLASH_ART -> this.executeChargedSlashArtTick(tick);
-         default -> false;
-      };
-   }
-
-   private boolean executeChargedSlashArtTick(int tick) {
-      if (this.swordsmanComboTarget != null && !this.isPassenger()) {
-         this.getNavigation().stop();
-         this.getLookControl().setLookAt(this.swordsmanComboTarget, 90.0F, 90.0F);
-         this.faceSwordsmanTarget();
-         if (!this.swordsmanChargedArtReleased) {
-            this.setDeltaMovement(this.getDeltaMovement().multiply(0.05, 1.0, 0.05));
-            if (tick == 0 || tick % 4 == 0) {
-               this.setSwordsmanTechniquePose(19);
-               SlashBladeCompat.emitChargedSlashArtParticles(this, this.swordsmanChargeType);
-            }
-
-            if (tick < this.swordsmanChargeTicks) {
-               return true;
-            } else {
-               this.swordsmanChargedArt = SlashBladeCompat.beginChargedSlashArt(this, this.swordsmanComboTarget, this.swordsmanChargeType);
-               if (this.swordsmanChargedArt == 0) {
-                  return false;
-               } else {
-                  this.swordsmanChargedArtReleased = true;
-                  this.swordsmanSlashArtCooldown = 600;
-                  this.swordsmanSlashArtCharge = 0;
-                  this.swordsmanPreviousChargeType = this.swordsmanLastChargeType;
-                  this.swordsmanLastChargeType = this.swordsmanChargeType;
-                  this.setSwordsmanTechniquePose(SlashBladeCompat.getSlashArtPose(this.swordsmanChargedArt));
-                  return true;
-               }
-            }
-         } else {
-            int executionTick = tick - this.swordsmanChargeTicks;
-            if (SlashBladeCompat.isPiercingSlashArt(this.swordsmanChargedArt) && executionTick <= 7) {
-               this.dashSwordsmanTowardsTarget(this.distanceToSqr(this.swordsmanComboTarget));
-            } else {
-               this.setDeltaMovement(this.getDeltaMovement().multiply(0.25, 1.0, 0.25));
-            }
-
-            if (executionTick % 5 == 0) {
-               this.setSwordsmanTechniquePose(SlashBladeCompat.getSlashArtPose(this.swordsmanChargedArt));
-            }
-
-            if (!SlashBladeCompat.tickChargedSlashArt(this, this.swordsmanComboTarget, this.swordsmanChargedArt, this.swordsmanChargeType, executionTick)) {
-               return false;
-            } else {
-               if (executionTick >= SlashBladeCompat.getChargedSlashArtExecutionTicks(this.swordsmanChargedArt, this.swordsmanChargeType)) {
-                  this.swordsmanTechniqueFinished = true;
-               }
-
-               return true;
-            }
-         }
-      } else {
-         return false;
-      }
-   }
-
-   private void faceSwordsmanTarget() {
-      if (this.swordsmanComboTarget != null) {
-         Vec3 delta = this.swordsmanComboTarget.position().subtract(this.position());
-         if (!(delta.horizontalDistanceSqr() < 1.0E-6)) {
-            float yaw = (float)Math.toDegrees(Math.atan2(-delta.x, delta.z));
-            this.setYRot(yaw);
-            this.setYBodyRot(yaw);
-            this.setYHeadRot(yaw);
-         }
-      }
-   }
-
-   private boolean executeComboATick(int tick) {
-      boolean powered = SlashBladeCompat.isPowered(this);
-
-      return switch (tick) {
-         case 0 -> this.performSwordsmanTechniqueHit(1, 0.44F, 0);
-         case 6 -> this.performSwordsmanTechniqueHit(2, 0.44F, 0);
-         case 13, 16 -> this.performSwordsmanTechniqueHit(3, 0.44F, 0);
-         case 22, 24 -> this.performSwordsmanTechniqueHit(powered ? 5 : 4, powered ? 1.0F : 0.44F, 0);
-         case 31, 33, 35 -> !powered || this.performSwordsmanTechniqueHit(6, 1.0F, 0);
-         default -> true;
-      };
-   }
-
-   private boolean executeComboBTick(int tick) {
-      return switch (tick) {
-         case 0 -> this.performSwordsmanTechniqueHit(1, 0.44F, 0);
-         default -> true;
-         case 6 -> this.performSwordsmanTechniqueHit(2, 0.44F, 0);
-         case 13, 16 -> this.performSwordsmanTechniqueHit(3, 0.44F, 0);
-         case 24, 26, 28, 30, 32, 34, 36, 38 -> this.performSwordsmanTechniqueHit(7, 0.244F, 0);
-         case 44, 46 -> this.performSwordsmanTechniqueHit(7, 0.5F, 1);
-      };
-   }
-
-   private boolean executeComboCTick(int tick) {
-      return switch (tick) {
-         case 0 -> this.performSwordsmanTechniqueHit(1, 0.44F, 0);
-         case 6 -> this.performSwordsmanTechniqueHit(2, 0.44F, 0);
-         case 18, 20 -> this.performSwordsmanTechniqueHit(8, 0.88F, 0);
-         default -> true;
-      };
-   }
-
-   private boolean executeRapidSlashTick(int tick) {
-      if (tick == 0) {
-         this.setSwordsmanTechniquePose(9);
-         return true;
-      } else if (this.swordsmanComboTarget != null && !this.isPassenger()) {
-         double distanceSqr = this.distanceToSqr(this.swordsmanComboTarget);
-         if (distanceSqr > 18.0625) {
-            this.dashSwordsmanTowardsTarget(distanceSqr);
-            if (tick % 7 == 1) {
-               this.setSwordsmanTechniquePose(9);
-            }
-
-            return true;
-         } else {
-            this.getNavigation().stop();
-            this.setDeltaMovement(this.getDeltaMovement().multiply(0.35, 1.0, 0.35));
-            if (this.swordsmanRapidHitCooldown > 0) {
-               this.swordsmanRapidHitCooldown--;
-            } else if (this.swordsmanRapidHitCount < 4) {
-               if (!this.performSwordsmanTechniqueHit(9, 0.44F, 0)) {
-                  return false;
-               }
-
-               this.swordsmanRapidHitCount++;
-               this.swordsmanRapidHitCooldown = 2;
-            }
-
-            if (this.swordsmanRapidHitCount >= 4 && this.swordsmanRapidHitCooldown <= 0) {
-               this.swordsmanTechniqueFinished = true;
-            }
-
-            return true;
-         }
-      } else {
-         return false;
-      }
-   }
-
-   private void dashSwordsmanTowardsTarget(double distanceSqr) {
-      if (this.swordsmanComboTarget != null && !this.isPassenger()) {
-         this.getNavigation().stop();
-         Vec3 direction = this.horizontalDirectionToSwordsmanTarget();
-         if (!(direction.lengthSqr() < 1.0E-4)) {
-            double distance = Math.sqrt(distanceSqr);
-            double speed = distance > 16.0 ? 1.1 : (distance > 8.0 ? 0.92 : 0.72);
-            Vec3 motion = this.getDeltaMovement();
-            this.setDeltaMovement(direction.x * speed, motion.y, direction.z * speed);
-            float yaw = (float)Math.toDegrees(Math.atan2(-direction.x, direction.z));
-            this.setYRot(yaw);
-            this.setYBodyRot(yaw);
-            this.setYHeadRot(yaw);
-            this.setSprinting(true);
-            this.hasImpulse = true;
-            if (this.horizontalCollision && this.onGround()) {
-               this.getJumpControl().jump();
-            }
-         }
-      }
-   }
-
-   private boolean executeUpperChainTick(int tick) {
-      if (tick == 0) {
-         return this.performSwordsmanTechniqueHit(10, 0.5F, 1);
-      } else {
-         if (tick == 5) {
-            this.setSwordsmanTechniquePose(11);
-            this.setDeltaMovement(this.getDeltaMovement().x, 0.6, this.getDeltaMovement().z);
-            this.setOnGround(false);
-            this.hasImpulse = true;
-         } else {
-            if (tick == 8) {
-               return this.performSwordsmanTechniqueHit(12, 0.6F, 1);
-            }
-
-            if (tick == 14) {
-               return this.performSwordsmanTechniqueHit(12, 0.6F, 1);
-            }
-         }
-
-         return true;
-      }
-   }
-
-   private boolean executeAerialComboATick(int tick) {
-      if (tick == 0) {
-         if (!this.performSwordsmanTechniqueHit(10, 0.5F, 1)) {
-            return false;
-         } else {
-            this.launchSwordsmanAerialCombo();
-            this.setSwordsmanTechniquePose(11);
-            return true;
-         }
-      } else {
-         if (this.shouldBeginSwordsmanAerialCleave(tick, 34)) {
-            this.beginSwordsmanAerialCleave();
-         }
-
-         if (this.swordsmanAerialCleaveActive) {
-            return this.tickSwordsmanAerialCleave();
-         } else {
-            this.hoverSwordsmanNearTarget();
-
-            return switch (tick) {
-               case 5 -> this.performSwordsmanTechniqueHit(13, 0.28F, 0);
-               case 11 -> this.performSwordsmanTechniqueHit(14, 0.28F, 0);
-               case 18, 20 -> this.performSwordsmanTechniqueHit(15, 0.28F, 2);
-               default -> true;
-            };
-         }
-      }
-   }
-
-   private boolean executeAerialComboBTick(int tick) {
-      if (tick == 0) {
-         if (!this.performSwordsmanTechniqueHit(10, 0.5F, 1)) {
-            return false;
-         } else {
-            this.launchSwordsmanAerialCombo();
-            this.setSwordsmanTechniquePose(11);
-            return true;
-         }
-      } else {
-         if (this.shouldBeginSwordsmanAerialCleave(tick, 40)) {
-            this.beginSwordsmanAerialCleave();
-         }
-
-         if (this.swordsmanAerialCleaveActive) {
-            return this.tickSwordsmanAerialCleave();
-         } else {
-            this.hoverSwordsmanNearTarget();
-
-            return switch (tick) {
-               case 5 -> this.performSwordsmanTechniqueHit(13, 0.28F, 0);
-               case 11 -> this.performSwordsmanTechniqueHit(14, 0.28F, 0);
-               case 19, 24 -> this.performSwordsmanTechniqueHit(16, 0.34F, 1);
-               case 31, 33 -> this.performSwordsmanTechniqueHit(17, 0.34F, 3);
-               default -> true;
-            };
-         }
-      }
-   }
-
-   private boolean executeAerialCleaveOnlyTick(int tick) {
-      if (!this.swordsmanAerialCleaveActive) {
-         this.beginSwordsmanAerialCleave();
-      }
-
-      return this.tickSwordsmanAerialCleave();
-   }
-
-   private void launchSwordsmanAerialCombo() {
-      if (!this.isPassenger()) {
-         this.getNavigation().stop();
-         Vec3 motion = this.getDeltaMovement();
-         Vec3 towardTarget = this.horizontalDirectionToSwordsmanTarget();
-         this.setDeltaMovement(towardTarget.x * 0.22, Math.max(0.72, motion.y), towardTarget.z * 0.22);
-         this.setOnGround(false);
-         this.hasImpulse = true;
-      }
-   }
-
-   private void hoverSwordsmanNearTarget() {
-      if (this.swordsmanComboTarget != null && !this.isPassenger()) {
-         this.getNavigation().stop();
-         Vec3 delta = this.swordsmanComboTarget.position().add(0.0, 1.0, 0.0).subtract(this.position());
-         double horizontalDistance = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
-         double x = Mth.clamp(delta.x * 0.1, -0.24, 0.24);
-         double z = Mth.clamp(delta.z * 0.1, -0.24, 0.24);
-         double y = Mth.clamp(delta.y * 0.08, -0.08, 0.16);
-         if (horizontalDistance < 1.2) {
-            x *= 0.35;
-            z *= 0.35;
-         }
-
-         this.setDeltaMovement(x, y, z);
-         this.fallDistance = 0.0F;
-         this.setOnGround(false);
-         this.hasImpulse = true;
-      }
-   }
-
-   private boolean shouldBeginSwordsmanAerialCleave(int tick, int maximumAirTicks) {
-      if (this.swordsmanAerialCleaveActive || this.isPassenger()) {
-         return false;
-      } else if (tick < maximumAirTicks && this.swordsmanComboTarget != null) {
-         double horizontalDistanceSqr = this.horizontalDistanceSqr(this.swordsmanComboTarget);
-         double targetBelow = this.getY() - this.swordsmanComboTarget.getY();
-         return tick >= 16 && (targetBelow > 2.6 || horizontalDistanceSqr > 30.25 || !this.swordsmanComboTarget.isAlive());
-      } else {
-         return true;
-      }
-   }
-
-   private void beginSwordsmanAerialCleave() {
-      this.swordsmanAerialCleaveActive = true;
-      this.swordsmanAerialCleaveTicks = 0;
-      this.setSwordsmanTechniquePose(18);
-      if (!this.isPassenger()) {
-         this.getNavigation().stop();
-         Vec3 motion = this.getDeltaMovement();
-         this.setDeltaMovement(motion.x * 0.35, Math.min(-0.35, motion.y), motion.z * 0.35);
-         this.setOnGround(false);
-         this.hasImpulse = true;
-      }
-   }
-
-   private boolean tickSwordsmanAerialCleave() {
-      if (this.isPassenger()) {
-         return false;
-      } else {
-         this.swordsmanAerialCleaveTicks++;
-         this.fallDistance = 0.0F;
-         Vec3 towardTarget = this.horizontalDirectionToSwordsmanTarget();
-         Vec3 motion = this.getDeltaMovement();
-         double downwardSpeed = Math.max(-1.65, motion.y - 0.24);
-         this.setDeltaMovement(towardTarget.x * 0.18, downwardSpeed, towardTarget.z * 0.18);
-         this.hasImpulse = true;
-         if (this.swordsmanAerialCleaveTicks % 4 == 0
-            && this.swordsmanComboTarget != null
-            && this.distanceToSqr(this.swordsmanComboTarget) <= 22.5625
-            && !this.performSwordsmanTechniqueHit(18, 0.44F, 3)) {
-            return false;
-         } else {
-            if (this.onGround()) {
-               if (this.swordsmanComboTarget != null && this.distanceToSqr(this.swordsmanComboTarget) <= 27.5625) {
-                  this.performSwordsmanTechniqueHit(18, 0.44F, 3);
-               }
-
-               this.swordsmanTechniqueFinished = true;
-            } else if (this.swordsmanAerialCleaveTicks >= 45) {
-               this.swordsmanTechniqueFinished = true;
-            }
-
-            return true;
-         }
-      }
-   }
-
-   private Vec3 horizontalDirectionToSwordsmanTarget() {
-      if (this.swordsmanComboTarget == null) {
-         return Vec3.ZERO;
-      } else {
-         Vec3 delta = this.swordsmanComboTarget.position().subtract(this.position());
-         Vec3 horizontal = new Vec3(delta.x, 0.0, delta.z);
-         return horizontal.lengthSqr() < 1.0E-4 ? Vec3.ZERO : horizontal.normalize();
-      }
-   }
-
-   private double horizontalDistanceSqr(LivingEntity target) {
-      double x = target.getX() - this.getX();
-      double z = target.getZ() - this.getZ();
-      return x * x + z * z;
-   }
-
-   private void driveSwordsmanTowardsTarget(double speed, double stopDistance) {
-      if (this.swordsmanComboTarget != null && !this.isPassenger()) {
-         if (this.distanceToSqr(this.swordsmanComboTarget) > stopDistance * stopDistance) {
-            this.getNavigation().moveTo(this.swordsmanComboTarget, speed);
-         } else {
-            this.getNavigation().stop();
-         }
-      }
-   }
-
-   private void tickSwordsmanCombo() {
-      if (!this.level().isClientSide) {
-         if (this.swordsmanTechniqueRecoveryTicks > 0) {
-            this.swordsmanTechniqueRecoveryTicks--;
-         }
-
-         if (this.swordsmanSlashArtCooldown > 0) {
-            this.swordsmanSlashArtCooldown--;
-         }
-
-         if (this.swordsmanComboActive) {
-            if (!this.isSwordsman()) {
-               this.cancelSwordsmanCombo();
-            } else {
-               if (!this.isValidSwordsmanComboTarget()) {
-                  if (!this.swordsmanTechnique.aerial && !this.swordsmanAerialCleaveActive || this.isPassenger()) {
-                     this.cancelSwordsmanCombo();
-                     return;
-                  }
-
-                  this.swordsmanComboTarget = null;
-                  this.swordsmanTechnique = CombatNpcEntity.SwordsmanTechnique.AERIAL_CLEAVE;
-                  if (!this.swordsmanAerialCleaveActive) {
-                     this.beginSwordsmanAerialCleave();
-                  }
-               }
-
-               LivingEntity target = this.swordsmanComboTarget;
-               if (target != null) {
-                  this.getLookControl().setLookAt(target, 60.0F, 60.0F);
-               }
-
-               if (this.swordsmanTechnique.aerial
-                  || this.swordsmanTechnique == CombatNpcEntity.SwordsmanTechnique.RAPID_SLASH
-                  || this.swordsmanTechnique == CombatNpcEntity.SwordsmanTechnique.SLASH_ART
-                  || this.swordsmanTechnique == CombatNpcEntity.SwordsmanTechnique.UPPER_CHAIN && this.swordsmanComboTicks >= 5) {
-                  if ((this.swordsmanTechnique.aerial || this.swordsmanTechnique == CombatNpcEntity.SwordsmanTechnique.UPPER_CHAIN) && !this.isPassenger()) {
-                     this.getNavigation().stop();
-                  }
-               } else {
-                  this.driveSwordsmanTowardsTarget(0.9, 2.75);
-               }
-
-               this.swordsmanComboTicks++;
-               if (!this.executeSwordsmanTechniqueTick(this.swordsmanComboTicks)) {
-                  this.cancelSwordsmanCombo();
-               } else if (this.swordsmanTechniqueFinished || this.swordsmanComboTicks >= this.swordsmanTechnique.durationTicks) {
-                  this.finishSwordsmanTechnique();
-               }
-            }
-         }
-      }
-   }
-
-   private boolean isValidSwordsmanComboTarget() {
-      return this.swordsmanComboTarget != null
-         && this.swordsmanComboTarget.isAlive()
-         && this.swordsmanComboTarget.level() == this.level()
-         && this.distanceToSqr(this.swordsmanComboTarget) <= 1600.0;
-   }
-
-   private void cancelSwordsmanCombo() {
-      this.swordsmanComboActive = false;
-      this.swordsmanComboTarget = null;
-      this.swordsmanComboTicks = 0;
-      this.swordsmanComboStep = 0;
-      this.swordsmanPoseTicks = 0;
-      this.swordsmanTechnique = CombatNpcEntity.SwordsmanTechnique.NONE;
-      this.swordsmanAerialCleaveActive = false;
-      this.swordsmanAerialCleaveTicks = 0;
-      this.swordsmanTechniqueFinished = false;
-      this.swordsmanRapidHitCooldown = 0;
-      this.swordsmanRapidHitCount = 0;
-      this.swordsmanChargedArt = 0;
-      this.swordsmanChargeTicks = 0;
-      this.swordsmanChargedArtReleased = false;
-      this.setSprinting(false);
-      if (!this.level().isClientSide && (Integer)this.entityData.get(SWORDSMAN_COMBO) != 0) {
-         this.entityData.set(SWORDSMAN_COMBO, 0);
-      }
-   }
-
-   private boolean isSwordsmanComboActive() {
-      return this.swordsmanComboActive;
-   }
-
-   private int getSwordsmanTechniqueCooldownTicks() {
-      return 4;
-   }
-
-   private void finishSwordsmanTechnique() {
-      if (this.swordsmanTechnique != CombatNpcEntity.SwordsmanTechnique.SLASH_ART) {
-         this.swordsmanSlashArtCharge = Math.min(7, this.swordsmanSlashArtCharge + 1);
-      }
-
-      this.swordsmanTechniqueRecoveryTicks = 8;
-      this.cancelSwordsmanCombo();
-   }
-
-   private boolean isSwordsmanAerialRecovery() {
-      return this.swordsmanComboActive && (this.swordsmanTechnique.aerial || this.swordsmanAerialCleaveActive);
    }
 
    public void performRangedAttack(LivingEntity target, float velocity) {
@@ -1102,7 +276,6 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          } else {
             ItemStack projectileStack = this.getProjectile(this.getMainHandItem());
             AbstractArrow arrow = ProjectileUtil.getMobArrow(this, projectileStack, velocity);
-            this.positionDragonRiderArrow(arrow, target);
             float projectileSpeed = this.calculateProjectileVelocity(target);
             Vec3 start = new Vec3(this.getX(), arrow.getY(), this.getZ());
             NpcRangedAttackHelper.BallisticShot shot = NpcRangedAttackHelper.findBallisticShot(this, target, start, (double)projectileSpeed, 0.05)
@@ -1144,7 +317,6 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
             direction.x * cos - direction.z * sin, direction.y, direction.x * sin + direction.z * cos
          );
          AbstractArrow arrow = ProjectileUtil.getMobArrow(this, projectileStack, 1.0F);
-         this.positionDragonRiderArrow(arrow, target);
          NpcRangedAttackHelper.configureCrossbowArrow(this, arrow, crossbow);
          arrow.shoot(shotDirection.x, shotDirection.y, shotDirection.z, 3.15F, (float)(8 - this.level().getDifficulty().getId() * 2));
          this.level().addFreshEntity(arrow);
@@ -1165,20 +337,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private boolean canAcquireCombatTarget(LivingEntity target) {
-      return !DragonRiderController.canAcquireTarget(this, target) ? false : !this.isRangedCombatant() || this.hasBallisticRangedShot(target);
-   }
-
-   private void positionDragonRiderArrow(AbstractArrow arrow, LivingEntity target) {
-      if (this.isLogicalDragonRider()) {
-         Vec3 direction = this.targetAimDirection(target);
-         Vec3 origin = this.position().add(0.0, (double)this.getBbHeight() * 0.55, 0.0).add(direction.scale(1.35));
-         arrow.setPos(origin.x, origin.y, origin.z);
-      }
-   }
-
-   private Vec3 targetAimDirection(LivingEntity target) {
-      Vec3 aim = NpcRangedAttackHelper.predictTargetPosition(this, target, 3.15);
-      return aim.subtract(this.position().add(0.0, (double)this.getBbHeight() * 0.55, 0.0)).normalize();
+      return !this.isRangedCombatant() || this.hasBallisticRangedShot(target);
    }
 
    private float calculateProjectileVelocity(LivingEntity target) {
@@ -1201,26 +360,17 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    @Override
    public void addAdditionalSaveData(CompoundTag tag) {
       super.addAdditionalSaveData(tag);
-      if (!this.legacySpellContainerStack.isEmpty()) {
-         tag.put("SpellbookStack", this.legacySpellContainerStack.save(new CompoundTag()));
-      }
-
       tag.putInt("PatrolIndex", this.patrolIndex);
       tag.putBoolean("PatrolAtPoint", this.patrolAtPoint);
       tag.putInt("PatrolTicksAtPoint", this.patrolTicksAtPoint);
-      tag.putInt("SwordsmanSlashArtCooldown", this.swordsmanSlashArtCooldown);
-      tag.putInt("SwordsmanSlashArtCharge", this.swordsmanSlashArtCharge);
    }
 
    @Override
    public void readAdditionalSaveData(CompoundTag tag) {
       super.readAdditionalSaveData(tag);
-      this.legacySpellContainerStack = tag.contains("SpellbookStack", 10) ? ItemStack.of(tag.getCompound("SpellbookStack")) : ItemStack.EMPTY;
       this.patrolIndex = tag.getInt("PatrolIndex");
       this.patrolAtPoint = tag.getBoolean("PatrolAtPoint");
       this.patrolTicksAtPoint = tag.getInt("PatrolTicksAtPoint");
-      this.swordsmanSlashArtCooldown = tag.contains("SwordsmanSlashArtCooldown") ? Math.max(0, tag.getInt("SwordsmanSlashArtCooldown")) : 200;
-      this.swordsmanSlashArtCharge = tag.contains("SwordsmanSlashArtCharge") ? Mth.clamp(tag.getInt("SwordsmanSlashArtCharge"), 0, 7) : 0;
    }
 
    @Override
@@ -1236,29 +386,9 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    @Override
    public void aiStep() {
       super.aiStep();
-      if (!this.level().isClientSide && !this.legacySpellContainerStack.isEmpty()) {
-         this.migrateLegacySpellContainer();
-      }
-
       this.ensureRangedFollowRange();
-      SlashBladeCompat.preserveNpcBladeDurability(this);
-      this.tickSwordsmanCombo();
-      this.tickSwordsmanPose();
-      SlashBladeCompat.preserveNpcBladeDurability(this);
       if (!this.level().isClientSide && this.getCurrentCommand() == NpcCommandType.ATTACK && (this.getTarget() == null || !this.getTarget().isAlive())) {
          this.clearCommand();
-      }
-
-      if (this.isLogicalDragonRider() || this.getVehicle() != null && IceAndFireDragonCompat.isDragon(this.getVehicle())) {
-         DragonRiderController.tick(this);
-      }
-
-      if (this.getVehicle() != null && IceAndFireHippogryphCompat.isHippogryph(this.getVehicle())) {
-         HippogryphRiderController.tick(this);
-      }
-
-      if (this.getVehicle() != null && IceAndFireHippocampusCompat.isHippocampus(this.getVehicle())) {
-         HippocampusRiderController.tick(this);
       }
 
       if (this.isCommander()) {
@@ -1269,88 +399,59 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.tickOwnedMountedArcherOrbit();
    }
 
-   private void migrateLegacySpellContainer() {
-      if (!this.legacySpellContainerStack.isEmpty()) {
-         if (this.getMainHandItem().isEmpty()) {
-            this.setItemSlot(EquipmentSlot.MAINHAND, this.legacySpellContainerStack);
-            this.legacySpellContainerStack = ItemStack.EMPTY;
-         } else if (this.getOffhandItem().isEmpty()) {
-            this.setItemSlot(EquipmentSlot.OFFHAND, this.legacySpellContainerStack);
-            this.legacySpellContainerStack = ItemStack.EMPTY;
-         } else if (!this.level().isClientSide) {
-            this.spawnAtLocation(this.legacySpellContainerStack);
-            this.legacySpellContainerStack = ItemStack.EMPTY;
-         }
-      }
-   }
-
-   private void tickSwordsmanPose() {
-      if (!this.level().isClientSide) {
-         if (!this.isSwordsman()) {
-            this.cancelSwordsmanCombo();
-         } else {
-            if (this.swordsmanPoseTicks > 0 && --this.swordsmanPoseTicks == 0) {
-               this.entityData.set(SWORDSMAN_COMBO, 0);
-            }
-         }
-      }
-   }
-
    private void tickOwnedCavalryCharge() {
-      if (this.getVehicle() == null || !IceAndFireHippocampusCompat.isHippocampus(this.getVehicle()) && !IceAndFireHippogryphCompat.isHippogryph(this.getVehicle())) {
-         if (!this.isRangedCombatant()) {
-            if (this.getVehicle() instanceof Mob mount) {
-               if (!NpcWaterEscape.isRecoveryActive(this)) {
-                  LivingEntity target = this.getTarget();
-                  if (this.getCurrentCommand() != NpcCommandType.MOVE || !this.updateMountedMoveMovement()) {
-                     if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
-                        this.stopMountedCharge(mount);
-                        this.mountPassDestination = null;
-                        this.mountAttackedThisCharge = false;
-                     } else if (this.validMountedTarget(target) || !this.shouldFollowCombatGroupFormation()) {
-                        if (this.validMountedTarget(target) || !this.updateMountedFollowMovement()) {
-                           if (this.usesCustomMountedMovement() && this.validMountedTarget(target)) {
-                              if (this.mountAttackCooldown > 0) {
-                                 this.mountAttackCooldown--;
-                              }
+      if (!this.isRangedCombatant()) {
+         if (this.getVehicle() instanceof Mob mount) {
+            if (!NpcWaterEscape.isRecoveryActive(this)) {
+               LivingEntity target = this.getTarget();
+               if (this.getCurrentCommand() != NpcCommandType.MOVE || !this.updateMountedMoveMovement()) {
+                  if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
+                     this.stopMountedCharge(mount);
+                     this.mountPassDestination = null;
+                     this.mountAttackedThisCharge = false;
+                  } else if (this.validMountedTarget(target) || !this.shouldFollowCombatGroupFormation()) {
+                     if (this.validMountedTarget(target) || !this.updateMountedFollowMovement()) {
+                        if (this.usesCustomMountedMovement() && this.validMountedTarget(target)) {
+                           if (this.mountAttackCooldown > 0) {
+                              this.mountAttackCooldown--;
+                           }
 
-                              this.getLookControl().setLookAt(target, 30.0F, 30.0F);
-                              if (this.mountPassDestination != null) {
-                                 Vec3 destination = this.mountPassDestination;
-                                 this.mountPassTicks--;
-                                 this.driveMountedCharge(mount, destination);
-                                 if (this.mountPassDestination == null) {
-                                    this.mountAttackedThisCharge = false;
-                                 } else {
-                                    if (this.mountPassTicks <= 0 || mount.position().distanceToSqr(destination) < 3.0) {
-                                       this.mountPassDestination = null;
-                                       this.mountAttackedThisCharge = false;
-                                    }
-                                 }
+                           this.getLookControl().setLookAt(target, 30.0F, 30.0F);
+                           if (this.mountPassDestination != null) {
+                              Vec3 destination = this.mountPassDestination;
+                              this.mountPassTicks--;
+                              this.driveMountedCharge(mount, destination);
+                              if (this.mountPassDestination == null) {
+                                 this.mountAttackedThisCharge = false;
                               } else {
-                                 double attackDistance = Math.max(3.2, NpcEquipmentResolver.meleeAttackReach(this));
-                                 if (mount.distanceToSqr(target) > attackDistance * attackDistance) {
+                                 if (this.mountPassTicks <= 0 || mount.position().distanceToSqr(destination) < 3.0) {
+                                    this.mountPassDestination = null;
                                     this.mountAttackedThisCharge = false;
-                                    this.driveMountedCharge(mount, target.position());
-                                 } else {
-                                    if (!this.mountAttackedThisCharge && this.mountAttackCooldown <= 0) {
-                                       this.swing(InteractionHand.MAIN_HAND);
-                                       this.doHurtTarget(target);
-                                       this.mountAttackedThisCharge = true;
-                                       this.mountAttackCooldown = NpcEquipmentResolver.meleeAttackInterval(this);
-                                       Vec3 direction = target.position().subtract(mount.position());
-                                       Vec3 horizontal = new Vec3(direction.x, 0.0, direction.z);
-                                       horizontal = horizontal.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : horizontal.normalize();
-                                       this.mountPassDestination = target.position().add(horizontal.scale(10.0));
-                                       this.mountPassTicks = 28;
-                                    }
                                  }
                               }
                            } else {
-                              this.stopMountedCharge(mount);
-                              this.mountPassDestination = null;
-                              this.mountAttackedThisCharge = false;
+                              double attackDistance = Math.max(3.2, NpcEquipmentResolver.meleeAttackReach(this));
+                              if (mount.distanceToSqr(target) > attackDistance * attackDistance) {
+                                 this.mountAttackedThisCharge = false;
+                                 this.driveMountedCharge(mount, target.position());
+                              } else {
+                                 if (!this.mountAttackedThisCharge && this.mountAttackCooldown <= 0) {
+                                    this.swing(InteractionHand.MAIN_HAND);
+                                    this.doHurtTarget(target);
+                                    this.mountAttackedThisCharge = true;
+                                    this.mountAttackCooldown = NpcEquipmentResolver.meleeAttackInterval(this);
+                                    Vec3 direction = target.position().subtract(mount.position());
+                                    Vec3 horizontal = new Vec3(direction.x, 0.0, direction.z);
+                                    horizontal = horizontal.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : horizontal.normalize();
+                                    this.mountPassDestination = target.position().add(horizontal.scale(10.0));
+                                    this.mountPassTicks = 28;
+                                 }
+                              }
                            }
+                        } else {
+                           this.stopMountedCharge(mount);
+                           this.mountPassDestination = null;
+                           this.mountAttackedThisCharge = false;
                         }
                      }
                   }
@@ -1361,70 +462,68 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private void tickOwnedMountedArcherOrbit() {
-      if (this.getVehicle() == null || !IceAndFireHippocampusCompat.isHippocampus(this.getVehicle()) && !IceAndFireHippogryphCompat.isHippogryph(this.getVehicle())) {
-         if (!this.isRangedCombatant() || !(this.getVehicle() instanceof Mob mount)) {
+      if (!this.isRangedCombatant() || !(this.getVehicle() instanceof Mob mount)) {
+         this.mountedArcherTarget = null;
+      } else if (NpcWaterEscape.isRecoveryActive(this)) {
+         this.mountedArcherTarget = null;
+      } else {
+         LivingEntity target = this.getTarget();
+         if (this.getCurrentCommand() == NpcCommandType.MOVE && this.updateMountedMoveMovement()) {
             this.mountedArcherTarget = null;
-         } else if (NpcWaterEscape.isRecoveryActive(this)) {
+         } else if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
             this.mountedArcherTarget = null;
-         } else {
-            LivingEntity target = this.getTarget();
-            if (this.getCurrentCommand() == NpcCommandType.MOVE && this.updateMountedMoveMovement()) {
+         } else if (this.validMountedTarget(target) || !this.shouldFollowCombatGroupFormation()) {
+            if (!this.validMountedTarget(target) && this.updateMountedFollowMovement()) {
                this.mountedArcherTarget = null;
-            } else if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
+            } else if (!this.validMountedTarget(target)) {
                this.mountedArcherTarget = null;
-            } else if (this.validMountedTarget(target) || !this.shouldFollowCombatGroupFormation()) {
-               if (!this.validMountedTarget(target) && this.updateMountedFollowMovement()) {
-                  this.mountedArcherTarget = null;
-               } else if (!this.validMountedTarget(target)) {
-                  this.mountedArcherTarget = null;
-                  mount.getNavigation().stop();
-                  mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.45, 1.0, 0.45));
-               } else {
-                  if (this.mountedArcherTarget != target) {
-                     this.mountedArcherTarget = target;
-                     this.mountedArcherClockwise = this.getRandom().nextBoolean();
-                  }
-
-                  Vec3 offset = mount.position().subtract(target.position());
-                  Vec3 radial = new Vec3(offset.x, 0.0, offset.z);
-                  double distance = radial.length();
-                  if (distance < 0.001) {
-                     radial = new Vec3(1.0, 0.0, 0.0);
-                     distance = 1.0;
-                  } else {
-                     radial = radial.scale(1.0 / distance);
-                  }
-
-                  double correction = (14.0 - distance) * 0.12;
-                  if (distance < 10.0) {
-                     correction = 1.0;
-                  }
-
-                  if (distance > 18.0) {
-                     correction = -1.0;
-                  }
-
-                  Vec3 direction = this.mountedOrbitDirection(radial, correction, this.mountedArcherClockwise);
-                  if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
-                     this.mountedArcherClockwise = !this.mountedArcherClockwise;
-                     direction = this.mountedOrbitDirection(radial, correction, this.mountedArcherClockwise);
-                     if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
-                        this.stopMountedCharge(mount);
-                        return;
-                     }
-                  }
-
-                  AttributeInstance movement = mount.getAttribute(Attributes.MOVEMENT_SPEED);
-                  if (movement != null) {
-                     movement.setBaseValue(Math.max(movement.getBaseValue(), 0.45));
-                  }
-
-                  Vec3 current = mount.getDeltaMovement();
-                  mount.setDeltaMovement(direction.x * 0.45, current.y, direction.z * 0.45);
-                  mount.getNavigation().stop();
-                  this.faceMountedDirection(mount, direction);
-                  this.faceRiderAtTarget(target);
+               mount.getNavigation().stop();
+               mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.45, 1.0, 0.45));
+            } else {
+               if (this.mountedArcherTarget != target) {
+                  this.mountedArcherTarget = target;
+                  this.mountedArcherClockwise = this.getRandom().nextBoolean();
                }
+
+               Vec3 offset = mount.position().subtract(target.position());
+               Vec3 radial = new Vec3(offset.x, 0.0, offset.z);
+               double distance = radial.length();
+               if (distance < 0.001) {
+                  radial = new Vec3(1.0, 0.0, 0.0);
+                  distance = 1.0;
+               } else {
+                  radial = radial.scale(1.0 / distance);
+               }
+
+               double correction = (14.0 - distance) * 0.12;
+               if (distance < 10.0) {
+                  correction = 1.0;
+               }
+
+               if (distance > 18.0) {
+                  correction = -1.0;
+               }
+
+               Vec3 direction = this.mountedOrbitDirection(radial, correction, this.mountedArcherClockwise);
+               if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
+                  this.mountedArcherClockwise = !this.mountedArcherClockwise;
+                  direction = this.mountedOrbitDirection(radial, correction, this.mountedArcherClockwise);
+                  if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
+                     this.stopMountedCharge(mount);
+                     return;
+                  }
+               }
+
+               AttributeInstance movement = mount.getAttribute(Attributes.MOVEMENT_SPEED);
+               if (movement != null) {
+                  movement.setBaseValue(Math.max(movement.getBaseValue(), 0.45));
+               }
+
+               Vec3 current = mount.getDeltaMovement();
+               mount.setDeltaMovement(direction.x * 0.45, current.y, direction.z * 0.45);
+               mount.getNavigation().stop();
+               this.faceMountedDirection(mount, direction);
+               this.faceRiderAtTarget(target);
             }
          }
       }
@@ -1499,9 +598,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    boolean hasActiveCombatDeployment() {
-      return !this.hasActivePatrolDeployment() && !this.shouldFollowCombatGroupFormation()
-         ? this.isSwordsman() && SlashBladeCompat.canUseThornsGuard(this) && NpcShielding.findIncomingProjectile(this) != null
-         : true;
+      return this.hasActivePatrolDeployment() || this.shouldFollowCombatGroupFormation();
    }
 
    private static class CombatMeleeAttackGoal extends MeleeAttackGoal {
@@ -1518,7 +615,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
 
       public boolean canContinueToUse() {
-         return this.npc.canUseMeleeCombatGoal() && (this.npc.isSwordsmanAerialRecovery() || super.canContinueToUse());
+         return this.npc.canUseMeleeCombatGoal() && super.canContinueToUse();
       }
 
       public void tick() {
@@ -1528,7 +625,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
          super.tick();
          LivingEntity target = this.npc.getTarget();
-         if (target != null && !this.npc.isSwordsman()) {
+         if (target != null) {
             double holdDistance = NpcEquipmentResolver.meleeHoldDistance(this.npc);
             if (this.npc.distanceToSqr(target) <= holdDistance * holdDistance && this.npc.hasMeleeLineOfSight(target)) {
                this.npc.getNavigation().stop();
@@ -1538,15 +635,11 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
 
       protected void checkAndPerformAttack(LivingEntity target, double distanceSqr) {
-         if (!this.npc.isSwordsmanComboActive()) {
-            double attackReachSqr = this.npc.isSwordsman() ? 1024.0 : this.getAttackReachSqr(target);
-            if (distanceSqr <= attackReachSqr && this.weaponCooldown <= 0 && this.npc.hasMeleeLineOfSight(target)) {
-               boolean attacked = this.npc.doHurtTarget(target);
-               if (attacked) {
-                  this.weaponCooldown = this.npc.isSwordsman()
-                     ? this.npc.getSwordsmanTechniqueCooldownTicks()
-                     : NpcEquipmentResolver.meleeAttackInterval(this.npc);
-               }
+         double attackReachSqr = this.getAttackReachSqr(target);
+         if (distanceSqr <= attackReachSqr && this.weaponCooldown <= 0 && this.npc.hasMeleeLineOfSight(target)) {
+            boolean attacked = this.npc.doHurtTarget(target);
+            if (attacked) {
+               this.weaponCooldown = NpcEquipmentResolver.meleeAttackInterval(this.npc);
             }
          }
       }
@@ -1582,7 +675,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       public boolean canUse() {
          this.target = this.npc.getTarget();
          this.npc.ensureRangedFollowRange();
-         boolean usable = !this.npc.isLogicalDragonRider() && this.npc.isRangedCombatant() && this.validTarget();
+         boolean usable = this.npc.isRangedCombatant() && this.validTarget();
          if (usable) {
             this.resetBallisticCheck();
          }
@@ -1592,7 +685,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       public boolean canContinueToUse() {
          this.npc.ensureRangedFollowRange();
-         return !this.npc.isLogicalDragonRider() && this.npc.isRangedCombatant() && this.npc.getTarget() == this.target && this.validTarget();
+         return this.npc.isRangedCombatant() && this.npc.getTarget() == this.target && this.validTarget();
       }
 
       public void start() {
@@ -2132,90 +1225,4 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
    }
 
-   private static class SwordsmanProjectileGuardGoal extends Goal {
-      private final CombatNpcEntity npc;
-      private Projectile threat;
-      private int guardLingerTicks;
-
-      private SwordsmanProjectileGuardGoal(CombatNpcEntity npc) {
-         this.npc = npc;
-         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
-      }
-
-      public boolean canUse() {
-         if (this.npc.isSwordsman() && SlashBladeCompat.canUseThornsGuard(this.npc)) {
-            this.threat = NpcShielding.findIncomingProjectile(this.npc);
-            return this.threat != null;
-         } else {
-            return false;
-         }
-      }
-
-      public boolean canContinueToUse() {
-         if (this.npc.isSwordsman() && SlashBladeCompat.canUseThornsGuard(this.npc)) {
-            Projectile nextThreat = NpcShielding.findIncomingProjectile(this.npc);
-            if (nextThreat != null) {
-               this.threat = nextThreat;
-               this.guardLingerTicks = 4;
-               return true;
-            } else {
-               return this.guardLingerTicks-- > 0;
-            }
-         } else {
-            return false;
-         }
-      }
-
-      public void start() {
-         this.guardLingerTicks = 4;
-         this.npc.cancelSwordsmanCombo();
-         this.npc.getNavigation().stop();
-         SlashBladeCompat.setThornsGuardInput(this.npc, true);
-      }
-
-      public void tick() {
-         this.npc.getNavigation().stop();
-         Vec3 motion = this.npc.getDeltaMovement();
-         this.npc.setDeltaMovement(0.0, motion.y, 0.0);
-         if (this.threat != null && this.threat.isAlive()) {
-            this.npc.getLookControl().setLookAt(this.threat.getX(), this.threat.getY(), this.threat.getZ(), 90.0F, 90.0F);
-            Vec3 direction = this.threat.position().subtract(this.npc.position());
-            if (direction.horizontalDistanceSqr() > 1.0E-5) {
-               float yaw = (float)Math.toDegrees(Math.atan2(-direction.x, direction.z));
-               this.npc.setYRot(yaw);
-               this.npc.setYBodyRot(yaw);
-               this.npc.setYHeadRot(yaw);
-            }
-         }
-
-         SlashBladeCompat.setThornsGuardInput(this.npc, true);
-      }
-
-      public void stop() {
-         this.threat = null;
-         this.guardLingerTicks = 0;
-         SlashBladeCompat.setThornsGuardInput(this.npc, false);
-      }
-   }
-
-   private static enum SwordsmanTechnique {
-      NONE(0, false),
-      COMBO_A(42, false),
-      COMBO_B(54, false),
-      COMBO_C(30, false),
-      RAPID_SLASH(80, false),
-      UPPER_CHAIN(24, false),
-      AERIAL_COMBO_A(82, true),
-      AERIAL_COMBO_B(88, true),
-      AERIAL_CLEAVE(50, true),
-      SLASH_ART(64, false);
-
-      private final int durationTicks;
-      private final boolean aerial;
-
-      private SwordsmanTechnique(int durationTicks, boolean aerial) {
-         this.durationTicks = durationTicks;
-         this.aerial = aerial;
-      }
-   }
 }

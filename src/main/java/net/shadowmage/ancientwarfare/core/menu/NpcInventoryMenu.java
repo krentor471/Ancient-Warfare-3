@@ -20,7 +20,6 @@ import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
 import net.shadowmage.ancientwarfare.core.entity.BardNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.DragonRiderController;
 import net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.TraderNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.WorkerNpcEntity;
@@ -140,7 +139,6 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
          return true;
       } else if (id == 3) {
          Entity storedMount = this.npc.getVehicle();
-         Entity logicalMount = DragonRiderController.getLogicalMount(this.npc);
          ItemStack repackedNpc = NpcSpawnerItem.createFromNpc(this.npc);
          if (!player.getInventory().add(repackedNpc)) {
             player.drop(repackedNpc, false);
@@ -151,10 +149,6 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
          this.npc.discard();
          if (storedMount instanceof Mob && storedMount.isAlive()) {
             storedMount.discard();
-         }
-
-         if (logicalMount instanceof Mob && logicalMount.isAlive()) {
-            logicalMount.discard();
          }
 
          player.displayClientMessage(Component.translatable("guistrings.npc.repacked"), true);

@@ -28,16 +28,6 @@ public final class ForgeGameplayConfig implements PlatformGameplayConfig {
    }
 
    @Override
-   public boolean iceAndFireBonusLoot() {
-      return AWLootConfig.iceAndFireBonusLoot();
-   }
-
-   @Override
-   public boolean slashBladeBonusLoot() {
-      return AWLootConfig.slashBladeBonusLoot();
-   }
-
-   @Override
    public boolean fillUnconfiguredStructureContainers() {
       return AWLootConfig.fillUnconfiguredStructureContainers();
    }

@@ -15,8 +15,6 @@ public final class AWLootConfig {
    private static final DoubleValue GLOBAL_ROLL_MULTIPLIER;
    private static final DoubleValue GLOBAL_COUNT_MULTIPLIER;
    private static final BooleanValue PREVENT_DUPLICATE_RESEARCH;
-   private static final BooleanValue ICE_AND_FIRE_BONUS;
-   private static final BooleanValue SLASHBLADE_BONUS;
    private static final BooleanValue FILL_UNCONFIGURED_STRUCTURE_CONTAINERS;
    private static final ConfigValue<List<? extends String>> DISABLED_TABLES;
    private static final ConfigValue<List<? extends String>> TABLE_ROLL_MULTIPLIERS;
@@ -49,14 +47,6 @@ public final class AWLootConfig {
 
    public static boolean preventDuplicateResearchNotes() {
       return (Boolean)PREVENT_DUPLICATE_RESEARCH.get();
-   }
-
-   public static boolean iceAndFireBonusLoot() {
-      return (Boolean)ICE_AND_FIRE_BONUS.get();
-   }
-
-   public static boolean slashBladeBonusLoot() {
-      return (Boolean)SLASHBLADE_BONUS.get();
    }
 
    public static boolean fillUnconfiguredStructureContainers() {
@@ -144,10 +134,6 @@ public final class AWLootConfig {
          .defineInRange("globalItemCountMultiplier", 1.0, 0.0, 100.0);
       PREVENT_DUPLICATE_RESEARCH = builder.comment("Avoid duplicate research notes in one container. Default preserves the current remastered behavior.")
          .define("preventDuplicateResearchNotes", true);
-      ICE_AND_FIRE_BONUS = builder.comment("Allow the optional Ice and Fire structure bonus rewards when that mod is installed.")
-         .define("enableIceAndFireBonusLoot", true);
-      SLASHBLADE_BONUS = builder.comment("Allow the optional SlashBlade structure bonus rewards when that mod is installed.")
-         .define("enableSlashBladeBonusLoot", true);
       FILL_UNCONFIGURED_STRUCTURE_CONTAINERS = builder.comment(
             new String[]{
                "Fill otherwise empty containers in naturally generated AWS/AWT structures with a table inferred from the building purpose, nearby workstations and faction.",

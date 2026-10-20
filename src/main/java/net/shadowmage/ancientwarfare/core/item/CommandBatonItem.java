@@ -30,8 +30,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Tier;
@@ -45,14 +43,7 @@ import net.minecraft.world.phys.Vec3;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcProfessionTool;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireDragonCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippocampusCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippogryphCompat;
 import net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.DragonRiderController;
-import net.shadowmage.ancientwarfare.core.entity.HippocampusRiderController;
-import net.shadowmage.ancientwarfare.core.entity.HippogryphRiderController;
-import net.shadowmage.ancientwarfare.core.entity.ModernSoldierNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity;
 
 public class CommandBatonItem extends Item implements NpcProfessionTool {
@@ -187,30 +178,18 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    private static String combatGroupType(PlayerOwnedNpcEntity npc) {
       if (npc.isSiegeEngineerProfession()) {
          return "siege_engineer";
-      } else if (npc instanceof ModernSoldierNpcEntity) {
-         return npc.getNpcType();
       } else if (npc instanceof CombatNpcEntity combat) {
-         if (combat.isLogicalDragonRider()) {
-            return "dragon_rider";
-         } else if (combat.isHippogryphRider()) {
-            return "hippogryph_rider";
-         } else if (combat.isHippocampusRider()) {
-            return "hippocampus_rider";
+         String subtype = combat.getNpcSubtype();
+         if (NpcEquipmentResolver.isRangedWeapon(combat.getMainHandItem())) {
+            return combat.isPassenger() ? "mounted_archer" : "archer";
+         } else if (combat.isPassenger()) {
+            return "cavalry";
+         } else if ("commander".equals(subtype)) {
+            return "commander";
+         } else if ("medic".equals(subtype)) {
+            return "medic";
          } else {
-            String subtype = combat.getNpcSubtype();
-            if (NpcEquipmentResolver.isRangedWeapon(combat.getMainHandItem())) {
-               return combat.isPassenger() ? "mounted_archer" : "archer";
-            } else if (combat.isPassenger()) {
-               return "cavalry";
-            } else if ("swordsman".equals(subtype)) {
-               return "swordsman";
-            } else if ("commander".equals(subtype)) {
-               return "commander";
-            } else if ("medic".equals(subtype)) {
-               return "medic";
-            } else {
-               return "engineer".equals(subtype) ? "engineer" : "soldier";
-            }
+            return "engineer".equals(subtype) ? "engineer" : "soldier";
          }
       } else {
          return "combat";
@@ -394,45 +373,13 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
                   AncientWarfareCore.LOG.info("Mount candidate {} rejected: permission", npc.getId());
                } else {
                   stillValid.add(uuid);
-                  boolean melee = npc instanceof CombatNpcEntity && "soldier".equals(npc.getNpcSubtype());
-                  boolean iceDragon = IceAndFireDragonCompat.isDragon(mount);
-                  boolean hippogryph = IceAndFireHippogryphCompat.isHippogryph(mount);
-                  boolean hippocampus = IceAndFireHippocampusCompat.isHippocampus(mount);
-                  boolean validDragon = !iceDragon || melee && IceAndFireDragonCompat.canBeMountedBy(mount, player.getUUID());
-                  boolean ranged = npc.getMainHandItem().getItem() instanceof BowItem || npc.getMainHandItem().getItem() instanceof CrossbowItem;
-                  boolean validHippogryph = !hippogryph
-                     || npc instanceof CombatNpcEntity
-                        && ("soldier".equals(npc.getNpcSubtype()) || ranged)
-                        && IceAndFireHippogryphCompat.canBeMountedBy(mount, player.getUUID());
-                  boolean validHippocampus = !hippocampus
-                     || npc instanceof CombatNpcEntity
-                        && ("soldier".equals(npc.getNpcSubtype()) || ranged)
-                        && IceAndFireHippocampusCompat.canBeMountedBy(mount, player.getUUID());
-                  boolean alreadyLogicalDragonRider = npc.isLogicalDragonRider() || IceAndFireDragonCompat.isDragon(npc.getVehicle());
-                  AncientWarfareCore.LOG
-                     .info(
-                        "Mount candidate {} subtype={}, iceDragon={}, validDragon={}, alive={}, passenger={}, logical={}, distance={}",
-                        new Object[]{
-                           npc.getId(),
-                           npc.getNpcSubtype(),
-                           iceDragon,
-                           validDragon,
-                           npc.isAlive(),
-                           npc.isPassenger(),
-                           alreadyLogicalDragonRider,
-                           npc.distanceTo(mount)
-                        }
-                     );
                   double mountCommandRange = 16.0;
                   if (commanded == 0
-                     && validDragon
-                     && validHippogryph
-                     && validHippocampus
                      && npc.isAlive()
-                     && (!npc.isPassenger() || alreadyLogicalDragonRider)
+                     && !npc.isPassenger()
                      && npc.distanceToSqr(mount) <= mountCommandRange * mountCommandRange) {
                      prepareMount(mount);
-                     boolean mounted = iceDragon ? DragonRiderController.attach(npc, mount) : npc.startRiding(mount, true);
+                     boolean mounted = npc.startRiding(mount, true);
                      if (mounted) {
                         npc.clearCommand();
                         commanded++;
@@ -498,31 +445,10 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          if (entity instanceof PlayerOwnedNpcEntity) {
             PlayerOwnedNpcEntity npc = (PlayerOwnedNpcEntity)entity;
             if (npc.hasCommandPermission(player)) {
-               boolean mounted = npc.isLogicalDragonRider() || npc.isPassenger();
-               if (!mounted) {
+               if (!npc.isPassenger()) {
                   stillValid.add(uuid);
                } else {
-                  label57: {
-                     if (npc instanceof CombatNpcEntity combat && npc.isLogicalDragonRider()) {
-                        DragonRiderController.detach(combat);
-                        break label57;
-                     }
-
-                     if (npc instanceof CombatNpcEntity combat && IceAndFireHippogryphCompat.isHippogryph(npc.getVehicle())) {
-                        HippogryphRiderController.detach(combat);
-                        break label57;
-                     }
-
-                     if (npc instanceof CombatNpcEntity combat && IceAndFireHippocampusCompat.isHippocampus(npc.getVehicle())) {
-                        HippocampusRiderController.detach(combat);
-                        break label57;
-                     }
-
-                     if (npc.isPassenger()) {
-                        npc.stopRiding();
-                     }
-                  }
-
+                  npc.stopRiding();
                   npc.teleportTo((double)target.getX() + 0.5, (double)target.getY() + 1.0, (double)target.getZ() + 0.5);
                   npc.clearCommand();
                   stillValid.add(uuid);
@@ -537,7 +463,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    private static boolean isMountedNpc(PlayerOwnedNpcEntity npc) {
-      return npc != null && (npc.isPassenger() || npc.isLogicalDragonRider());
+      return npc != null && npc.isPassenger();
    }
 
    private static Component commandMessage(CommandBatonItem.BatonMode mode, int commanded) {

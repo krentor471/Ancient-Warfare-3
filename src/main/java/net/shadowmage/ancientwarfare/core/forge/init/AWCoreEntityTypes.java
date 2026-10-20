@@ -7,7 +7,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
-import net.shadowmage.ancientwarfare.core.compat.IronsSpellbooksCompat;
 import net.shadowmage.ancientwarfare.core.entity.BallistaBoatEntity;
 import net.shadowmage.ancientwarfare.core.entity.BallistaBoltEntity;
 import net.shadowmage.ancientwarfare.core.entity.BallistaMobileEntity;
@@ -38,15 +37,12 @@ import net.shadowmage.ancientwarfare.core.entity.FactionPriestNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSiegeEngineerNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSoldierEliteNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSoldierNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.FactionSpellcasterNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionTraderNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.GateEntity;
 import net.shadowmage.ancientwarfare.core.entity.GiantTrebuchetEntity;
 import net.shadowmage.ancientwarfare.core.entity.HwachaEntity;
 import net.shadowmage.ancientwarfare.core.entity.HwachaRocketEntity;
-import net.shadowmage.ancientwarfare.core.entity.ModernSoldierNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.PriestNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.ShipCaptainNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.SiegeEngineerNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.TraderNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.TransportBoatEntity;
@@ -231,7 +227,7 @@ public final class AWCoreEntityTypes {
    );
    public static final RegistryObject<EntityType<CombatNpcEntity>> COMBAT_NPC = REGISTER.register(
       AWCoreIds.COMBAT_NPC.getPath(),
-      () -> Builder.of(IronsSpellbooksCompat::createCombatNpc, MobCategory.CREATURE)
+      () -> Builder.<CombatNpcEntity>of(CombatNpcEntity::new, MobCategory.CREATURE)
             .sized(0.6F, 1.95F)
             .clientTrackingRange(8)
             .build(AWCoreIds.COMBAT_NPC.toString())
@@ -258,17 +254,6 @@ public final class AWCoreEntityTypes {
             .sized(0.6F, 1.95F)
             .clientTrackingRange(8)
             .build(AWCoreIds.SIEGE_ENGINEER_NPC.toString())
-   );
-   public static final RegistryObject<EntityType<ModernSoldierNpcEntity>> MODERN_SOLDIER_NPC = REGISTER.register(
-      AWCoreIds.MODERN_SOLDIER_NPC.getPath(),
-      () -> Builder.of(ModernSoldierNpcEntity::new, MobCategory.CREATURE)
-            .sized(0.6F, 1.95F)
-            .clientTrackingRange(8)
-            .build(AWCoreIds.MODERN_SOLDIER_NPC.toString())
-   );
-   public static final RegistryObject<EntityType<ShipCaptainNpcEntity>> SHIP_CAPTAIN_NPC = REGISTER.register(
-      AWCoreIds.SHIP_CAPTAIN_NPC.getPath(),
-      () -> Builder.of(ShipCaptainNpcEntity::new, MobCategory.CREATURE).sized(0.6F, 1.95F).clientTrackingRange(8).build(AWCoreIds.SHIP_CAPTAIN_NPC.toString())
    );
    public static final RegistryObject<EntityType<FactionSoldierNpcEntity>> FACTION_SOLDIER_NPC = REGISTER.register(
       AWCoreIds.FACTION_SOLDIER_NPC.getPath(),
@@ -353,13 +338,6 @@ public final class AWCoreEntityTypes {
             .sized(0.6F, 1.95F)
             .clientTrackingRange(8)
             .build(AWCoreIds.FACTION_PRIEST_NPC.toString())
-   );
-   public static final RegistryObject<EntityType<FactionSpellcasterNpcEntity>> FACTION_SPELLCASTER_NPC = REGISTER.register(
-      AWCoreIds.FACTION_SPELLCASTER_NPC.getPath(),
-      () -> Builder.of(IronsSpellbooksCompat::createFactionSpellcaster, MobCategory.CREATURE)
-            .sized(0.6F, 1.95F)
-            .clientTrackingRange(8)
-            .build(AWCoreIds.FACTION_SPELLCASTER_NPC.toString())
    );
    public static final RegistryObject<EntityType<FactionBardNpcEntity>> FACTION_BARD_NPC = REGISTER.register(
       AWCoreIds.FACTION_BARD_NPC.getPath(),

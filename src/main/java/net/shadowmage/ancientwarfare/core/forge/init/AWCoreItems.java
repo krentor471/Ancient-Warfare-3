@@ -43,7 +43,6 @@ import net.shadowmage.ancientwarfare.core.item.ManualItem;
 import net.shadowmage.ancientwarfare.core.item.NpcShieldItem;
 import net.shadowmage.ancientwarfare.core.item.NpcSpawnerItem;
 import net.shadowmage.ancientwarfare.core.item.NpcWeaponItem;
-import net.shadowmage.ancientwarfare.core.item.OwnedNpcSpawnEggItem;
 import net.shadowmage.ancientwarfare.core.item.QuillItem;
 import net.shadowmage.ancientwarfare.core.item.ResearchBookItem;
 import net.shadowmage.ancientwarfare.core.item.ResearchNoteItem;
@@ -455,12 +454,6 @@ public final class AWCoreItems {
    public static final RegistryObject<Item> SIEGE_ENGINEER_NPC_SPAWN_EGG = REGISTER.register(
       "siege_engineer_npc_spawn_egg", () -> new ForgeSpawnEggItem(AWCoreEntityTypes.SIEGE_ENGINEER_NPC, 4868674, 13144378, new Properties())
    );
-   public static final RegistryObject<Item> MODERN_SOLDIER_NPC_SPAWN_EGG = REGISTER.register(
-      "modern_soldier_npc_spawn_egg", () -> new OwnedNpcSpawnEggItem(AWCoreEntityTypes.MODERN_SOLDIER_NPC, 4868674, 8030100, new Properties())
-   );
-   public static final RegistryObject<Item> SHIP_CAPTAIN_NPC_SPAWN_EGG = REGISTER.register(
-      "ship_captain_npc_spawn_egg", () -> new OwnedNpcSpawnEggItem(AWCoreEntityTypes.SHIP_CAPTAIN_NPC, 2504518, 13215307, new Properties())
-   );
    public static final RegistryObject<Item> FACTION_SOLDIER_NPC_SPAWN_EGG = REGISTER.register(
       "faction_soldier_npc_spawn_egg", () -> new ForgeSpawnEggItem(AWCoreEntityTypes.FACTION_SOLDIER_NPC, 3877412, 11547947, new Properties())
    );
@@ -487,9 +480,6 @@ public final class AWCoreItems {
    );
    public static final RegistryObject<Item> FACTION_PRIEST_NPC_SPAWN_EGG = REGISTER.register(
       "faction_priest_npc_spawn_egg", () -> new ForgeSpawnEggItem(AWCoreEntityTypes.FACTION_PRIEST_NPC, 13157024, 7232059, new Properties())
-   );
-   public static final RegistryObject<Item> FACTION_SPELLCASTER_NPC_SPAWN_EGG = REGISTER.register(
-      "faction_spellcaster_npc_spawn_egg", () -> new ForgeSpawnEggItem(AWCoreEntityTypes.FACTION_SPELLCASTER_NPC, 3088966, 9228543, new Properties())
    );
    public static final RegistryObject<Item> NPC_SPAWNER = REGISTER.register("npc_spawner", NpcSpawnerItem::new);
    public static final RegistryObject<Item> WOODEN_COMMAND_BATON = REGISTER.register("wooden_command_baton", () -> new CommandBatonItem(Tiers.WOOD));
