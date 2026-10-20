@@ -23,13 +23,21 @@ minecraft {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
+            // GeckoLib's mixins need their refmap remapped to run in the dev environment.
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
             mods {
                 "${mod_id}" {
                     source sourceSets.main
                 }
             }
         }
-        client {}
+        client {
+            // ./gradlew runClient -PquickPlay=localhost:25565 joins that server straight away.
+            if (project.hasProperty('quickPlay')) {
+                args '--quickPlayMultiplayer', project.property('quickPlay')
+            }
+        }
         server {
             args '--nogui'
         }
