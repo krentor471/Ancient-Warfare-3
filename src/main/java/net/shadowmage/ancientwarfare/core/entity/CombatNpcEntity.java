@@ -64,6 +64,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    private static final double MOUNTED_ARCHER_RADIUS = 14.0;
    private static final double MOUNTED_ARCHER_MIN_RADIUS = 10.0;
    private static final double MOUNTED_ARCHER_MAX_RADIUS = 18.0;
+   private static final int TARGET_SCAN_INTERVAL = 5;
    private int patrolIndex;
    private boolean patrolAtPoint;
    private int patrolTicksAtPoint;
@@ -143,7 +144,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
             new VerticalRangeTargetGoal<>(
                this,
                FactionNpcEntity.class,
-               2,
+               TARGET_SCAN_INTERVAL,
                false,
                false,
                target -> this.isHostileFactionNpc(target) && this.canAcquireCombatTarget(target),
@@ -156,7 +157,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
             new VerticalRangeTargetGoal<LivingEntity>(
                this,
                LivingEntity.class,
-               2,
+               TARGET_SCAN_INTERVAL,
                false,
                false,
                target -> this.canAttackTarget(target) && this.canAcquireCombatTarget(target),

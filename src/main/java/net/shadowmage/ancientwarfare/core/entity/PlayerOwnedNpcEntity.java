@@ -55,6 +55,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private static final EntityDataAccessor<Boolean> TOWN_HALL_SET = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BOOLEAN);
    private static final EntityDataAccessor<BlockPos> TOWN_HALL_POS = SynchedEntityData.defineId(PlayerOwnedNpcEntity.class, EntityDataSerializers.BLOCK_POS);
    private static final String TAG_OWNER = "Owner";
+   // Mirrors OWNER: ally checks read it for every nearby NPC, and synched data reads take a lock.
+   private Optional<UUID> owner;
    private static final String TAG_CURRENT_COMMAND = "CurrentCommand";
    private static final String TAG_COMMAND_TARGET = "CommandTarget";
    private static final String TAG_HOME_SET = "HomeSet";
@@ -189,11 +191,22 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    @Override
    public Optional<UUID> getOwner() {
-      return (Optional<UUID>)this.entityData.get(OWNER);
+      Optional<UUID> cached = this.owner;
+      return cached != null ? cached : (Optional<UUID>)this.entityData.get(OWNER);
    }
 
    public void setOwner(UUID owner) {
-      this.entityData.set(OWNER, Optional.ofNullable(owner));
+      Optional<UUID> value = Optional.ofNullable(owner);
+      this.entityData.set(OWNER, value);
+      this.owner = value;
+   }
+
+   @Override
+   public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+      super.onSyncedDataUpdated(key);
+      if (OWNER.equals(key)) {
+         this.owner = (Optional<UUID>)this.entityData.get(OWNER);
+      }
    }
 
    public boolean isAlliedTo(Entity entity) {

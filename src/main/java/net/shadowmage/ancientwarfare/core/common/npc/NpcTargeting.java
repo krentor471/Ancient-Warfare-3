@@ -65,7 +65,7 @@ public final class NpcTargeting {
       if (observer == null || target == null) {
          return false;
       } else if (observer != target && !observer.isPassengerOfSameVehicle(target)) {
-         if (observer.getTeam() != null && observer.getTeam().isAlliedTo(target.getTeam())) {
+         if (!observer.level().getScoreboard().getPlayerTeams().isEmpty() && observer.getTeam() != null && observer.getTeam().isAlliedTo(target.getTeam())) {
             return true;
          } else {
             UUID observerOwner = ownerId(observer);
