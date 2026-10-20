@@ -148,7 +148,7 @@ public final class AWLootConfig {
       TABLE_ROLL_MULTIPLIERS = builder.comment(
             new String[]{
                "Optional per-table execution multipliers, applied after globalRollMultiplier.",
-               "Format: [\"ancientwarfare:chests/empire=0.5\", \"ancientwarfare:chests/dwarf=2.0\"]"
+               "Format: [\"ancientwarfare:chests/empire=0.5\", \"ancientwarfare:chests/norska=2.0\"]"
             }
          )
          .defineListAllowEmpty("tableRollMultipliers", List.of(), AWLootConfig::validMultiplierEntry);

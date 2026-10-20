@@ -4164,7 +4164,7 @@ rule:
 plugin=blockTile
 number=276
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:advanced_loot_chest",properties:{facing:"west"}},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/beast_treasure_hoard",spawnEntity:1b,entity:"iceandfire:dread_ghoul"},Items:[],id:"ancientwarfarestructure:advanced_loot_chest_tile",Lock:""}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:advanced_loot_chest",properties:{facing:"west"}},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/castle_treasury_medium_value",spawnEntity:1b,entity:"iceandfire:dread_ghoul"},Items:[],id:"ancientwarfarestructure:advanced_loot_chest_tile",Lock:""}}
 :enddata
 :endrule
 

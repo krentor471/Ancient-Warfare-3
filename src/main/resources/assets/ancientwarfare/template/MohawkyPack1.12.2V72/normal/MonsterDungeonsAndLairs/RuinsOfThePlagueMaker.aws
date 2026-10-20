@@ -1003,7 +1003,7 @@ rule:
 plugin=blockTile
 number=48
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,entityNBT:{ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],hasCustomEquipment:0b,ArmorItems:[{},{},{},{}],skinSettings:{npcTypeName:"custom",skinTypeSelected:"default"},HandDropChances:[0.085f,0.085f],factionName:"undead",HandItems:[{id:"ancientwarfarenpc:scythe",Count:1b,Damage:0s},{}]},lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"ancientwarfarenpc:faction.soldier.elite"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,entityNBT:{ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],hasCustomEquipment:0b,ArmorItems:[{},{},{},{}],skinSettings:{npcTypeName:"custom",skinTypeSelected:"default"},HandDropChances:[0.085f,0.085f],factionName:"undead",HandItems:[{id:"ancientwarfarenpc:scythe",Count:1b,Damage:0s},{}]},lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"ancientwarfarenpc:faction.soldier.elite"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -1019,7 +1019,7 @@ rule:
 plugin=blockTile
 number=50
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,entityNBT:{ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],hasCustomEquipment:0b,ArmorItems:[{},{},{},{}],skinSettings:{npcTypeName:"custom",skinTypeSelected:"default"},HandDropChances:[0.085f,0.085f],factionName:"undead",HandItems:[{id:"ancientwarfarenpc:scythe",Count:1b,Damage:0s},{}]},lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"ancientwarfarenpc:faction.soldier.elite"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,entityNBT:{ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],hasCustomEquipment:0b,ArmorItems:[{},{},{},{}],skinSettings:{npcTypeName:"custom",skinTypeSelected:"default"},HandDropChances:[0.085f,0.085f],factionName:"undead",HandItems:[{id:"ancientwarfarenpc:scythe",Count:1b,Damage:0s},{}]},lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"ancientwarfarenpc:faction.soldier.elite"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -1123,7 +1123,7 @@ rule:
 plugin=blockTile
 number=63
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,entityNBT:{ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],hasCustomEquipment:0b,ArmorItems:[{},{},{},{}],skinSettings:{npcTypeName:"custom",skinTypeSelected:"default"},HandDropChances:[0.085f,0.085f],factionName:"undead",HandItems:[{id:"ancientwarfarenpc:scythe",Count:1b,Damage:0s},{}]},lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"ancientwarfarenpc:faction.soldier.elite"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,entityNBT:{ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],hasCustomEquipment:0b,ArmorItems:[{},{},{},{}],skinSettings:{npcTypeName:"custom",skinTypeSelected:"default"},HandDropChances:[0.085f,0.085f],factionName:"undead",HandItems:[{id:"ancientwarfarenpc:scythe",Count:1b,Damage:0s},{}]},lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"ancientwarfarenpc:faction.soldier.elite"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -1139,7 +1139,7 @@ rule:
 plugin=blockTile
 number=65
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,entityNBT:{ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],hasCustomEquipment:0b,ArmorItems:[{},{},{},{}],skinSettings:{npcTypeName:"custom",skinTypeSelected:"default"},HandDropChances:[0.085f,0.085f],factionName:"undead",HandItems:[{id:"ancientwarfarenpc:scythe",Count:1b,Damage:0s},{}]},lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"ancientwarfarenpc:faction.soldier.elite"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,entityNBT:{ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],hasCustomEquipment:0b,ArmorItems:[{},{},{},{}],skinSettings:{npcTypeName:"custom",skinTypeSelected:"default"},HandDropChances:[0.085f,0.085f],factionName:"undead",HandItems:[{id:"ancientwarfarenpc:scythe",Count:1b,Damage:0s},{}]},lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"ancientwarfarenpc:faction.soldier.elite"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 

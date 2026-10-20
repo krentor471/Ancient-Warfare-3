@@ -33,6 +33,7 @@ import net.minecraft.world.phys.AABB;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcDefaultsRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
+import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
 import net.shadowmage.ancientwarfare.core.common.structure.AdvancedSpawnerConfig;
@@ -97,7 +98,10 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
             if (spawner.spawnDelay > 0) {
                spawner.spawnDelay--;
             } else if (spawner.hasConfiguredSpawn) {
-               if (spawner.hasRequiredPlayer(serverLevel)
+               if (!spawner.factionName.isBlank() && !FactionRegistry.isKnown(spawner.factionName)) {
+                  // Spawners from structure templates may still name factions that were removed from the mod.
+                  serverLevel.removeBlock(pos, false);
+               } else if (spawner.hasRequiredPlayer(serverLevel)
                   && !spawner.tooManyNearbyMobs(serverLevel)
                   && spawner.hasRequiredRedstone(serverLevel)
                   && spawner.hasRequiredLight(serverLevel)) {

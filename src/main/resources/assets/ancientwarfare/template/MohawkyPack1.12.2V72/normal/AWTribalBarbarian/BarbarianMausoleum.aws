@@ -1405,7 +1405,7 @@ rule:
 plugin=blockTile
 number=42
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/beast_treasure_hoard",spawnEntity:1b,entity:"grimoireofgaia:bone_knight"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/castle_treasury_medium_value",spawnEntity:1b,entity:"grimoireofgaia:bone_knight"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -1437,7 +1437,7 @@ rule:
 plugin=blockTile
 number=46
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/beast_treasure_hoard",spawnEntity:1b,entity:"dungeonmobs:dmmanticore"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/castle_treasury_medium_value",spawnEntity:1b,entity:"dungeonmobs:dmmanticore"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -1541,7 +1541,7 @@ rule:
 plugin=blockTile
 number=59
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/beast_treasure_hoard",spawnEntity:1b,entity:"grimoireofgaia:bone_knight"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/castle_treasury_medium_value",spawnEntity:1b,entity:"grimoireofgaia:bone_knight"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
