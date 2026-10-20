@@ -38,6 +38,12 @@ for n in ns:
     summon('faction_soldier_npc',n//2,-12,0,6,nb%'empire')
     summon('faction_soldier_npc',n//2,12,0,6,nb%'norska')
     measure(f'battle {n//2}v{n//2} (invulnerable)',warm=8)
+  elif mode=='fight':
+    # Real fighting: mortal soldiers with a deep health pool, so the battle lasts the whole measurement.
+    nb='{FactionName:"%s",PersistenceRequired:1b,Attributes:[{Name:"generic.max_health",Base:1000d}],Health:1000f}'
+    summon('faction_soldier_npc',n//2,-12,0,6,nb%'empire')
+    summon('faction_soldier_npc',n//2,12,0,6,nb%'norska')
+    measure(f'fight {n//2}v{n//2} (1000 hp)',warm=8)
   elif mode=='army':
     own='{Owner:[I;1,2,3,4],PersistenceRequired:1b,Invulnerable:1b,HandItems:[{id:"minecraft:iron_sword",Count:1b},{}]}'
     summon('combat_npc',n//2,-12,0,6,own)

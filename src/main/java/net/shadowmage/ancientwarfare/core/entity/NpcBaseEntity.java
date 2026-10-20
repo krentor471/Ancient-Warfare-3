@@ -1,11 +1,13 @@
 package net.shadowmage.ancientwarfare.core.entity;
 
 import java.util.UUID;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
@@ -29,7 +31,10 @@ import net.minecraft.world.level.ClipContext.Fluid;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcCombatRoles;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcCommandType;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcFactionAccess;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcOwnerAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcShielding;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
@@ -71,12 +76,31 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    private static final UUID COMBAT_RANK_HEALTH_MODIFIER = UUID.fromString("f3a7c5e1-0b5c-4c2c-9e7c-7a1f1d7d6a01");
    private static final UUID COMBAT_RANK_DAMAGE_MODIFIER = UUID.fromString("b4d8e2a6-6e2a-4e91-a5f2-8c6e9b9d2c02");
 
+   private static final float MAX_MORALE = 100.0F;
+   private static final float ROUT_THRESHOLD = 20.0F;
+   private static final float RALLY_MORALE = 50.0F;
+   private static final int ROUT_TICKS = 160;
+   private static final float MORALE_PER_DAMAGE = 1.5F;
+   private static final float FLANK_MORALE_FACTOR = 2.0F;
+   private static final double FLANK_DOT = -0.3;
+   private static final float ALLY_DEATH_MORALE = 10.0F;
+   private static final double MORALE_RADIUS = 12.0;
+   private static final float LEADER_MORALE_RESISTANCE = 0.5F;
+   private static final float IDLE_MORALE_REGEN = 0.05F;
+   private static final float COMBAT_MORALE_REGEN = 0.01F;
+   private static final float LEADER_REGEN_FACTOR = 3.0F;
+   private float morale = MAX_MORALE;
+   private int routTicks;
+   private Vec3 routThreat;
+   private boolean leaderNearby;
+
    protected NpcBaseEntity(EntityType<? extends NpcBaseEntity> entityType, Level level) {
       super(entityType, level);
       this.setPersistenceRequired();
       this.getNavigation().getNodeEvaluator().setCanPassDoors(true);
       this.getNavigation().getNodeEvaluator().setCanOpenDoors(true);
       this.goalSelector.addGoal(1, new NpcOpenDoorGoal(this));
+      this.goalSelector.addGoal(0, new NpcRoutGoal(this));
    }
 
    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
@@ -116,6 +140,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
          }
 
          NpcSuffocationEscape.tryEscape(this);
+         this.tickMorale();
          int meleeAnimation = this.getMeleeAttackAnimationTicks();
          if (meleeAnimation > 0) {
             this.entityData.set(MELEE_ATTACK_ANIMATION, meleeAnimation - 1);
@@ -413,7 +438,104 @@ public abstract class NpcBaseEntity extends PathfinderMob {
          }
       }
 
-      return super.hurt(source, amount);
+      float scaled = amount * NpcCombatRoles.damageMultiplier(source, this);
+      boolean hurt = super.hurt(source, scaled);
+      if (hurt && !this.level().isClientSide) {
+         this.loseMorale(scaled * MORALE_PER_DAMAGE * (isHitFromBehind(this, source) ? FLANK_MORALE_FACTOR : 1.0F), source.getEntity());
+      }
+
+      return hurt;
+   }
+
+   @Override
+   public void die(DamageSource damageSource) {
+      if (!this.level().isClientSide && this.usesMorale()) {
+         // Seeing a comrade fall shakes everyone close by.
+         for (NpcBaseEntity ally : this.level().getEntitiesOfClass(NpcBaseEntity.class, this.getBoundingBox().inflate(MORALE_RADIUS), other -> other != this && other.isAlive() && isMoraleAlly(this, other))) {
+            ally.loseMorale(ALLY_DEATH_MORALE, damageSource.getEntity());
+         }
+      }
+
+      super.die(damageSource);
+   }
+
+   /** Soldiers keep morale; it drops with wounds, flank hits and fallen comrades, and at the bottom they rout. */
+   protected boolean usesMorale() {
+      return false;
+   }
+
+   /** Leaders steady the men around them and break less easily themselves. */
+   protected boolean isMoraleLeader() {
+      return false;
+   }
+
+   public float getMorale() {
+      return this.morale;
+   }
+
+   public boolean isRouting() {
+      return this.routTicks > 0;
+   }
+
+   Vec3 getRoutThreat() {
+      return this.routThreat == null ? this.position() : this.routThreat;
+   }
+
+   public void loseMorale(float amount, Entity source) {
+      if (this.usesMorale() && !this.isRouting()) {
+         this.morale -= amount * (this.isMoraleLeader() ? LEADER_MORALE_RESISTANCE : 1.0F);
+         if (this.morale <= ROUT_THRESHOLD) {
+            LivingEntity target = this.getTarget();
+            this.routThreat = source != null ? source.position() : (target != null ? target.position() : null);
+            this.routTicks = ROUT_TICKS;
+            this.setTarget(null);
+         }
+      }
+   }
+
+   private void tickMorale() {
+      if (this.usesMorale()) {
+         if (this.routTicks > 0) {
+            this.routTicks--;
+            if (this.routTicks % 20 == 0 && this.level() instanceof ServerLevel serverLevel) {
+               serverLevel.sendParticles(ParticleTypes.SPLASH, this.getX(), this.getEyeY() + 0.3, this.getZ(), 6, 0.2, 0.1, 0.2, 0.0);
+            }
+
+            if (this.routTicks == 0) {
+               this.morale = RALLY_MORALE;
+               this.routThreat = null;
+            }
+         } else if (this.morale < MAX_MORALE) {
+            if (this.tickCount % 40 == 0) {
+               this.leaderNearby = !this.isMoraleLeader()
+                  && !this.level().getEntitiesOfClass(NpcBaseEntity.class, this.getBoundingBox().inflate(MORALE_RADIUS), other -> other.isMoraleLeader() && other.isAlive() && isMoraleAlly(this, other)).isEmpty();
+            }
+
+            float regen = this.getTarget() == null ? IDLE_MORALE_REGEN : COMBAT_MORALE_REGEN;
+            this.morale = Math.min(MAX_MORALE, this.morale + regen * (this.leaderNearby ? LEADER_REGEN_FACTOR : 1.0F));
+         }
+      }
+   }
+
+   private static boolean isMoraleAlly(NpcBaseEntity self, NpcBaseEntity other) {
+      if (self instanceof NpcOwnerAccess selfOwned && other instanceof NpcOwnerAccess otherOwned && selfOwned.getOwner().isPresent()) {
+         return selfOwned.getOwner().equals(otherOwned.getOwner());
+      } else if (self instanceof NpcFactionAccess selfFaction && other instanceof NpcFactionAccess otherFaction) {
+         return selfFaction.getFactionName().equals(otherFaction.getFactionName());
+      } else {
+         return false;
+      }
+   }
+
+   private static boolean isHitFromBehind(LivingEntity victim, DamageSource source) {
+      Entity attacker = source.getDirectEntity();
+      if (attacker == null) {
+         return false;
+      } else {
+         Vec3 toAttacker = attacker.position().subtract(victim.position()).multiply(1.0, 0.0, 1.0);
+         Vec3 facing = Vec3.directionFromRotation(0.0F, victim.getYRot());
+         return toAttacker.lengthSqr() > 1.0E-4 && toAttacker.normalize().dot(facing) < FLANK_DOT;
+      }
    }
 
    public boolean isDamageSourceBlocked(DamageSource source) {
@@ -438,7 +560,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    }
 
    public void setTarget(LivingEntity target) {
-      super.setTarget(target != null && !NpcTargeting.canHarm(this, target) ? null : target);
+      super.setTarget(target != null && (this.isRouting() || !NpcTargeting.canHarm(this, target)) ? null : target);
    }
 
    public boolean doHurtTarget(Entity target) {

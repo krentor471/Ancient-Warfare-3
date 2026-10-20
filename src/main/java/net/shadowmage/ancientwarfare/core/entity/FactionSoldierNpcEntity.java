@@ -50,6 +50,16 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
       return navigation;
    }
 
+   @Override
+   protected boolean usesMorale() {
+      return true;
+   }
+
+   @Override
+   protected boolean isMoraleLeader() {
+      return this instanceof FactionLeaderNpcEntity || this instanceof FactionLeaderEliteNpcEntity;
+   }
+
    protected void registerGoals() {
       this.addSharedGoals();
       this.goalSelector.addGoal(1, new FactionSoldierNpcEntity.ShieldDefenseGoal(this));
@@ -70,12 +80,16 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
    }
 
    protected static class FactionMeleeAttackGoal extends MeleeAttackGoal {
+      private static final double DIRECT_STEER_SQ = 36.0;
+      private static final int APPROACH_TICK_STRIDE = 3;
       private final FactionSoldierNpcEntity npc;
+      private final double speed;
       private int weaponCooldown;
 
       protected FactionMeleeAttackGoal(FactionSoldierNpcEntity npc, double speedModifier, boolean followTargetEvenIfNotSeen) {
          super(npc, speedModifier, followTargetEvenIfNotSeen);
          this.npc = npc;
+         this.speed = speedModifier;
       }
 
       public boolean canUse() {
@@ -91,8 +105,18 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
             this.weaponCooldown--;
          }
 
-         super.tick();
          LivingEntity target = this.npc.getTarget();
+         if (target != null && this.closeIn(target)) {
+            return;
+         }
+
+         if (target != null && !this.npc.getNavigation().isDone() && (this.npc.tickCount + this.npc.getId()) % APPROACH_TICK_STRIDE != 0) {
+            // Still walking a path toward a target further off: the route rarely needs a refresh every tick.
+            this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
+            return;
+         }
+
+         super.tick();
          if (target != null) {
             double holdDistance = NpcEquipmentResolver.meleeHoldDistance(this.npc);
             if (this.npc.distanceToSqr(target) <= holdDistance * holdDistance && this.npc.hasMeleeLineOfSight(target)) {
@@ -100,6 +124,27 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
                this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
             }
          }
+      }
+
+      /**
+       * In the press of a melee the target is a few steps away in plain sight, so the soldier steps at it directly
+       * instead of asking the pathfinder for a new route every few ticks. Returns false when a real path is needed.
+       */
+      private boolean closeIn(LivingEntity target) {
+         double distanceSqr = this.npc.distanceToSqr(target);
+         if (distanceSqr > DIRECT_STEER_SQ || Math.abs(target.getY() - this.npc.getY()) > 1.0 || !this.npc.hasMeleeLineOfSight(target)) {
+            return false;
+         }
+
+         this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
+         double holdDistance = NpcEquipmentResolver.meleeHoldDistance(this.npc);
+         this.npc.getNavigation().stop();
+         if (distanceSqr > holdDistance * holdDistance) {
+            this.npc.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), this.speed);
+         }
+
+         this.checkAndPerformAttack(target, distanceSqr);
+         return true;
       }
 
       protected void checkAndPerformAttack(LivingEntity target, double distanceSqr) {

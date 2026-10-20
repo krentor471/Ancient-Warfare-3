@@ -70,6 +70,11 @@ public class FactionArcherNpcEntity extends FactionNpcEntity implements RangedAt
       }
    }
 
+   @Override
+   protected boolean usesMorale() {
+      return true;
+   }
+
    protected void registerGoals() {
       this.addSharedGoals();
       this.goalSelector.addGoal(2, new FactionArcherNpcEntity.ArcherRangedAttackGoal(this));
