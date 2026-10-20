@@ -42,13 +42,13 @@ public final class NpcTargeting {
    }
 
    public static boolean isAutomaticHostile(LivingEntity observer, LivingEntity target) {
-      return canHarm(observer, target)
-         && !(target instanceof Player)
+      return !(target instanceof Player)
          && !(target instanceof NpcOwnerAccess)
          && !(target instanceof NpcFactionAccess)
          && !(target instanceof ArmorStand)
          && !isOwnedOrTamed(target)
-         && disposition(target) == NpcTargeting.Disposition.HOSTILE;
+         && disposition(target) == NpcTargeting.Disposition.HOSTILE
+         && canHarm(observer, target);
    }
 
    public static boolean canHarm(LivingEntity observer, Entity target) {

@@ -34,10 +34,12 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    private static final EntityDataAccessor<String> FACTION_NAME = SynchedEntityData.defineId(FactionNpcEntity.class, EntityDataSerializers.STRING);
    private static final String TAG_FACTION_NAME = "FactionName";
    private static final double COMBAT_VERTICAL_TARGET_RANGE = 96.0;
-   private static final int TARGET_SCAN_INTERVAL = 4;
+   private static final int TARGET_SCAN_INTERVAL = 10;
    private static final int PLAYER_TIER = 1;
    private static final int FACTION_TIER = 2;
    private static final int MONSTER_TIER = 3;
+   // Mirrors FACTION_NAME: target scans read it for every nearby NPC, and synched data reads take a lock.
+   private String factionName;
 
    protected FactionNpcEntity(EntityType<? extends FactionNpcEntity> entityType, Level level, FactionNpcRole role) {
       super(entityType, level);
@@ -70,12 +72,22 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
 
    @Override
    public String getFactionName() {
-      return (String)this.entityData.get(FACTION_NAME);
+      String name = this.factionName;
+      return name != null ? name : (String)this.entityData.get(FACTION_NAME);
+   }
+
+   @Override
+   public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+      super.onSyncedDataUpdated(key);
+      if (FACTION_NAME.equals(key)) {
+         this.factionName = (String)this.entityData.get(FACTION_NAME);
+      }
    }
 
    public void setFactionName(String factionName) {
       String normalized = factionName != null && !factionName.isBlank() ? factionName.trim() : "brigand";
       this.entityData.set(FACTION_NAME, normalized);
+      this.factionName = normalized;
       this.setNpcType(normalized);
       this.applyFactionDefaults();
       LivingEntity currentTarget = this.getTarget();
@@ -117,10 +129,11 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    public boolean isHostileTowards(Entity entity) {
-      if (!NpcTargeting.canHarm(this, entity)) {
+      if (entity instanceof FactionNpcEntity factionNpc) {
+         // Cheap faction check first: target scans call this for every nearby NPC.
+         return FactionRegistry.isHostile(this.getFactionName(), factionNpc.getFactionName()) && NpcTargeting.canHarm(this, entity);
+      } else if (!NpcTargeting.canHarm(this, entity)) {
          return false;
-      } else if (entity instanceof FactionNpcEntity factionNpc) {
-         return this.isAlliedTo(factionNpc) ? false : FactionRegistry.isHostile(this.getFactionName(), factionNpc.getFactionName());
       } else if (!(entity instanceof Player player)) {
          return entity instanceof PlayerOwnedNpcEntity ownedNpc ? ownedNpc.getOwner().map(owner -> {
             if (FactionRegistry.get(this.getFactionName()).defaultStanding() < 0) {
@@ -200,31 +213,31 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
          .addGoal(
             2,
             new VerticalRangeTargetGoal<LivingEntity>(
-               this, LivingEntity.class, 4, false, false, target -> this.isPlayerTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
+               this, LivingEntity.class, TARGET_SCAN_INTERVAL, false, false, target -> this.isPlayerTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
             )
          );
       this.targetSelector
          .addGoal(
             4,
             new VerticalRangeTargetGoal<>(
-               this, FactionNpcEntity.class, 4, mustSee, false, target -> this.isFactionTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
+               this, FactionNpcEntity.class, TARGET_SCAN_INTERVAL, mustSee, false, target -> this.isFactionTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
             )
          );
       this.targetSelector
          .addGoal(
             5,
             new VerticalRangeTargetGoal<LivingEntity>(
-               this, LivingEntity.class, 4, mustSee, false, target -> this.isMonsterTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
+               this, LivingEntity.class, TARGET_SCAN_INTERVAL, mustSee, false, target -> this.isMonsterTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
             )
          );
    }
 
    protected final boolean isPlayerTierTarget(LivingEntity target) {
-      return target != null && target.isAlive() && (target instanceof Player || target instanceof PlayerOwnedNpcEntity) && this.isHostileTowards(target);
+      return (target instanceof Player || target instanceof PlayerOwnedNpcEntity) && this.isHostileTowards(target);
    }
 
    protected final boolean isFactionTierTarget(LivingEntity target) {
-      if (target instanceof FactionNpcEntity factionNpc && target.isAlive() && this.isHostileTowards(target)) {
+      if (target instanceof FactionNpcEntity && this.isHostileTowards(target)) {
          return true;
       }
 
