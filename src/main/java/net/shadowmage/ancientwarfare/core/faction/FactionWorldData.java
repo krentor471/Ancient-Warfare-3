@@ -22,6 +22,8 @@ public final class FactionWorldData extends SavedData {
    private final Map<String, Map<String, FactionDiplomacy.Relation>> relations = new HashMap<>();
    private final List<Settlement> settlements = new ArrayList<>();
    private final Map<String, Integer> treasuries = new HashMap<>();
+   private final List<PlannedSettlement> plannedSettlements = new ArrayList<>();
+   private final Map<String, Long> lastFounding = new HashMap<>();
    private int nextSettlementId = 1;
    private long lastSimulatedDay = -1L;
 
@@ -58,6 +60,35 @@ public final class FactionWorldData extends SavedData {
    public void setRelation(String faction, String other, FactionDiplomacy.Relation relation) {
       this.relations.computeIfAbsent(faction, ignored -> new HashMap<>()).put(other, relation);
       this.relations.computeIfAbsent(other, ignored -> new HashMap<>()).put(faction, relation);
+      this.setDirty();
+   }
+
+   /** Provinces decided so far that faction holds. */
+   public List<Long> provincesOf(String faction) {
+      List<Long> provinces = new ArrayList<>();
+      this.provinceOwners.forEach((province, owner) -> {
+         if (owner.equals(faction)) {
+            provinces.add(province);
+         }
+      });
+      return provinces;
+   }
+
+   public List<PlannedSettlement> plannedSettlements() {
+      return this.plannedSettlements;
+   }
+
+   public void addPlannedSettlement(PlannedSettlement plan) {
+      this.plannedSettlements.add(plan);
+      this.setDirty();
+   }
+
+   public long lastFounding(String faction) {
+      return this.lastFounding.getOrDefault(faction, Long.MIN_VALUE / 2);
+   }
+
+   public void setLastFounding(String faction, long day) {
+      this.lastFounding.put(faction, day);
       this.setDirty();
    }
 
@@ -136,6 +167,22 @@ public final class FactionWorldData extends SavedData {
       this.treasuries.forEach(gold::putInt);
       tag.put("Treasuries", gold);
       tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
+      ListTag plans = new ListTag();
+
+      for (PlannedSettlement plan : this.plannedSettlements) {
+         CompoundTag entry = new CompoundTag();
+         entry.putString("Faction", plan.faction());
+         entry.putInt("X", plan.x());
+         entry.putInt("Z", plan.z());
+         entry.putLong("Province", plan.province());
+         entry.putLong("Day", plan.day());
+         plans.add(entry);
+      }
+
+      tag.put("PlannedSettlements", plans);
+      CompoundTag foundings = new CompoundTag();
+      this.lastFounding.forEach(foundings::putLong);
+      tag.put("LastFounding", foundings);
       return tag;
    }
 
@@ -177,6 +224,15 @@ public final class FactionWorldData extends SavedData {
       CompoundTag gold = tag.getCompound("Treasuries");
       gold.getAllKeys().forEach(faction -> data.treasuries.put(faction, gold.getInt(faction)));
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
+
+      for (Tag element : tag.getList("PlannedSettlements", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         data.plannedSettlements
+            .add(new PlannedSettlement(entry.getString("Faction"), entry.getInt("X"), entry.getInt("Z"), entry.getLong("Province"), entry.getLong("Day")));
+      }
+
+      CompoundTag foundings = tag.getCompound("LastFounding");
+      foundings.getAllKeys().forEach(faction -> data.lastFounding.put(faction, foundings.getLong(faction)));
       return data;
    }
 
@@ -196,6 +252,10 @@ public final class FactionWorldData extends SavedData {
          CompoundTag entry = (CompoundTag)element;
          owners.put(entry.getLong("Key"), entry.getString("Owner"));
       }
+   }
+
+   /** A village a faction founded on paper; it is built the next time its land loads with no player near. */
+   public static record PlannedSettlement(String faction, int x, int z, long province, long day) {
    }
 
    /**

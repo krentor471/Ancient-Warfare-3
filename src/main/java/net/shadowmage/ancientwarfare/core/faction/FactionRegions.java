@@ -87,21 +87,37 @@ public final class FactionRegions {
 
       for (int dx = -1; dx <= 1; dx++) {
          for (int dz = -1; dz <= 1; dz++) {
-            RandomSource random = RandomSource.create(worldSeed ^ (long)(cellX + dx) * 7374110527L ^ (long)(cellZ + dz) * 9248861453L ^ salt);
-            int margin = size / 6;
-            int seedX = (cellX + dx) * size + margin + random.nextInt(size - 2 * margin);
-            int seedZ = (cellZ + dz) * size + margin + random.nextInt(size - 2 * margin);
-            long ox = (long)seedX - x;
-            long oz = (long)seedZ - z;
+            Cell cell = cell(worldSeed, cellX + dx, cellZ + dz, size, salt);
+            long ox = (long)cell.seedX() - x;
+            long oz = (long)cell.seedZ() - z;
             long distance = ox * ox + oz * oz;
             if (distance < bestDistance) {
                bestDistance = distance;
-               best = new Cell(ChunkPos.asLong(cellX + dx, cellZ + dz), seedX, seedZ);
+               best = cell;
             }
          }
       }
 
       return best;
+   }
+
+   private static Cell cell(long worldSeed, int cellX, int cellZ, int size, long salt) {
+      RandomSource random = RandomSource.create(worldSeed ^ (long)cellX * 7374110527L ^ (long)cellZ * 9248861453L ^ salt);
+      int margin = size / 6;
+      int seedX = cellX * size + margin + random.nextInt(size - 2 * margin);
+      int seedZ = cellZ * size + margin + random.nextInt(size - 2 * margin);
+      return new Cell(ChunkPos.asLong(cellX, cellZ), seedX, seedZ);
+   }
+
+   /** The province of a grid cell, decided if it was not yet. */
+   public static Province provinceByCell(ServerLevel level, int cellX, int cellZ) {
+      Cell cell = cell(level.getSeed(), cellX, cellZ, PROVINCE_SIZE, PROVINCE_SALT);
+      return provinceAt(level, cell.seedX(), cell.seedZ());
+   }
+
+   /** Whether any of faction's buildings fit the climate at this point. */
+   public static boolean suits(ServerLevel level, String faction, int x, int z) {
+      return biomeScores(level.getUncachedNoiseBiome(x >> 2, 64 >> 2, z >> 2)).getOrDefault(faction, 0) > 0;
    }
 
    private static String pickOwner(ServerLevel level, long key, int seedX, int seedZ) {

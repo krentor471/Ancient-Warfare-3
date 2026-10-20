@@ -294,10 +294,18 @@ public final class ForgeFactionCommands {
          total[2] += settlement.garrison();
       }
 
-      tell(source, Component.literal("Day " + data.lastSimulatedDay() + ". Faction: settlements, people, garrison, treasury"));
+      tell(
+         source,
+         Component.literal(
+            "Day " + data.lastSimulatedDay() + ", " + data.plannedSettlements().size() + " village(s) planned. Faction: settlements, provinces, people, garrison, treasury"
+         )
+      );
       totals.forEach(
          (faction, total) -> tell(
-               source, Component.literal("  " + faction + ": " + total[0] + ", " + total[1] + ", " + total[2] + ", " + data.treasury(faction) + " gold")
+               source,
+               Component.literal(
+                  "  " + faction + ": " + total[0] + ", " + data.provincesOf(faction).size() + ", " + total[1] + ", " + total[2] + ", " + data.treasury(faction) + " gold"
+               )
             )
       );
       return totals.size();
@@ -331,6 +339,8 @@ public final class ForgeFactionCommands {
       FactionWorldData data = FactionWorldData.get(source.getLevel());
 
       for (int i = 0; i < days; i++) {
+         // Runs ahead of the clock; the daily tick waits until real days catch up.
+         data.setLastSimulatedDay(data.lastSimulatedDay() + 1);
          FactionSimulation.simulateDay(source.getLevel(), data);
       }
 

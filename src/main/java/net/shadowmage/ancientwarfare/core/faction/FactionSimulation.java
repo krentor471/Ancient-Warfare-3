@@ -62,6 +62,8 @@ public final class FactionSimulation {
          simulateDay(level, data);
       }
 
+      FactionExpansion.tick(level, data);
+
       if (level.getGameTime() % GARRISON_CHECK_TICKS == 0L && !level.players().isEmpty()) {
          maintainGarrisons(level, data);
       }
@@ -95,6 +97,7 @@ public final class FactionSimulation {
          data.setTreasury(faction, gold);
       }
 
+      FactionExpansion.simulateDay(level, data, data.lastSimulatedDay());
       data.setDirty();
       AncientWarfareCore.LOG.debug("Simulated faction day {}: recruits {}", data.lastSimulatedDay(), recruited);
    }

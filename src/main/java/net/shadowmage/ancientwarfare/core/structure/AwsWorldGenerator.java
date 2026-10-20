@@ -40,17 +40,32 @@ public final class AwsWorldGenerator {
    public static boolean generateAt(ServerLevel level, ChunkPos chunk, boolean forced) {
       return NaturalGenerationContext.run(() -> {
          NaturalGenerationContext.markChunk(chunk);
-         return generateInternalAt(level, chunk, forced);
+         return generateInternalAt(level, chunk, forced, null);
       });
    }
 
-   private static boolean generateInternalAt(ServerLevel level, ChunkPos chunk, boolean forced) {
+   /** Builds one of faction's templates near chunk, for a settlement the faction founded. */
+   public static boolean generateSettlementAt(ServerLevel level, ChunkPos chunk, String faction) {
+      return NaturalGenerationContext.run(() -> {
+         // The site may be far from any player: load the land first, heights read as the void otherwise.
+         for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+               NaturalGenerationContext.markChunk(new ChunkPos(chunk.x + dx, chunk.z + dz));
+               level.getChunk(chunk.x + dx, chunk.z + dz);
+            }
+         }
+
+         return generateInternalAt(level, chunk, false, faction);
+      });
+   }
+
+   private static boolean generateInternalAt(ServerLevel level, ChunkPos chunk, boolean forced, String requiredFaction) {
       if (level.dimension() != Level.OVERWORLD) {
          return false;
       } else {
          long seed = level.getSeed() ^ (long)chunk.x * 341873128712L ^ (long)chunk.z * 132897987541L;
          RandomSource random = RandomSource.create(seed);
-         if (!forced && !isCandidateChunk(level.getSeed(), chunk)) {
+         if (!forced && requiredFaction == null && !isCandidateChunk(level.getSeed(), chunk)) {
             return false;
          } else {
             BlockPos spawn = level.getSharedSpawnPos();
@@ -73,6 +88,10 @@ public final class AwsWorldGenerator {
                      AncientWarfareCore.LOG.info("Ocean AWS candidate {} exhausted bounded attempts: {}", chunk, rejections);
                   }
 
+                  if (requiredFaction != null) {
+                     AncientWarfareCore.LOG.info("No {} template fit near {}: {}", requiredFaction, chunk, rejections);
+                  }
+
                   return false;
                }
 
@@ -89,6 +108,7 @@ public final class AwsWorldGenerator {
                      oceanAttempt |= waterSite;
                      if (waterSite
                         && !forced
+                        && requiredFaction == null
                         && AWCorePlatform.gameplayConfig().largeAquaticAwsEnabled()
                         && LargeIslandWorldGenerator.tryQueue(level, x, surfaceY, z, random)) {
                         return true;
@@ -101,9 +121,14 @@ public final class AwsWorldGenerator {
                         if (!templatex.requiresPhasedPlacement()
                            && templatex.acceptsBiome(biome)
                            && templatex.aquatic() == waterSite
-                           && FactionRegions.allows(regionOwner, TemplateFactions.ofTemplate(templatex.path()))) {
+                           && FactionRegions.allows(regionOwner, TemplateFactions.ofTemplate(templatex.path()))
+                           && (requiredFaction == null || requiredFaction.equals(TemplateFactions.ofTemplate(templatex.path())))) {
                            candidates.add(templatex);
                         }
+                     }
+
+                     if (candidates.isEmpty()) {
+                        rejections.merge("no_template_for_" + biome.unwrapKey().map(key -> key.location().getPath()).orElse("biome"), 1, Integer::sum);
                      }
 
                      facing = Plane.HORIZONTAL.getRandomDirection(random);
