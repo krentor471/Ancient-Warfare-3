@@ -78,9 +78,7 @@ public class NpcSpawnerItem extends Item {
    }
 
    public static float getIconValue(String npcType) {
-      Map var10000 = EXTERNAL_ICON_VALUES;
-
-      return var10000.getOrDefault(npcType, switch (npcType) {
+      return EXTERNAL_ICON_VALUES.getOrDefault(npcType, switch (npcType) {
          case "combat" -> 0.1F;
          case "courier" -> 0.2F;
          case "trader" -> 0.3F;

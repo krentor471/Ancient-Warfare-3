@@ -50,7 +50,7 @@ public final class WarehouseNetwork {
             for (int z = min.getZ() >> 4; z <= max.getZ() >> 4; z++) {
                LevelChunk chunk = server.getChunkSource().getChunkNow(x, z);
                if (chunk != null) {
-                  for (BlockEntity entity : new ArrayList(chunk.getBlockEntities().values())) {
+                  for (BlockEntity entity : new ArrayList<>(chunk.getBlockEntities().values())) {
                      BlockPos p = entity.getBlockPos();
                      if (!entity.isRemoved()
                         && p.getX() >= min.getX()

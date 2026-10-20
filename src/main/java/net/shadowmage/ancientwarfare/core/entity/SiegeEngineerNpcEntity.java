@@ -43,7 +43,7 @@ public class SiegeEngineerNpcEntity extends WeaponOperatorNpcEntity {
       super.registerGoals();
       this.goalSelector.addGoal(3, new SiegeEngineerNpcEntity.OperateSiegeWeaponGoal(this));
       this.goalSelector.addGoal(4, new SiegeEngineerNpcEntity.FindSiegeWeaponGoal(this));
-      this.targetSelector.addGoal(2, new VerticalRangeTargetGoal(this, FactionNpcEntity.class, 10, false, false, this::isHostileFactionNpc, 96.0));
+      this.targetSelector.addGoal(2, new VerticalRangeTargetGoal<>(this, FactionNpcEntity.class, 10, false, false, this::isHostileFactionNpc, 96.0));
       this.targetSelector.addGoal(3, new VerticalRangeTargetGoal<LivingEntity>(this, LivingEntity.class, 10, false, false, this::isAutomaticSiegeTarget, 96.0));
    }
 

@@ -44,7 +44,8 @@ public class WarehouseStockViewerMenu extends AbstractContainerMenu {
       this.refreshFilters();
       this.addPlayerInventory(playerInventory, linker ? 47 : 8, 88);
 
-      for (int index = 0; index < 4; index++) {
+      for (int i = 0; i < 4; i++) {
+         int index = i;
          for (DataSlot slot : WarehouseDataSlots.longValue(() -> this.quantities[index], value -> this.quantities[index] = value)) {
             this.addDataSlot(slot);
          }

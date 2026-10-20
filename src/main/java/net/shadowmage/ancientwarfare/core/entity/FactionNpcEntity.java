@@ -206,7 +206,7 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       this.targetSelector
          .addGoal(
             4,
-            new VerticalRangeTargetGoal(
+            new VerticalRangeTargetGoal<>(
                this, FactionNpcEntity.class, 4, mustSee, false, target -> this.isFactionTierTarget(target) && this.canAcquireFactionTarget(target), 96.0
             )
          );

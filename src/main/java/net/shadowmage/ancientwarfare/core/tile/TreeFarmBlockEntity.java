@@ -336,7 +336,7 @@ public class TreeFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          ? Optional.empty()
          : this.scanGroundTargetsFromCursor()
             .stream()
-            .flatMap(pos -> (Stream<? extends BlockPos>)List.of(pos, pos.above()).stream())
+            .flatMap(pos -> Stream.of(pos, pos.above()))
             .filter(this::canFertilize)
             .findFirst();
    }

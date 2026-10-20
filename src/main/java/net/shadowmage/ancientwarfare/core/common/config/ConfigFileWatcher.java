@@ -165,8 +165,9 @@ public final class ConfigFileWatcher implements AutoCloseable {
                         this.changed(path);
                      } else if (path.equals(this.structureFile.getParent())) {
                         if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
+                           Path removed = path;
                            this.directories.entrySet().removeIf(entry -> {
-                              if (entry.getValue().equals(path)) {
+                              if (entry.getValue().equals(removed)) {
                                  entry.getKey().cancel();
                                  return true;
                               } else {

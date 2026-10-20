@@ -192,7 +192,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.targetSelector
          .addGoal(
             2,
-            new VerticalRangeTargetGoal(
+            new VerticalRangeTargetGoal<>(
                this,
                FactionNpcEntity.class,
                2,

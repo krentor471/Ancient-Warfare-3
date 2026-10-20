@@ -101,10 +101,9 @@ public final class OwnedNpcSpawnEggItem extends ForgeSpawnEggItem {
       return offspring;
    }
 
-   private static <T extends Entity> T spawnOwned(
-      EntityType<T> type, ServerLevel level, ItemStack stack, Player player, BlockPos position, boolean alignToSurface, boolean invertYOffset
+   private static Entity spawnOwned(
+      EntityType<?> type, ServerLevel level, ItemStack stack, Player player, BlockPos position, boolean alignToSurface, boolean invertYOffset
    ) {
-      Consumer<T> configure = EntityType.createDefaultStackConfig(level, stack, player).andThen(entity -> assignOwner(entity, player));
       if (type.create(level) instanceof ModernSoldierNpcEntity owned) {
          Entity extended = NpcSpawnerItem.createNpcFromStack(level, NpcSpawnerItem.create(owned.getNpcType(), owned.getNpcSubtype()));
          if (extended instanceof Mob) {
@@ -112,7 +111,14 @@ public final class OwnedNpcSpawnEggItem extends ForgeSpawnEggItem {
          }
       }
 
-      return (T)type.spawn(level, stack.getTag(), configure, position, MobSpawnType.SPAWN_EGG, alignToSurface, invertYOffset);
+      return spawnTyped(type, level, stack, player, position, alignToSurface, invertYOffset);
+   }
+
+   private static <T extends Entity> T spawnTyped(
+      EntityType<T> type, ServerLevel level, ItemStack stack, Player player, BlockPos position, boolean alignToSurface, boolean invertYOffset
+   ) {
+      Consumer<T> configure = EntityType.<T>createDefaultStackConfig(level, stack, player).andThen(entity -> assignOwner(entity, player));
+      return type.spawn(level, stack.getTag(), configure, position, MobSpawnType.SPAWN_EGG, alignToSurface, invertYOffset);
    }
 
    private static void assignOwner(Entity entity, Player player) {

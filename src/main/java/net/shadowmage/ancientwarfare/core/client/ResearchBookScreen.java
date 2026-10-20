@@ -11,6 +11,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.shadowmage.ancientwarfare.core.common.engineering.EngineeringRecipe;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.shadowmage.ancientwarfare.core.common.engineering.EngineeringRecipeRegistry;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
@@ -237,7 +238,7 @@ public class ResearchBookScreen extends AbstractContainerScreen<ResearchBookMenu
          ? this.minecraft
             .level
             .getRecipeManager()
-            .getAllRecipesFor(AWCoreRegistryAccess.recipeType(AWCoreIds.id("engineering")))
+            .getAllRecipesFor(AWCoreRegistryAccess.<RecipeType<EngineeringRecipe>>recipeType(AWCoreIds.id("engineering")))
             .stream()
             .filter(recipe -> researchId.equals(recipe.requiredResearch()))
             .toList()

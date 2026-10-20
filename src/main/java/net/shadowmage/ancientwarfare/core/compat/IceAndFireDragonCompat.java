@@ -78,7 +78,7 @@ public final class IceAndFireDragonCompat {
 
    public static void prepareForRider(Entity dragon) {
       if (isDragon(dragon)) {
-         for (Entity passenger : new ArrayList(dragon.getPassengers())) {
+         for (Entity passenger : new ArrayList<>(dragon.getPassengers())) {
             if (!(passenger instanceof Player)) {
                passenger.stopRiding();
             }

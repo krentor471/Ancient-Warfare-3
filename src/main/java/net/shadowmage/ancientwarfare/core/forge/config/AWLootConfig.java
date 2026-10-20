@@ -66,7 +66,7 @@ public final class AWLootConfig {
    private static boolean disabled(ResourceLocation table) {
       String target = table.toString();
 
-      for (String configured : (List)DISABLED_TABLES.get()) {
+      for (String configured : (List<String>)DISABLED_TABLES.get()) {
          if (target.equals(configured.trim().toLowerCase(Locale.ROOT))) {
             return true;
          }
@@ -78,7 +78,7 @@ public final class AWLootConfig {
    private static double tableMultiplier(ResourceLocation table) {
       String target = table.toString();
 
-      for (String configured : (List)TABLE_ROLL_MULTIPLIERS.get()) {
+      for (String configured : (List<String>)TABLE_ROLL_MULTIPLIERS.get()) {
          int separator = configured.lastIndexOf(61);
          if (separator > 0 && target.equals(configured.substring(0, separator).trim().toLowerCase(Locale.ROOT))) {
             try {

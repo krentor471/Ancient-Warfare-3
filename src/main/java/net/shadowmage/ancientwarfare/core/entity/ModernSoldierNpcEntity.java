@@ -24,7 +24,7 @@ public class ModernSoldierNpcEntity extends WeaponOperatorNpcEntity {
    @Override
    protected void registerGoals() {
       super.registerGoals();
-      this.targetSelector.addGoal(2, new VerticalRangeTargetGoal(this, FactionNpcEntity.class, 10, false, false, this::canAttackTarget, 96.0));
+      this.targetSelector.addGoal(2, new VerticalRangeTargetGoal<>(this, FactionNpcEntity.class, 10, false, false, this::canAttackTarget, 96.0));
       this.targetSelector.addGoal(3, new VerticalRangeTargetGoal<LivingEntity>(this, LivingEntity.class, 10, false, false, this::canAttackTarget, 96.0));
    }
 

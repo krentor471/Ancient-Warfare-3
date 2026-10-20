@@ -163,7 +163,7 @@ public final class AWCoreEntityTypes {
    );
    public static final RegistryObject<EntityType<BallistaBoltEntity>> BALLISTA_BOLT = REGISTER.register(
       "ballista_bolt",
-      () -> Builder.of(BallistaBoltEntity::new, MobCategory.MISC)
+      () -> Builder.<BallistaBoltEntity>of(BallistaBoltEntity::new, MobCategory.MISC)
             .sized(0.35F, 0.35F)
             .clientTrackingRange(8)
             .updateInterval(1)
@@ -171,7 +171,7 @@ public final class AWCoreEntityTypes {
    );
    public static final RegistryObject<EntityType<CatapultShotEntity>> CATAPULT_SHOT = REGISTER.register(
       "catapult_shot",
-      () -> Builder.of(CatapultShotEntity::new, MobCategory.MISC)
+      () -> Builder.<CatapultShotEntity>of(CatapultShotEntity::new, MobCategory.MISC)
             .sized(0.85F, 0.85F)
             .clientTrackingRange(10)
             .updateInterval(1)
@@ -195,7 +195,7 @@ public final class AWCoreEntityTypes {
    );
    public static final RegistryObject<EntityType<CannonShotEntity>> CANNON_SHOT = REGISTER.register(
       "cannon_shot",
-      () -> Builder.of(CannonShotEntity::new, MobCategory.MISC)
+      () -> Builder.<CannonShotEntity>of(CannonShotEntity::new, MobCategory.MISC)
             .sized(0.5F, 0.5F)
             .clientTrackingRange(10)
             .updateInterval(1)
@@ -215,7 +215,7 @@ public final class AWCoreEntityTypes {
    );
    public static final RegistryObject<EntityType<HwachaRocketEntity>> HWACHA_ROCKET = REGISTER.register(
       "hwacha_rocket",
-      () -> Builder.of(HwachaRocketEntity::new, MobCategory.MISC)
+      () -> Builder.<HwachaRocketEntity>of(HwachaRocketEntity::new, MobCategory.MISC)
             .sized(0.25F, 0.25F)
             .clientTrackingRange(10)
             .updateInterval(1)
