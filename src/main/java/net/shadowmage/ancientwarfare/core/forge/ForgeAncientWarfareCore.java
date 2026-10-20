@@ -178,6 +178,6 @@ public final class ForgeAncientWarfareCore {
       ForgeLootTableOverridePack.initialize();
       AWStructureTemplateOverrides.initialize();
       ForgeCoreRegistries.register(FMLJavaModLoadingContext.get().getModEventBus());
-      AncientWarfareCore.LOG.info("Ancient Warfare 2 1.20.1 port loaded");
+      AncientWarfareCore.LOG.info("Ancient Warfare 3 loaded");
    }
 }

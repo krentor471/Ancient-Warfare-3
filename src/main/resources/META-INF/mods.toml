@@ -4,10 +4,10 @@ license="GPL-3.0-or-later"
 
 [[mods]]
 modId="ancientwarfare"
-version="0.2.8-remastered"
-displayName="Ancient Warfare 2: Remastered (1.20.1)"
-authors="shadowmage45, P3pp3rF1y, Ancient Warfare 2 Remastered contributors"
-description='''Unofficial community remaster of Ancient Warfare 2 for Minecraft 1.20.1 Forge, featuring extensively rewritten systems, restored legacy content, new compatibility integrations, and recreated models.'''
+version="${mod_version}"
+displayName="Ancient Warfare 3"
+authors="Ancient Warfare 3 contributors; original Ancient Warfare 2 by shadowmage45 and P3pp3rF1y; Ancient Warfare 2: Remastered contributors"
+description='''Unofficial continuation of Ancient Warfare 2 for Minecraft 1.20.1 Forge, forked from Ancient Warfare 2: Remastered 0.2.8. A realistic medieval mod about ruling your own faction: workers, logistics, research and siege warfare, without magic or fantasy. Not affiliated with or endorsed by the original authors.'''
 
 [[dependencies.ancientwarfare]]
 modId="forge"

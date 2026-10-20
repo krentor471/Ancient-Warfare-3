@@ -74,3 +74,10 @@ jar {
     }
     finalizedBy 'reobfJar'
 }
+
+processResources {
+    inputs.property 'mod_version', mod_version
+    filesMatching('META-INF/mods.toml') {
+        expand(mod_version: mod_version)
+    }
+}
