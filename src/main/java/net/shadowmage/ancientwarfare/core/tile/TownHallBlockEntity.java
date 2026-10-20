@@ -10,8 +10,8 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.Connection;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Component.Serializer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
@@ -19,8 +19,8 @@ import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.EquipmentSlot.Type;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Inventory;
@@ -35,6 +35,7 @@ import net.minecraft.world.phys.AABB;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
 import net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity;
+import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 import net.shadowmage.ancientwarfare.core.item.NpcSpawnerItem;
 import net.shadowmage.ancientwarfare.core.menu.TownHallMenu;
 import org.jetbrains.annotations.Nullable;
@@ -69,6 +70,10 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
 
       if (--townHall.broadcastDelay <= 0) {
          townHall.broadcastDelay = 200;
+         if (townHall.owner != null && level instanceof ServerLevel server) {
+            FactionWorldData.get(server).setVillage(pos, townHall.owner);
+         }
+
          townHall.broadcast(level, pos);
       }
    }

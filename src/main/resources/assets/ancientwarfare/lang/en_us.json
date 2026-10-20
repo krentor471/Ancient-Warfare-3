@@ -1264,5 +1264,15 @@
   "gui.ancientwarfare.diplomacy.action.alliance": "Alliance",
   "gui.ancientwarfare.diplomacy.action.gift": "Gift %s emeralds",
   "gui.ancientwarfare.diplomacy.action.war": "Declare war",
-  "diplomacy.ancientwarfare.betrayal": "You broke your treaty with %s. They will not forget it."
+  "diplomacy.ancientwarfare.betrayal": "You broke your treaty with %s. They will not forget it.",
+  "news.ancientwarfare.war_on_you": "War: %s declared war on you",
+  "news.ancientwarfare.raid_warning": "Raid warning: %s are gathering %s soldiers against your village at %s, %s",
+  "news.ancientwarfare.raid_arrived": "Raid: %s are attacking your village at %s, %s",
+  "news.ancientwarfare.raid_repelled": "You drove off the raid of %s",
+  "news.ancientwarfare.raid_retreat": "The raiders of %s fell back",
+  "news.ancientwarfare.village_captured": "Lost: %s took your village at %s, %s",
+  "news.ancientwarfare.village_claimed": "This settlement of %s is yours now",
+  "news.ancientwarfare.village_held": "%s still hold this settlement: %s soldiers left in its garrison",
+  "news.ancientwarfare.assault": "Battle: %s attack the settlement of %s at %s, %s",
+  "news.ancientwarfare.assault_repelled": "%s beat off the attack of %s"
 }

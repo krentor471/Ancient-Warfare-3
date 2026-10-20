@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -24,7 +25,12 @@ public final class FactionWorldData extends SavedData {
    private final Map<String, Integer> treasuries = new HashMap<>();
    private final List<PlannedSettlement> plannedSettlements = new ArrayList<>();
    private final Map<String, Long> lastFounding = new HashMap<>();
+   private final List<Army> armies = new ArrayList<>();
+   /** Player villages by town hall position, with their owner. */
+   private final Map<BlockPos, UUID> villages = new HashMap<>();
+   private final Map<BlockPos, Long> lastRaid = new HashMap<>();
    private int nextSettlementId = 1;
+   private int nextArmyId = 1;
    private long lastSimulatedDay = -1L;
 
    public static FactionWorldData get(ServerLevel level) {
@@ -111,6 +117,56 @@ public final class FactionWorldData extends SavedData {
       return settlement;
    }
 
+   public void removeSettlement(Settlement settlement) {
+      this.settlements.remove(settlement);
+      this.setDirty();
+   }
+
+   public List<Army> armies() {
+      return Collections.unmodifiableList(this.armies);
+   }
+
+   public Army addArmy(String faction, String defender, int targetSettlement, UUID villageOwner, BlockPos target, int size, long ready) {
+      Army army = new Army(this.nextArmyId++, faction, defender, targetSettlement, villageOwner, target, size, ready);
+      this.armies.add(army);
+      this.setDirty();
+      return army;
+   }
+
+   public Army army(int id) {
+      for (Army army : this.armies) {
+         if (army.id == id) {
+            return army;
+         }
+      }
+
+      return null;
+   }
+
+   public void removeArmy(Army army) {
+      this.armies.remove(army);
+      this.setDirty();
+   }
+
+   public Map<BlockPos, UUID> villages() {
+      return Collections.unmodifiableMap(this.villages);
+   }
+
+   public void setVillage(BlockPos pos, UUID owner) {
+      if (owner == null ? this.villages.remove(pos) != null : !owner.equals(this.villages.put(pos.immutable(), owner))) {
+         this.setDirty();
+      }
+   }
+
+   public long lastRaid(BlockPos village) {
+      return this.lastRaid.getOrDefault(village, Long.MIN_VALUE / 2);
+   }
+
+   public void setLastRaid(BlockPos village, long day) {
+      this.lastRaid.put(village.immutable(), day);
+      this.setDirty();
+   }
+
    public int treasury(String faction) {
       return this.treasuries.getOrDefault(faction, 0);
    }
@@ -188,6 +244,38 @@ public final class FactionWorldData extends SavedData {
       CompoundTag foundings = new CompoundTag();
       this.lastFounding.forEach(foundings::putLong);
       tag.put("LastFounding", foundings);
+      ListTag armyList = new ListTag();
+
+      for (Army army : this.armies) {
+         CompoundTag entry = new CompoundTag();
+         entry.putInt("Id", army.id);
+         entry.putString("Faction", army.faction);
+         entry.putString("Defender", army.defender);
+         entry.putInt("TargetSettlement", army.targetSettlement);
+         if (army.villageOwner != null) {
+            entry.putUUID("VillageOwner", army.villageOwner);
+         }
+
+         entry.put("Target", NbtUtils.writeBlockPos(army.target));
+         entry.putInt("Size", army.size);
+         entry.putLong("Ready", army.ready);
+         entry.putBoolean("Spawned", army.spawned);
+         entry.putLong("Started", army.started);
+         entry.putInt("Alive", army.alive);
+         armyList.add(entry);
+      }
+
+      tag.put("Armies", armyList);
+      tag.putInt("NextArmyId", this.nextArmyId);
+      ListTag villageList = new ListTag();
+      this.villages.forEach((pos, owner) -> {
+         CompoundTag entry = new CompoundTag();
+         entry.put("Pos", NbtUtils.writeBlockPos(pos));
+         entry.putUUID("Owner", owner);
+         entry.putLong("LastRaid", this.lastRaid(pos));
+         villageList.add(entry);
+      });
+      tag.put("Villages", villageList);
       return tag;
    }
 
@@ -239,6 +327,37 @@ public final class FactionWorldData extends SavedData {
 
       CompoundTag foundings = tag.getCompound("LastFounding");
       foundings.getAllKeys().forEach(faction -> data.lastFounding.put(faction, foundings.getLong(faction)));
+
+      for (Tag element : tag.getList("Armies", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         Army army = new Army(
+            entry.getInt("Id"),
+            entry.getString("Faction"),
+            entry.getString("Defender"),
+            entry.getInt("TargetSettlement"),
+            entry.hasUUID("VillageOwner") ? entry.getUUID("VillageOwner") : null,
+            NbtUtils.readBlockPos(entry.getCompound("Target")),
+            entry.getInt("Size"),
+            entry.getLong("Ready")
+         );
+         army.spawned = entry.getBoolean("Spawned");
+         army.started = entry.getLong("Started");
+         army.alive = entry.getInt("Alive");
+         data.armies.add(army);
+         data.nextArmyId = Math.max(data.nextArmyId, army.id + 1);
+      }
+
+      data.nextArmyId = Math.max(data.nextArmyId, tag.getInt("NextArmyId"));
+
+      for (Tag element : tag.getList("Villages", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         if (entry.hasUUID("Owner")) {
+            BlockPos pos = NbtUtils.readBlockPos(entry.getCompound("Pos"));
+            data.villages.put(pos, entry.getUUID("Owner"));
+            data.lastRaid.put(pos, entry.getLong("LastRaid"));
+         }
+      }
+
       return data;
    }
 
@@ -257,6 +376,87 @@ public final class FactionWorldData extends SavedData {
       for (Tag element : list) {
          CompoundTag entry = (CompoundTag)element;
          owners.put(entry.getLong("Key"), entry.getString("Owner"));
+      }
+   }
+
+   /**
+    * Soldiers a faction sent against a settlement or a player's village near a player. They are
+    * real NPCs while their target is loaded, tagged with the army's id.
+    */
+   public static final class Army {
+      private final int id;
+      private final String faction;
+      /** The faction defending the target settlement; "" for a player's village. */
+      private final String defender;
+      /** Target settlement id, or 0 for a player's village. */
+      private final int targetSettlement;
+      private final UUID villageOwner;
+      private final BlockPos target;
+      private final int size;
+      /** Game time from which the army may set out. */
+      private final long ready;
+      boolean spawned;
+      long started;
+      int alive;
+
+      Army(int id, String faction, String defender, int targetSettlement, UUID villageOwner, BlockPos target, int size, long ready) {
+         this.id = id;
+         this.faction = faction;
+         this.defender = defender;
+         this.targetSettlement = targetSettlement;
+         this.villageOwner = villageOwner;
+         this.target = target;
+         this.size = size;
+         this.ready = ready;
+         this.alive = size;
+      }
+
+      public int id() {
+         return this.id;
+      }
+
+      public String faction() {
+         return this.faction;
+      }
+
+      public String defender() {
+         return this.defender;
+      }
+
+      public int targetSettlement() {
+         return this.targetSettlement;
+      }
+
+      public UUID villageOwner() {
+         return this.villageOwner;
+      }
+
+      public boolean isRaid() {
+         return this.villageOwner != null;
+      }
+
+      public BlockPos target() {
+         return this.target;
+      }
+
+      public int size() {
+         return this.size;
+      }
+
+      public long ready() {
+         return this.ready;
+      }
+
+      public boolean spawned() {
+         return this.spawned;
+      }
+
+      public int alive() {
+         return this.alive;
+      }
+
+      public String tag() {
+         return FactionArmies.TAG_PREFIX + this.id;
       }
    }
 

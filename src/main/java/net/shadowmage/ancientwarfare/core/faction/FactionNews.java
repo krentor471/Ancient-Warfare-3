@@ -1,7 +1,9 @@
 package net.shadowmage.ancientwarfare.core.faction;
 
+import java.util.UUID;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 
 /** World news: wars, treaties, conquests and new villages, told to every player in chat. */
@@ -28,7 +30,16 @@ public final class FactionNews {
       tell(level, Component.translatable("news.ancientwarfare.founded", factionName(faction), x, z));
    }
 
-   private static void tell(ServerLevel level, Component message) {
+   /** News for one player only, such as a raid on their village; lost while they are offline. */
+   public static void tellPlayer(ServerLevel level, UUID playerId, Component message) {
+      AncientWarfareCore.LOG.info("Faction news for {}: {}", playerId, message.getString());
+      ServerPlayer player = level.getServer().getPlayerList().getPlayer(playerId);
+      if (player != null) {
+         player.sendSystemMessage(message);
+      }
+   }
+
+   static void tell(ServerLevel level, Component message) {
       AncientWarfareCore.LOG.info("Faction news: {}", message.getString());
       level.getServer().getPlayerList().broadcastSystemMessage(message, false);
    }

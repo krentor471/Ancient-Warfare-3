@@ -63,6 +63,7 @@ public final class FactionSimulation {
       }
 
       FactionExpansion.tick(level, data);
+      FactionArmies.tick(level, data);
 
       if (level.getGameTime() % GARRISON_CHECK_TICKS == 0L && !level.players().isEmpty()) {
          maintainGarrisons(level, data);
@@ -99,12 +100,17 @@ public final class FactionSimulation {
 
       FactionExpansion.simulateDay(level, data, data.lastSimulatedDay());
       FactionAI.simulateDay(level, data, data.lastSimulatedDay());
+      FactionArmies.simulateDay(level, data, data.lastSimulatedDay());
       data.setDirty();
       AncientWarfareCore.LOG.debug("Simulated faction day {}: recruits {}", data.lastSimulatedDay(), recruited);
    }
 
    /** A faction NPC died: soldiers come off their settlement's garrison, civilians off its people. */
    public static void onNpcDeath(ServerLevel level, FactionNpcEntity npc) {
+      if (FactionArmies.armyId(npc) != 0) {
+         return;
+      }
+
       FactionWorldData data = FactionWorldData.get(level);
       FactionWorldData.Settlement settlement = settlementAt(data, npc.getFactionName(), npc.getX(), npc.getZ(), LOSS_MARGIN);
       if (settlement != null) {
@@ -125,6 +131,11 @@ public final class FactionSimulation {
     */
    public static boolean onNpcJoin(ServerLevel level, FactionNpcEntity npc) {
       FactionWorldData data = FactionWorldData.get(level);
+      int army = FactionArmies.armyId(npc);
+      if (army != 0) {
+         // Soldiers of an army that has since gone home or fallen.
+         return data.army(army) != null;
+      }
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          if (settlement.capturedFrom.equals(npc.getFactionName()) && settlement.contains(npc.getX(), npc.getZ(), GARRISON_MARGIN)) {
@@ -205,7 +216,7 @@ public final class FactionSimulation {
       return false;
    }
 
-   private static int liveSoldiers(ServerLevel level, FactionWorldData.Settlement settlement) {
+   static int liveSoldiers(ServerLevel level, FactionWorldData.Settlement settlement) {
       AABB area = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(GARRISON_MARGIN, 32.0, GARRISON_MARGIN);
       return level.getEntitiesOfClass(FactionNpcEntity.class, area, npc -> npc.isAlive() && npc.getFactionName().equals(settlement.faction()) && !isCivilian(npc))
          .size();
@@ -217,27 +228,35 @@ public final class FactionSimulation {
       for (int attempt = 0; attempt < 8; attempt++) {
          int x = settlement.min().getX() + random.nextInt(settlement.max().getX() - settlement.min().getX() + 1);
          int z = settlement.min().getZ() + random.nextInt(settlement.max().getZ() - settlement.min().getZ() + 1);
-         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-         BlockPos pos = new BlockPos(x, y, z);
-         if (!level.getBlockState(pos.below()).getFluidState().isEmpty()
-            || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
-            || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()
-            || level.getNearestPlayer(x + 0.5, y, z + 0.5, HIDDEN_RANGE, false) != null) {
-            continue;
-         }
-
-         EntityType<? extends FactionNpcEntity> type = random.nextInt(3) == 0 ? AWCoreEntityTypes.FACTION_ARCHER_NPC.get() : AWCoreEntityTypes.FACTION_SOLDIER_NPC.get();
-         FactionNpcEntity npc = type.create(level);
-         if (npc == null) {
+         if (level.getNearestPlayer(x + 0.5, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z + 0.5, HIDDEN_RANGE, false) == null
+            && spawnSoldier(level, settlement.faction(), x, z) != null) {
             return;
          }
-
-         npc.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
-         npc.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
-         npc.setFactionName(settlement.faction());
-         level.addFreshEntity(npc);
-         return;
       }
+   }
+
+   /** Spawns one of the faction's soldiers (a third of them archers) standing on the ground at x, z; null when there is no room. */
+   static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z) {
+      RandomSource random = level.getRandom();
+      int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+      BlockPos pos = new BlockPos(x, y, z);
+      if (!level.getBlockState(pos.below()).getFluidState().isEmpty()
+         || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
+         || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()) {
+         return null;
+      }
+
+      EntityType<? extends FactionNpcEntity> type = random.nextInt(3) == 0 ? AWCoreEntityTypes.FACTION_ARCHER_NPC.get() : AWCoreEntityTypes.FACTION_SOLDIER_NPC.get();
+      FactionNpcEntity npc = type.create(level);
+      if (npc == null) {
+         return null;
+      }
+
+      npc.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
+      npc.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+      npc.setFactionName(faction);
+      level.addFreshEntity(npc);
+      return npc;
    }
 
    private static boolean isCivilian(FactionNpcEntity npc) {

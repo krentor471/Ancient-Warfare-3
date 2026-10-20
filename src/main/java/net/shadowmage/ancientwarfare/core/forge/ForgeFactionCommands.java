@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -23,10 +24,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+import net.shadowmage.ancientwarfare.core.faction.FactionArmies;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
@@ -117,6 +119,39 @@ public final class ForgeFactionCommands {
                            )
                      )
                )
+               .then(
+                  Commands.literal("raid")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(
+                              Commands.argument("size", IntegerArgumentType.integer(1, 12))
+                                 .executes(context -> raid(context.getSource(), faction(context, "faction"), IntegerArgumentType.getInteger(context, "size")))
+                           )
+                     )
+               )
+               .then(
+                  Commands.literal("assault")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(
+                              Commands.argument("settlement", IntegerArgumentType.integer(1))
+                                 .then(
+                                    Commands.argument("size", IntegerArgumentType.integer(1, 12))
+                                       .executes(
+                                          context -> assault(
+                                             context.getSource(),
+                                             faction(context, "faction"),
+                                             IntegerArgumentType.getInteger(context, "settlement"),
+                                             IntegerArgumentType.getInteger(context, "size")
+                                          )
+                                       )
+                                 )
+                           )
+                     )
+               )
+               .then(Commands.literal("armies").executes(context -> showArmies(context.getSource())))
                .then(
                   Commands.literal("simulate")
                      .requires(source -> source.hasPermission(2))
@@ -334,6 +369,72 @@ public final class ForgeFactionCommands {
       FactionWorldData.get(source.getLevel()).setProvinceOwner(settlement.province(), faction);
       tell(source, Component.literal("Founded settlement #" + settlement.id() + " of " + faction + " with garrison " + garrison));
       return settlement.id();
+   }
+
+   /** Sends a raid against the player village nearest to the command's position, setting out almost at once. */
+   private static int raid(CommandSourceStack source, String faction, int size) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      BlockPos origin = BlockPos.containing(source.getPosition());
+      BlockPos village = null;
+
+      for (BlockPos pos : data.villages().keySet()) {
+         if (village == null || pos.distSqr(origin) < village.distSqr(origin)) {
+            village = pos;
+         }
+      }
+
+      if (village == null) {
+         source.sendFailure(Component.literal("No player village (town hall) is known"));
+         return 0;
+      }
+
+      UUID owner = data.villages().get(village);
+      FactionStandingData.get(source.getLevel()).setTreaty(owner, faction, RelationState.WAR);
+      FactionWorldData.Army army = FactionArmies.raid(source.getLevel(), data, faction, village, owner, size, 100L);
+      if (army == null) {
+         source.sendFailure(Component.literal(faction + " has no soldiers to send"));
+         return 0;
+      }
+
+      tell(source, Component.literal("Army #" + army.id() + " of " + faction + " (" + army.size() + ") raids the village at " + village.toShortString()));
+      return army.id();
+   }
+
+   private static int assault(CommandSourceStack source, String faction, int settlementId, int size) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.id() == settlementId) {
+            FactionWorldData.Army army = FactionArmies.assault(source.getLevel(), data, faction, settlement, size);
+            if (army == null) {
+               source.sendFailure(Component.literal("No army sent: " + faction + " has no soldiers, or the settlement is already under attack"));
+               return 0;
+            }
+
+            tell(source, Component.literal("Army #" + army.id() + " of " + faction + " (" + army.size() + ") marches on settlement #" + settlementId));
+            return army.id();
+         }
+      }
+
+      source.sendFailure(Component.literal("No settlement #" + settlementId));
+      return 0;
+   }
+
+   private static int showArmies(CommandSourceStack source) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      tell(source, Component.literal(data.armies().size() + " army(ies), " + data.villages().size() + " player village(s)"));
+
+      for (FactionWorldData.Army army : data.armies()) {
+         tell(
+            source,
+            Component.literal(
+               "  #" + army.id() + " " + army.faction() + " -> " + (army.isRaid() ? "village" : army.defender() + " #" + army.targetSettlement()) + " at "
+                  + army.target().toShortString() + ", " + (army.spawned() ? "fighting, " + army.alive() + " alive" : "gathering " + army.size())
+            )
+         );
+      }
+
+      return data.armies().size();
    }
 
    private static int simulate(CommandSourceStack source, int days) {

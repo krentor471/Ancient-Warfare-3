@@ -142,11 +142,17 @@ public final class FactionAI {
       String attacker = firstAttacks ? faction : other;
       String defender = firstAttacks ? other : faction;
       FactionWorldData.Settlement target = borderSettlement(data, attacker, defender);
-      if (target == null || level.hasNearbyAlivePlayer(target.center().getX(), target.center().getY(), target.center().getZ(), CAPTURE_PLAYER_RANGE)) {
+      if (target == null) {
          return;
       }
 
       int force = (int)Math.ceil(strength.getOrDefault(attacker, 0) * ATTACK_SHARE);
+      if (level.hasNearbyAlivePlayer(target.center().getX(), target.center().getY(), target.center().getZ(), CAPTURE_PLAYER_RANGE)) {
+         // A player is watching: the battle is fought by real soldiers instead.
+         FactionArmies.assault(level, data, attacker, target, force);
+         return;
+      }
+
       int defence = target.garrison;
       int attackerLosses = Math.min(force, (int)Math.round(defence * (0.3 + random.nextDouble() * 0.4)));
       int defenderLosses = Math.min(defence, (int)Math.round(force * (0.3 + random.nextDouble() * 0.4)));
@@ -156,20 +162,46 @@ public final class FactionAI {
       strength.merge(defender, -defenderLosses, Integer::sum);
       FactionDiplomacy.adjustOpinion(level, attacker, defender, -2);
       if (target.garrison <= 0 && force - attackerLosses > 0) {
-         target.capturedFrom = defender;
-         target.setFaction(attacker);
-         target.garrison = Math.max(1, (force - attackerLosses) / 2);
-         target.manned = true;
-         takeLosses(data, attacker, target.garrison);
-         data.setProvinceOwner(target.province(), attacker);
-         FactionNews.captured(level, attacker, defender, target);
+         int garrison = Math.max(1, (force - attackerLosses) / 2);
+         takeLosses(data, attacker, garrison);
+         capture(level, data, target, attacker, garrison);
       }
 
       data.setDirty();
    }
 
-   /** Takes soldiers from the faction's garrisons, largest first, as an army leaving home. */
-   private static void takeLosses(FactionWorldData data, String faction, int losses) {
+   /** The settlement passes to the attacker, with the given garrison, together with its province. */
+   static void capture(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement target, String attacker, int garrison) {
+      String defender = target.faction();
+      target.capturedFrom = defender;
+      target.setFaction(attacker);
+      target.garrison = garrison;
+      target.manned = true;
+      data.setProvinceOwner(target.province(), attacker);
+      data.setDirty();
+      FactionNews.captured(level, attacker, defender, target);
+   }
+
+   /** Soldiers coming home join the faction's largest garrison. */
+   static void returnSoldiers(FactionWorldData data, String faction, int soldiers) {
+      FactionWorldData.Settlement largest = null;
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.faction().equals(faction) && (largest == null || settlement.garrison > largest.garrison)) {
+            largest = settlement;
+         }
+      }
+
+      if (largest != null && soldiers > 0) {
+         largest.garrison += soldiers;
+         data.setDirty();
+      }
+   }
+
+   /** Takes soldiers from the faction's garrisons, largest first, as an army leaving home. Returns how many were taken. */
+   static int takeLosses(FactionWorldData data, String faction, int losses) {
+      int taken = 0;
+
       while (losses > 0) {
          FactionWorldData.Settlement largest = null;
 
@@ -180,12 +212,15 @@ public final class FactionAI {
          }
 
          if (largest == null) {
-            return;
+            return taken;
          }
 
          largest.garrison--;
          losses--;
+         taken++;
       }
+
+      return taken;
    }
 
    /** The defender's settlement in a province touching the attacker's land, the weakest first. */
@@ -217,7 +252,7 @@ public final class FactionAI {
       return false;
    }
 
-   private static Map<String, Integer> strengths(FactionWorldData data) {
+   static Map<String, Integer> strengths(FactionWorldData data) {
       Map<String, Integer> strength = new HashMap<>();
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
