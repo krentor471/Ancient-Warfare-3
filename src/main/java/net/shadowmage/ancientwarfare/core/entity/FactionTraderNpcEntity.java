@@ -3,6 +3,7 @@ package net.shadowmage.ancientwarfare.core.entity;
 import java.util.List;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.Level;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionTradeListRegistry;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
+import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 import net.shadowmage.ancientwarfare.core.menu.FactionTradeMenu;
 
 public class FactionTraderNpcEntity extends FactionNpcEntity {
@@ -54,6 +56,10 @@ public class FactionTraderNpcEntity extends FactionNpcEntity {
    }
 
    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+      if (player instanceof ServerPlayer serverPlayer) {
+         PlayerDiplomacy.discover(serverPlayer, this.getFactionName());
+      }
+
       if (!this.level().isClientSide) {
          List<FactionTradeListRegistry.FactionTradeEntry> trades = this.getAvailableTrades();
          AWCorePlatform.openMenu(

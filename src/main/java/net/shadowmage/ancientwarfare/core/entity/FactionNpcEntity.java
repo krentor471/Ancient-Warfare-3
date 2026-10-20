@@ -6,7 +6,9 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -30,6 +32,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcFactionAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 
 public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFactionAccess {
    private static final EntityDataAccessor<String> FACTION_NAME = SynchedEntityData.defineId(FactionNpcEntity.class, EntityDataSerializers.STRING);
@@ -110,6 +113,21 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
             new Object[]{this.getFactionName(), Component.translatable("entity.ancientwarfare.faction." + this.getNpcSubtype())}
          )
       );
+   }
+
+   /** Talking to a faction's leader opens diplomacy with that faction. */
+   @Override
+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+      if (hand != InteractionHand.MAIN_HAND || !PlayerDiplomacy.isLeader(this)) {
+         return super.mobInteract(player, hand);
+      }
+
+      if (player instanceof ServerPlayer serverPlayer) {
+         PlayerDiplomacy.discover(serverPlayer, this.getFactionName());
+         PlayerDiplomacy.open(serverPlayer, this.getFactionName());
+      }
+
+      return InteractionResult.sidedSuccess(this.level().isClientSide);
    }
 
    protected void addSharedGoals() {

@@ -158,9 +158,13 @@ public final class FactionSimulation {
          boolean near = false;
 
          for (ServerPlayer player : players) {
-            if (player.distanceToSqr(center.getX(), player.getY(), center.getZ()) < ACTIVE_RANGE * ACTIVE_RANGE) {
+            double distance = player.distanceToSqr(center.getX(), player.getY(), center.getZ());
+            if (distance < PlayerDiplomacy.DISCOVERY_RANGE * PlayerDiplomacy.DISCOVERY_RANGE) {
+               PlayerDiplomacy.discover(player, settlement.faction());
+            }
+
+            if (distance < ACTIVE_RANGE * ACTIVE_RANGE) {
                near = true;
-               break;
             }
          }
 

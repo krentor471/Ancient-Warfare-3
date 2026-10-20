@@ -21,6 +21,9 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.NetworkEvent.Context;
 import net.minecraftforge.network.simple.SimpleChannel;
+import net.shadowmage.ancientwarfare.core.client.DiplomacyScreen;
+import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.RelationState;
 import net.shadowmage.ancientwarfare.core.client.MailboxTargetScreen;
 import net.shadowmage.ancientwarfare.core.common.npc.BardTrack;
 import net.shadowmage.ancientwarfare.core.common.npc.TradeOrderData;
@@ -188,6 +191,21 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.BatonStancePacket::decode)
          .consumerMainThread(AWCoreNetwork.BatonStancePacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.DiplomacyOpenPacket.class, 30, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.DiplomacyOpenPacket::encode)
+         .decoder(AWCoreNetwork.DiplomacyOpenPacket::decode)
+         .consumerMainThread(AWCoreNetwork.DiplomacyOpenPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.DiplomacyActionPacket.class, 31, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.DiplomacyActionPacket::encode)
+         .decoder(AWCoreNetwork.DiplomacyActionPacket::decode)
+         .consumerMainThread(AWCoreNetwork.DiplomacyActionPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.DiplomacyDataPacket.class, 32, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.DiplomacyDataPacket::encode)
+         .decoder(AWCoreNetwork.DiplomacyDataPacket::decode)
+         .consumerMainThread(AWCoreNetwork.DiplomacyDataPacket::handle)
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.CommandViewSelectPacket.class, 27, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.CommandViewSelectPacket::encode)
          .decoder(AWCoreNetwork.CommandViewSelectPacket::decode)
@@ -324,6 +342,18 @@ public final class AWCoreNetwork {
 
    public static void sendBatonFormation() {
       CHANNEL.sendToServer(new AWCoreNetwork.BatonFormationPacket());
+   }
+
+   public static void sendDiplomacyOpen() {
+      CHANNEL.sendToServer(new AWCoreNetwork.DiplomacyOpenPacket());
+   }
+
+   public static void sendDiplomacyAction(String faction, PlayerDiplomacy.Action action) {
+      CHANNEL.sendToServer(new AWCoreNetwork.DiplomacyActionPacket(faction, action.ordinal()));
+   }
+
+   public static void sendDiplomacyData(ServerPlayer player, String focus, boolean open, List<PlayerDiplomacy.Entry> entries) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.DiplomacyDataPacket(focus, open, entries));
    }
 
    public static void sendBatonStance() {
@@ -593,6 +623,101 @@ public final class AWCoreNetwork {
             ServerPlayer player = context.getSender();
             if (player != null) {
                CommandBatonItem.commandViewOrder(heldBaton(player), player, packet.order, packet.pos, packet.end, packet.entityId, packet.queued);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record DiplomacyOpenPacket() {
+      private static void encode(AWCoreNetwork.DiplomacyOpenPacket packet, FriendlyByteBuf buffer) {
+      }
+
+      private static AWCoreNetwork.DiplomacyOpenPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.DiplomacyOpenPacket();
+      }
+
+      private static void handle(AWCoreNetwork.DiplomacyOpenPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               PlayerDiplomacy.open(player, "");
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record DiplomacyActionPacket(String faction, int action) {
+      private static void encode(AWCoreNetwork.DiplomacyActionPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeUtf(packet.faction, 64);
+         buffer.writeVarInt(packet.action);
+      }
+
+      private static AWCoreNetwork.DiplomacyActionPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.DiplomacyActionPacket(buffer.readUtf(64), buffer.readVarInt());
+      }
+
+      private static void handle(AWCoreNetwork.DiplomacyActionPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               PlayerDiplomacy.act(player, packet.faction, PlayerDiplomacy.Action.byId(packet.action));
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record DiplomacyDataPacket(String focus, boolean open, List<PlayerDiplomacy.Entry> entries) {
+      private static final int MAX_ENTRIES = 64;
+
+      private static void encode(AWCoreNetwork.DiplomacyDataPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeUtf(packet.focus, 64);
+         buffer.writeBoolean(packet.open);
+         buffer.writeVarInt(Math.min(MAX_ENTRIES, packet.entries.size()));
+
+         for (PlayerDiplomacy.Entry entry : packet.entries.subList(0, Math.min(MAX_ENTRIES, packet.entries.size()))) {
+            buffer.writeUtf(entry.faction(), 64);
+            buffer.writeVarInt(entry.standing());
+            buffer.writeVarInt(entry.treaty().ordinal());
+            buffer.writeVarInt(Math.min(MAX_ENTRIES, entry.wars().size()));
+            entry.wars().stream().limit(MAX_ENTRIES).forEach(war -> buffer.writeUtf(war, 64));
+            buffer.writeVarInt(entry.settlements());
+            buffer.writeBoolean(entry.leaderNear());
+         }
+      }
+
+      private static AWCoreNetwork.DiplomacyDataPacket decode(FriendlyByteBuf buffer) {
+         String focus = buffer.readUtf(64);
+         boolean open = buffer.readBoolean();
+         int count = Math.min(MAX_ENTRIES, buffer.readVarInt());
+         List<PlayerDiplomacy.Entry> entries = new ArrayList<>();
+
+         for (int i = 0; i < count; i++) {
+            String faction = buffer.readUtf(64);
+            int standing = buffer.readVarInt();
+            RelationState treaty = RelationState.values()[Math.floorMod(buffer.readVarInt(), RelationState.values().length)];
+            int warCount = Math.min(MAX_ENTRIES, buffer.readVarInt());
+            List<String> wars = new ArrayList<>();
+
+            for (int j = 0; j < warCount; j++) {
+               wars.add(buffer.readUtf(64));
+            }
+
+            entries.add(new PlayerDiplomacy.Entry(faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean()));
+         }
+
+         return new AWCoreNetwork.DiplomacyDataPacket(focus, open, entries);
+      }
+
+      private static void handle(AWCoreNetwork.DiplomacyDataPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               DiplomacyScreen.accept(packet.focus, packet.open, packet.entries);
             }
          });
          context.setPacketHandled(true);
