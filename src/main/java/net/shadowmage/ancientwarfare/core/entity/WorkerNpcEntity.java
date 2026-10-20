@@ -327,7 +327,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
 
       public void stop() {
          if (this.worker.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
-            this.worker.clearCommand();
+            this.worker.completeMoveCommand();
             this.worker.setWorkState("idle");
          }
 

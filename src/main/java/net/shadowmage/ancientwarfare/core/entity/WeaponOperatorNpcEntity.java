@@ -111,7 +111,7 @@ public abstract class WeaponOperatorNpcEntity extends PlayerOwnedNpcEntity {
 
       public void stop() {
          if (this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= 4.0) {
-            this.npc.clearCommand();
+            this.npc.completeMoveCommand();
          }
 
          this.target = null;

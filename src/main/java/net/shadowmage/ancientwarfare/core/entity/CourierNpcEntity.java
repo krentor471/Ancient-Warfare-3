@@ -724,7 +724,7 @@ public class CourierNpcEntity extends PlayerOwnedNpcEntity {
 
       public void stop() {
          if (this.courier.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
-            this.courier.clearCommand();
+            this.courier.completeMoveCommand();
          }
 
          this.target = null;

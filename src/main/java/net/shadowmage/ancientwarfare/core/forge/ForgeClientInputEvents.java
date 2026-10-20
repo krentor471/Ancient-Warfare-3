@@ -3,12 +3,15 @@ package net.shadowmage.ancientwarfare.core.forge;
 import com.mojang.blaze3d.platform.InputConstants.Type;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.InputEvent.Key;
+import net.minecraftforge.event.TickEvent.ClientTickEvent;
+import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
@@ -32,6 +35,28 @@ public final class ForgeClientInputEvents {
    private static final KeyMapping BATON_CLEAR_SELECTIONS = batonKey("key.ancientwarfare.baton_clear_selections", 88);
 
    private ForgeClientInputEvents() {
+   }
+
+   /**
+    * Ctrl+1..9 saves the baton selection as a squad, Alt+1..9 selects that squad. Runs before vanilla handles the
+    * hotbar keys, so the held baton stays in hand.
+    */
+   @SubscribeEvent
+   public static void onClientTick(ClientTickEvent event) {
+      Minecraft minecraft = Minecraft.getInstance();
+      if (event.phase == Phase.START && minecraft.player != null && minecraft.screen == null) {
+         boolean holdingBaton = isHoldingBaton(minecraft.player.getMainHandItem()) || isHoldingBaton(minecraft.player.getOffhandItem());
+         boolean assign = Screen.hasControlDown();
+         if (holdingBaton && (assign || Screen.hasAltDown())) {
+            KeyMapping[] hotbar = minecraft.options.keyHotbarSlots;
+
+            for (int i = 0; i < hotbar.length; i++) {
+               while (hotbar[i].consumeClick()) {
+                  AWCoreNetwork.sendBatonSquad(i + 1, assign);
+               }
+            }
+         }
+      }
    }
 
    @SubscribeEvent

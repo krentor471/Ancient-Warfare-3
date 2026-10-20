@@ -133,6 +133,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.goalSelector.addGoal(3, new CombatNpcEntity.CommanderAuraGoal(this));
       this.goalSelector.addGoal(3, new CombatNpcEntity.MedicHealGoal(this));
       this.goalSelector.addGoal(3, new CombatGroupFollowGoal(this));
+      this.goalSelector.addGoal(4, new CombatNpcEntity.HoldPositionGoal(this));
       this.goalSelector.addGoal(4, new CombatNpcEntity.PatrolOrderGoal(this, 1.0));
       this.goalSelector.addGoal(5, new CombatNpcEntity.ReturnHomeGoal(this, 1.0));
       this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
@@ -380,6 +381,11 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    @Override
+   protected boolean holdsPositionAfterMove() {
+      return true;
+   }
+
+   @Override
    protected boolean usesCustomMountedMovement() {
       return this.getVehicle() instanceof Mob;
    }
@@ -405,7 +411,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          if (this.getVehicle() instanceof Mob mount) {
             if (!NpcWaterEscape.isRecoveryActive(this)) {
                LivingEntity target = this.getTarget();
-               if (this.getCurrentCommand() != NpcCommandType.MOVE || !this.updateMountedMoveMovement()) {
+               if ((this.getCurrentCommand() != NpcCommandType.MOVE || !this.updateMountedMoveMovement()) && !this.updateMountedHoldMovement()) {
                   if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
                      this.stopMountedCharge(mount);
                      this.mountPassDestination = null;
@@ -469,7 +475,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          this.mountedArcherTarget = null;
       } else {
          LivingEntity target = this.getTarget();
-         if (this.getCurrentCommand() == NpcCommandType.MOVE && this.updateMountedMoveMovement()) {
+         if (this.getCurrentCommand() == NpcCommandType.MOVE && this.updateMountedMoveMovement() || this.updateMountedHoldMovement()) {
             this.mountedArcherTarget = null;
          } else if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
             this.mountedArcherTarget = null;
@@ -980,7 +986,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       public void stop() {
          if (this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
-            this.npc.clearCommand();
+            this.npc.completeMoveCommand();
          }
 
          this.target = null;
@@ -989,6 +995,51 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       private double distanceToTargetSq() {
          return this.npc.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
+      }
+   }
+
+   private static class HoldPositionGoal extends Goal {
+      private static final double STOP_DISTANCE_SQ = 4.0;
+      private final CombatNpcEntity npc;
+      private int repathTicks;
+
+      private HoldPositionGoal(CombatNpcEntity npc) {
+         this.npc = npc;
+         this.setFlags(EnumSet.of(Flag.MOVE));
+      }
+
+      public boolean canUse() {
+         return this.npc.isHoldingPosition() && !this.npc.isPassenger() && !this.hasLiveTarget() && this.distanceToHoldSq() > STOP_DISTANCE_SQ;
+      }
+
+      public boolean canContinueToUse() {
+         return this.canUse();
+      }
+
+      public void start() {
+         this.repathTicks = 0;
+      }
+
+      public void tick() {
+         BlockPos hold = this.npc.getCommandTarget();
+         if (this.repathTicks-- <= 0 || this.npc.getNavigation().isDone()) {
+            this.npc.getNavigation().moveTo((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5, 1.0);
+            this.repathTicks = 10;
+         }
+      }
+
+      public void stop() {
+         this.npc.getNavigation().stop();
+      }
+
+      private boolean hasLiveTarget() {
+         LivingEntity target = this.npc.getTarget();
+         return target != null && target.isAlive();
+      }
+
+      private double distanceToHoldSq() {
+         BlockPos hold = this.npc.getCommandTarget();
+         return this.npc.distanceToSqr((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5);
       }
    }
 

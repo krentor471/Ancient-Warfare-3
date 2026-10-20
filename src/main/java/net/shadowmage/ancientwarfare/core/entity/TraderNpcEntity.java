@@ -128,7 +128,7 @@ public class TraderNpcEntity extends PlayerOwnedNpcEntity {
 
       public void stop() {
          if (this.trader.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
-            this.trader.clearCommand();
+            this.trader.completeMoveCommand();
          }
 
          this.target = null;

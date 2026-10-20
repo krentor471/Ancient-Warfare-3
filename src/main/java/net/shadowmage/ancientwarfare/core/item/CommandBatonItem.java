@@ -14,6 +14,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -37,11 +38,13 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.Item.Properties;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcSquadData;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcProfessionTool;
 import net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity;
@@ -51,7 +54,9 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    private static final String COMBAT_GROUP_NPCS_TAG = "CombatGroupNpcs";
    private static final String COMBAT_GROUP_TYPE_TAG = "CombatGroupType";
    private static final String MODE_TAG = "Mode";
-   private static final int MAX_SELECTED = 16;
+   private static final int MAX_SELECTED = 128;
+   private static final double AREA_SELECT_RADIUS = 24.0;
+   private static final double MOVE_SPACING = 2.0;
    private final Tier tier;
    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
 
@@ -92,7 +97,12 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       } else {
          CommandBatonItem.BatonMode mode = getMode(stack);
          if (target instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
-            toggleNpcSelection(stack, player, npc);
+            if (player.isShiftKeyDown() && mode != CommandBatonItem.BatonMode.COMBAT_GROUP) {
+               selectNearby(stack, player, npc);
+            } else {
+               toggleNpcSelection(stack, player, npc);
+            }
+
             return InteractionResult.SUCCESS;
          }
 
@@ -118,7 +128,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          List<UUID> selected = getSelectedNpcs(stack);
          if (selected.remove(npcId)) {
             player.displayClientMessage(Component.translatable("guistrings.npc.baton.deselected", new Object[]{npc.getDisplayName()}), true);
-         } else if (selected.size() < 16) {
+         } else if (selected.size() < MAX_SELECTED) {
             selected.add(npcId);
             player.displayClientMessage(Component.translatable("guistrings.npc.baton.selected", new Object[]{npc.getDisplayName()}), true);
          } else {
@@ -127,6 +137,76 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
          setSelectedNpcs(stack, selected);
       }
+   }
+
+   /** Selects every NPC of the clicked kind (soldier or civilian) the player commands around the clicked one. */
+   private static void selectNearby(ItemStack stack, Player player, PlayerOwnedNpcEntity clicked) {
+      boolean soldiers = clicked instanceof CombatNpcEntity;
+      List<UUID> selected = getSelectedNpcs(stack);
+      List<PlayerOwnedNpcEntity> nearby = player.level()
+         .getEntitiesOfClass(
+            PlayerOwnedNpcEntity.class,
+            clicked.getBoundingBox().inflate(AREA_SELECT_RADIUS),
+            npc -> npc.isAlive() && npc instanceof CombatNpcEntity == soldiers && npc.hasCommandPermission(player)
+         );
+
+      for (PlayerOwnedNpcEntity npc : nearby) {
+         if (selected.size() >= MAX_SELECTED) {
+            break;
+         }
+
+         if (!selected.contains(npc.getUUID())) {
+            selected.add(npc.getUUID());
+         }
+      }
+
+      setSelectedNpcs(stack, selected);
+      player.displayClientMessage(Component.translatable("guistrings.npc.baton.area_selected", new Object[]{selected.size()}), true);
+   }
+
+   /** Saves the current selection as squad {@code slot}, or loads that squad as the selection. */
+   public static void squadHotkey(ItemStack stack, ServerPlayer player, int slot, boolean assign) {
+      if (stack.getItem() instanceof CommandBatonItem && slot >= 1 && slot <= NpcSquadData.SLOTS) {
+         NpcSquadData squads = NpcSquadData.get(player.serverLevel());
+         if (assign) {
+            List<UUID> selected = getSelectedNpcs(stack);
+            squads.setSquad(player.getUUID(), slot, selected);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.squad_saved", new Object[]{slot, selected.size()}), true);
+         } else {
+            List<UUID> members = new ArrayList<>();
+
+            for (UUID uuid : squads.getSquad(player.getUUID(), slot)) {
+               // Unloaded members stay in the squad; dead or foreign ones are dropped.
+               Entity entity = player.serverLevel().getEntity(uuid);
+               if (entity == null || entity instanceof PlayerOwnedNpcEntity npc && npc.isAlive() && npc.hasCommandPermission(player)) {
+                  members.add(uuid);
+               }
+            }
+
+            squads.setSquad(player.getUUID(), slot, members);
+            setSelectedNpcs(stack, members);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.squad_selected", new Object[]{slot, members.size()}), true);
+         }
+      }
+   }
+
+   private static int issueHoldCommand(ServerLevel level, Player player, ItemStack stack) {
+      List<UUID> selected = getSelectedNpcs(stack);
+      List<UUID> stillValid = new ArrayList<>();
+      int commanded = 0;
+
+      for (UUID uuid : selected) {
+         if (level.getEntity(uuid) instanceof CombatNpcEntity npc && npc.hasCommandPermission(player)) {
+            npc.setHoldCommand(npc.blockPosition());
+            stillValid.add(uuid);
+            commanded++;
+         } else if (level.getEntity(uuid) instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
+            stillValid.add(uuid);
+         }
+      }
+
+      setSelectedNpcs(stack, stillValid);
+      return commanded;
    }
 
    private static void toggleCombatGroupSelection(ItemStack stack, Player player, PlayerOwnedNpcEntity npc) {
@@ -138,7 +218,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          if (selected.remove(npcId)) {
             player.displayClientMessage(Component.translatable("guistrings.npc.baton.combat_group_removed", new Object[]{npc.getDisplayName()}), true);
             refreshCombatGroupType(stack, player, selected);
-         } else if (selected.size() < 16) {
+         } else if (selected.size() < MAX_SELECTED) {
             String selectedType = getCombatGroupType(stack);
             if (selectedType == null || selectedType.isBlank()) {
                selectedType = selected.stream()
@@ -238,7 +318,12 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       Player player = context.getPlayer();
       if (!level.isClientSide && player != null) {
          ItemStack stack = context.getItemInHand();
-         if (player.isShiftKeyDown()) {
+         if (player.isShiftKeyDown() && getMode(stack) == CommandBatonItem.BatonMode.MOVE) {
+            BlockPos target = context.getClickedPos().relative(context.getClickedFace());
+            int commanded = issueQueuedMoveCommand((ServerLevel)level, player, stack, target);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.queued_move_command", new Object[]{commanded}), true);
+            return InteractionResult.SUCCESS;
+         } else if (player.isShiftKeyDown()) {
             changeMode(stack, player, getMode(stack).next());
             return InteractionResult.SUCCESS;
          } else {
@@ -260,6 +345,8 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       );
       tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.execute").withStyle(ChatFormatting.DARK_GRAY));
       tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.cycle").withStyle(ChatFormatting.DARK_GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.queue").withStyle(ChatFormatting.DARK_GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.squads").withStyle(ChatFormatting.DARK_GRAY));
       int selectedCount = getMode(stack) == CommandBatonItem.BatonMode.COMBAT_GROUP ? getCombatGroupNpcs(stack).size() : getSelectedNpcs(stack).size();
       tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.selected", new Object[]{selectedCount}).withStyle(ChatFormatting.DARK_GRAY));
    }
@@ -270,6 +357,10 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          return InteractionResultHolder.success(stack);
       } else if (player.isShiftKeyDown()) {
          changeMode(stack, player, getMode(stack).next());
+         return InteractionResultHolder.success(stack);
+      } else if (getMode(stack) == CommandBatonItem.BatonMode.HOLD) {
+         int commanded = issueHoldCommand((ServerLevel)level, player, stack);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.hold_command", new Object[]{commanded}), true);
          return InteractionResultHolder.success(stack);
       } else if (getMode(stack) == CommandBatonItem.BatonMode.CLEAR_COMMAND) {
          int commanded = issueClearCommand((ServerLevel)level, player, stack);
@@ -298,6 +389,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          case CLEAR_COMMAND -> issueClearCommand(level, player, stack);
          case DISMOUNT -> issueDismountCommand(level, player, stack, target);
          case MOVE -> issueMoveCommand(level, player, stack, target);
+         case HOLD -> issueHoldCommand(level, player, stack);
          case ATTACK -> 0;
          case MOUNT -> 0;
          case COMBAT_GROUP -> getCombatGroupNpcs(stack).size();
@@ -305,24 +397,59 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    private static int issueMoveCommand(ServerLevel level, Player player, ItemStack stack, BlockPos target) {
-      List<UUID> selected = getSelectedNpcs(stack);
-      List<UUID> stillValid = new ArrayList<>();
-      int commanded = 0;
+      return issueMoveCommand(level, player, stack, target, false);
+   }
 
-      for (UUID uuid : selected) {
-         Entity entity = level.getEntity(uuid);
-         if (entity instanceof PlayerOwnedNpcEntity) {
-            PlayerOwnedNpcEntity npc = (PlayerOwnedNpcEntity)entity;
-            if (npc.hasCommandPermission(player)) {
-               npc.setMoveCommand(target);
-               stillValid.add(uuid);
-               commanded++;
-            }
+   private static int issueQueuedMoveCommand(ServerLevel level, Player player, ItemStack stack, BlockPos target) {
+      return issueMoveCommand(level, player, stack, target, true);
+   }
+
+   private static int issueMoveCommand(ServerLevel level, Player player, ItemStack stack, BlockPos target, boolean queued) {
+      List<UUID> stillValid = new ArrayList<>();
+      List<PlayerOwnedNpcEntity> npcs = new ArrayList<>();
+
+      for (UUID uuid : getSelectedNpcs(stack)) {
+         if (level.getEntity(uuid) instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
+            npcs.add(npc);
+            stillValid.add(uuid);
+         }
+      }
+
+      List<BlockPos> spots = spreadAround(level, player, target, npcs.size());
+
+      for (int i = 0; i < npcs.size(); i++) {
+         if (queued) {
+            npcs.get(i).queueMoveCommand(spots.get(i));
+         } else {
+            npcs.get(i).setMoveCommand(spots.get(i));
          }
       }
 
       setSelectedNpcs(stack, stillValid);
-      return commanded;
+      return npcs.size();
+   }
+
+   /** Square block of spots around the target, facing away from the player, so a group does not crowd onto one block. */
+   private static List<BlockPos> spreadAround(ServerLevel level, Player player, BlockPos target, int count) {
+      List<BlockPos> spots = new ArrayList<>(count);
+      int columns = Math.max(1, (int)Math.ceil(Math.sqrt(count)));
+      int rows = (count + columns - 1) / columns;
+      double yaw = Math.toRadians(player.getYRot());
+      double rightX = -Math.cos(yaw);
+      double rightZ = -Math.sin(yaw);
+      double forwardX = -Math.sin(yaw);
+      double forwardZ = Math.cos(yaw);
+
+      for (int i = 0; i < count; i++) {
+         double side = (i % columns - (columns - 1) / 2.0) * MOVE_SPACING;
+         double depth = -(i / columns - (rows - 1) / 2.0) * MOVE_SPACING;
+         int x = (int)Math.floor(target.getX() + 0.5 + side * rightX + depth * forwardX);
+         int z = (int)Math.floor(target.getZ() + 0.5 + side * rightZ + depth * forwardZ);
+         int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         spots.add(new BlockPos(x, Math.abs(surface - target.getY()) <= 3 ? surface : target.getY(), z));
+      }
+
+      return spots;
    }
 
    private static int issueAttackCommand(ServerLevel level, Player player, ItemStack stack, LivingEntity target) {
@@ -471,6 +598,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          case CLEAR_COMMAND -> Component.translatable("guistrings.npc.baton.clear_command", new Object[]{commanded});
          case DISMOUNT -> Component.translatable("guistrings.npc.baton.dismount_command", new Object[]{commanded});
          case MOVE -> Component.translatable("guistrings.npc.baton.move_command", new Object[]{commanded});
+         case HOLD -> Component.translatable("guistrings.npc.baton.hold_command", new Object[]{commanded});
          case ATTACK -> Component.translatable("guistrings.npc.baton.move_attack_command", new Object[]{commanded});
          case MOUNT -> Component.translatable("guistrings.npc.baton.mount_command", new Object[]{commanded});
          case COMBAT_GROUP -> Component.translatable("guistrings.npc.baton.combat_group_ready", new Object[]{commanded});
@@ -571,6 +699,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       DISMOUNT("dismount", "guistrings.npc.baton.dismount"),
       ATTACK("attack", "guistrings.npc.baton.attack"),
       MOVE("move", "guistrings.npc.baton.move"),
+      HOLD("hold", "guistrings.npc.baton.hold"),
       MOUNT("mount", "guistrings.npc.baton.mount"),
       COMBAT_GROUP("combatGroup", "guistrings.npc.baton.combat_group");
 

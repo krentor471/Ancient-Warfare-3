@@ -173,6 +173,11 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.DraftingPreviewPacket::decode)
          .consumerMainThread(AWCoreNetwork.DraftingPreviewPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.BatonSquadPacket.class, 25, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.BatonSquadPacket::encode)
+         .decoder(AWCoreNetwork.BatonSquadPacket::decode)
+         .consumerMainThread(AWCoreNetwork.BatonSquadPacket::handle)
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.MailboxConfigPacket.class, 13)
          .encoder(AWCoreNetwork.MailboxConfigPacket::encode)
          .decoder(AWCoreNetwork.MailboxConfigPacket::decode)
@@ -282,6 +287,10 @@ public final class AWCoreNetwork {
 
    public static void sendCommandBatonHotkey() {
       CHANNEL.sendToServer(new AWCoreNetwork.CommandBatonHotkeyPacket());
+   }
+
+   public static void sendBatonSquad(int slot, boolean assign) {
+      CHANNEL.sendToServer(new AWCoreNetwork.BatonSquadPacket(slot, assign));
    }
 
    public static void sendTraderToRoute(int traderEntityId, BlockPos target) {
@@ -488,6 +497,33 @@ public final class AWCoreNetwork {
                }
 
                CommandBatonItem.clearSelections(stack, player);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record BatonSquadPacket(int slot, boolean assign) {
+      private static void encode(AWCoreNetwork.BatonSquadPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarInt(packet.slot);
+         buffer.writeBoolean(packet.assign);
+      }
+
+      private static AWCoreNetwork.BatonSquadPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.BatonSquadPacket(buffer.readVarInt(), buffer.readBoolean());
+      }
+
+      private static void handle(AWCoreNetwork.BatonSquadPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               ItemStack stack = player.getMainHandItem();
+               if (!(stack.getItem() instanceof CommandBatonItem)) {
+                  stack = player.getOffhandItem();
+               }
+
+               CommandBatonItem.squadHotkey(stack, player, packet.slot, packet.assign);
             }
          });
          context.setPacketHandled(true);

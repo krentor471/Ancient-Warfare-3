@@ -1,5 +1,6 @@
 package net.shadowmage.ancientwarfare.core.entity;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -58,6 +59,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    // Mirrors OWNER: ally checks read it for every nearby NPC, and synched data reads take a lock.
    private Optional<UUID> owner;
    private static final String TAG_CURRENT_COMMAND = "CurrentCommand";
+   private static final int MAX_QUEUED_MOVES = 16;
+   private static final double HOLD_LEASH_SQ = 400.0;
    private static final String TAG_COMMAND_TARGET = "CommandTarget";
    private static final String TAG_HOME_SET = "HomeSet";
    private static final String TAG_HOME_POS = "HomePos";
@@ -78,6 +81,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private Vec3 combatGroupOffset = Vec3.ZERO;
    private long combatGroupRefreshTime = Long.MIN_VALUE;
    private UUID attackCommandTargetUuid;
+   private final ArrayDeque<BlockPos> queuedMoves = new ArrayDeque<>();
    private int foodSupplyRetryTicks;
    private boolean followCombatRecallActive;
 
@@ -118,6 +122,9 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       }
 
       this.getFollowTarget().ifPresent(uuid -> tag.putUUID("FollowTarget", uuid));
+      if (!this.queuedMoves.isEmpty()) {
+         tag.putLongArray("QueuedMoves", this.queuedMoves.stream().mapToLong(BlockPos::asLong).toArray());
+      }
 
       if (!this.getOrdersStack().isEmpty()) {
          tag.put("OrdersStack", this.getOrdersStack().save(new CompoundTag()));
@@ -150,6 +157,11 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
       if (tag.contains("CommandTarget")) {
          this.setCommandTarget(BlockPos.of(tag.getLong("CommandTarget")));
+      }
+
+      this.queuedMoves.clear();
+      for (long pos : tag.getLongArray("QueuedMoves")) {
+         this.queuedMoves.add(BlockPos.of(pos));
       }
 
       if (tag.contains("HomeSet")) {
@@ -254,6 +266,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
       this.updateFollowCombatRecall();
       this.enforceAttackCommandTarget();
+      this.enforceHoldLeash();
       if (this.isGuiInteractionPaused()) {
          this.freezeForGui();
       }
@@ -328,6 +341,59 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    public void setMoveCommand(BlockPos target) {
+      this.queuedMoves.clear();
+      this.startMoveCommand(target);
+   }
+
+   /** Adds a move to the end of the order queue, or starts it at once when the NPC is not already moving. */
+   public void queueMoveCommand(BlockPos target) {
+      if (this.getCurrentCommand() != NpcCommandType.MOVE) {
+         this.setMoveCommand(target);
+      } else if (this.queuedMoves.size() < MAX_QUEUED_MOVES) {
+         this.queuedMoves.add(target);
+      }
+   }
+
+   /** Called when the NPC reaches its move target: starts the next queued move, holds the spot, or goes back to its duties. */
+   public void completeMoveCommand() {
+      BlockPos next = this.queuedMoves.poll();
+      if (next != null) {
+         this.startMoveCommand(next);
+      } else if (this.holdsPositionAfterMove()) {
+         this.setHoldCommand(this.getCommandTarget());
+      } else {
+         this.clearCommand();
+      }
+   }
+
+   protected boolean holdsPositionAfterMove() {
+      return false;
+   }
+
+   /** Keeps the NPC at the position: it fights enemies that come close and walks back afterwards. */
+   public void setHoldCommand(BlockPos pos) {
+      this.queuedMoves.clear();
+      this.setFollowTarget(null);
+      this.attackCommandTargetUuid = null;
+      this.setCommandTarget(pos);
+      this.setCurrentCommand(NpcCommandType.GUARD);
+   }
+
+   public boolean isHoldingPosition() {
+      return this.getCurrentCommand() == NpcCommandType.GUARD && !BlockPos.ZERO.equals(this.getCommandTarget());
+   }
+
+   private void enforceHoldLeash() {
+      if (!this.level().isClientSide && this.isHoldingPosition()) {
+         LivingEntity target = this.getTarget();
+         BlockPos hold = this.getCommandTarget();
+         if (target != null && target.distanceToSqr((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5) > HOLD_LEASH_SQ) {
+            this.setTarget(null);
+         }
+      }
+   }
+
+   private void startMoveCommand(BlockPos target) {
       this.setFollowTarget(null);
       this.attackCommandTargetUuid = null;
       this.setTarget(null);
@@ -345,6 +411,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    public void clearCommand() {
+      this.queuedMoves.clear();
       if (this.getCurrentCommand() == NpcCommandType.FOLLOW) {
          this.setFollowTarget(null);
       }
@@ -918,11 +985,15 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
                            this.driveMountToward(mount, destinationx);
                         } else {
                            this.stopMount(mount, 0.4);
-                           this.clearCommand();
+                           this.completeMoveCommand();
                         }
 
                         return;
                      }
+                  }
+
+                  if (this.updateMountedHoldMovement()) {
+                     return;
                   }
 
                   if (!this.updateMountedFollowMovement()) {
@@ -987,12 +1058,35 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
                   this.driveMountToward(mount, destination);
                } else {
                   this.stopMount(mount, 0.4);
-                  this.clearCommand();
+                  this.completeMoveCommand();
                }
 
                return true;
             }
 
+            return false;
+         }
+      } else {
+         return false;
+      }
+   }
+
+   /** Rides back to the held position once there is nothing to fight. */
+   protected boolean updateMountedHoldMovement() {
+      if (this.isHoldingPosition() && !this.isGuiInteractionPaused()) {
+         LivingEntity combatTarget = this.getTarget();
+         if (combatTarget != null && combatTarget.isAlive()) {
+            return false;
+         } else if (this.getVehicle() instanceof Mob mount) {
+            Vec3 destination = Vec3.atBottomCenterOf(this.getCommandTarget());
+            if (mount.distanceToSqr(destination) > 9.0) {
+               this.driveMountToward(mount, destination);
+            } else {
+               this.stopMount(mount, 0.4);
+            }
+
+            return true;
+         } else {
             return false;
          }
       } else {
