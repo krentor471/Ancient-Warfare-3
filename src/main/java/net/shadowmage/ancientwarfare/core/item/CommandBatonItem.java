@@ -4,11 +4,15 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.ImmutableMultimap.Builder;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
@@ -44,6 +48,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcFormation;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcSquadData;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcProfessionTool;
 import net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity;
@@ -56,7 +61,8 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    private static final String MODE_TAG = "Mode";
    private static final int MAX_SELECTED = 128;
    private static final double AREA_SELECT_RADIUS = 24.0;
-   private static final double MOVE_SPACING = 2.0;
+   private static final double MIN_MARCH_FOR_FACING_SQ = 16.0;
+   private static final String FORMATION_TAG = "Formation";
    private final Tier tier;
    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
 
@@ -197,7 +203,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
       for (UUID uuid : selected) {
          if (level.getEntity(uuid) instanceof CombatNpcEntity npc && npc.hasCommandPermission(player)) {
-            npc.setHoldCommand(npc.blockPosition());
+            npc.setHoldCommand(npc.blockPosition(), npc.getYRot());
             stillValid.add(uuid);
             commanded++;
          } else if (level.getEntity(uuid) instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
@@ -347,6 +353,10 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.cycle").withStyle(ChatFormatting.DARK_GRAY));
       tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.queue").withStyle(ChatFormatting.DARK_GRAY));
       tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.squads").withStyle(ChatFormatting.DARK_GRAY));
+      tooltip.add(
+         Component.translatable("tooltip.ancientwarfare.command_baton.formation", new Object[]{Component.translatable(getFormation(stack).translationKey())})
+            .withStyle(ChatFormatting.GRAY)
+      );
       int selectedCount = getMode(stack) == CommandBatonItem.BatonMode.COMBAT_GROUP ? getCombatGroupNpcs(stack).size() : getSelectedNpcs(stack).size();
       tooltip.add(Component.translatable("tooltip.ancientwarfare.command_baton.selected", new Object[]{selectedCount}).withStyle(ChatFormatting.DARK_GRAY));
    }
@@ -415,13 +425,17 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          }
       }
 
-      List<BlockPos> spots = spreadAround(level, player, target, npcs.size());
+      if (!npcs.isEmpty()) {
+         Direction facing = formationFacing(player, npcs, target);
+         float yaw = facing.toYRot();
+         List<BlockPos> spots = assignFormation(level, npcs, target, facing, getFormation(stack));
 
-      for (int i = 0; i < npcs.size(); i++) {
-         if (queued) {
-            npcs.get(i).queueMoveCommand(spots.get(i));
-         } else {
-            npcs.get(i).setMoveCommand(spots.get(i));
+         for (int i = 0; i < npcs.size(); i++) {
+            if (queued) {
+               npcs.get(i).queueMoveCommand(spots.get(i), yaw);
+            } else {
+               npcs.get(i).setMoveCommand(spots.get(i), yaw);
+            }
          }
       }
 
@@ -429,27 +443,77 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       return npcs.size();
    }
 
-   /** Square block of spots around the target, facing away from the player, so a group does not crowd onto one block. */
-   private static List<BlockPos> spreadAround(ServerLevel level, Player player, BlockPos target, int count) {
-      List<BlockPos> spots = new ArrayList<>(count);
-      int columns = Math.max(1, (int)Math.ceil(Math.sqrt(count)));
-      int rows = (count + columns - 1) / columns;
-      double yaw = Math.toRadians(player.getYRot());
-      double rightX = -Math.cos(yaw);
-      double rightZ = -Math.sin(yaw);
-      double forwardX = -Math.sin(yaw);
-      double forwardZ = Math.cos(yaw);
+   /** The group faces the way it marches: from its centre to the target, or where the player looks for a short step. */
+   private static Direction formationFacing(Player player, List<PlayerOwnedNpcEntity> npcs, BlockPos target) {
+      double x = 0.0;
+      double z = 0.0;
 
-      for (int i = 0; i < count; i++) {
-         double side = (i % columns - (columns - 1) / 2.0) * MOVE_SPACING;
-         double depth = -(i / columns - (rows - 1) / 2.0) * MOVE_SPACING;
-         int x = (int)Math.floor(target.getX() + 0.5 + side * rightX + depth * forwardX);
-         int z = (int)Math.floor(target.getZ() + 0.5 + side * rightZ + depth * forwardZ);
-         int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-         spots.add(new BlockPos(x, Math.abs(surface - target.getY()) <= 3 ? surface : target.getY(), z));
+      for (PlayerOwnedNpcEntity npc : npcs) {
+         x += npc.getX();
+         z += npc.getZ();
       }
 
-      return spots;
+      double dx = target.getX() + 0.5 - x / npcs.size();
+      double dz = target.getZ() + 0.5 - z / npcs.size();
+      return dx * dx + dz * dz < MIN_MARCH_FOR_FACING_SQ ? player.getDirection() : Direction.getNearest(dx, 0.0, dz);
+   }
+
+   /**
+    * Gives every NPC a slot: melee in the front rows and ranged behind, and inside a row NPCs keep their left-to-right
+    * order so paths do not cross. Slots snap to the block grid, so the formation faces one of the four directions.
+    */
+   private static List<BlockPos> assignFormation(ServerLevel level, List<PlayerOwnedNpcEntity> npcs, BlockPos target, Direction facing, NpcFormation formation) {
+      Direction right = facing.getClockWise();
+      List<PlayerOwnedNpcEntity> ordered = new ArrayList<>(npcs);
+      ordered.sort(
+         Comparator.<PlayerOwnedNpcEntity>comparingInt(npc -> NpcEquipmentResolver.isRangedWeapon(npc.getMainHandItem()) ? 1 : 0)
+            .thenComparingDouble(npc -> -along(npc, target, facing))
+      );
+      List<NpcFormation.Slot> slots = formation.slots(ordered.size());
+      Map<PlayerOwnedNpcEntity, BlockPos> spots = new HashMap<>();
+      int start = 0;
+
+      while (start < slots.size()) {
+         int row = slots.get(start).row();
+         int end = start;
+         while (end < slots.size() && slots.get(end).row() == row) {
+            end++;
+         }
+
+         List<PlayerOwnedNpcEntity> rowNpcs = new ArrayList<>(ordered.subList(start, end));
+         rowNpcs.sort(Comparator.comparingDouble(npc -> along(npc, target, right)));
+
+         for (int i = 0; i < rowNpcs.size(); i++) {
+            NpcFormation.Slot slot = slots.get(start + i);
+            int x = target.getX() + right.getStepX() * slot.side() - facing.getStepX() * slot.depth();
+            int z = target.getZ() + right.getStepZ() * slot.side() - facing.getStepZ() * slot.depth();
+            int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            spots.put(rowNpcs.get(i), new BlockPos(x, Math.abs(surface - target.getY()) <= 3 ? surface : target.getY(), z));
+         }
+
+         start = end;
+      }
+
+      List<BlockPos> result = new ArrayList<>(npcs.size());
+      npcs.forEach(npc -> result.add(spots.get(npc)));
+      return result;
+   }
+
+   private static double along(PlayerOwnedNpcEntity npc, BlockPos target, Direction direction) {
+      return (npc.getX() - target.getX() - 0.5) * direction.getStepX() + (npc.getZ() - target.getZ() - 0.5) * direction.getStepZ();
+   }
+
+   public static NpcFormation getFormation(ItemStack stack) {
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains(FORMATION_TAG) ? NpcFormation.byName(tag.getString(FORMATION_TAG)) : NpcFormation.SQUARE;
+   }
+
+   public static void cycleFormation(ItemStack stack, Player player) {
+      if (stack.getItem() instanceof CommandBatonItem) {
+         NpcFormation formation = getFormation(stack).next();
+         stack.getOrCreateTag().putString(FORMATION_TAG, formation.serializedName());
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.formation_changed", new Object[]{Component.translatable(formation.translationKey())}), true);
+      }
    }
 
    private static int issueAttackCommand(ServerLevel level, Player player, ItemStack stack, LivingEntity target) {

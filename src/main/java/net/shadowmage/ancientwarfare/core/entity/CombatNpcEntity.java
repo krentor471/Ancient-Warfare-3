@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
@@ -126,7 +127,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    protected void registerGoals() {
-      this.goalSelector.addGoal(1, new CombatNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(1, new CombatNpcEntity.MoveToCommandGoal(this, 1.0, 0.75));
       this.goalSelector.addGoal(1, new CombatNpcEntity.ShieldDefenseGoal(this));
       this.goalSelector.addGoal(2, new CombatNpcEntity.CombatRangedAttackGoal(this));
       this.goalSelector.addGoal(2, new CombatNpcEntity.CombatMeleeAttackGoal(this, this.playerSprintNavigationSpeed(), true));
@@ -134,6 +135,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.goalSelector.addGoal(3, new CombatNpcEntity.MedicHealGoal(this));
       this.goalSelector.addGoal(3, new CombatGroupFollowGoal(this));
       this.goalSelector.addGoal(4, new CombatNpcEntity.HoldPositionGoal(this));
+      this.goalSelector.addGoal(5, new CombatNpcEntity.FaceHoldDirectionGoal(this));
       this.goalSelector.addGoal(4, new CombatNpcEntity.PatrolOrderGoal(this, 1.0));
       this.goalSelector.addGoal(5, new CombatNpcEntity.ReturnHomeGoal(this, 1.0));
       this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
@@ -947,6 +949,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private static class MoveToCommandGoal extends Goal {
+      private static final double NEAR_ENOUGH_SQ = 9.0;
       private final CombatNpcEntity npc;
       private final double speedModifier;
       private final double stopDistanceSq;
@@ -969,7 +972,13 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
 
       public boolean canContinueToUse() {
-         return this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() > this.stopDistanceSq;
+         return this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && !this.arrived();
+      }
+
+      /** Close to the slot, or as close as the path gets: a blocked formation slot must not keep the order open forever. */
+      private boolean arrived() {
+         double distanceSq = this.distanceToTargetSq();
+         return distanceSq <= this.stopDistanceSq || distanceSq <= NEAR_ENOUGH_SQ && this.npc.getNavigation().isDone();
       }
 
       public void tick() {
@@ -985,7 +994,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
 
       public void stop() {
-         if (this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
+         if (this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.arrived()) {
             this.npc.completeMoveCommand();
          }
 
@@ -999,7 +1008,8 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private static class HoldPositionGoal extends Goal {
-      private static final double STOP_DISTANCE_SQ = 4.0;
+      private static final double STOP_DISTANCE_SQ = 0.25;
+      private static final double STEP_DISTANCE_SQ = 4.0;
       private final CombatNpcEntity npc;
       private int repathTicks;
 
@@ -1022,7 +1032,11 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       public void tick() {
          BlockPos hold = this.npc.getCommandTarget();
-         if (this.repathTicks-- <= 0 || this.npc.getNavigation().isDone()) {
+         if (this.distanceToHoldSq() <= STEP_DISTANCE_SQ) {
+            // The last step onto the slot: pathfinding stops a block short, so walk straight to the block centre.
+            this.npc.getNavigation().stop();
+            this.npc.getMoveControl().setWantedPosition((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5, 0.7);
+         } else if (this.repathTicks-- <= 0 || this.npc.getNavigation().isDone()) {
             this.npc.getNavigation().moveTo((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5, 1.0);
             this.repathTicks = 10;
          }
@@ -1040,6 +1054,30 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       private double distanceToHoldSq() {
          BlockPos hold = this.npc.getCommandTarget();
          return this.npc.distanceToSqr((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5);
+      }
+   }
+
+   /** A soldier standing in formation looks the way the formation faces instead of at passers-by. */
+   private static class FaceHoldDirectionGoal extends Goal {
+      private final CombatNpcEntity npc;
+
+      private FaceHoldDirectionGoal(CombatNpcEntity npc) {
+         this.npc = npc;
+         this.setFlags(EnumSet.of(Flag.LOOK));
+      }
+
+      public boolean canUse() {
+         return this.npc.isHoldingPosition() && !Float.isNaN(this.npc.getHoldYaw()) && this.npc.getTarget() == null;
+      }
+
+      public void tick() {
+         double yaw = Math.toRadians(this.npc.getHoldYaw());
+         this.npc.getLookControl().setLookAt(this.npc.getX() - Math.sin(yaw) * 8.0, this.npc.getEyeY(), this.npc.getZ() + Math.cos(yaw) * 8.0);
+         if (this.npc.getNavigation().isDone() && !this.npc.getMoveControl().hasWanted()) {
+            float holdYaw = this.npc.getHoldYaw();
+            this.npc.setYRot(Mth.rotLerp(0.3F, this.npc.getYRot(), holdYaw));
+            this.npc.setYBodyRot(this.npc.getYRot());
+         }
       }
    }
 

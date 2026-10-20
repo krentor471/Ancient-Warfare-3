@@ -178,6 +178,11 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.BatonSquadPacket::decode)
          .consumerMainThread(AWCoreNetwork.BatonSquadPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.BatonFormationPacket.class, 26, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.BatonFormationPacket::encode)
+         .decoder(AWCoreNetwork.BatonFormationPacket::decode)
+         .consumerMainThread(AWCoreNetwork.BatonFormationPacket::handle)
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.MailboxConfigPacket.class, 13)
          .encoder(AWCoreNetwork.MailboxConfigPacket::encode)
          .decoder(AWCoreNetwork.MailboxConfigPacket::decode)
@@ -287,6 +292,10 @@ public final class AWCoreNetwork {
 
    public static void sendCommandBatonHotkey() {
       CHANNEL.sendToServer(new AWCoreNetwork.CommandBatonHotkeyPacket());
+   }
+
+   public static void sendBatonFormation() {
+      CHANNEL.sendToServer(new AWCoreNetwork.BatonFormationPacket());
    }
 
    public static void sendBatonSquad(int slot, boolean assign) {
@@ -497,6 +506,31 @@ public final class AWCoreNetwork {
                }
 
                CommandBatonItem.clearSelections(stack, player);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record BatonFormationPacket() {
+      private static void encode(AWCoreNetwork.BatonFormationPacket packet, FriendlyByteBuf buffer) {
+      }
+
+      private static AWCoreNetwork.BatonFormationPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.BatonFormationPacket();
+      }
+
+      private static void handle(AWCoreNetwork.BatonFormationPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               ItemStack stack = player.getMainHandItem();
+               if (!(stack.getItem() instanceof CommandBatonItem)) {
+                  stack = player.getOffhandItem();
+               }
+
+               CommandBatonItem.cycleFormation(stack, player);
             }
          });
          context.setPacketHandled(true);

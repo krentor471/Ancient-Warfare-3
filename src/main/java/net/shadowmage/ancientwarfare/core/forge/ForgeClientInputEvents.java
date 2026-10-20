@@ -33,6 +33,7 @@ public final class ForgeClientInputEvents {
       "key.ancientwarfare.add_work_order_point", Type.KEYSYM, 90, "key.categories.ancientwarfare"
    );
    private static final KeyMapping BATON_CLEAR_SELECTIONS = batonKey("key.ancientwarfare.baton_clear_selections", 88);
+   private static final KeyMapping BATON_FORMATION = batonKey("key.ancientwarfare.baton_formation", 71);
 
    private ForgeClientInputEvents() {
    }
@@ -76,6 +77,11 @@ public final class ForgeClientInputEvents {
          }
 
          consumeBatonKey(minecraft, BATON_CLEAR_SELECTIONS);
+         while (BATON_FORMATION.consumeClick()) {
+            if (isHoldingBaton(minecraft.player.getMainHandItem()) || isHoldingBaton(minecraft.player.getOffhandItem())) {
+               AWCoreNetwork.sendBatonFormation();
+            }
+         }
       }
    }
 
@@ -119,6 +125,7 @@ public final class ForgeClientInputEvents {
          event.register(ForgeClientInputEvents.BALLISTA_UP);
          event.register(ForgeClientInputEvents.BALLISTA_DOWN);
          event.register(ForgeClientInputEvents.BATON_CLEAR_SELECTIONS);
+         event.register(ForgeClientInputEvents.BATON_FORMATION);
       }
    }
 }

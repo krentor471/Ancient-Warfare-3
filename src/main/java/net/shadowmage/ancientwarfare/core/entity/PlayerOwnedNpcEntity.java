@@ -81,7 +81,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private Vec3 combatGroupOffset = Vec3.ZERO;
    private long combatGroupRefreshTime = Long.MIN_VALUE;
    private UUID attackCommandTargetUuid;
-   private final ArrayDeque<BlockPos> queuedMoves = new ArrayDeque<>();
+   private final ArrayDeque<PlayerOwnedNpcEntity.Waypoint> queuedMoves = new ArrayDeque<>();
+   private float holdYaw = Float.NaN;
    private int foodSupplyRetryTicks;
    private boolean followCombatRecallActive;
 
@@ -123,7 +124,12 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
       this.getFollowTarget().ifPresent(uuid -> tag.putUUID("FollowTarget", uuid));
       if (!this.queuedMoves.isEmpty()) {
-         tag.putLongArray("QueuedMoves", this.queuedMoves.stream().mapToLong(BlockPos::asLong).toArray());
+         tag.putLongArray("QueuedMoves", this.queuedMoves.stream().mapToLong(waypoint -> waypoint.pos().asLong()).toArray());
+         tag.putIntArray("QueuedYaws", this.queuedMoves.stream().mapToInt(waypoint -> Float.floatToIntBits(waypoint.yaw())).toArray());
+      }
+
+      if (!Float.isNaN(this.holdYaw)) {
+         tag.putFloat("HoldYaw", this.holdYaw);
       }
 
       if (!this.getOrdersStack().isEmpty()) {
@@ -160,9 +166,14 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       }
 
       this.queuedMoves.clear();
-      for (long pos : tag.getLongArray("QueuedMoves")) {
-         this.queuedMoves.add(BlockPos.of(pos));
+      long[] queuedPositions = tag.getLongArray("QueuedMoves");
+      int[] queuedYaws = tag.getIntArray("QueuedYaws");
+      for (int i = 0; i < queuedPositions.length; i++) {
+         float yaw = i < queuedYaws.length ? Float.intBitsToFloat(queuedYaws[i]) : Float.NaN;
+         this.queuedMoves.add(new PlayerOwnedNpcEntity.Waypoint(BlockPos.of(queuedPositions[i]), yaw));
       }
+
+      this.holdYaw = tag.contains("HoldYaw") ? tag.getFloat("HoldYaw") : Float.NaN;
 
       if (tag.contains("HomeSet")) {
          this.entityData.set(HOME_SET, tag.getBoolean("HomeSet"));
@@ -341,24 +352,29 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    public void setMoveCommand(BlockPos target) {
+      this.setMoveCommand(target, Float.NaN);
+   }
+
+   /** Moves to the target; {@code yaw} is the direction to face once there, or NaN for none. */
+   public void setMoveCommand(BlockPos target, float yaw) {
       this.queuedMoves.clear();
-      this.startMoveCommand(target);
+      this.startMoveCommand(target, yaw);
    }
 
    /** Adds a move to the end of the order queue, or starts it at once when the NPC is not already moving. */
-   public void queueMoveCommand(BlockPos target) {
+   public void queueMoveCommand(BlockPos target, float yaw) {
       if (this.getCurrentCommand() != NpcCommandType.MOVE) {
-         this.setMoveCommand(target);
+         this.setMoveCommand(target, yaw);
       } else if (this.queuedMoves.size() < MAX_QUEUED_MOVES) {
-         this.queuedMoves.add(target);
+         this.queuedMoves.add(new PlayerOwnedNpcEntity.Waypoint(target, yaw));
       }
    }
 
    /** Called when the NPC reaches its move target: starts the next queued move, holds the spot, or goes back to its duties. */
    public void completeMoveCommand() {
-      BlockPos next = this.queuedMoves.poll();
+      PlayerOwnedNpcEntity.Waypoint next = this.queuedMoves.poll();
       if (next != null) {
-         this.startMoveCommand(next);
+         this.startMoveCommand(next.pos(), next.yaw());
       } else if (this.holdsPositionAfterMove()) {
          this.setHoldCommand(this.getCommandTarget());
       } else {
@@ -371,6 +387,11 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    }
 
    /** Keeps the NPC at the position: it fights enemies that come close and walks back afterwards. */
+   public void setHoldCommand(BlockPos pos, float yaw) {
+      this.holdYaw = yaw;
+      this.setHoldCommand(pos);
+   }
+
    public void setHoldCommand(BlockPos pos) {
       this.queuedMoves.clear();
       this.setFollowTarget(null);
@@ -393,7 +414,13 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       }
    }
 
-   private void startMoveCommand(BlockPos target) {
+   /** Direction a holding NPC faces when idle, or NaN when it may look around. */
+   public float getHoldYaw() {
+      return this.holdYaw;
+   }
+
+   private void startMoveCommand(BlockPos target, float yaw) {
+      this.holdYaw = yaw;
       this.setFollowTarget(null);
       this.attackCommandTargetUuid = null;
       this.setTarget(null);
@@ -412,6 +439,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
 
    public void clearCommand() {
       this.queuedMoves.clear();
+      this.holdYaw = Float.NaN;
       if (this.getCurrentCommand() == NpcCommandType.FOLLOW) {
          this.setFollowTarget(null);
       }
@@ -1174,5 +1202,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       } catch (IllegalArgumentException var2) {
          return NpcCommandType.NONE;
       }
+   }
+
+   private static record Waypoint(BlockPos pos, float yaw) {
    }
 }
