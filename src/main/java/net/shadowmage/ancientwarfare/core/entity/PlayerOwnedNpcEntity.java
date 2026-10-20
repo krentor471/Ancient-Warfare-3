@@ -408,10 +408,16 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       if (!this.level().isClientSide && this.isHoldingPosition()) {
          LivingEntity target = this.getTarget();
          BlockPos hold = this.getCommandTarget();
-         if (target != null && target.distanceToSqr((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5) > HOLD_LEASH_SQ) {
+         double leashSq = this.holdLeashSq();
+         if (target != null && target.distanceToSqr((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5) > leashSq) {
             this.setTarget(null);
          }
       }
+   }
+
+   /** How far from its post a holding NPC may follow a target before letting it go. */
+   protected double holdLeashSq() {
+      return HOLD_LEASH_SQ;
    }
 
    /** Direction a holding NPC faces when idle, or NaN when it may look around. */
@@ -432,8 +438,9 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
       if (NpcTargeting.canHarm(this, target)) {
          this.setFollowTarget(null);
          this.attackCommandTargetUuid = target.getUUID();
-         this.setTarget(target);
+         // The command goes first: a passive soldier only takes a target it was ordered to attack.
          this.setCurrentCommand(NpcCommandType.ATTACK);
+         this.setTarget(target);
       }
    }
 

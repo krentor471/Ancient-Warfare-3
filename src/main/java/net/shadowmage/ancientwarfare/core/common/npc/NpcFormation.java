@@ -51,8 +51,20 @@ public enum NpcFormation {
       return SQUARE;
    }
 
-   /** Slots for {@code count} NPCs, front row first, each row left to right. */
+   public int sideSpacing() {
+      return this.sideSpacing;
+   }
+
    public List<Slot> slots(int count) {
+      return this.slots(count, 0);
+   }
+
+   /**
+    * Slots for {@code count} NPCs, front row first, each row left to right. {@code columns} above zero sets the width of
+    * the front for the square, line and shield wall, as when the player draws the front; the column and wedge keep
+    * their shape.
+    */
+   public List<Slot> slots(int count, int columns) {
       List<Slot> slots = new ArrayList<>(count);
       if (count <= 0) {
          return slots;
@@ -65,7 +77,7 @@ public enum NpcFormation {
 
          return slots;
       } else {
-         int columns = switch (this) {
+         int width = columns > 0 && this != COLUMN ? Math.min(columns, count) : switch (this) {
             case SQUARE -> (int)Math.ceil(Math.sqrt(count));
             case LINE -> ceilDiv(count, Math.min(MAX_RANKS, ceilDiv(count, LINE_RANK_SIZE)));
             case SHIELD_WALL -> ceilDiv(count, Math.min(MAX_RANKS, ceilDiv(count, SHIELD_WALL_RANK_SIZE)));
@@ -74,7 +86,7 @@ public enum NpcFormation {
          };
 
          for (int row = 0; slots.size() < count; row++) {
-            this.addRow(slots, row, Math.min(columns, count - slots.size()));
+            this.addRow(slots, row, Math.min(width, count - slots.size()));
          }
 
          return slots;

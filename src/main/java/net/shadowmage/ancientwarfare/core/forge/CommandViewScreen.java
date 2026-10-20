@@ -42,6 +42,9 @@ public class CommandViewScreen extends Screen {
    private double mouseX;
    private double mouseY;
    private boolean dragging;
+   private double frontStartX;
+   private double frontStartY;
+   private boolean drawingFront;
    private boolean mouseSeen;
    private double scroll;
 
@@ -99,6 +102,19 @@ public class CommandViewScreen extends Screen {
 
    @Override
    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      if (this.drawingFront) {
+         // Dotted line for the front being drawn.
+         double dx = mouseX - this.frontStartX;
+         double dy = mouseY - this.frontStartY;
+         int steps = (int)(Math.sqrt(dx * dx + dy * dy) / 3.0);
+
+         for (int i = 0; i <= steps; i++) {
+            int x = (int)(this.frontStartX + dx * i / Math.max(1, steps));
+            int y = (int)(this.frontStartY + dy * i / Math.max(1, steps));
+            graphics.fill(x - 1, y - 1, x + 1, y + 1, BOX_BORDER);
+         }
+      }
+
       if (this.dragging) {
          int x0 = (int)Math.min(this.dragStartX, mouseX);
          int y0 = (int)Math.min(this.dragStartY, mouseY);
@@ -119,7 +135,8 @@ public class CommandViewScreen extends Screen {
          6,
          TEXT_COLOR
       );
-      graphics.drawString(this.font, Component.translatable("guistrings.npc.command_view.help1"), 6, this.height - 33, TEXT_COLOR);
+      graphics.drawString(this.font, Component.translatable("guistrings.npc.command_view.help1"), 6, this.height - 44, TEXT_COLOR);
+      graphics.drawString(this.font, Component.translatable("guistrings.npc.command_view.help4"), 6, this.height - 33, TEXT_COLOR);
       graphics.drawString(this.font, Component.translatable("guistrings.npc.command_view.help2"), 6, this.height - 22, TEXT_COLOR);
       graphics.drawString(this.font, Component.translatable("guistrings.npc.command_view.help3"), 6, this.height - 11, TEXT_COLOR);
       super.render(graphics, mouseX, mouseY, partialTick);
@@ -141,7 +158,10 @@ public class CommandViewScreen extends Screen {
          this.dragging = false;
          return true;
       } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-         this.order(mouseX, mouseY);
+         // The order goes on release: a click orders as usual, a drag draws the front of the formation.
+         this.frontStartX = mouseX;
+         this.frontStartY = mouseY;
+         this.drawingFront = false;
          return true;
       } else {
          return super.mouseClicked(mouseX, mouseY, button);
@@ -154,6 +174,8 @@ public class CommandViewScreen extends Screen {
       this.mouseY = mouseY;
       if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && Math.abs(mouseX - this.dragStartX) + Math.abs(mouseY - this.dragStartY) > DRAG_THRESHOLD) {
          this.dragging = true;
+      } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && Math.abs(mouseX - this.frontStartX) + Math.abs(mouseY - this.frontStartY) > DRAG_THRESHOLD) {
+         this.drawingFront = true;
       }
 
       return true;
@@ -168,6 +190,15 @@ public class CommandViewScreen extends Screen {
             this.selectInBox(Math.min(this.dragStartX, mouseX), Math.min(this.dragStartY, mouseY), Math.max(this.dragStartX, mouseX), Math.max(this.dragStartY, mouseY), add);
          } else {
             this.selectUnderCursor(mouseX, mouseY, add);
+         }
+
+         return true;
+      } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+         if (this.drawingFront) {
+            this.drawingFront = false;
+            this.orderFront(this.frontStartX, this.frontStartY, mouseX, mouseY);
+         } else {
+            this.order(this.frontStartX, this.frontStartY);
          }
 
          return true;
@@ -196,12 +227,25 @@ public class CommandViewScreen extends Screen {
       } else if (keyCode == GLFW.GLFW_KEY_G) {
          AWCoreNetwork.sendBatonFormation();
          return true;
+      } else if (keyCode == GLFW.GLFW_KEY_V) {
+         AWCoreNetwork.sendBatonStance();
+         return true;
       } else if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_9) {
          // Ctrl+number saves the selection as a squad; the number alone (or Alt+number) selects that squad.
          AWCoreNetwork.sendBatonSquad(keyCode - GLFW.GLFW_KEY_0, hasControlDown());
          return true;
       } else {
          return super.keyPressed(keyCode, scanCode, modifiers);
+      }
+   }
+
+   private void orderFront(double startX, double startY, double endX, double endY) {
+      BlockHitResult start = this.pickBlock(startX, startY);
+      BlockHitResult end = this.pickBlock(endX, endY);
+      if (start.getType() == HitResult.Type.BLOCK && end.getType() == HitResult.Type.BLOCK) {
+         AWCoreNetwork.sendCommandViewFront(start.getBlockPos().relative(start.getDirection()), end.getBlockPos().relative(end.getDirection()), hasShiftDown());
+      } else {
+         this.order(startX, startY);
       }
    }
 
@@ -252,12 +296,20 @@ public class CommandViewScreen extends Screen {
       }
    }
 
+   /** The block under the cursor, ignoring entities in the way. */
+   private BlockHitResult pickBlock(double mouseX, double mouseY) {
+      Camera camera = this.minecraft.gameRenderer.getMainCamera();
+      Vec3 start = camera.getPosition();
+      Vec3 end = start.add(this.ray(camera, mouseX, mouseY).scale(PICK_RANGE));
+      return this.minecraft.level.clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, this.minecraft.player));
+   }
+
    /** The block or entity under the cursor, looking from the camera along the cursor's ray. */
    private HitResult pick(double mouseX, double mouseY) {
       Camera camera = this.minecraft.gameRenderer.getMainCamera();
       Vec3 start = camera.getPosition();
       Vec3 end = start.add(this.ray(camera, mouseX, mouseY).scale(PICK_RANGE));
-      BlockHitResult blockHit = this.minecraft.level.clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, this.minecraft.player));
+      BlockHitResult blockHit = this.pickBlock(mouseX, mouseY);
       Vec3 entityEnd = blockHit.getType() == HitResult.Type.MISS ? end : blockHit.getLocation();
       EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(
          this.minecraft.level,

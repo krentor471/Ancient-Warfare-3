@@ -53,6 +53,7 @@ import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcFormation;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcSquadData;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcStance;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcProfessionTool;
 import net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity;
@@ -210,7 +211,9 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    /** Order given in the command view to the baton's selection. */
-   public static void commandViewOrder(ItemStack stack, ServerPlayer player, CommandBatonItem.ViewOrder order, BlockPos pos, int entityId, boolean queued) {
+   public static void commandViewOrder(
+      ItemStack stack, ServerPlayer player, CommandBatonItem.ViewOrder order, BlockPos pos, BlockPos end, int entityId, boolean queued
+   ) {
       if (isAdvanced(stack)) {
          ServerLevel level = player.serverLevel();
          switch (order) {
@@ -236,6 +239,15 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
                int commanded = issueHoldCommand(level, player, stack);
                player.displayClientMessage(Component.translatable("guistrings.npc.baton.hold_command", new Object[]{commanded}), true);
             }
+            case FRONT -> {
+               if (player.distanceToSqr(Vec3.atCenterOf(pos)) <= COMMAND_VIEW_RANGE_SQ
+                  && player.distanceToSqr(Vec3.atCenterOf(end)) <= COMMAND_VIEW_RANGE_SQ) {
+                  int commanded = issueFrontMoveCommand(level, player, stack, pos, end, queued);
+                  player.displayClientMessage(
+                     Component.translatable(queued ? "guistrings.npc.baton.queued_move_command" : "guistrings.npc.baton.move_command", new Object[]{commanded}), true
+                  );
+               }
+            }
             case BARRAGE -> {
                if (player.distanceToSqr(Vec3.atCenterOf(pos)) <= COMMAND_VIEW_RANGE_SQ) {
                   int commanded = issueBarrageCommand(level, player, stack, pos);
@@ -254,6 +266,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    public static enum ViewOrder {
       MOVE,
+      FRONT,
       ATTACK,
       HOLD,
       BARRAGE,
@@ -532,6 +545,27 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    private static int issueMoveCommand(ServerLevel level, Player player, ItemStack stack, BlockPos target, boolean queued) {
+      return issueMoveCommand(level, player, stack, target, queued, null, 0);
+   }
+
+   /**
+    * Move with the front line drawn by the player: the formation is centred between the two points, its front runs along
+    * them and is as wide as the line, and it faces away from the camera side of the line (right of the drawing direction).
+    */
+   private static int issueFrontMoveCommand(ServerLevel level, Player player, ItemStack stack, BlockPos start, BlockPos end, boolean queued) {
+      int dx = end.getX() - start.getX();
+      int dz = end.getZ() - start.getZ();
+      Direction right = Direction.getNearest((float)dx, 0.0F, (float)dz);
+      Direction facing = right.getCounterClockWise();
+      int length = Math.abs(dx * right.getStepX() + dz * right.getStepZ());
+      BlockPos center = new BlockPos(Math.floorDiv(start.getX() + end.getX(), 2), start.getY(), Math.floorDiv(start.getZ() + end.getZ(), 2));
+      int columns = length / getFormation(stack).sideSpacing() + 1;
+      return issueMoveCommand(level, player, stack, center, queued, facing, columns);
+   }
+
+   private static int issueMoveCommand(
+      ServerLevel level, Player player, ItemStack stack, BlockPos target, boolean queued, @Nullable Direction facingOverride, int columns
+   ) {
       List<UUID> stillValid = new ArrayList<>();
       List<PlayerOwnedNpcEntity> npcs = new ArrayList<>();
 
@@ -543,9 +577,9 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       }
 
       if (!npcs.isEmpty()) {
-         Direction facing = formationFacing(player, npcs, target);
+         Direction facing = facingOverride != null ? facingOverride : formationFacing(player, npcs, target);
          float yaw = facing.toYRot();
-         List<BlockPos> spots = assignFormation(level, npcs, target, facing, getFormation(stack));
+         List<BlockPos> spots = assignFormation(level, npcs, target, facing, getFormation(stack), columns);
 
          for (int i = 0; i < npcs.size(); i++) {
             if (queued) {
@@ -579,14 +613,16 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
     * Gives every NPC a slot: melee in the front rows and ranged behind, and inside a row NPCs keep their left-to-right
     * order so paths do not cross. Slots snap to the block grid, so the formation faces one of the four directions.
     */
-   private static List<BlockPos> assignFormation(ServerLevel level, List<PlayerOwnedNpcEntity> npcs, BlockPos target, Direction facing, NpcFormation formation) {
+   private static List<BlockPos> assignFormation(
+      ServerLevel level, List<PlayerOwnedNpcEntity> npcs, BlockPos target, Direction facing, NpcFormation formation, int columns
+   ) {
       Direction right = facing.getClockWise();
       List<PlayerOwnedNpcEntity> ordered = new ArrayList<>(npcs);
       ordered.sort(
          Comparator.<PlayerOwnedNpcEntity>comparingInt(npc -> NpcEquipmentResolver.isRangedWeapon(npc.getMainHandItem()) ? 1 : 0)
             .thenComparingDouble(npc -> -along(npc, target, facing))
       );
-      List<NpcFormation.Slot> slots = formation.slots(ordered.size());
+      List<NpcFormation.Slot> slots = formation.slots(ordered.size(), columns);
       Map<PlayerOwnedNpcEntity, BlockPos> spots = new HashMap<>();
       int start = 0;
 
@@ -630,6 +666,30 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          NpcFormation formation = getFormation(stack).next();
          stack.getOrCreateTag().putString(FORMATION_TAG, formation.serializedName());
          player.displayClientMessage(Component.translatable("guistrings.npc.baton.formation_changed", new Object[]{Component.translatable(formation.translationKey())}), true);
+      }
+   }
+
+   /** Switches the selected soldiers to the stance after the first one's, so a group always ends up in one stance. */
+   public static void cycleStance(ItemStack stack, ServerPlayer player) {
+      if (stack.getItem() instanceof CommandBatonItem) {
+         ServerLevel level = player.serverLevel();
+         List<CombatNpcEntity> soldiers = new ArrayList<>();
+
+         for (UUID uuid : getSelectedNpcs(stack)) {
+            if (level.getEntity(uuid) instanceof CombatNpcEntity soldier && soldier.hasCommandPermission(player)) {
+               soldiers.add(soldier);
+            }
+         }
+
+         if (soldiers.isEmpty()) {
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.stance_none"), true);
+         } else {
+            NpcStance stance = soldiers.get(0).getStance().next();
+            soldiers.forEach(soldier -> soldier.setStance(stance));
+            player.displayClientMessage(
+               Component.translatable("guistrings.npc.baton.stance_changed", new Object[]{Component.translatable(stance.translationKey()), soldiers.size()}), true
+            );
+         }
       }
    }
 

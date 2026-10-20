@@ -47,6 +47,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.CombatProfessionResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcCommandType;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcShielding;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcStance;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
@@ -68,7 +69,9 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    private static final int TARGET_SCAN_INTERVAL = 5;
    private static final double BARRAGE_RANGE = 48.0;
    private static final double BARRAGE_SPREAD = 2.0;
+   private static final double AGGRESSIVE_LEASH_SQ = 48.0 * 48.0;
    private BlockPos barragePoint;
+   private NpcStance stance = NpcStance.DEFENSIVE;
    private int patrolIndex;
    private boolean patrolAtPoint;
    private int patrolTicksAtPoint;
@@ -175,7 +178,9 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
    @Override
    public void setTarget(LivingEntity target) {
-      if (target != null && this.isFollowCombatRecallActive()) {
+      if (target != null && this.stance == NpcStance.PASSIVE && this.getCurrentCommand() != NpcCommandType.ATTACK) {
+         super.setTarget(null);
+      } else if (target != null && this.isFollowCombatRecallActive()) {
          super.setTarget(null);
       } else {
          super.setTarget(target);
@@ -374,6 +379,8 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       if (this.barragePoint != null) {
          tag.putLong("BarragePoint", this.barragePoint.asLong());
       }
+
+      tag.putString("Stance", this.stance.serializedName());
    }
 
    @Override
@@ -383,6 +390,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.patrolAtPoint = tag.getBoolean("PatrolAtPoint");
       this.patrolTicksAtPoint = tag.getInt("PatrolTicksAtPoint");
       this.barragePoint = tag.contains("BarragePoint") ? BlockPos.of(tag.getLong("BarragePoint")) : null;
+      this.stance = NpcStance.byName(tag.getString("Stance"));
    }
 
    @Override
@@ -403,6 +411,22 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    @Override
    protected boolean holdsPositionAfterMove() {
       return true;
+   }
+
+   public NpcStance getStance() {
+      return this.stance;
+   }
+
+   public void setStance(NpcStance stance) {
+      this.stance = stance;
+      if (stance == NpcStance.PASSIVE && this.getCurrentCommand() != NpcCommandType.ATTACK) {
+         this.setTarget(null);
+      }
+   }
+
+   @Override
+   protected double holdLeashSq() {
+      return this.stance == NpcStance.AGGRESSIVE ? AGGRESSIVE_LEASH_SQ : super.holdLeashSq();
    }
 
    /**
