@@ -29,6 +29,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcFactionAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
+import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 
 public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFactionAccess {
    private static final EntityDataAccessor<String> FACTION_NAME = SynchedEntityData.defineId(FactionNpcEntity.class, EntityDataSerializers.STRING);
@@ -131,25 +132,17 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    public boolean isHostileTowards(Entity entity) {
       if (entity instanceof FactionNpcEntity factionNpc) {
          // Cheap faction check first: target scans call this for every nearby NPC.
-         return FactionRegistry.isHostile(this.getFactionName(), factionNpc.getFactionName()) && NpcTargeting.canHarm(this, entity);
+         return FactionDiplomacy.isHostile(this.level(), this.getFactionName(), factionNpc.getFactionName()) && NpcTargeting.canHarm(this, entity);
       } else if (!NpcTargeting.canHarm(this, entity)) {
          return false;
       } else if (!(entity instanceof Player player)) {
-         return entity instanceof PlayerOwnedNpcEntity ownedNpc ? ownedNpc.getOwner().map(owner -> {
-            if (FactionRegistry.get(this.getFactionName()).defaultStanding() < 0) {
-               return true;
-            } else {
-               if (this.level() instanceof ServerLevel serverLevelx && FactionStandingData.get(serverLevelx).isHostile(owner, this.getFactionName())) {
-                  return true;
-               }
-
-               return false;
-            }
-         }).orElse(false) : false;
+         return entity instanceof PlayerOwnedNpcEntity ownedNpc
+            ? ownedNpc.getOwner()
+               .map(owner -> this.level() instanceof ServerLevel serverLevelx && FactionStandingData.get(serverLevelx).isHostile(owner, this.getFactionName()))
+               .orElse(false)
+            : false;
       } else if (player.isCreative()) {
          return false;
-      } else if (FactionRegistry.get(this.getFactionName()).defaultStanding() < 0) {
-         return true;
       } else {
          if (this.level() instanceof ServerLevel serverLevel && FactionStandingData.get(serverLevel).isHostile(player.getUUID(), this.getFactionName())) {
             return true;

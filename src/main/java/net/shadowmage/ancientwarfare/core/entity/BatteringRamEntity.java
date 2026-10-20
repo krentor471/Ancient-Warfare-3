@@ -29,8 +29,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 import net.shadowmage.ancientwarfare.core.block.GateProxyBlock;
-import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcCommandType;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcOwnerAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
@@ -249,10 +249,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
                || !NpcTargeting.canHarm(engineer, target)
                || !owner.equals(target.getUUID()) && (!(target instanceof NpcOwnerAccess owned) || !owned.getOwner().filter(owner::equals).isPresent())) {
                if (engineer instanceof FactionNpcEntity faction
-                  && (
-                     FactionRegistry.get(faction.getFactionName()).defaultStanding() < 0
-                        || FactionStandingData.get(server).isHostile(owner, faction.getFactionName())
-                  )) {
+                  && FactionStandingData.get(server).isHostile(owner, faction.getFactionName())) {
                   return true;
                }
 
@@ -265,15 +262,12 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
          String gateFaction = NaturalGateTerritory.faction(server, gate);
          if (!gateFaction.isEmpty()) {
             if (engineer instanceof FactionNpcEntity faction) {
-               return FactionRegistry.isHostile(faction.getFactionName(), gateFaction);
+               return FactionDiplomacy.isHostile(server, faction.getFactionName(), gateFaction);
             }
 
             if (engineer instanceof NpcOwnerAccess owned
                && owned.getOwner()
-                  .map(
-                     playerOwner -> FactionRegistry.get(gateFaction).defaultStanding() < 0
-                           || FactionStandingData.get(server).isHostile(playerOwner, gateFaction)
-                  )
+                  .map(playerOwner -> FactionStandingData.get(server).isHostile(playerOwner, gateFaction))
                   .orElse(false)) {
                return true;
             }

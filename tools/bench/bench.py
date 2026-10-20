@@ -3,6 +3,8 @@ sys.path.insert(0,'.')
 from rcon import R
 r=R()
 r.cmd('save-off')
+# Factions start at peace; the fight modes need two at war.
+r.cmd('awfaction war empire norska')
 def tps():
   out=r.cmd('forge tps'); m=re.search(r'overworld\): Mean tick time: ([\d.]+) ms',out); return float(m.group(1))
 def clear():

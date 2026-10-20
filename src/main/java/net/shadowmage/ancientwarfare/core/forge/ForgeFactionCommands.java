@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -25,8 +27,10 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
+import net.shadowmage.ancientwarfare.core.faction.RelationState;
 
 @EventBusSubscriber(
    modid = "ancientwarfare",
@@ -100,7 +104,82 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("region").executes(context -> showRegion(context.getSource())))
                .then(Commands.literal("map").executes(context -> showMap(context.getSource())))
                .then(Commands.literal("settlements").executes(context -> showSettlements(context.getSource())))
+               .then(Commands.literal("relations").then(factionArgument("faction").executes(context -> showRelations(context.getSource(), faction(context, "faction")))))
+               .then(stateCommand("war", RelationState.WAR))
+               .then(stateCommand("peace", RelationState.NEUTRAL))
+               .then(stateCommand("pact", RelationState.PACT))
+               .then(stateCommand("alliance", RelationState.ALLIANCE))
+               .then(
+                  Commands.literal("opinion")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(
+                              factionArgument("other")
+                                 .then(
+                                    Commands.argument("change", IntegerArgumentType.integer(-200, 200))
+                                       .executes(
+                                          context -> changeOpinion(
+                                                context.getSource(), faction(context, "faction"), faction(context, "other"), IntegerArgumentType.getInteger(context, "change")
+                                             )
+                                       )
+                                 )
+                           )
+                     )
+               )
          );
+   }
+
+   private static RequiredArgumentBuilder<CommandSourceStack, String> factionArgument(String name) {
+      return Commands.argument(name, StringArgumentType.word())
+         .suggests((context, builder) -> SharedSuggestionProvider.suggest(FactionRegistry.factionNames(), builder));
+   }
+
+   private static String faction(CommandContext<CommandSourceStack> context, String name) {
+      return StringArgumentType.getString(context, name).toLowerCase(Locale.ROOT);
+   }
+
+   private static LiteralArgumentBuilder<CommandSourceStack> stateCommand(String name, RelationState state) {
+      return Commands.literal(name)
+         .requires(source -> source.hasPermission(2))
+         .then(
+            factionArgument("faction")
+               .then(factionArgument("other").executes(context -> setState(context.getSource(), faction(context, "faction"), faction(context, "other"), state)))
+         );
+   }
+
+   private static int showRelations(CommandSourceStack source, String faction) {
+      if (!FactionRegistry.isKnown(faction)) {
+         source.sendFailure(Component.literal("Unknown faction " + faction));
+         return 0;
+      }
+
+      tell(source, Component.literal("Relations of " + faction + ":"));
+
+      for (String other : new TreeSet<>(FactionRegistry.factionNames())) {
+         if (!other.equals(faction)) {
+            FactionDiplomacy.Relation relation = FactionDiplomacy.relation(source.getLevel(), faction, other);
+            tell(source, Component.literal("  " + other + ": " + relation.state().serializedName() + ", opinion " + relation.opinion()));
+         }
+      }
+
+      return 1;
+   }
+
+   private static int setState(CommandSourceStack source, String faction, String other, RelationState state) {
+      if (!FactionDiplomacy.setState(source.getLevel(), faction, other, state)) {
+         source.sendFailure(Component.literal("Relation of " + faction + " and " + other + " is already " + state.serializedName() + " or cannot change (outlaws are always at war)"));
+         return 0;
+      }
+
+      tell(source, Component.literal(faction + " and " + other + " are now at " + state.serializedName()));
+      return 1;
+   }
+
+   private static int changeOpinion(CommandSourceStack source, String faction, String other, int change) {
+      FactionDiplomacy.Relation relation = FactionDiplomacy.adjustOpinion(source.getLevel(), faction, other, change);
+      tell(source, Component.literal("Opinion of " + faction + " and " + other + " is now " + relation.opinion()));
+      return relation.opinion();
    }
 
    private static int showRegion(CommandSourceStack source) {

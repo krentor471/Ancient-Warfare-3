@@ -13,11 +13,13 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
-/** World-wide faction state: realm factions, province owners and settlements. Stored with the overworld. */
+/** World-wide faction state: realm factions, province owners, relations and settlements. Stored with the overworld. */
 public final class FactionWorldData extends SavedData {
    private static final String DATA_NAME = "ancientwarfare_faction_world";
    private final Map<Long, String> realmFactions = new HashMap<>();
    private final Map<Long, String> provinceOwners = new HashMap<>();
+   /** Relations changed from their defaults, stored under both factions. */
+   private final Map<String, Map<String, FactionDiplomacy.Relation>> relations = new HashMap<>();
    private final List<Settlement> settlements = new ArrayList<>();
    private int nextSettlementId = 1;
 
@@ -45,6 +47,18 @@ public final class FactionWorldData extends SavedData {
       this.setDirty();
    }
 
+   /** Stored relation between two factions, or null while it is still the default. */
+   public FactionDiplomacy.Relation relation(String faction, String other) {
+      Map<String, FactionDiplomacy.Relation> byOther = this.relations.get(faction);
+      return byOther == null ? null : byOther.get(other);
+   }
+
+   public void setRelation(String faction, String other, FactionDiplomacy.Relation relation) {
+      this.relations.computeIfAbsent(faction, ignored -> new HashMap<>()).put(other, relation);
+      this.relations.computeIfAbsent(other, ignored -> new HashMap<>()).put(faction, relation);
+      this.setDirty();
+   }
+
    public List<Settlement> settlements() {
       return Collections.unmodifiableList(this.settlements);
    }
@@ -60,6 +74,19 @@ public final class FactionWorldData extends SavedData {
    public CompoundTag save(CompoundTag tag) {
       tag.put("Realms", writeOwners(this.realmFactions));
       tag.put("Provinces", writeOwners(this.provinceOwners));
+      ListTag relationList = new ListTag();
+      this.relations.forEach((faction, byOther) -> byOther.forEach((other, relation) -> {
+         if (faction.compareTo(other) < 0) {
+            CompoundTag entry = new CompoundTag();
+            entry.putString("Faction", faction);
+            entry.putString("Other", other);
+            entry.putInt("Opinion", relation.opinion());
+            entry.putString("State", relation.state().serializedName());
+            entry.putLong("Since", relation.since());
+            relationList.add(entry);
+         }
+      }));
+      tag.put("Relations", relationList);
       ListTag list = new ListTag();
 
       for (Settlement settlement : this.settlements) {
@@ -85,6 +112,15 @@ public final class FactionWorldData extends SavedData {
 
       readOwners(tag.getList("Realms", Tag.TAG_COMPOUND), data.realmFactions);
       readOwners(tag.getList("Provinces", Tag.TAG_COMPOUND), data.provinceOwners);
+
+      for (Tag element : tag.getList("Relations", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         data.setRelation(
+            entry.getString("Faction"),
+            entry.getString("Other"),
+            new FactionDiplomacy.Relation(entry.getInt("Opinion"), RelationState.byName(entry.getString("State")), entry.getLong("Since"))
+         );
+      }
 
       for (Tag element : tag.getList("Settlements", Tag.TAG_COMPOUND)) {
          CompoundTag entry = (CompoundTag)element;
