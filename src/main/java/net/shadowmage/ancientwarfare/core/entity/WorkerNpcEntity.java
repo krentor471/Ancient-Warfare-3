@@ -351,6 +351,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       private final double speedModifier;
       private final Map<BlockPos, Integer> rejectedUntil = new HashMap<>();
       private BlockPos target;
+      private BlockPos approach;
       private int nextSearchTick;
       private int repathCooldown;
       private int stuckTicks;
@@ -364,7 +365,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       }
 
       public boolean canUse() {
-         if (this.canAutomaticallyWork() && this.worker.tickCount >= this.nextSearchTick) {
+         if (this.canAutomaticallyWork() && this.worker.tickCount >= this.nextSearchTick && this.worker.onGround()) {
             this.pruneRejectedTargets();
             this.target = this.findNearestAvailableWorksite();
             if (this.target == null) {
@@ -372,6 +373,16 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
                this.nextSearchTick = this.worker.tickCount + 40;
                return false;
             } else {
+               this.approach = WorksiteApproach.find(this.worker, this.target, this.worker.getWorkRangeSq());
+               if (this.approach == null) {
+                  // Nowhere to stand next to it that the worker can walk to: try the next site instead of pushing at walls.
+                  this.rejectedUntil.put(this.target, this.worker.tickCount + 200);
+                  this.worker.setWorkState("no_work_site");
+                  this.nextSearchTick = this.worker.tickCount + 1;
+                  this.target = null;
+                  return false;
+               }
+
                this.failed = false;
                this.repathCooldown = 0;
                this.stuckTicks = 0;
@@ -397,7 +408,8 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          if (this.target != null) {
             this.worker.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
             double distanceSq = this.distanceToTargetSq();
-            if (distanceSq > this.worker.getWorkRangeSq()) {
+            if (distanceSq > this.worker.getWorkRangeSq() && !WorksiteApproach.isAt(this.worker, this.approach)
+               || WorksiteApproach.inDoorway(this.worker)) {
                this.worker.workTicksAtSite = 0;
                this.worker.setWorkState("moving_to_work");
                if (distanceSq < this.lastDistanceSq - 0.05) {
@@ -412,9 +424,9 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
                   boolean pathFound = this.worker
                      .getNavigation()
                      .moveTo(
-                        (double)this.target.getX() + 0.5,
-                        (double)this.target.getY(),
-                        (double)this.target.getZ() + 0.5,
+                        (double)this.approach.getX() + 0.5,
+                        (double)this.approach.getY(),
+                        (double)this.approach.getZ() + 0.5,
                         this.worker.playerSprintNavigationSpeed()
                      );
                   if (!pathFound) {
@@ -451,6 +463,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       public void stop() {
          this.worker.getNavigation().stop();
          this.target = null;
+         this.approach = null;
          this.failed = false;
          this.repathCooldown = 0;
          this.stuckTicks = 0;
@@ -651,9 +664,18 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    private static class WorkOrderGoal extends Goal {
       private static final int DEFAULT_WORK_TICKS = 10;
       private static final int INVALID_SITE_WAIT_TICKS = 40;
+      private static final int REPATH_TICKS = 20;
+      private static final int STUCK_TICKS = 60;
+      private static final int MAX_FAILURES = 3;
       private final WorkerNpcEntity worker;
       private final double speedModifier;
       private BlockPos target;
+      private BlockPos approach;
+      private BlockPos approachFor;
+      private int repathCooldown;
+      private int stuckTicks;
+      private int failures;
+      private double lastDistanceSq = Double.MAX_VALUE;
 
       private WorkOrderGoal(WorkerNpcEntity worker, double speedModifier, double stopDistance) {
          this.worker = worker;
@@ -691,17 +713,10 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       public void tick() {
          if (this.target != null) {
             this.worker.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
-            if (this.distanceToTargetSq() > this.worker.getWorkRangeSq()) {
-               this.worker.workTicksAtSite = 0;
-               this.worker.setWorkState("moving_to_work");
-               this.worker
-                  .getNavigation()
-                  .moveTo(
-                     (double)this.target.getX() + 0.5,
-                     (double)this.target.getY(),
-                     (double)this.target.getZ() + 0.5,
-                     this.worker.playerSprintNavigationSpeed()
-                  );
+            if (this.distanceToTargetSq() > this.worker.getWorkRangeSq()
+                  && !(this.target.equals(this.approachFor) && WorksiteApproach.isAt(this.worker, this.approach))
+               || WorksiteApproach.inDoorway(this.worker)) {
+               this.walkToSite();
             } else {
                this.worker.getNavigation().stop();
                WorkSite site = WorkSites.get(this.worker.level(), this.target).orElse(null);
@@ -733,8 +748,74 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          }
       }
 
+      /**
+       * Walks to a free spot next to the site, refreshing the path now and then. A site with no reachable spot, or one
+       * the worker stops getting closer to, is skipped for the next one in the order instead of blocking it forever.
+       */
+      private void walkToSite() {
+         if (!this.target.equals(this.approachFor)) {
+            this.approachFor = this.target;
+            this.approach = null;
+            this.failures = 0;
+            this.repathCooldown = 0;
+         }
+
+         if (this.approach == null) {
+            // Look for a spot now and then; the pathfinder cannot plan while the worker is still falling or jumping.
+            if (this.repathCooldown-- <= 0 && this.worker.onGround()) {
+               this.approach = WorksiteApproach.find(this.worker, this.target, this.worker.getWorkRangeSq());
+               this.stuckTicks = 0;
+               this.lastDistanceSq = this.distanceToTargetSq();
+               if (this.approach == null && ++this.failures >= MAX_FAILURES) {
+                  this.skipSite();
+                  return;
+               }
+
+               this.repathCooldown = this.approach == null ? REPATH_TICKS : 0;
+            }
+
+            if (this.approach == null) {
+               this.worker.setWorkState("no_work_site");
+               return;
+            }
+         }
+
+         this.worker.workTicksAtSite = 0;
+         this.worker.setWorkState("moving_to_work");
+         double distanceSq = this.distanceToTargetSq();
+         if (distanceSq < this.lastDistanceSq - 0.05) {
+            this.stuckTicks = 0;
+            this.lastDistanceSq = distanceSq;
+         } else if (++this.stuckTicks >= STUCK_TICKS) {
+            this.skipSite();
+            return;
+         }
+
+         if (this.repathCooldown-- <= 0) {
+            this.repathCooldown = REPATH_TICKS;
+            boolean pathFound = this.worker
+               .getNavigation()
+               .moveTo((double)this.approach.getX() + 0.5, (double)this.approach.getY(), (double)this.approach.getZ() + 0.5, this.worker.playerSprintNavigationSpeed());
+            if (pathFound) {
+               this.failures = 0;
+            } else if (++this.failures >= MAX_FAILURES) {
+               this.skipSite();
+            }
+         }
+      }
+
+      private void skipSite() {
+         this.worker.setWorkState("no_work_site");
+         this.worker.workTicksAtSite = 0;
+         this.worker.getNavigation().stop();
+         this.approachFor = null;
+         this.advanceToNextSite();
+      }
+
       public void stop() {
          this.target = null;
+         this.approachFor = null;
+         this.approach = null;
          this.worker.getNavigation().stop();
          if (this.worker.getCurrentCommand() == NpcCommandType.NONE) {
             this.worker.setWorkState("idle");

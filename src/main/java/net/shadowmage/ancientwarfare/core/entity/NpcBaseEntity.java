@@ -25,6 +25,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ClipContext.Block;
 import net.minecraft.world.level.ClipContext.Fluid;
@@ -101,6 +102,11 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       this.getNavigation().getNodeEvaluator().setCanOpenDoors(true);
       this.goalSelector.addGoal(1, new NpcOpenDoorGoal(this));
       this.goalSelector.addGoal(0, new NpcRoutGoal(this));
+   }
+
+   @Override
+   protected PathNavigation createNavigation(Level level) {
+      return new NpcGroundNavigation(this, level);
    }
 
    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
