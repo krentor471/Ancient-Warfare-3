@@ -17,6 +17,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
+import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
+import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
+import net.shadowmage.ancientwarfare.core.faction.TemplateFactions;
 import net.shadowmage.ancientwarfare.core.tile.ProtectionFlagBlockEntity;
 
 public final class AwtWorldGenerator {
@@ -139,8 +142,11 @@ public final class AwtWorldGenerator {
                   Holder<Biome> biome = level.getBiome(center);
                   List<AwtWorldGenTemplateRegistry.Template> candidates = new ArrayList<>();
 
+                  String regionOwner = FactionRegions.ownerAt(level, x, z);
+
                   for (AwtWorldGenTemplateRegistry.Template template : AwtWorldGenTemplateRegistry.templates()) {
-                     if ((filter.isBlank() || normalize(template.name()).contains(filter)) && (forced || template.acceptsBiome(biome))) {
+                     if ((filter.isBlank() || normalize(template.name()).contains(filter))
+                        && (forced || template.acceptsBiome(biome) && FactionRegions.allows(regionOwner, TemplateFactions.ofTown(template.name())))) {
                         candidates.add(template);
                      }
                   }
@@ -416,6 +422,7 @@ public final class AwtWorldGenerator {
             );
             AwsTemplatePlacer.refreshHorizontalConnections(level, plan.occupiedBlocks());
             configureTownFlags(level, plan);
+            registerSettlement(level, task, plan);
             releaseForcedChunks(level);
             AncientWarfareCore.LOG.info("Completed phased AWT town {} at {}, {}, {}", new Object[]{task.name, task.x, task.y, task.z});
          }
@@ -505,6 +512,23 @@ public final class AwtWorldGenerator {
       long dx = (long)x1 - (long)x2;
       long dz = (long)z1 - (long)z2;
       return dx * dx + dz * dz;
+   }
+
+   private static void registerSettlement(ServerLevel level, AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
+      String faction = TemplateFactions.ofTown(task.name);
+      if (!faction.isEmpty()) {
+         BlockPos min = plan.min();
+         FactionWorldData.get(level)
+            .addSettlement(
+               faction,
+               "town",
+               task.path,
+               min,
+               min.offset(plan.totalSize() - 1, 0, plan.totalSize() - 1),
+               FactionRegions.provinceAt(level, task.x, task.z).key(),
+               level.getGameTime()
+            );
+      }
    }
 
    private static String normalize(String value) {

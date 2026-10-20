@@ -19,6 +19,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
+import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
+import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
+import net.shadowmage.ancientwarfare.core.faction.TemplateFactions;
 
 public final class AwsWorldGenerator {
    private static final int SITE_ATTEMPTS = 8;
@@ -91,9 +94,13 @@ public final class AwsWorldGenerator {
                      }
 
                      List<AwsWorldGenTemplateRegistry.Template> candidates = new ArrayList<>();
+                     String regionOwner = FactionRegions.ownerAt(level, x, z);
 
                      for (AwsWorldGenTemplateRegistry.Template templatex : AwsWorldGenTemplateRegistry.templates()) {
-                        if (!templatex.requiresPhasedPlacement() && templatex.acceptsBiome(biome) && templatex.aquatic() == waterSite) {
+                        if (!templatex.requiresPhasedPlacement()
+                           && templatex.acceptsBiome(biome)
+                           && templatex.aquatic() == waterSite
+                           && FactionRegions.allows(regionOwner, TemplateFactions.ofTemplate(templatex.path()))) {
                            candidates.add(templatex);
                         }
                      }
@@ -154,6 +161,20 @@ public final class AwsWorldGenerator {
                   template.path(), min.getX(), min.getY(), min.getZ(), maxX, min.getY() + template.sizeY() - 1, maxZ, facing.get2DDataValue()
                )
             );
+            String faction = TemplateFactions.ofTemplate(template.path());
+            if (!faction.isEmpty()) {
+               FactionWorldData.get(level)
+                  .addSettlement(
+                     faction,
+                     "structure",
+                     template.path(),
+                     min,
+                     new BlockPos(maxX, min.getY() + template.sizeY() - 1, maxZ),
+                     FactionRegions.provinceAt(level, origin.getX(), origin.getZ()).key(),
+                     level.getGameTime()
+                  );
+            }
+
             AncientWarfareCore.LOG
                .info("Naturally generated AWS {} at {} facing {} after {} site attempt(s)", new Object[]{template.path(), origin, facing, siteAttempt + 1});
             return true;
