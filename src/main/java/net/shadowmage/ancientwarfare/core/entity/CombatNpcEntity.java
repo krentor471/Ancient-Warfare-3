@@ -66,6 +66,9 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    private static final double MOUNTED_ARCHER_MIN_RADIUS = 10.0;
    private static final double MOUNTED_ARCHER_MAX_RADIUS = 18.0;
    private static final int TARGET_SCAN_INTERVAL = 5;
+   private static final double BARRAGE_RANGE = 48.0;
+   private static final double BARRAGE_SPREAD = 2.0;
+   private BlockPos barragePoint;
    private int patrolIndex;
    private boolean patrolAtPoint;
    private int patrolTicksAtPoint;
@@ -129,6 +132,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    protected void registerGoals() {
       this.goalSelector.addGoal(1, new CombatNpcEntity.MoveToCommandGoal(this, 1.0, 0.75));
       this.goalSelector.addGoal(1, new CombatNpcEntity.ShieldDefenseGoal(this));
+      this.goalSelector.addGoal(1, new CombatNpcEntity.BarrageGoal(this));
       this.goalSelector.addGoal(2, new CombatNpcEntity.CombatRangedAttackGoal(this));
       this.goalSelector.addGoal(2, new CombatNpcEntity.CombatMeleeAttackGoal(this, this.playerSprintNavigationSpeed(), true));
       this.goalSelector.addGoal(3, new CombatNpcEntity.CommanderAuraGoal(this));
@@ -367,6 +371,9 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       tag.putInt("PatrolIndex", this.patrolIndex);
       tag.putBoolean("PatrolAtPoint", this.patrolAtPoint);
       tag.putInt("PatrolTicksAtPoint", this.patrolTicksAtPoint);
+      if (this.barragePoint != null) {
+         tag.putLong("BarragePoint", this.barragePoint.asLong());
+      }
    }
 
    @Override
@@ -375,6 +382,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.patrolIndex = tag.getInt("PatrolIndex");
       this.patrolAtPoint = tag.getBoolean("PatrolAtPoint");
       this.patrolTicksAtPoint = tag.getInt("PatrolTicksAtPoint");
+      this.barragePoint = tag.contains("BarragePoint") ? BlockPos.of(tag.getLong("BarragePoint")) : null;
    }
 
    @Override
@@ -395,6 +403,76 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    @Override
    protected boolean holdsPositionAfterMove() {
       return true;
+   }
+
+   /**
+    * Area fire: a ranged soldier holds where it stands and shoots high arcs at the point until given another order.
+    * Returns false for soldiers without a bow or crossbow.
+    */
+   public boolean setBarrageCommand(BlockPos point) {
+      if (!this.isRangedCombatant()) {
+         return false;
+      }
+
+      float yaw = (float)(Mth.atan2(point.getZ() + 0.5 - this.getZ(), point.getX() + 0.5 - this.getX()) * 180.0F / (float)Math.PI) - 90.0F;
+      this.setHoldCommand(this.blockPosition(), yaw);
+      this.barragePoint = point.immutable();
+      return true;
+   }
+
+   @Override
+   public void setHoldCommand(BlockPos pos) {
+      this.barragePoint = null;
+      super.setHoldCommand(pos);
+   }
+
+   @Override
+   public void setMoveCommand(BlockPos target, float yaw) {
+      this.barragePoint = null;
+      super.setMoveCommand(target, yaw);
+   }
+
+   @Override
+   public void queueMoveCommand(BlockPos target, float yaw) {
+      this.barragePoint = null;
+      super.queueMoveCommand(target, yaw);
+   }
+
+   @Override
+   public void setAttackCommand(LivingEntity target) {
+      this.barragePoint = null;
+      super.setAttackCommand(target);
+   }
+
+   @Override
+   public void clearCommand() {
+      this.barragePoint = null;
+      super.clearCommand();
+   }
+
+   private void performBarrageShot(Vec3 point) {
+      ItemStack weapon = this.getMainHandItem();
+      boolean crossbow = NpcEquipmentResolver.isCrossbow(weapon);
+      ItemStack projectileStack = this.getProjectile(weapon);
+      if (projectileStack.isEmpty()) {
+         projectileStack = new ItemStack(Items.ARROW);
+      }
+
+      AbstractArrow arrow = ProjectileUtil.getMobArrow(this, projectileStack, 1.0F);
+      Vec3 start = new Vec3(this.getX(), arrow.getY(), this.getZ());
+      Vec3 aim = point.add(this.getRandom().nextGaussian() * BARRAGE_SPREAD, 0.0, this.getRandom().nextGaussian() * BARRAGE_SPREAD);
+      NpcRangedAttackHelper.findArcShot(start, aim, crossbow ? 3.15 : 3.0).ifPresent(shot -> {
+         this.recordCombatAttack();
+         arrow.shoot(shot.direction().x, shot.direction().y, shot.direction().z, shot.speed(), 1.5F);
+         if (crossbow) {
+            NpcRangedAttackHelper.configureCrossbowArrow(this, arrow, weapon);
+         } else {
+            NpcRangedAttackHelper.configureBowArrow(this, arrow, 1.0F);
+         }
+
+         this.playSound(crossbow ? SoundEvents.CROSSBOW_SHOOT : SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+         this.level().addFreshEntity(arrow);
+      });
    }
 
    @Override
@@ -701,6 +779,62 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
    }
 
+   /** Archers ordered to fire on a point loose high volleys at it, unless an enemy is already on top of them. */
+   private static class BarrageGoal extends Goal {
+      private static final double CLOSE_ENEMY_SQ = 100.0;
+      private final CombatNpcEntity npc;
+      private int drawTicks;
+      private int cooldown;
+
+      private BarrageGoal(CombatNpcEntity npc) {
+         this.npc = npc;
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+      }
+
+      public boolean canUse() {
+         BlockPos point = this.npc.barragePoint;
+         if (point == null || !this.npc.isRangedCombatant() || this.npc.isPassenger() || !this.npc.isHoldingPosition()) {
+            return false;
+         }
+
+         LivingEntity target = this.npc.getTarget();
+         return (target == null || this.npc.distanceToSqr(target) > CLOSE_ENEMY_SQ)
+            && this.npc.distanceToSqr(Vec3.atBottomCenterOf(point)) <= BARRAGE_RANGE * BARRAGE_RANGE;
+      }
+
+      public void tick() {
+         Vec3 point = Vec3.atBottomCenterOf(this.npc.barragePoint);
+         this.npc.getNavigation().stop();
+         this.npc.getLookControl().setLookAt(point.x, point.y + this.npc.distanceToSqr(point) * 0.02, point.z, 30.0F, 30.0F);
+         if (this.cooldown > 0) {
+            this.cooldown--;
+         }
+
+         if (this.npc.isUsingItem()) {
+            int requiredDrawTicks = this.npc.getMainHandItem().getItem() instanceof CrossbowItem
+               ? NpcRangedAttackHelper.crossbowChargeDuration(this.npc.getMainHandItem())
+               : 20;
+            if (++this.drawTicks >= requiredDrawTicks) {
+               this.npc.performBarrageShot(point);
+               this.npc.stopUsingItem();
+               this.drawTicks = 0;
+               this.cooldown = NpcVolley.COOLDOWN_TICKS;
+            }
+         } else if (this.cooldown <= 0 && NpcVolley.canStartDraw(this.npc)) {
+            this.npc.startUsingItem(InteractionHand.MAIN_HAND);
+            this.drawTicks = 0;
+         }
+      }
+
+      public void stop() {
+         if (this.npc.isUsingItem()) {
+            this.npc.stopUsingItem();
+         }
+
+         this.drawTicks = 0;
+      }
+   }
+
    private static class CombatRangedAttackGoal extends Goal {
       private static final double MAX_RANGE = 18.0;
       private static final double MIN_RANGE = 8.0;
@@ -769,7 +903,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
                   this.npc.performRangedAttack(this.target, 1.0F);
                   this.stopUsingWeapon();
                   this.drawTicks = 0;
-                  this.cooldown = 30;
+                  this.cooldown = NpcVolley.COOLDOWN_TICKS;
                }
             } else if (!this.canShootTarget()) {
                this.stopUsingWeapon();
@@ -787,7 +921,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
             } else {
                this.clearRetreat();
                this.npc.getNavigation().stop();
-               if (this.cooldown <= 0) {
+               if (this.cooldown <= 0 && NpcVolley.canStartDraw(this.npc)) {
                   this.npc.startUsingItem(InteractionHand.MAIN_HAND);
                   this.drawTicks = 0;
                }

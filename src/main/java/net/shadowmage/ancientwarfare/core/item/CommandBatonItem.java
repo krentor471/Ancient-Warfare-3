@@ -45,7 +45,9 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
@@ -234,6 +236,12 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
                int commanded = issueHoldCommand(level, player, stack);
                player.displayClientMessage(Component.translatable("guistrings.npc.baton.hold_command", new Object[]{commanded}), true);
             }
+            case BARRAGE -> {
+               if (player.distanceToSqr(Vec3.atCenterOf(pos)) <= COMMAND_VIEW_RANGE_SQ) {
+                  int commanded = issueBarrageCommand(level, player, stack, pos);
+                  player.displayClientMessage(Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded}), true);
+               }
+            }
             case CLEAR -> {
                int commanded = issueClearCommand(level, player, stack);
                player.displayClientMessage(Component.translatable("guistrings.npc.baton.clear_command", new Object[]{commanded}), true);
@@ -242,10 +250,13 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       }
    }
 
+   private static final double BARRAGE_PICK_RANGE = 64.0;
+
    public static enum ViewOrder {
       MOVE,
       ATTACK,
       HOLD,
+      BARRAGE,
       CLEAR;
    }
 
@@ -273,6 +284,24 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
             player.displayClientMessage(Component.translatable("guistrings.npc.baton.squad_selected", new Object[]{slot, members.size()}), true);
          }
       }
+   }
+
+   /** Selected archers and crossbowmen hold their ground and fire high volleys at the point; the rest keep their orders. */
+   private static int issueBarrageCommand(ServerLevel level, Player player, ItemStack stack, BlockPos point) {
+      List<UUID> stillValid = new ArrayList<>();
+      int commanded = 0;
+
+      for (UUID uuid : getSelectedNpcs(stack)) {
+         if (level.getEntity(uuid) instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
+            stillValid.add(uuid);
+            if (npc instanceof CombatNpcEntity soldier && soldier.setBarrageCommand(point)) {
+               commanded++;
+            }
+         }
+      }
+
+      setSelectedNpcs(stack, stillValid);
+      return commanded;
    }
 
    private static int issueHoldCommand(ServerLevel level, Player player, ItemStack stack) {
@@ -451,6 +480,14 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          int commanded = issueHoldCommand((ServerLevel)level, player, stack);
          player.displayClientMessage(Component.translatable("guistrings.npc.baton.hold_command", new Object[]{commanded}), true);
          return InteractionResultHolder.success(stack);
+      } else if (getMode(stack) == CommandBatonItem.BatonMode.BARRAGE) {
+         // The point is usually far beyond arm's reach, so look along the player's view for it.
+         if (player.pick(BARRAGE_PICK_RANGE, 1.0F, false) instanceof BlockHitResult blockHit && blockHit.getType() == HitResult.Type.BLOCK) {
+            int commanded = issueBarrageCommand((ServerLevel)level, player, stack, blockHit.getBlockPos().relative(blockHit.getDirection()));
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded}), true);
+         }
+
+         return InteractionResultHolder.success(stack);
       } else if (getMode(stack) == CommandBatonItem.BatonMode.CLEAR_COMMAND) {
          int commanded = issueClearCommand((ServerLevel)level, player, stack);
          player.displayClientMessage(Component.translatable("guistrings.npc.baton.clear_command", new Object[]{commanded}), true);
@@ -479,6 +516,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          case DISMOUNT -> issueDismountCommand(level, player, stack, target);
          case MOVE -> issueMoveCommand(level, player, stack, target);
          case HOLD -> issueHoldCommand(level, player, stack);
+         case BARRAGE -> issueBarrageCommand(level, player, stack, target);
          case ATTACK -> 0;
          case MOUNT -> 0;
          case COMBAT_GROUP -> getCombatGroupNpcs(stack).size();
@@ -742,6 +780,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          case DISMOUNT -> Component.translatable("guistrings.npc.baton.dismount_command", new Object[]{commanded});
          case MOVE -> Component.translatable("guistrings.npc.baton.move_command", new Object[]{commanded});
          case HOLD -> Component.translatable("guistrings.npc.baton.hold_command", new Object[]{commanded});
+         case BARRAGE -> Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded});
          case ATTACK -> Component.translatable("guistrings.npc.baton.move_attack_command", new Object[]{commanded});
          case MOUNT -> Component.translatable("guistrings.npc.baton.mount_command", new Object[]{commanded});
          case COMBAT_GROUP -> Component.translatable("guistrings.npc.baton.combat_group_ready", new Object[]{commanded});
@@ -843,6 +882,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       ATTACK("attack", "guistrings.npc.baton.attack"),
       MOVE("move", "guistrings.npc.baton.move"),
       HOLD("hold", "guistrings.npc.baton.hold"),
+      BARRAGE("barrage", "guistrings.npc.baton.barrage"),
       MOUNT("mount", "guistrings.npc.baton.mount"),
       COMBAT_GROUP("combatGroup", "guistrings.npc.baton.combat_group");
 

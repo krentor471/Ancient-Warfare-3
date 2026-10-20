@@ -250,7 +250,7 @@ public class FactionArcherNpcEntity extends FactionNpcEntity implements RangedAt
                if (this.drawTicks >= requiredDrawTicks) {
                   this.archer.performRangedAttack(this.target, 1.0F);
                   this.stopUsingBow();
-                  this.cooldown = 30;
+                  this.cooldown = NpcVolley.COOLDOWN_TICKS;
                   this.drawTicks = 0;
                }
             } else if (!this.canShootTarget()) {
@@ -272,7 +272,7 @@ public class FactionArcherNpcEntity extends FactionNpcEntity implements RangedAt
                this.clearRetreat();
                this.clearFiringPosition();
                this.archer.getNavigation().stop();
-               if (this.cooldown <= 0) {
+               if (this.cooldown <= 0 && NpcVolley.canStartDraw(this.archer)) {
                   this.archer.startUsingItem(InteractionHand.MAIN_HAND);
                   this.drawTicks = 0;
                }

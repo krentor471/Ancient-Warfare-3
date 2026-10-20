@@ -44,6 +44,13 @@ for n in ns:
     summon('faction_soldier_npc',n//2,-12,0,6,nb%'empire')
     summon('faction_soldier_npc',n//2,12,0,6,nb%'norska')
     measure(f'fight {n//2}v{n//2} (1000 hp)',warm=8)
+  elif mode=='mixed':
+    # Real fight with a ranged half on each side: archers behind the infantry.
+    nb='{FactionName:"%s",PersistenceRequired:1b,Attributes:[{Name:"generic.max_health",Base:1000d}],Health:1000f}'
+    for f,x in (('empire',-12),('norska',12)):
+      summon('faction_soldier_npc',n//4,x,0,6,nb%f)
+      summon('faction_archer_npc',n//4,x*2,0,6,nb%f)
+    measure(f'mixed {n//2}v{n//2}, half archers (1000 hp)',warm=8)
   elif mode=='army':
     own='{Owner:[I;1,2,3,4],PersistenceRequired:1b,Invulnerable:1b,HandItems:[{id:"minecraft:iron_sword",Count:1b},{}]}'
     summon('combat_npc',n//2,-12,0,6,own)

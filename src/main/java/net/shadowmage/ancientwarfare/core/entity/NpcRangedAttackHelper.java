@@ -13,6 +13,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 
 final class NpcRangedAttackHelper {
+   private static final double ARC_ANGLE = Math.toRadians(45.0);
    private NpcRangedAttackHelper() {
    }
 
@@ -99,6 +100,58 @@ final class NpcRangedAttackHelper {
       } else {
          return Optional.empty();
       }
+   }
+
+   /**
+    * High arcing shot at a point on the ground, for area fire over the heads of the front ranks. Speed is searched with
+    * the arrow's real drag; empty when the point is out of reach at {@code maxSpeed}.
+    */
+   static Optional<NpcRangedAttackHelper.BallisticShot> findArcShot(Vec3 start, Vec3 aim, double maxSpeed) {
+      double dx = aim.x - start.x;
+      double dz = aim.z - start.z;
+      double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+      if (horizontalDistance < 4.0) {
+         return Optional.empty();
+      }
+
+      double height = aim.y - start.y;
+      if (arcRange(maxSpeed, ARC_ANGLE, height) < horizontalDistance) {
+         return Optional.empty();
+      }
+
+      double low = 0.3;
+      double high = maxSpeed;
+
+      for (int iteration = 0; iteration < 16; iteration++) {
+         double middle = (low + high) * 0.5;
+         if (arcRange(middle, ARC_ANGLE, height) < horizontalDistance) {
+            low = middle;
+         } else {
+            high = middle;
+         }
+      }
+
+      return Optional.of(shot(new Vec3(dx / horizontalDistance, 0.0, dz / horizontalDistance), ARC_ANGLE, high));
+   }
+
+   /** Horizontal distance an arrow covers before it falls back to {@code height}, stepping like the arrow does in flight. */
+   private static double arcRange(double speed, double angle, double height) {
+      double vx = speed * Math.cos(angle);
+      double vy = speed * Math.sin(angle);
+      double x = 0.0;
+      double y = 0.0;
+
+      for (int tick = 0; tick < 300; tick++) {
+         x += vx;
+         y += vy;
+         vx *= 0.99;
+         vy = vy * 0.99 - 0.05;
+         if (vy < 0.0 && y < height) {
+            break;
+         }
+      }
+
+      return x;
    }
 
    private static NpcRangedAttackHelper.BallisticShot shot(Vec3 horizontalDirection, double angle, double speed) {

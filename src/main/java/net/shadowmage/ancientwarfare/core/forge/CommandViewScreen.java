@@ -210,6 +210,8 @@ public class CommandViewScreen extends Screen {
       boolean queued = hasShiftDown();
       if (hit instanceof EntityHitResult entityHit && entityHit.getEntity() instanceof LivingEntity target && !this.isOwn(target)) {
          AWCoreNetwork.sendCommandViewOrder(CommandBatonItem.ViewOrder.ATTACK, target.blockPosition(), target.getId(), false);
+      } else if (hit instanceof BlockHitResult blockHit && blockHit.getType() == HitResult.Type.BLOCK && hasAltDown()) {
+         AWCoreNetwork.sendCommandViewOrder(CommandBatonItem.ViewOrder.BARRAGE, blockHit.getBlockPos().relative(blockHit.getDirection()), -1, false);
       } else if (hit instanceof BlockHitResult blockHit && blockHit.getType() == HitResult.Type.BLOCK) {
          AWCoreNetwork.sendCommandViewOrder(CommandBatonItem.ViewOrder.MOVE, blockHit.getBlockPos().relative(blockHit.getDirection()), -1, queued);
       } else if (hit instanceof EntityHitResult entityHit) {
