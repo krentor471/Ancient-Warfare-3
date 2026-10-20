@@ -38,6 +38,7 @@ import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.Tiers;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.Item.Properties;
 import net.minecraft.world.item.context.UseOnContext;
@@ -63,6 +64,9 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    private static final double AREA_SELECT_RADIUS = 24.0;
    private static final double MIN_MARCH_FOR_FACING_SQ = 16.0;
    private static final String FORMATION_TAG = "Formation";
+   /** How far from the player the command view may select and order, matching how far it lets the camera fly. */
+   public static final double COMMAND_VIEW_RANGE = 128.0;
+   private static final double COMMAND_VIEW_RANGE_SQ = COMMAND_VIEW_RANGE * COMMAND_VIEW_RANGE;
    private final Tier tier;
    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
 
@@ -168,6 +172,81 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
       setSelectedNpcs(stack, selected);
       player.displayClientMessage(Component.translatable("guistrings.npc.baton.area_selected", new Object[]{selected.size()}), true);
+   }
+
+   /** Iron, gold and diamond batons unlock the top-down command view; wooden and stone ones command by hand only. */
+   public static boolean isAdvanced(ItemStack stack) {
+      return stack.getItem() instanceof CommandBatonItem baton && baton.tier != Tiers.WOOD && baton.tier != Tiers.STONE;
+   }
+
+   public static int selectionCount(ItemStack stack) {
+      return getSelectedNpcs(stack).size();
+   }
+
+   /** Selection made in the command view: the client sends the NPCs inside the box or under the cursor. */
+   public static void commandViewSelect(ItemStack stack, ServerPlayer player, int[] entityIds, boolean add) {
+      if (isAdvanced(stack)) {
+         List<UUID> selected = add ? getSelectedNpcs(stack) : new ArrayList<>();
+
+         for (int id : entityIds) {
+            if (selected.size() >= MAX_SELECTED) {
+               break;
+            }
+
+            if (player.serverLevel().getEntity(id) instanceof PlayerOwnedNpcEntity npc
+               && npc.isAlive()
+               && npc.hasCommandPermission(player)
+               && npc.distanceToSqr(player) <= COMMAND_VIEW_RANGE_SQ
+               && !selected.contains(npc.getUUID())) {
+               selected.add(npc.getUUID());
+            }
+         }
+
+         setSelectedNpcs(stack, selected);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.view_selected", new Object[]{selected.size()}), true);
+      }
+   }
+
+   /** Order given in the command view to the baton's selection. */
+   public static void commandViewOrder(ItemStack stack, ServerPlayer player, CommandBatonItem.ViewOrder order, BlockPos pos, int entityId, boolean queued) {
+      if (isAdvanced(stack)) {
+         ServerLevel level = player.serverLevel();
+         switch (order) {
+            case MOVE -> {
+               if (player.distanceToSqr(Vec3.atCenterOf(pos)) <= COMMAND_VIEW_RANGE_SQ) {
+                  int commanded = issueMoveCommand(level, player, stack, pos, queued);
+                  player.displayClientMessage(
+                     Component.translatable(queued ? "guistrings.npc.baton.queued_move_command" : "guistrings.npc.baton.move_command", new Object[]{commanded}), true
+                  );
+               }
+            }
+            case ATTACK -> {
+               if (level.getEntity(entityId) instanceof LivingEntity target
+                  && target != player
+                  && target.isAlive()
+                  && target.distanceToSqr(player) <= COMMAND_VIEW_RANGE_SQ
+                  && !(target instanceof PlayerOwnedNpcEntity owned && owned.hasCommandPermission(player))) {
+                  int commanded = issueAttackCommand(level, player, stack, target);
+                  player.displayClientMessage(Component.translatable("guistrings.npc.baton.attack_command", new Object[]{commanded}), true);
+               }
+            }
+            case HOLD -> {
+               int commanded = issueHoldCommand(level, player, stack);
+               player.displayClientMessage(Component.translatable("guistrings.npc.baton.hold_command", new Object[]{commanded}), true);
+            }
+            case CLEAR -> {
+               int commanded = issueClearCommand(level, player, stack);
+               player.displayClientMessage(Component.translatable("guistrings.npc.baton.clear_command", new Object[]{commanded}), true);
+            }
+         }
+      }
+   }
+
+   public static enum ViewOrder {
+      MOVE,
+      ATTACK,
+      HOLD,
+      CLEAR;
    }
 
    /** Saves the current selection as squad {@code slot}, or loads that squad as the selection. */

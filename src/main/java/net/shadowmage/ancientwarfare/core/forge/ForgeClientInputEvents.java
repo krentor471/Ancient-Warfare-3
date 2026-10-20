@@ -4,12 +4,16 @@ import com.mojang.blaze3d.platform.InputConstants.Type;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.InputEvent.Key;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.event.RenderHandEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -34,6 +38,7 @@ public final class ForgeClientInputEvents {
    );
    private static final KeyMapping BATON_CLEAR_SELECTIONS = batonKey("key.ancientwarfare.baton_clear_selections", 88);
    private static final KeyMapping BATON_FORMATION = batonKey("key.ancientwarfare.baton_formation", 71);
+   private static final KeyMapping COMMAND_VIEW = batonKey("key.ancientwarfare.command_view", 66);
 
    private ForgeClientInputEvents() {
    }
@@ -60,6 +65,21 @@ public final class ForgeClientInputEvents {
       }
    }
 
+   /** In the command view the camera is not the player, so the player's hand and the crosshair are hidden. */
+   @SubscribeEvent
+   public static void onRenderHand(RenderHandEvent event) {
+      if (CommandViewScreen.isOpen(Minecraft.getInstance())) {
+         event.setCanceled(true);
+      }
+   }
+
+   @SubscribeEvent
+   public static void onRenderOverlay(RenderGuiOverlayEvent.Pre event) {
+      if (CommandViewScreen.isOpen(Minecraft.getInstance()) && event.getOverlay().id().equals(VanillaGuiOverlay.CROSSHAIR.id())) {
+         event.setCanceled(true);
+      }
+   }
+
    @SubscribeEvent
    public static void onKeyInput(Key event) {
       Minecraft minecraft = Minecraft.getInstance();
@@ -77,6 +97,15 @@ public final class ForgeClientInputEvents {
          }
 
          consumeBatonKey(minecraft, BATON_CLEAR_SELECTIONS);
+         while (COMMAND_VIEW.consumeClick()) {
+            ItemStack baton = CommandViewScreen.heldBaton(minecraft);
+            if (CommandBatonItem.isAdvanced(baton)) {
+               CommandViewScreen.open(minecraft, COMMAND_VIEW);
+            } else if (isHoldingBaton(baton)) {
+               minecraft.player.displayClientMessage(Component.translatable("guistrings.npc.command_view.needs_advanced_baton"), true);
+            }
+         }
+
          while (BATON_FORMATION.consumeClick()) {
             if (isHoldingBaton(minecraft.player.getMainHandItem()) || isHoldingBaton(minecraft.player.getOffhandItem())) {
                AWCoreNetwork.sendBatonFormation();
@@ -126,6 +155,7 @@ public final class ForgeClientInputEvents {
          event.register(ForgeClientInputEvents.BALLISTA_DOWN);
          event.register(ForgeClientInputEvents.BATON_CLEAR_SELECTIONS);
          event.register(ForgeClientInputEvents.BATON_FORMATION);
+         event.register(ForgeClientInputEvents.COMMAND_VIEW);
       }
    }
 }

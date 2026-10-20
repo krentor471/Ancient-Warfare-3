@@ -183,6 +183,16 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.BatonFormationPacket::decode)
          .consumerMainThread(AWCoreNetwork.BatonFormationPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.CommandViewSelectPacket.class, 27, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.CommandViewSelectPacket::encode)
+         .decoder(AWCoreNetwork.CommandViewSelectPacket::decode)
+         .consumerMainThread(AWCoreNetwork.CommandViewSelectPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.CommandViewOrderPacket.class, 28, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.CommandViewOrderPacket::encode)
+         .decoder(AWCoreNetwork.CommandViewOrderPacket::decode)
+         .consumerMainThread(AWCoreNetwork.CommandViewOrderPacket::handle)
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.MailboxConfigPacket.class, 13)
          .encoder(AWCoreNetwork.MailboxConfigPacket::encode)
          .decoder(AWCoreNetwork.MailboxConfigPacket::decode)
@@ -292,6 +302,14 @@ public final class AWCoreNetwork {
 
    public static void sendCommandBatonHotkey() {
       CHANNEL.sendToServer(new AWCoreNetwork.CommandBatonHotkeyPacket());
+   }
+
+   public static void sendCommandViewSelect(int[] entityIds, boolean add) {
+      CHANNEL.sendToServer(new AWCoreNetwork.CommandViewSelectPacket(entityIds, add));
+   }
+
+   public static void sendCommandViewOrder(CommandBatonItem.ViewOrder order, BlockPos pos, int entityId, boolean queued) {
+      CHANNEL.sendToServer(new AWCoreNetwork.CommandViewOrderPacket(order, pos, entityId, queued));
    }
 
    public static void sendBatonFormation() {
@@ -506,6 +524,59 @@ public final class AWCoreNetwork {
                }
 
                CommandBatonItem.clearSelections(stack, player);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   private static ItemStack heldBaton(ServerPlayer player) {
+      ItemStack stack = player.getMainHandItem();
+      return stack.getItem() instanceof CommandBatonItem ? stack : player.getOffhandItem();
+   }
+
+   public static record CommandViewSelectPacket(int[] entityIds, boolean add) {
+      private static final int MAX_IDS = 512;
+
+      private static void encode(AWCoreNetwork.CommandViewSelectPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarIntArray(packet.entityIds);
+         buffer.writeBoolean(packet.add);
+      }
+
+      private static AWCoreNetwork.CommandViewSelectPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.CommandViewSelectPacket(buffer.readVarIntArray(MAX_IDS), buffer.readBoolean());
+      }
+
+      private static void handle(AWCoreNetwork.CommandViewSelectPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               CommandBatonItem.commandViewSelect(heldBaton(player), player, packet.entityIds, packet.add);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record CommandViewOrderPacket(CommandBatonItem.ViewOrder order, BlockPos pos, int entityId, boolean queued) {
+      private static void encode(AWCoreNetwork.CommandViewOrderPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeEnum(packet.order);
+         buffer.writeBlockPos(packet.pos);
+         buffer.writeVarInt(packet.entityId);
+         buffer.writeBoolean(packet.queued);
+      }
+
+      private static AWCoreNetwork.CommandViewOrderPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.CommandViewOrderPacket(buffer.readEnum(CommandBatonItem.ViewOrder.class), buffer.readBlockPos(), buffer.readVarInt(), buffer.readBoolean());
+      }
+
+      private static void handle(AWCoreNetwork.CommandViewOrderPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               CommandBatonItem.commandViewOrder(heldBaton(player), player, packet.order, packet.pos, packet.entityId, packet.queued);
             }
          });
          context.setPacketHandled(true);
