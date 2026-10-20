@@ -29,6 +29,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
+import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 import net.shadowmage.ancientwarfare.core.faction.RelationState;
 
@@ -104,6 +105,23 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("region").executes(context -> showRegion(context.getSource())))
                .then(Commands.literal("map").executes(context -> showMap(context.getSource())))
                .then(Commands.literal("settlements").executes(context -> showSettlements(context.getSource())))
+               .then(Commands.literal("factions").executes(context -> showFactions(context.getSource())))
+               .then(
+                  Commands.literal("found")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(
+                              Commands.argument("garrison", IntegerArgumentType.integer(0, 64))
+                                 .executes(context -> found(context.getSource(), faction(context, "faction"), IntegerArgumentType.getInteger(context, "garrison")))
+                           )
+                     )
+               )
+               .then(
+                  Commands.literal("simulate")
+                     .requires(source -> source.hasPermission(2))
+                     .then(Commands.argument("days", IntegerArgumentType.integer(1, 365)).executes(context -> simulate(context.getSource(), IntegerArgumentType.getInteger(context, "days"))))
+               )
                .then(Commands.literal("relations").then(factionArgument("faction").executes(context -> showRelations(context.getSource(), faction(context, "faction")))))
                .then(stateCommand("war", RelationState.WAR))
                .then(stateCommand("peace", RelationState.NEUTRAL))
@@ -251,8 +269,9 @@ public final class ForgeFactionCommands {
          String template = settlement.template().substring(settlement.template().lastIndexOf('/') + 1);
          tell(source, 
             Component.literal(
-               "#" + settlement.id() + " " + settlement.faction() + " " + settlement.kind() + " " + template + " at " + center.getX() + " " + center.getY() + " "
-                  + center.getZ() + " (" + (int)Math.sqrt(settlement.horizontalDistanceSquared(source.getPosition().x, source.getPosition().z)) + " blocks)"
+               "#" + settlement.id() + " " + settlement.faction() + " " + settlement.kind() + " " + template + " tier " + settlement.tier() + ", people "
+                  + settlement.population() + ", garrison " + settlement.garrison() + " at " + center.getX() + " " + center.getY() + " " + center.getZ() + " ("
+                  + (int)Math.sqrt(settlement.horizontalDistanceSquared(source.getPosition().x, source.getPosition().z)) + " blocks)"
             )
          );
       }
@@ -262,6 +281,61 @@ public final class ForgeFactionCommands {
 
    private static void tell(CommandSourceStack source, Component message) {
       source.sendSuccess(() -> message, false);
+   }
+
+   private static int showFactions(CommandSourceStack source) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      Map<String, int[]> totals = new TreeMap<>();
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         int[] total = totals.computeIfAbsent(settlement.faction(), ignored -> new int[3]);
+         total[0]++;
+         total[1] += settlement.population();
+         total[2] += settlement.garrison();
+      }
+
+      tell(source, Component.literal("Day " + data.lastSimulatedDay() + ". Faction: settlements, people, garrison, treasury"));
+      totals.forEach(
+         (faction, total) -> tell(
+               source, Component.literal("  " + faction + ": " + total[0] + ", " + total[1] + ", " + total[2] + ", " + data.treasury(faction) + " gold")
+            )
+      );
+      return totals.size();
+   }
+
+   /** Registers a 33x33 settlement around the command position; for testing garrisons. */
+   private static int found(CommandSourceStack source, String faction, int garrison) {
+      if (!FactionRegistry.isKnown(faction)) {
+         source.sendFailure(Component.literal("Unknown faction " + faction));
+         return 0;
+      }
+
+      BlockPos center = BlockPos.containing(source.getPosition());
+      FactionWorldData.Settlement settlement = FactionWorldData.get(source.getLevel())
+         .addSettlement(
+            faction,
+            "structure",
+            "command",
+            center.offset(-16, -4, -16),
+            center.offset(16, 8, 16),
+            FactionRegions.provinceAt(source.getLevel(), center.getX(), center.getZ()).key(),
+            source.getLevel().getGameTime(),
+            garrison,
+            FactionSimulation.startingPopulation(garrison, 2)
+         );
+      tell(source, Component.literal("Founded settlement #" + settlement.id() + " of " + faction + " with garrison " + garrison));
+      return settlement.id();
+   }
+
+   private static int simulate(CommandSourceStack source, int days) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+
+      for (int i = 0; i < days; i++) {
+         FactionSimulation.simulateDay(source.getLevel(), data);
+      }
+
+      tell(source, Component.literal("Simulated " + days + " faction day(s)"));
+      return showFactions(source);
    }
 
    private static String ownerName(String owner) {

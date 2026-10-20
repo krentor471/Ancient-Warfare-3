@@ -18,6 +18,7 @@ import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
+import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 import net.shadowmage.ancientwarfare.core.faction.TemplateFactions;
 import net.shadowmage.ancientwarfare.core.tile.ProtectionFlagBlockEntity;
@@ -517,6 +518,19 @@ public final class AwtWorldGenerator {
    private static void registerSettlement(ServerLevel level, AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
       String faction = TemplateFactions.ofTown(task.name);
       if (!faction.isEmpty()) {
+         int soldiers = 0;
+         int civilians = 0;
+
+         for (List<AwtTownPlacer.PlannedTemplate> placements : List.of(plan.walls(), plan.buildings())) {
+            for (AwtTownPlacer.PlannedTemplate placement : placements) {
+               TemplateFactions.TemplateInfo info = TemplateFactions.info(placement.templatePath());
+               if (info.faction().equals(faction)) {
+                  soldiers += info.soldiers();
+                  civilians += info.civilians();
+               }
+            }
+         }
+
          BlockPos min = plan.min();
          FactionWorldData.get(level)
             .addSettlement(
@@ -526,7 +540,9 @@ public final class AwtWorldGenerator {
                min,
                min.offset(plan.totalSize() - 1, 0, plan.totalSize() - 1),
                FactionRegions.provinceAt(level, task.x, task.z).key(),
-               level.getGameTime()
+               level.getGameTime(),
+               soldiers,
+               FactionSimulation.startingPopulation(soldiers, civilians)
             );
       }
    }

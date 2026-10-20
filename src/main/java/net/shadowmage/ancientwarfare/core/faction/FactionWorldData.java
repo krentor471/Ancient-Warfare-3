@@ -21,7 +21,9 @@ public final class FactionWorldData extends SavedData {
    /** Relations changed from their defaults, stored under both factions. */
    private final Map<String, Map<String, FactionDiplomacy.Relation>> relations = new HashMap<>();
    private final List<Settlement> settlements = new ArrayList<>();
+   private final Map<String, Integer> treasuries = new HashMap<>();
    private int nextSettlementId = 1;
+   private long lastSimulatedDay = -1L;
 
    public static FactionWorldData get(ServerLevel level) {
       return level.getServer().overworld().getDataStorage().computeIfAbsent(FactionWorldData::load, FactionWorldData::new, DATA_NAME);
@@ -63,11 +65,33 @@ public final class FactionWorldData extends SavedData {
       return Collections.unmodifiableList(this.settlements);
    }
 
-   public Settlement addSettlement(String faction, String kind, String template, BlockPos min, BlockPos max, long province, long gameTime) {
+   public Settlement addSettlement(
+      String faction, String kind, String template, BlockPos min, BlockPos max, long province, long gameTime, int garrison, int population
+   ) {
       Settlement settlement = new Settlement(this.nextSettlementId++, faction, kind, template, min, max, province, gameTime);
+      settlement.garrison = garrison;
+      settlement.population = population;
       this.settlements.add(settlement);
       this.setDirty();
       return settlement;
+   }
+
+   public int treasury(String faction) {
+      return this.treasuries.getOrDefault(faction, 0);
+   }
+
+   public void setTreasury(String faction, int gold) {
+      this.treasuries.put(faction, Math.max(0, gold));
+      this.setDirty();
+   }
+
+   public long lastSimulatedDay() {
+      return this.lastSimulatedDay;
+   }
+
+   public void setLastSimulatedDay(long day) {
+      this.lastSimulatedDay = day;
+      this.setDirty();
    }
 
    @Override
@@ -99,11 +123,19 @@ public final class FactionWorldData extends SavedData {
          entry.put("Max", NbtUtils.writeBlockPos(settlement.max()));
          entry.putLong("Province", settlement.province());
          entry.putLong("Founded", settlement.founded());
+         entry.putInt("Population", settlement.population);
+         entry.putInt("Garrison", settlement.garrison);
+         entry.putInt("Tier", settlement.tier);
+         entry.putBoolean("Manned", settlement.manned);
          list.add(entry);
       }
 
       tag.put("Settlements", list);
       tag.putInt("NextSettlementId", this.nextSettlementId);
+      CompoundTag gold = new CompoundTag();
+      this.treasuries.forEach(gold::putInt);
+      tag.put("Treasuries", gold);
+      tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
       return tag;
    }
 
@@ -124,7 +156,7 @@ public final class FactionWorldData extends SavedData {
 
       for (Tag element : tag.getList("Settlements", Tag.TAG_COMPOUND)) {
          CompoundTag entry = (CompoundTag)element;
-         data.settlements.add(new Settlement(
+         Settlement settlement = new Settlement(
             entry.getInt("Id"),
             entry.getString("Faction"),
             entry.getString("Kind"),
@@ -133,10 +165,18 @@ public final class FactionWorldData extends SavedData {
             NbtUtils.readBlockPos(entry.getCompound("Max")),
             entry.getLong("Province"),
             entry.getLong("Founded")
-         ));
+         );
+         settlement.population = entry.getInt("Population");
+         settlement.garrison = entry.getInt("Garrison");
+         settlement.tier = entry.getInt("Tier");
+         settlement.manned = entry.getBoolean("Manned");
+         data.settlements.add(settlement);
       }
 
       data.nextSettlementId = Math.max(tag.getInt("NextSettlementId"), data.settlements.size() + 1);
+      CompoundTag gold = tag.getCompound("Treasuries");
+      gold.getAllKeys().forEach(faction -> data.treasuries.put(faction, gold.getInt(faction)));
+      data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
       return data;
    }
 
@@ -158,7 +198,86 @@ public final class FactionWorldData extends SavedData {
       }
    }
 
-   public static record Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
+   /**
+    * A faction's settlement. Its people and garrison are abstract numbers the daily simulation grows;
+    * the NPCs standing there are spawned to match the garrison while a player is near.
+    */
+   public static final class Settlement {
+      private final int id;
+      private final String faction;
+      private final String kind;
+      private final String template;
+      private final BlockPos min;
+      private final BlockPos max;
+      private final long province;
+      private final long founded;
+      int population;
+      int garrison;
+      int tier;
+      /** Set once the template's own spawners have fired, so respawns do not double them. */
+      boolean manned;
+      /** Game time of the last garrison respawn; not saved. */
+      long lastRespawn;
+
+      Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
+         this.id = id;
+         this.faction = faction;
+         this.kind = kind;
+         this.template = template;
+         this.min = min;
+         this.max = max;
+         this.province = province;
+         this.founded = founded;
+      }
+
+      public int id() {
+         return this.id;
+      }
+
+      public String faction() {
+         return this.faction;
+      }
+
+      public String kind() {
+         return this.kind;
+      }
+
+      public String template() {
+         return this.template;
+      }
+
+      public BlockPos min() {
+         return this.min;
+      }
+
+      public BlockPos max() {
+         return this.max;
+      }
+
+      public long province() {
+         return this.province;
+      }
+
+      public long founded() {
+         return this.founded;
+      }
+
+      public int population() {
+         return this.population;
+      }
+
+      public int garrison() {
+         return this.garrison;
+      }
+
+      public int tier() {
+         return this.tier;
+      }
+
+      public boolean manned() {
+         return this.manned;
+      }
+
       public BlockPos center() {
          return new BlockPos((this.min.getX() + this.max.getX()) / 2, this.min.getY(), (this.min.getZ() + this.max.getZ()) / 2);
       }
@@ -168,6 +287,10 @@ public final class FactionWorldData extends SavedData {
          double dx = center.getX() - x;
          double dz = center.getZ() - z;
          return dx * dx + dz * dz;
+      }
+
+      public boolean contains(double x, double z, int margin) {
+         return x >= this.min.getX() - margin && x <= this.max.getX() + 1 + margin && z >= this.min.getZ() - margin && z <= this.max.getZ() + 1 + margin;
       }
    }
 }

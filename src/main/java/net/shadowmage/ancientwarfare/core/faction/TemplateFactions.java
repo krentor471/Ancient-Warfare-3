@@ -14,19 +14,25 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 /** Which faction a structure template belongs to, from the index built by tools/worldgen/template_factions.py. */
 public final class TemplateFactions {
    private static final String RESOURCE = "/assets/ancientwarfare/template_factions.txt";
-   private static Map<String, String> factions;
+   private static final TemplateInfo NEUTRAL = new TemplateInfo("", 0, 0);
+   private static Map<String, TemplateInfo> templates;
 
    private TemplateFactions() {
    }
 
    /** Faction of an AWS template, or "" when it has no faction spawners or the faction is unknown. */
-   public static synchronized String ofTemplate(String path) {
-      if (factions == null) {
-         factions = load();
+   public static String ofTemplate(String path) {
+      return info(path).faction();
+   }
+
+   /** Faction and starting garrison and people of an AWS template. */
+   public static synchronized TemplateInfo info(String path) {
+      if (templates == null) {
+         templates = load();
       }
 
-      String faction = factions.getOrDefault(path, "");
-      return FactionRegistry.isKnown(faction) ? faction : "";
+      TemplateInfo info = templates.getOrDefault(path, NEUTRAL);
+      return FactionRegistry.isKnown(info.faction()) ? info : NEUTRAL;
    }
 
    /** Faction of an AWT town, taken from its name prefix (EmpireWalledCity is empire's). */
@@ -43,8 +49,8 @@ public final class TemplateFactions {
       return best;
    }
 
-   private static Map<String, String> load() {
-      Map<String, String> loaded = new HashMap<>();
+   private static Map<String, TemplateInfo> load() {
+      Map<String, TemplateInfo> loaded = new HashMap<>();
 
       try (InputStream stream = TemplateFactions.class.getResourceAsStream(RESOURCE)) {
          if (stream == null) {
@@ -55,7 +61,11 @@ public final class TemplateFactions {
          try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
             reader.lines().filter(line -> !line.startsWith("#") && line.contains("=")).forEach(line -> {
                int split = line.lastIndexOf('=');
-               loaded.put(line.substring(0, split).trim(), line.substring(split + 1).trim().toLowerCase(Locale.ROOT));
+               String[] fields = line.substring(split + 1).trim().split(";");
+               loaded.put(
+                  line.substring(0, split).trim(),
+                  new TemplateInfo(fields[0].toLowerCase(Locale.ROOT), fields.length > 1 ? parse(fields[1]) : 0, fields.length > 2 ? parse(fields[2]) : 0)
+               );
             });
          }
       } catch (IOException exception) {
@@ -63,5 +73,16 @@ public final class TemplateFactions {
       }
 
       return loaded;
+   }
+
+   private static int parse(String value) {
+      try {
+         return Integer.parseInt(value.trim());
+      } catch (NumberFormatException exception) {
+         return 0;
+      }
+   }
+
+   public static record TemplateInfo(String faction, int soldiers, int civilians) {
    }
 }

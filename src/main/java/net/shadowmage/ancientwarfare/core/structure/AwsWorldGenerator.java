@@ -20,6 +20,7 @@ import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
+import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 import net.shadowmage.ancientwarfare.core.faction.TemplateFactions;
 
@@ -161,17 +162,19 @@ public final class AwsWorldGenerator {
                   template.path(), min.getX(), min.getY(), min.getZ(), maxX, min.getY() + template.sizeY() - 1, maxZ, facing.get2DDataValue()
                )
             );
-            String faction = TemplateFactions.ofTemplate(template.path());
-            if (!faction.isEmpty()) {
+            TemplateFactions.TemplateInfo info = TemplateFactions.info(template.path());
+            if (!info.faction().isEmpty()) {
                FactionWorldData.get(level)
                   .addSettlement(
-                     faction,
+                     info.faction(),
                      "structure",
                      template.path(),
                      min,
                      new BlockPos(maxX, min.getY() + template.sizeY() - 1, maxZ),
                      FactionRegions.provinceAt(level, origin.getX(), origin.getZ()).key(),
-                     level.getGameTime()
+                     level.getGameTime(),
+                     info.soldiers(),
+                     FactionSimulation.startingPopulation(info.soldiers(), info.civilians())
                   );
             }
 
