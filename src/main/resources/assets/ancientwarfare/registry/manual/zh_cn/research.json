@@ -1,0 +1,430 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "research",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "一 研究",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "联动说明：附属模组的近代化研究",
+          "category_link": "integrations",
+          "anchor": "world_war"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "统治者手册",
+          "category_link": "research",
+          "anchor": "entry_001"
+        },
+        {
+          "text": "研究之书",
+          "category_link": "research",
+          "anchor": "entry_002"
+        },
+        {
+          "text": "研究站",
+          "category_link": "research",
+          "anchor": "entry_003"
+        },
+        {
+          "text": "研究笔记",
+          "category_link": "research",
+          "anchor": "entry_004"
+        },
+        {
+          "text": "工程站",
+          "category_link": "research",
+          "anchor": "entry_005"
+        },
+        {
+          "text": "羽毛笔",
+          "category_link": "research",
+          "anchor": "entry_006"
+        },
+        {
+          "text": "锤子",
+          "category_link": "research",
+          "anchor": "entry_007"
+        },
+        {
+          "text": "背包",
+          "category_link": "research",
+          "anchor": "entry_008"
+        },
+        {
+          "text": "邮箱",
+          "category_link": "research",
+          "anchor": "entry_009"
+        },
+        {
+          "text": "钢锭与机械零件",
+          "category_link": "research",
+          "anchor": "entry_010"
+        },
+        {
+          "text": "信息工具",
+          "category_link": "research",
+          "anchor": "entry_011"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "本章介绍研究与基础工具。研究之书保存技术进度，研究站推进研究，工程站利用已经掌握的技术制作物品。这三件物品承担不同工作，不能互相代替。"
+    },
+    {
+      "content_type": "heading",
+      "text": "统治者手册",
+      "level": 2,
+      "anchor": "entry_001"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:manual"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：在普通工作台用木锤与原版书无序合成。"
+    },
+    {
+      "content_type": "text",
+      "text": "统治者手册用来查阅本模组的物品和设施说明。手持右键打开，按目录进入对应章节。它本身不保存研究进度，也不承担 NPC 指挥或机器设置功能。"
+    },
+    {
+      "content_type": "text",
+      "text": "普通工作台中使用木锤和原版书进行无序合成，即可制作手册。需要解锁工程配方时，请使用研究之书。"
+    },
+    {
+      "content_type": "heading",
+      "text": "研究之书",
+      "level": 2,
+      "anchor": "entry_002"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:research_book"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工作台，无前置研究要求。"
+    },
+    {
+      "content_type": "text",
+      "text": "研究之书记录已经完成的研究、当前研究进度和研究队列。第一次手持右键会为尚未署名的书绑定玩家姓名，再次右键打开研究界面；潜行右键可以重新署名。"
+    },
+    {
+      "content_type": "text",
+      "text": "需要研究新技术时，把书放入研究站；需要制作有研究要求的工程物品时，把具备相应技术的书放入制作设施的书本槽。进度保存在这本书上，不要把不同书本当成实时同步的同一份研究记录。"
+    },
+    {
+      "content_type": "heading",
+      "text": "研究站",
+      "level": 2,
+      "anchor": "entry_003"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:research_station"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工作台，无前置研究要求。"
+    },
+    {
+      "content_type": "text",
+      "text": "研究站用于消耗材料并完成研究。放入已经署名的研究之书，在界面中安排研究项目，按项目要求补足材料。开始一个项目时会检查并扣除所需材料；材料不足时，该项目不能正常启动。"
+    },
+    {
+      "content_type": "text",
+      "text": "研究站能自行推进研究。研究员工人可以额外提供工作进度，因此研究员是加快研究的帮手，而不是让研究站开始工作的唯一条件。完成的技术写入站内书本，取走书本时也会带走这份研究记录。"
+    },
+    {
+      "content_type": "heading",
+      "text": "研究笔记",
+      "level": 2,
+      "anchor": "entry_004"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:research_note",
+          "tag": {
+            "researchName": "agriculture"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：部分结构战利品表会产出带研究内容的笔记，例如档案类战利品；空白或无效内容不能提供研究。"
+    },
+    {
+      "content_type": "text",
+      "text": "研究笔记对应一项具体技术。背包中携带研究之书后使用笔记，会作用于背包中找到的第一本研究之书；携带多本书时，应先整理位置，避免用错目标。"
+    },
+    {
+      "content_type": "text",
+      "text": "尚未掌握笔记对应技术时，笔记可以直接完成该技术并消耗一张。已经掌握该技术但书中还有正在研究的项目时，笔记会提供相当于其对应研究耗时四分之一的进度。没有研究之书、笔记内容无效，或既已掌握又没有在研项目时，不会消耗。"
+    },
+    {
+      "content_type": "heading",
+      "text": "工程站",
+      "level": 2,
+      "anchor": "entry_005"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:engineering_station"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工作台，无前置研究要求。"
+    },
+    {
+      "content_type": "text",
+      "text": "工程站负责模组的工程制造。放入研究之书，选择或摆放所需工程配方，并提供材料后取出成品。配方需要研究时，站内书本必须已经完成对应技术。"
+    },
+    {
+      "content_type": "text",
+      "text": "工程配方与原版工作台配方分别管理。同样的材料摆法放到错误的制作台上，并不一定能得到成品；也不能只把研究之书放在玩家背包里，就认为所有制作界面都已获得研究权限。"
+    },
+    {
+      "content_type": "heading",
+      "text": "羽毛笔",
+      "level": 2,
+      "anchor": "entry_006"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_quill"
+        },
+        {
+          "name": "ancientwarfare:stone_quill"
+        },
+        {
+          "name": "ancientwarfare:iron_quill"
+        },
+        {
+          "name": "ancientwarfare:gold_quill"
+        },
+        {
+          "name": "ancientwarfare:diamond_quill"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为工程学。"
+    },
+    {
+      "content_type": "text",
+      "text": "木、石、铁、金和钻石羽毛笔属于研究工具。将羽毛笔交给工作者并放入主手，可以让其被识别为研究员，再通过工作指令安排到研究站工作。"
+    },
+    {
+      "content_type": "text",
+      "text": "羽毛笔不会替代研究之书或研究材料。安排人员前先确认研究站里有书、有能够启动的项目，再检查 NPC 是否能走到工作位置。"
+    },
+    {
+      "content_type": "heading",
+      "text": "锤子",
+      "level": 2,
+      "anchor": "entry_007"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_hammer"
+        },
+        {
+          "name": "ancientwarfare:stone_hammer"
+        },
+        {
+          "name": "ancientwarfare:iron_hammer"
+        },
+        {
+          "name": "ancientwarfare:gold_hammer"
+        },
+        {
+          "name": "ancientwarfare:diamond_hammer"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为工程学。"
+    },
+    {
+      "content_type": "text",
+      "text": "锤子兼作设备调整工具和工匠职业工具。手持锤子潜行对空气右键，可以切换旋转模式与工作模式；使用前先看当前模式提示。"
+    },
+    {
+      "content_type": "text",
+      "text": "旋转模式用于调整支持旋转的设施。对汇流器、分配器等支持面设置的传动设备潜行点击，可以切换连接面。工作模式可向生存结构创造器提供人工施工能量；不要把它理解成对所有机器都有效的加速工具。工作者主手持锤时会被识别为工匠。"
+    },
+    {
+      "content_type": "heading",
+      "text": "背包",
+      "level": 2,
+      "anchor": "entry_008"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:backpack"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "背包提供随身物品存储，手持右键打开。小型背包、旅行背包、中型背包和大型背包分别提供 9、18、27、36 格空间。"
+    },
+    {
+      "content_type": "text",
+      "text": "背包的等级和库存保存在物品数据里。整理物品、交易或替换存档物品时，应保留原背包本身，不要用一个外观相同的新背包代替已有库存的背包。"
+    },
+    {
+      "content_type": "heading",
+      "text": "邮箱",
+      "level": 2,
+      "anchor": "entry_009"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:mailbox"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为航海术。"
+    },
+    {
+      "content_type": "text",
+      "text": "邮箱按名称把物品送到另一个邮箱。先给接收端设置名称，再在发送端设置对应目标，并确认两端使用一致的公共或私人地址规则。私人地址还与所有者有关。"
+    },
+    {
+      "content_type": "text",
+      "text": "在邮箱界面中按槽位标识放入要发送的物品；设置目标后，邮箱会自动尝试发送。各面可配置物品访问方式，用于和搬运设施衔接。当前邮箱地址登记按维度分别保存，因此应在同一维度内建立投递线路，不要依靠它跨维度送货。"
+    },
+    {
+      "content_type": "heading",
+      "text": "钢锭与机械零件",
+      "level": 2,
+      "anchor": "entry_010"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:steel_ingot"
+        },
+        {
+          "name": "ancientwarfare:wooden_gear"
+        },
+        {
+          "name": "ancientwarfare:iron_gear"
+        },
+        {
+          "name": "ancientwarfare:steel_gear"
+        },
+        {
+          "name": "ancientwarfare:wooden_shaft"
+        },
+        {
+          "name": "ancientwarfare:iron_shaft"
+        },
+        {
+          "name": "ancientwarfare:steel_shaft"
+        },
+        {
+          "name": "ancientwarfare:wooden_bearings"
+        },
+        {
+          "name": "ancientwarfare:iron_bearings"
+        },
+        {
+          "name": "ancientwarfare:steel_bearings"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：钢锭：工程站，研究要求为精炼；木质齿轮组、铁质齿轮组、钢质齿轮组、木轴、铁轴、钢轴、木质套管、铁质套管、钢质套管：工作台，无前置研究要求。"
+    },
+    {
+      "content_type": "text",
+      "text": "钢锭、齿轮组、轴和套管是制造材料。木质、铁质和钢质零件分别出现在不同配方中，使用时按配方指定材质准备，不能只按外形相近来替换。"
+    },
+    {
+      "content_type": "text",
+      "text": "这些物品主要投入工程制造，不是摆在地上就能工作的传动设备。要把动力送往机器，应制作第二章介绍的传动杆、汇流器和分配器。"
+    },
+    {
+      "content_type": "heading",
+      "text": "信息工具",
+      "level": 2,
+      "anchor": "entry_011"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:info_tool"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "状态：已注册，但当前没有独立查询操作。"
+    },
+    {
+      "content_type": "text",
+      "text": "信息工具目前是已注册的普通物品，没有独立的查询交互。它不能代替机器界面、NPC 界面或调试指令来读取状态。"
+    },
+    {
+      "content_type": "text",
+      "text": "检查生产与搬运问题时，请打开对应设施，核对材料、输出空间、工作范围、连接方向和工作状态。"
+    }
+  ]
+}

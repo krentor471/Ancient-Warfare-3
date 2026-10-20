@@ -1,0 +1,17 @@
+{
+  "required_research": "construction",
+  "pattern": [
+    " I ",
+    "RPG",
+    " I "
+  ],
+  "key": {
+    "I": { "tag": "forge:ingots/iron" },
+    "R": { "item": "minecraft:redstone" },
+    "P": { "item": "minecraft:paper" },
+    "G": { "item": "minecraft:glass" }
+  },
+  "result": {
+    "item": "ancientwarfare:structure_scanner"
+  }
+}

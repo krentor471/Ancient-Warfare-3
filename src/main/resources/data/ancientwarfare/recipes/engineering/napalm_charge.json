@@ -1,0 +1,29 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "combustion",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:gunpowder"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:wool"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:cactus"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:napalm_charge",
+                   "count":  8
+               }
+}

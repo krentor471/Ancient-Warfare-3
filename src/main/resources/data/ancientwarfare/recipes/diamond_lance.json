@@ -1,0 +1,21 @@
+{
+    "type":  "minecraft:crafting_shaped",
+    "category":  "combat",
+    "pattern":  [
+                    " # ",
+                    " # ",
+                    "#S#"
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "#":  {
+                          "tag":  "forge:gems/diamond"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:diamond_lance"
+               },
+    "show_notification":  true
+}

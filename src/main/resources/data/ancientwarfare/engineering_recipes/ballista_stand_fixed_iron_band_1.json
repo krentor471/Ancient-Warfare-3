@@ -1,0 +1,30 @@
+{
+    "required_research":  "siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:treated_wood"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:torsion_unit"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ballista_stand_fixed_iron_band_1"
+               }
+}

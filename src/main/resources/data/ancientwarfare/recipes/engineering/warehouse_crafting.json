@@ -1,0 +1,26 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "trade",
+    "pattern":  [
+                    "_P_",
+                    "_W_",
+                    "_I_"
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:paper"
+                      },
+                "W":  {
+                          "item":  "minecraft:crafting_table"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      },
+                "_":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:warehouse_crafting"
+               }
+}

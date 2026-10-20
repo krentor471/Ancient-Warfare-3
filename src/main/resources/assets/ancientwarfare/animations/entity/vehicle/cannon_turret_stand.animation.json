@@ -1,0 +1,81 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.ancientwarfare.cannon_turret_stand.rotate_360": {
+      "loop": true,
+      "bones": {
+        "rotating_beam": {
+          "rotation": [
+            0,
+            "query.anim_time * 360",
+            0
+          ]
+        }
+      }
+    },
+    "animation.ancientwarfare.cannon_turret_stand.pitch_up_30": {
+      "loop": "hold_on_last_frame",
+      "animation_length": 1,
+      "bones": {
+        "barrel": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              -30,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.ancientwarfare.cannon_turret_stand.pitch_down_15": {
+      "loop": "hold_on_last_frame",
+      "animation_length": 1,
+      "bones": {
+        "barrel": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              15,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.ancientwarfare.cannon_turret_stand.fire_recoil": {
+      "animation_length": 0.6,
+      "bones": {
+        "barrel": {
+          "position": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.12": [
+              0,
+              0,
+              2.5
+            ],
+            "0.6": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

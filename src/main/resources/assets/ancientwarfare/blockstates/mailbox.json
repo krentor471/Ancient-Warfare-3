@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"ancientwarfare:block/mailbox"},"facing=south":{"model":"ancientwarfare:block/mailbox","y":180},"facing=west":{"model":"ancientwarfare:block/mailbox","y":270},"facing=east":{"model":"ancientwarfare:block/mailbox","y":90}}}

@@ -1,0 +1,22 @@
+{
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  12
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:coal"
+                                           },
+                            "count":  4
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:tempered_iron",
+                   "count":  8
+               }
+}

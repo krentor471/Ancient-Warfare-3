@@ -1,0 +1,19 @@
+{
+    "required_research":  "the_wheel",
+    "pattern":  [
+                    "PPP",
+                    "GPG",
+                    "PPP"
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "minecraft:planks"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:wooden_gear"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:windmill_generator"
+               }
+}

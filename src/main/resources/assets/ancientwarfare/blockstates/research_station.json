@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,has_book=false": { "model": "ancientwarfare:block/research_station" },
+    "facing=east,has_book=false": { "model": "ancientwarfare:block/research_station", "y": 90 },
+    "facing=south,has_book=false": { "model": "ancientwarfare:block/research_station", "y": 180 },
+    "facing=west,has_book=false": { "model": "ancientwarfare:block/research_station", "y": 270 },
+    "facing=north,has_book=true": { "model": "ancientwarfare:block/research_station_has_book" },
+    "facing=east,has_book=true": { "model": "ancientwarfare:block/research_station_has_book", "y": 90 },
+    "facing=south,has_book=true": { "model": "ancientwarfare:block/research_station_has_book", "y": 180 },
+    "facing=west,has_book=true": { "model": "ancientwarfare:block/research_station_has_book", "y": 270 }
+  }
+}

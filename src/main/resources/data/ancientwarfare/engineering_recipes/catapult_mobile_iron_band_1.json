@@ -1,0 +1,30 @@
+{
+    "required_research":  "siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:treated_wood"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:torsion_unit"
+                                           },
+                            "count":  3
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        },
+                        {
+                            "item":  "ancientwarfare:mobility_unit"
+                        },
+                        {
+                            "item":  "ancientwarfare:turret_components"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:catapult_mobile_iron_band_1"
+               }
+}

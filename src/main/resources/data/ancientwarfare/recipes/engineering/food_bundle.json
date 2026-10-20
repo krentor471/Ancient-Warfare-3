@@ -1,0 +1,36 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "leadership",
+    "pattern":  [
+                    "AP ",
+                    "BF ",
+                    "WC "
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:cooked_porkchop"
+                      },
+                "A":  {
+                          "item":  "minecraft:apple"
+                      },
+                "B":  {
+                          "item":  "minecraft:bread"
+                      },
+                "C":  {
+                          "item":  "minecraft:cooked_chicken"
+                      },
+                "F":  {
+                          "item":  "minecraft:cooked_beef"
+                      },
+                "W":  {
+                          "ingredient":  {
+                                             "item":  "minecraft:potion"
+                                         },
+                          "count":  1,
+                          "nbt":  "{\"Potion\":\"minecraft:water\"}"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:food_bundle"
+               }
+}

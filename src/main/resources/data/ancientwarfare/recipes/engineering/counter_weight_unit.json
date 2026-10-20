@@ -1,0 +1,28 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "theory_of_gravity",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:stone_tool_materials"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  4
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:counter_weight_unit"
+               }
+}

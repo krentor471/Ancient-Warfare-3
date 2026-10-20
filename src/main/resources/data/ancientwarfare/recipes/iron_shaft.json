@@ -1,0 +1,18 @@
+{
+    "pattern":  [
+                    " P ",
+                    " P ",
+                    " P "
+                ],
+    "show_notification":  true,
+    "type":  "minecraft:crafting_shaped",
+    "key":  {
+                "P":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "category":  "misc",
+    "result":  {
+                   "item":  "ancientwarfare:iron_shaft"
+               }
+}

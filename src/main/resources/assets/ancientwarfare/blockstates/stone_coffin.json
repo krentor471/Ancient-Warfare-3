@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/stone_coffin", "y": 180 },
+    "facing=south": { "model": "ancientwarfare:block/stone_coffin" },
+    "facing=west": { "model": "ancientwarfare:block/stone_coffin", "y": 90 },
+    "facing=east": { "model": "ancientwarfare:block/stone_coffin", "y": 270 }
+  }
+}

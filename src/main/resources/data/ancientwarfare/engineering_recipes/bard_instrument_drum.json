@@ -1,0 +1,22 @@
+{
+    "required_research":  "leadership",
+    "pattern":  [
+                    "PLP",
+                    " P ",
+                    "   "
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "minecraft:planks"
+                      },
+                "L":  {
+                          "item":  "minecraft:leather"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:bard_instrument",
+                   "tag":  {
+                               "instrument":  "drum"
+                           }
+               }
+}

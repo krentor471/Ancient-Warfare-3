@@ -1,0 +1,27 @@
+{
+    "required_research":  "siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "item":  "ancientwarfare:treated_wood"
+                        },
+                        {
+                            "item":  "ancientwarfare:mobility_unit"
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "item":  "ancientwarfare:counter_weight_unit"
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:battering_ram_iron_band_1"
+               }
+}

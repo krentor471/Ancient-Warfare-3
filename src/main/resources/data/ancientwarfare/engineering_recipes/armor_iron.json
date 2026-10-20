@@ -1,0 +1,15 @@
+{
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  5
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:armor_iron"
+               }
+}

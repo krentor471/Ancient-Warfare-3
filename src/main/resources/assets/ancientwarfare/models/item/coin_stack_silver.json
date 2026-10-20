@@ -1,0 +1,138 @@
+{
+  "parent": "ancientwarfare:block/coin_stack_8_silver",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        2.5,
+        0
+      ],
+      "scale": [
+        0.375,
+        0.375,
+        0.375
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        2.5,
+        0
+      ],
+      "scale": [
+        0.375,
+        0.375,
+        0.375
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        3,
+        0
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.625,
+        0.625,
+        0.625
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "ancientwarfare:coin_stack_size": 0.25
+      },
+      "model": "ancientwarfare:block/coin_stack_16_silver"
+    },
+    {
+      "predicate": {
+        "ancientwarfare:coin_stack_size": 0.375
+      },
+      "model": "ancientwarfare:block/coin_stack_24_silver"
+    },
+    {
+      "predicate": {
+        "ancientwarfare:coin_stack_size": 0.5
+      },
+      "model": "ancientwarfare:block/coin_stack_32_silver"
+    },
+    {
+      "predicate": {
+        "ancientwarfare:coin_stack_size": 0.625
+      },
+      "model": "ancientwarfare:block/coin_stack_40_silver"
+    },
+    {
+      "predicate": {
+        "ancientwarfare:coin_stack_size": 0.75
+      },
+      "model": "ancientwarfare:block/coin_stack_48_silver"
+    },
+    {
+      "predicate": {
+        "ancientwarfare:coin_stack_size": 0.875
+      },
+      "model": "ancientwarfare:block/coin_stack_56_silver"
+    },
+    {
+      "predicate": {
+        "ancientwarfare:coin_stack_size": 1.0
+      },
+      "model": "ancientwarfare:block/coin_stack_64_silver"
+    }
+  ]
+}

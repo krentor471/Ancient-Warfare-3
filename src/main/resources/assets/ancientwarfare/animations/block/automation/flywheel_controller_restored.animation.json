@@ -1,0 +1,53 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.ancientwarfare.flywheel_controller.run": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {
+        "inputGear": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              360
+            ]
+          }
+        },
+        "outputGear": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              360
+            ]
+          }
+        },
+        "spindle": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "2": [
+              0,
+              360,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

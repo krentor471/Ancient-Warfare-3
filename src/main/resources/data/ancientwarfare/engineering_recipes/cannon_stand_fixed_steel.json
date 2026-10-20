@@ -1,0 +1,24 @@
+{
+    "required_research":  "advanced_siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:major_alloy"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:powder_case"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:cannon_stand_fixed_steel"
+               }
+}

@@ -1,0 +1,17 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:clay_casing"
+                                           },
+                            "count":  6
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ammo_stone_shot_45",
+                   "count":  10
+               }
+}

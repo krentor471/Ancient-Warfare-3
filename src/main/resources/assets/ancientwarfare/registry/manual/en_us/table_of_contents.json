@@ -1,0 +1,69 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "table_of_contents",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "Treatise on the Principles of Ruling",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "Look up items and facilities to learn their purpose, acquisition, operation and limits. Click a chapter to open its index."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Research",
+          "category_link": "research"
+        },
+        {
+          "text": "Torque",
+          "category_link": "torque"
+        },
+        {
+          "text": "Automated Worksites",
+          "category_link": "machines"
+        },
+        {
+          "text": "Warehouse",
+          "category_link": "warehouse"
+        },
+        {
+          "text": "NPCs",
+          "category_link": "npcs"
+        },
+        {
+          "text": "Tribes and Nations",
+          "category_link": "factions"
+        },
+        {
+          "text": "Structures",
+          "category_link": "structures"
+        },
+        {
+          "text": "Decorative Blocks",
+          "category_link": "decoration"
+        },
+        {
+          "text": "Vehicles",
+          "category_link": "vehicles"
+        },
+        {
+          "text": "Mod Integrations",
+          "category_link": "integrations"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Turn pages with the bottom arrows, the mouse wheel or the left/right arrow keys. Contents returns to the chapter list, Chapter Index returns to the current chapter index, and Back returns to the location before your last jump."
+    },
+    {
+      "content_type": "text",
+      "text": "Instructions use the current default recipes and key bindings. If a server changes data or you rebind controls, follow your actual settings."
+    }
+  ]
+}

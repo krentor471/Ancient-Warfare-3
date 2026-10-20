@@ -1,0 +1,6 @@
+{
+    "parent": "ancientwarfare:item/wooden_spear",
+    "textures": {
+        "0": "ancientwarfare:item/golden_spear"
+    }
+}

@@ -1,0 +1,430 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "decoration",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "八 装饰方块",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "桌椅与王座",
+          "category_link": "decoration",
+          "anchor": "entry_067"
+        },
+        {
+          "text": "火坑与火盆",
+          "category_link": "decoration",
+          "anchor": "entry_068"
+        },
+        {
+          "text": "祭坛布与祭坛蜡烛",
+          "category_link": "decoration",
+          "anchor": "entry_069"
+        },
+        {
+          "text": "祭坛与黄金神像",
+          "category_link": "decoration",
+          "anchor": "entry_070"
+        },
+        {
+          "text": "图腾与神像组件",
+          "category_link": "decoration",
+          "anchor": "entry_071"
+        },
+        {
+          "text": "墓碑",
+          "category_link": "decoration",
+          "anchor": "entry_072"
+        },
+        {
+          "text": "棺材骨灰瓮与战利品篮",
+          "category_link": "decoration",
+          "anchor": "entry_073"
+        },
+        {
+          "text": "铁笼刑架与木桩",
+          "category_link": "decoration",
+          "anchor": "entry_074"
+        },
+        {
+          "text": "铜币堆银币堆金币堆与古代硬币堆",
+          "category_link": "decoration",
+          "anchor": "entry_075"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "装饰方块用来布置城镇、营地、宗教场所与墓地。多数条目只提供外观与碰撞；少数具有照明、容器或硬币堆叠交互，需要分别使用。"
+    },
+    {
+      "content_type": "heading",
+      "text": "桌椅与王座",
+      "level": 2,
+      "anchor": "entry_067"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:table"
+        },
+        {
+          "name": "ancientwarfare:chair"
+        },
+        {
+          "name": "ancientwarfare:stool"
+        },
+        {
+          "name": "ancientwarfare:bench"
+        },
+        {
+          "name": "ancientwarfare:scissor_seat"
+        },
+        {
+          "name": "ancientwarfare:tribal_stool"
+        },
+        {
+          "name": "ancientwarfare:tribal_chair"
+        },
+        {
+          "name": "ancientwarfare:wooden_throne"
+        },
+        {
+          "name": "ancientwarfare:golden_throne"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "桌子、椅子、矮凳、长凳、剪式座椅、部落家具和王座用于室内布置。放置时注意朝向，较高或多部分家具需要留足空间。"
+    },
+    {
+      "content_type": "text",
+      "text": "当前普通座椅类没有坐下交互。王座不会授予玩家统治权，桌椅也不会自动成为 NPC 工作站；它们的主要用途是造景。"
+    },
+    {
+      "content_type": "heading",
+      "text": "火坑与火盆",
+      "level": 2,
+      "anchor": "entry_068"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:fire_pit"
+        },
+        {
+          "name": "ancientwarfare:fire_pit_log"
+        },
+        {
+          "name": "ancientwarfare:fire_pit_square"
+        },
+        {
+          "name": "ancientwarfare:brazier_flame"
+        },
+        {
+          "name": "ancientwarfare:brazier_ember"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：火坑、原木火坑、方形火坑：工作台，无前置研究要求。本组其余变体不共用上述直接配方。"
+    },
+    {
+      "content_type": "text",
+      "text": "火坑、原木火坑、方形火坑和烈焰火盆提供较亮的装饰照明，余烬火盆的光线较弱，适合营地和室内场景。"
+    },
+    {
+      "content_type": "text",
+      "text": "这些已点燃外观的方块按自身设定发光，不需要在手册中增加一套并不存在的通用打火石点燃流程。它们也不是斯特林发电机的燃料入口或烹饪机器。"
+    },
+    {
+      "content_type": "heading",
+      "text": "祭坛布与祭坛蜡烛",
+      "level": 2,
+      "anchor": "entry_069"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:altar_short_cloth"
+        },
+        {
+          "name": "ancientwarfare:altar_long_cloth"
+        },
+        {
+          "name": "ancientwarfare:altar_candle"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "短祭坛布、长祭坛布与祭坛蜡烛用于布置祭坛。模板或物品数据可携带相应外观信息，使用时留意已有样式，避免把所有变体看作完全相同的物品。"
+    },
+    {
+      "content_type": "text",
+      "text": "祭坛蜡烛提供照明，祭坛布主要用于装饰。它们不会自行研究、施法、改变阵营关系或触发 NPC 复活。"
+    },
+    {
+      "content_type": "heading",
+      "text": "祭坛与黄金神像",
+      "level": 2,
+      "anchor": "entry_070"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:altar_lectern"
+        },
+        {
+          "name": "ancientwarfare:altar_sun"
+        },
+        {
+          "name": "ancientwarfare:golden_idol"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "祭坛讲台、太阳祭坛和黄金神像用于宗教或仪式场景。按建筑朝向放置，为较高神像预留上方空间。"
+    },
+    {
+      "content_type": "text",
+      "text": "这些方块不是研究站或附魔设施。仅凭物品名字中的祭坛和神像，不能推断存在献祭、召唤或增益系统。"
+    },
+    {
+      "content_type": "heading",
+      "text": "图腾与神像组件",
+      "level": 2,
+      "anchor": "entry_071"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:orc_totem_1"
+        },
+        {
+          "name": "ancientwarfare:orc_totem_2"
+        },
+        {
+          "name": "ancientwarfare:orc_totem_2_lit"
+        },
+        {
+          "name": "ancientwarfare:goblin_totem_1"
+        },
+        {
+          "name": "ancientwarfare:goblin_totem_2"
+        },
+        {
+          "name": "ancientwarfare:goblin_totem_2_lit"
+        },
+        {
+          "name": "ancientwarfare:totem_part_base"
+        },
+        {
+          "name": "ancientwarfare:totem_part_mid"
+        },
+        {
+          "name": "ancientwarfare:totem_part_top"
+        },
+        {
+          "name": "ancientwarfare:totem_part_wings"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：图腾底座、图腾中部、图腾顶部：工作台，无前置研究要求。本组其余变体不共用上述直接配方。"
+    },
+    {
+      "content_type": "text",
+      "text": "兽人和哥布林图腾有普通与发光样式；分段图腾则包含底座、中部、顶部、翅膀，以及伊尔明苏尔、象神像和索尔泰克神像组件。"
+    },
+    {
+      "content_type": "text",
+      "text": "各组件按造型拼接成完整装饰，并不因连接完整就自动变成机器。发光变体与普通变体是不同条目，选取时应看清名称。"
+    },
+    {
+      "content_type": "heading",
+      "text": "墓碑",
+      "level": 2,
+      "anchor": "entry_072"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:gravestone_1"
+        },
+        {
+          "name": "ancientwarfare:gravestone_2"
+        },
+        {
+          "name": "ancientwarfare:gravestone_3"
+        },
+        {
+          "name": "ancientwarfare:gravestone_4"
+        },
+        {
+          "name": "ancientwarfare:gravestone_5"
+        },
+        {
+          "name": "ancientwarfare:gravestone_6"
+        },
+        {
+          "name": "ancientwarfare:gravestone_7"
+        },
+        {
+          "name": "ancientwarfare:gravestone_8"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "八种墓碑用于墓园和遗迹布置。选择外形并按朝向放置即可，不承担玩家死亡物品保管或 NPC 复活记录功能。"
+    },
+    {
+      "content_type": "text",
+      "text": "需要处理己方 NPC 复活时，应使用第五章介绍的市政厅与牧师机制，而不是把墓碑摆在死亡位置。"
+    },
+    {
+      "content_type": "heading",
+      "text": "棺材骨灰瓮与战利品篮",
+      "level": 2,
+      "anchor": "entry_073"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_coffin"
+        },
+        {
+          "name": "ancientwarfare:stone_coffin"
+        },
+        {
+          "name": "ancientwarfare:urn"
+        },
+        {
+          "name": "ancientwarfare:loot_basket"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "木棺、石棺、骨灰瓮和战利品篮带有容器功能，可以打开并存放实际物品。它们可以兼顾场景外观与存储用途。"
+    },
+    {
+      "content_type": "text",
+      "text": "外观像战利品容器不代表会无限刷新奖励。拆除或搬迁前先处理内部物品；它们也不自动计入仓库储物仓，仓库的识别规则见第四章。"
+    },
+    {
+      "content_type": "heading",
+      "text": "铁笼刑架与木桩",
+      "level": 2,
+      "anchor": "entry_074"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:iron_cage"
+        },
+        {
+          "name": "ancientwarfare:gibbet"
+        },
+        {
+          "name": "ancientwarfare:wooden_post"
+        },
+        {
+          "name": "ancientwarfare:stretching_rack"
+        },
+        {
+          "name": "ancientwarfare:stake"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "铁笼、绞刑笼、木柱、刑架和木桩用于牢房、营地或刑场造景，其中一些由多个部分占据空间，放置前应预留完整位置。"
+    },
+    {
+      "content_type": "text",
+      "text": "这些外观不代表已有完整的抓捕、囚禁或审讯系统。不能只把笼子摆在 NPC 附近，就期待它改变该 NPC 的所属阵营和行为。"
+    },
+    {
+      "content_type": "heading",
+      "text": "铜币堆银币堆金币堆与古代硬币堆",
+      "level": 2,
+      "anchor": "entry_075"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:coin_stack_copper"
+        },
+        {
+          "name": "ancientwarfare:coin_stack_silver"
+        },
+        {
+          "name": "ancientwarfare:coin_stack_gold"
+        },
+        {
+          "name": "ancientwarfare:coin_stack_ancient"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工作台，无前置研究要求。"
+    },
+    {
+      "content_type": "text",
+      "text": "币堆用于摆放和收取对应币种。每堆以八枚为一级，从 8 枚增加到 64 枚。手持至少八枚同种硬币右键，可以在未满时增加一级并消耗八枚。"
+    },
+    {
+      "content_type": "text",
+      "text": "空手或持非匹配硬币的物品右键，会取回八枚；只剩八枚时会移除币堆。拆除也按对应币种返还硬币。币堆不会产钱，四种币种不能借此互相转换。"
+    }
+  ]
+}

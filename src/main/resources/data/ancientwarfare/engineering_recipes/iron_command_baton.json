@@ -1,0 +1,19 @@
+{
+    "required_research":  "command",
+    "pattern":  [
+                    "  I",
+                    " I ",
+                    "S  "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:iron_command_baton"
+               }
+}

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/auto_crafting" },
+    "facing=east": { "model": "ancientwarfare:block/auto_crafting", "y": 90 },
+    "facing=south": { "model": "ancientwarfare:block/auto_crafting", "y": 180 },
+    "facing=west": { "model": "ancientwarfare:block/auto_crafting", "y": 270 }
+  }
+}

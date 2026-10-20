@@ -1,0 +1,21 @@
+{
+    "required_research":  "siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:treated_wood"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "item":  "ancientwarfare:powder_case"
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:hwacha_iron_band_1"
+               }
+}

@@ -1,0 +1,1 @@
+{"variants":{"bridge=false,open=false":{"model":"ancientwarfare:block/empty"},"bridge=false,open=true":{"model":"ancientwarfare:block/empty"},"bridge=true,open=false":{"model":"ancientwarfare:block/empty"},"bridge=true,open=true":{"model":"ancientwarfare:block/empty"}}}

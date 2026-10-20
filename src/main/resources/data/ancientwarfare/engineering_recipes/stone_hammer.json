@@ -1,0 +1,19 @@
+{
+    "required_research":  "engineering",
+    "pattern":  [
+                    "MSM",
+                    " S ",
+                    " S "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "M":  {
+                          "item":  "minecraft:stone"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:stone_hammer"
+               }
+}

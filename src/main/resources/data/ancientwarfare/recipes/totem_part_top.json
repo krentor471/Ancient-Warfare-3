@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["WBY", "RLE", "FLF"],
+  "key": { "B": { "item": "minecraft:black_dye" }, "W": { "item": "minecraft:white_dye" }, "R": { "item": "minecraft:red_dye" }, "Y": { "item": "minecraft:yellow_dye" }, "E": { "item": "minecraft:blue_dye" }, "L": { "tag": "minecraft:logs" }, "F": { "item": "minecraft:feather" } },
+  "result": { "item": "ancientwarfare:totem_part_top" }
+}

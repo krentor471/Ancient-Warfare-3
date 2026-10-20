@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "trade",
+    "pattern":  [
+                    "D  ",
+                    "P  ",
+                    "W  "
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:paper"
+                      },
+                "D":  {
+                          "item":  "minecraft:light_gray_dye"
+                      },
+                "W":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:routing_order"
+               }
+}

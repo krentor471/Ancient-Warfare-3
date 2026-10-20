@@ -1,0 +1,25 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:planks"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  3
+                        },
+                        {
+                            "item":  "minecraft:piston"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:vehicle_upgrade_turret_pitch"
+               }
+}

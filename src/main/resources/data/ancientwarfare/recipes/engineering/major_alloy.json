@@ -1,0 +1,35 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/gold"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:redstone"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:coal"
+                                           },
+                            "count":  8
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:major_alloy",
+                   "count":  8
+               }
+}

@@ -1,0 +1,18 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:paper"
+                                           },
+                            "count":  3
+                        },
+                        {
+                            "tag":  "minecraft:planks"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:vehicle_upgrade_aim"
+               }
+}

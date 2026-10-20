@@ -1,0 +1,28 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:cluster_charge"
+                                           },
+                            "count":  6
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:explosive_charge"
+                                           },
+                            "count":  6
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:clay_casing"
+                                           },
+                            "count":  6
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ammo_pebble_shot_45",
+                   "count":  4
+               }
+}

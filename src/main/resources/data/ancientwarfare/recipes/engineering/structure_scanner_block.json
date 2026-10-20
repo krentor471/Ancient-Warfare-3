@@ -1,0 +1,18 @@
+{
+  "type": "ancientwarfare:engineering",
+  "required_research": "construction",
+  "pattern": [
+    "IPI",
+    "CSC",
+    "I I"
+  ],
+  "key": {
+    "I": { "tag": "forge:ingots/iron" },
+    "P": { "item": "minecraft:paper" },
+    "C": { "tag": "forge:chests/wooden" },
+    "S": { "item": "ancientwarfare:structure_scanner" }
+  },
+  "result": {
+    "item": "ancientwarfare:structure_scanner_block"
+  }
+}

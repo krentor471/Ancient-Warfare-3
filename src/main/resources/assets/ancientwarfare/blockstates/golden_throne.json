@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,half=lower": { "model": "ancientwarfare:block/golden_throne_bottom", "y": 180 },
+    "facing=south,half=lower": { "model": "ancientwarfare:block/golden_throne_bottom" },
+    "facing=west,half=lower": { "model": "ancientwarfare:block/golden_throne_bottom", "y": 90 },
+    "facing=east,half=lower": { "model": "ancientwarfare:block/golden_throne_bottom", "y": 270 },
+    "facing=north,half=upper": { "model": "ancientwarfare:block/golden_throne_top", "y": 180 },
+    "facing=south,half=upper": { "model": "ancientwarfare:block/golden_throne_top" },
+    "facing=west,half=upper": { "model": "ancientwarfare:block/golden_throne_top", "y": 90 },
+    "facing=east,half=upper": { "model": "ancientwarfare:block/golden_throne_top", "y": 270 }
+  }
+}

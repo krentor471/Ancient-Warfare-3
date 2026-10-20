@@ -1,0 +1,169 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.ancientwarfare.flywheel_storage_small_bottom_windows",
+        "texture_width": 128,
+        "texture_height": 128,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2.1875,
+        "visible_bounds_offset": [
+          0,
+          0.59375,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "windowLower",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -7,
+                3,
+                7.5
+              ],
+              "size": [
+                14,
+                10,
+                0
+              ],
+              "uv": [
+                0,
+                74
+              ]
+            },
+            {
+              "origin": [
+                -7,
+                3,
+                -7.5
+              ],
+              "size": [
+                14,
+                10,
+                0
+              ],
+              "uv": [
+                30,
+                74
+              ]
+            },
+            {
+              "origin": [
+                7.5,
+                3,
+                -7
+              ],
+              "size": [
+                0,
+                10,
+                14
+              ],
+              "uv": [
+                60,
+                61
+              ]
+            },
+            {
+              "origin": [
+                -7.5,
+                3,
+                -7
+              ],
+              "size": [
+                0,
+                10,
+                14
+              ],
+              "uv": [
+                90,
+                61
+              ]
+            }
+          ]
+        },
+        {
+          "name": "windowUpper",
+          "pivot": [
+            0,
+            10,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -7,
+                13,
+                7.5
+              ],
+              "size": [
+                14,
+                6,
+                0
+              ],
+              "uv": [
+                0,
+                85
+              ]
+            },
+            {
+              "origin": [
+                -7,
+                13,
+                -7.5
+              ],
+              "size": [
+                14,
+                6,
+                0
+              ],
+              "uv": [
+                30,
+                85
+              ]
+            },
+            {
+              "origin": [
+                7.5,
+                13,
+                -7
+              ],
+              "size": [
+                0,
+                6,
+                14
+              ],
+              "uv": [
+                60,
+                85
+              ]
+            },
+            {
+              "origin": [
+                -7.5,
+                13,
+                -7
+              ],
+              "size": [
+                0,
+                6,
+                14
+              ],
+              "uv": [
+                90,
+                85
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

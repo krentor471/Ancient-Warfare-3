@@ -1,0 +1,27 @@
+{
+    "required_research":  "advanced_siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:minor_alloy"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:powder_case"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        },
+                        {
+                            "item":  "ancientwarfare:mobility_unit"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:cannon_mobile_iron"
+               }
+}

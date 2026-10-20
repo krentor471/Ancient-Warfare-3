@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "engineering",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:planks"
+                                           },
+                            "count":  4
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:iron_core_wood",
+                   "count":  8
+               }
+}

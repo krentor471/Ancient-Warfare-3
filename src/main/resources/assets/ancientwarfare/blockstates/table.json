@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    { "apply": { "model": "ancientwarfare:block/table_top" } },
+    { "when": { "leg_northeast": "true" }, "apply": { "model": "ancientwarfare:block/table_leg" } },
+    { "when": { "leg_northwest": "true" }, "apply": { "model": "ancientwarfare:block/table_leg", "y": 270 } },
+    { "when": { "leg_southeast": "true" }, "apply": { "model": "ancientwarfare:block/table_leg", "y": 90 } },
+    { "when": { "leg_southwest": "true" }, "apply": { "model": "ancientwarfare:block/table_leg", "y": 180 } }
+  ]
+}

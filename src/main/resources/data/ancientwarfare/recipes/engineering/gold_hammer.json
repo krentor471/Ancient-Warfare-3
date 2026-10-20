@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "engineering",
+    "pattern":  [
+                    "MSM",
+                    " S ",
+                    " S "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "M":  {
+                          "tag":  "forge:ingots/gold"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:gold_hammer"
+               }
+}

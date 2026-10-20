@@ -1,0 +1,21 @@
+{
+    "type":  "minecraft:crafting_shaped",
+    "category":  "combat",
+    "pattern":  [
+                    " # ",
+                    " # ",
+                    "#S#"
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "#":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:wooden_lance"
+               },
+    "show_notification":  true
+}

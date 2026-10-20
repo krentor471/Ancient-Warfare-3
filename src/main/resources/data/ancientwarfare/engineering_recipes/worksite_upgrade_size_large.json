@@ -1,0 +1,19 @@
+{
+    "required_research":  "mathematics",
+    "pattern":  [
+                    "FFF",
+                    "SSS",
+                    "FFF"
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:string"
+                      },
+                "F":  {
+                          "tag":  "minecraft:wooden_fences"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:worksite_upgrade_size_large"
+               }
+}

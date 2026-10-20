@@ -1,0 +1,430 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "decoration",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "VIII. Decorative Blocks",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Tables, Seats and Thrones",
+          "category_link": "decoration",
+          "anchor": "entry_067"
+        },
+        {
+          "text": "Fire Pits and Braziers",
+          "category_link": "decoration",
+          "anchor": "entry_068"
+        },
+        {
+          "text": "Altar Cloths and Candles",
+          "category_link": "decoration",
+          "anchor": "entry_069"
+        },
+        {
+          "text": "Altars and Golden Idol",
+          "category_link": "decoration",
+          "anchor": "entry_070"
+        },
+        {
+          "text": "Totems and Idol Components",
+          "category_link": "decoration",
+          "anchor": "entry_071"
+        },
+        {
+          "text": "Gravestones",
+          "category_link": "decoration",
+          "anchor": "entry_072"
+        },
+        {
+          "text": "Coffins, Urn and Loot Basket",
+          "category_link": "decoration",
+          "anchor": "entry_073"
+        },
+        {
+          "text": "Cages, Racks and Stakes",
+          "category_link": "decoration",
+          "anchor": "entry_074"
+        },
+        {
+          "text": "Copper, Silver, Gold and Ancient Coin Stacks",
+          "category_link": "decoration",
+          "anchor": "entry_075"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Decorative blocks furnish towns, camps, religious sites and graveyards. Most provide only appearance and collision; a few have lighting, container or coin-stacking interactions and should be used accordingly."
+    },
+    {
+      "content_type": "heading",
+      "text": "Tables, Seats and Thrones",
+      "level": 2,
+      "anchor": "entry_067"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:table"
+        },
+        {
+          "name": "ancientwarfare:chair"
+        },
+        {
+          "name": "ancientwarfare:stool"
+        },
+        {
+          "name": "ancientwarfare:bench"
+        },
+        {
+          "name": "ancientwarfare:scissor_seat"
+        },
+        {
+          "name": "ancientwarfare:tribal_stool"
+        },
+        {
+          "name": "ancientwarfare:tribal_chair"
+        },
+        {
+          "name": "ancientwarfare:wooden_throne"
+        },
+        {
+          "name": "ancientwarfare:golden_throne"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "Tables, Chairs, Stools, Benches, Scissor Seats, tribal furniture and Thrones furnish interiors. Check facing and leave room for tall or multipart furniture."
+    },
+    {
+      "content_type": "text",
+      "text": "Ordinary seats currently have no sit interaction. Thrones grant no ruling authority, and furniture does not automatically become an NPC worksite. Their main purpose is decoration."
+    },
+    {
+      "content_type": "heading",
+      "text": "Fire Pits and Braziers",
+      "level": 2,
+      "anchor": "entry_068"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:fire_pit"
+        },
+        {
+          "name": "ancientwarfare:fire_pit_log"
+        },
+        {
+          "name": "ancientwarfare:fire_pit_square"
+        },
+        {
+          "name": "ancientwarfare:brazier_flame"
+        },
+        {
+          "name": "ancientwarfare:brazier_ember"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Fire Pit, Log Fire Pit and Square Fire Pit use the crafting table with no research prerequisite. Other variants in this group do not share those direct recipes."
+    },
+    {
+      "content_type": "text",
+      "text": "Fire Pits, Log Fire Pits, Square Fire Pits and flaming Braziers provide bright decorative light. Ember Braziers emit weaker light for camps and interiors."
+    },
+    {
+      "content_type": "text",
+      "text": "These lit-looking blocks emit light according to their settings; there is no universal Flint and Steel ignition workflow to add. They are not fuel inputs for Stirling Generators or cooking machines."
+    },
+    {
+      "content_type": "heading",
+      "text": "Altar Cloths and Candles",
+      "level": 2,
+      "anchor": "entry_069"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:altar_short_cloth"
+        },
+        {
+          "name": "ancientwarfare:altar_long_cloth"
+        },
+        {
+          "name": "ancientwarfare:altar_candle"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "Short and Long Altar Cloths and Altar Candles decorate altars. Templates or item data may carry appearance information. Preserve the chosen style rather than treating every variant as identical."
+    },
+    {
+      "content_type": "text",
+      "text": "Altar Candles provide light and cloths are mainly decorative. They do not research, cast spells, change faction relations or trigger NPC resurrection."
+    },
+    {
+      "content_type": "heading",
+      "text": "Altars and Golden Idol",
+      "level": 2,
+      "anchor": "entry_070"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:altar_lectern"
+        },
+        {
+          "name": "ancientwarfare:altar_sun"
+        },
+        {
+          "name": "ancientwarfare:golden_idol"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "Altar Lecterns, Sun Altars and the Golden Idol suit religious or ceremonial scenes. Place them to match the building's facing and leave overhead space for tall idols."
+    },
+    {
+      "content_type": "text",
+      "text": "They are not Research Stations or enchanting facilities. Names such as altar or idol do not imply sacrifice, summoning or buff systems."
+    },
+    {
+      "content_type": "heading",
+      "text": "Totems and Idol Components",
+      "level": 2,
+      "anchor": "entry_071"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:orc_totem_1"
+        },
+        {
+          "name": "ancientwarfare:orc_totem_2"
+        },
+        {
+          "name": "ancientwarfare:orc_totem_2_lit"
+        },
+        {
+          "name": "ancientwarfare:goblin_totem_1"
+        },
+        {
+          "name": "ancientwarfare:goblin_totem_2"
+        },
+        {
+          "name": "ancientwarfare:goblin_totem_2_lit"
+        },
+        {
+          "name": "ancientwarfare:totem_part_base"
+        },
+        {
+          "name": "ancientwarfare:totem_part_mid"
+        },
+        {
+          "name": "ancientwarfare:totem_part_top"
+        },
+        {
+          "name": "ancientwarfare:totem_part_wings"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Totem Base, Middle and Top use the crafting table with no research prerequisite. Other variants in this group do not share those direct recipes."
+    },
+    {
+      "content_type": "text",
+      "text": "Orc and Goblin Totems have ordinary and lit variants. Multipart decorations include Totem Base, Middle, Top and Wings, plus Irminsul, Elephant Idol and Xoltec Idol components."
+    },
+    {
+      "content_type": "text",
+      "text": "Assemble matching components for a complete decoration; completing the shape does not turn it into a machine. Lit and ordinary variants are separate entries, so read their names."
+    },
+    {
+      "content_type": "heading",
+      "text": "Gravestones",
+      "level": 2,
+      "anchor": "entry_072"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:gravestone_1"
+        },
+        {
+          "name": "ancientwarfare:gravestone_2"
+        },
+        {
+          "name": "ancientwarfare:gravestone_3"
+        },
+        {
+          "name": "ancientwarfare:gravestone_4"
+        },
+        {
+          "name": "ancientwarfare:gravestone_5"
+        },
+        {
+          "name": "ancientwarfare:gravestone_6"
+        },
+        {
+          "name": "ancientwarfare:gravestone_7"
+        },
+        {
+          "name": "ancientwarfare:gravestone_8"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "Eight Gravestone styles decorate graveyards and ruins. Choose a shape and place it with the desired facing. They do not store player death items or record NPC resurrection tasks."
+    },
+    {
+      "content_type": "text",
+      "text": "To resurrect allied NPCs, use the Town Hall and Priest system in Chapter V, not a Gravestone at the death position."
+    },
+    {
+      "content_type": "heading",
+      "text": "Coffins, Urn and Loot Basket",
+      "level": 2,
+      "anchor": "entry_073"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_coffin"
+        },
+        {
+          "name": "ancientwarfare:stone_coffin"
+        },
+        {
+          "name": "ancientwarfare:urn"
+        },
+        {
+          "name": "ancientwarfare:loot_basket"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "Wooden and Stone Coffins, the Urn and Loot Basket are containers that can be opened to store real items. They combine decorative appearance with storage."
+    },
+    {
+      "content_type": "text",
+      "text": "A loot-container appearance does not imply endlessly refreshing rewards. Handle contents before removing or moving them. They are not automatically Warehouse Storage; see Chapter IV for warehouse recognition."
+    },
+    {
+      "content_type": "heading",
+      "text": "Cages, Racks and Stakes",
+      "level": 2,
+      "anchor": "entry_074"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:iron_cage"
+        },
+        {
+          "name": "ancientwarfare:gibbet"
+        },
+        {
+          "name": "ancientwarfare:wooden_post"
+        },
+        {
+          "name": "ancientwarfare:stretching_rack"
+        },
+        {
+          "name": "ancientwarfare:stake"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "Iron Cages, Gibbet Cages, Wooden Posts, Racks and Stakes decorate prisons, camps and execution grounds. Some occupy multiple parts of space; leave room for the whole structure."
+    },
+    {
+      "content_type": "text",
+      "text": "Their appearance does not provide a complete capture, imprisonment or interrogation system. Placing a cage near an NPC does not change its faction or behavior."
+    },
+    {
+      "content_type": "heading",
+      "text": "Copper, Silver, Gold and Ancient Coin Stacks",
+      "level": 2,
+      "anchor": "entry_075"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:coin_stack_copper"
+        },
+        {
+          "name": "ancientwarfare:coin_stack_silver"
+        },
+        {
+          "name": "ancientwarfare:coin_stack_gold"
+        },
+        {
+          "name": "ancientwarfare:coin_stack_ancient"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: crafting table; no research prerequisite."
+    },
+    {
+      "content_type": "text",
+      "text": "Coin Stacks let you place and recover the corresponding coins. Each level holds eight coins, from 8 to 64 per stack. Right-click with at least eight matching coins to add a level to a non-full stack, consuming eight."
+    },
+    {
+      "content_type": "text",
+      "text": "Right-click with an empty hand or a non-matching item to recover eight coins; the stack disappears when its last eight are taken. Breaking also returns matching coins. Stacks do not generate money or convert between the four currencies."
+    }
+  ]
+}

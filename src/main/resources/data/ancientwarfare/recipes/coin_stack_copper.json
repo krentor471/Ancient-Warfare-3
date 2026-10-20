@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["CCC", "C C", "CCC"],
+  "key": { "C": { "type": "forge:partial_nbt", "item": "ancientwarfare:coin", "nbt": { "metal": "copper" } } },
+  "result": { "item": "ancientwarfare:coin_stack_copper" }
+}

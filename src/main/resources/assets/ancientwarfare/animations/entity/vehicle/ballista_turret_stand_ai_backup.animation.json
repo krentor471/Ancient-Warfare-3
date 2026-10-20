@@ -1,0 +1,130 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.ancientwarfare.ballista_turret_stand.rotate_360": {
+      "animation_length": 2,
+      "loop": true,
+      "bones": {
+        "rotating_beam": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              180,
+              0
+            ],
+            "2": [
+              0,
+              360,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.ancientwarfare.ballista_turret_stand.pitch_up_30": {
+      "animation_length": 1,
+      "bones": {
+        "rotating_beam": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              30,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.ancientwarfare.ballista_turret_stand.pitch_down_15": {
+      "animation_length": 1,
+      "bones": {
+        "rotating_beam": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              -15,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.ancientwarfare.ballista_turret_stand.string_draw_and_release": {
+      "animation_length": 1.2,
+      "bones": {
+        "string_left_half": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.75": [
+              0,
+              -28,
+              0
+            ],
+            "1.2": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "string_right_half": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.75": [
+              0,
+              28,
+              0
+            ],
+            "1.2": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "trigger": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.85": [
+              -20,
+              0,
+              0
+            ],
+            "1.1": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

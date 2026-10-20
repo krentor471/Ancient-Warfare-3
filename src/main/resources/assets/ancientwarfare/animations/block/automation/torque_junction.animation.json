@@ -1,0 +1,95 @@
+{
+    "format_version":  "1.8.0",
+    "animations":  {
+                       "animation.torque_junction.spin":  {
+                                                              "loop":  true,
+                                                              "animation_length":  2,
+                                                              "bones":  {
+                                                                            "junction_east_rotating":  {
+                                                                                                           "rotation":  {
+                                                                                                                            "0":  [
+                                                                                                                                      0,
+                                                                                                                                      0,
+                                                                                                                                      0
+                                                                                                                                  ],
+                                                                                                                            "2":  [
+                                                                                                                                      -360,
+                                                                                                                                      0,
+                                                                                                                                      0
+                                                                                                                                  ]
+                                                                                                                        }
+                                                                                                       },
+                                                                            "junction_west_rotating":  {
+                                                                                                           "rotation":  {
+                                                                                                                            "0":  [
+                                                                                                                                      0,
+                                                                                                                                      0,
+                                                                                                                                      0
+                                                                                                                                  ],
+                                                                                                                            "2":  [
+                                                                                                                                      360,
+                                                                                                                                      0,
+                                                                                                                                      0
+                                                                                                                                  ]
+                                                                                                                        }
+                                                                                                       },
+                                                                            "junction_up_rotating":  {
+                                                                                                         "rotation":  {
+                                                                                                                          "0":  [
+                                                                                                                                    0,
+                                                                                                                                    0,
+                                                                                                                                    0
+                                                                                                                                ],
+                                                                                                                          "2":  [
+                                                                                                                                    0,
+                                                                                                                                    -360,
+                                                                                                                                    0
+                                                                                                                                ]
+                                                                                                                      }
+                                                                                                     },
+                                                                            "junction_down_rotating":  {
+                                                                                                           "rotation":  {
+                                                                                                                            "0":  [
+                                                                                                                                      0,
+                                                                                                                                      0,
+                                                                                                                                      0
+                                                                                                                                  ],
+                                                                                                                            "2":  [
+                                                                                                                                      0,
+                                                                                                                                      360,
+                                                                                                                                      0
+                                                                                                                                  ]
+                                                                                                                        }
+                                                                                                       },
+                                                                            "junction_north_rotating":  {
+                                                                                                            "rotation":  {
+                                                                                                                             "0":  [
+                                                                                                                                       0,
+                                                                                                                                       0,
+                                                                                                                                       0
+                                                                                                                                   ],
+                                                                                                                             "2":  [
+                                                                                                                                       0,
+                                                                                                                                       0,
+                                                                                                                                       -360
+                                                                                                                                   ]
+                                                                                                                         }
+                                                                                                        },
+                                                                            "junction_south_rotating":  {
+                                                                                                            "rotation":  {
+                                                                                                                             "0":  [
+                                                                                                                                       0,
+                                                                                                                                       0,
+                                                                                                                                       0
+                                                                                                                                   ],
+                                                                                                                             "2":  [
+                                                                                                                                       0,
+                                                                                                                                       0,
+                                                                                                                                       360
+                                                                                                                                   ]
+                                                                                                                         }
+                                                                                                        }
+                                                                        }
+                                                          }
+                   }
+}

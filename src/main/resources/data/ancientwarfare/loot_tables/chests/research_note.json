@@ -1,0 +1,371 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "name": "main",
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "advanced_siege_warfare",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"advanced_siege_warfare\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "agriculture",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"agriculture\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "animal_husbandry",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"animal_husbandry\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "ballistics",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"ballistics\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "chemistry",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"chemistry\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "combustion",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"combustion\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "command",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"command\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "conscription",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"conscription\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "construction",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"construction\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "engineering",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"engineering\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "explosives",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"explosives\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "farming",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"farming\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "fishing",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"fishing\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "gunpowder",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"gunpowder\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "invention",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"invention\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "leadership",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"leadership\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "machinery",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"machinery\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "mass_production",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"mass_production\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "mathematics",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"mathematics\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "mining",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"mining\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "naval_warfare",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"naval_warfare\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "navigation",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"navigation\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "refining",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"refining\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "rocketry",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"rocketry\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "seafaring",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"seafaring\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "siege_warfare",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"siege_warfare\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "tactics",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"tactics\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "theory_of_gravity",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"theory_of_gravity\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "the_wheel",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"the_wheel\"}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "ancientwarfare:research_note",
+          "entryName": "trade",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{researchName:\"trade\"}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+package net.shadowmage.ancientwarfare.core.client;
+
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
+import net.shadowmage.ancientwarfare.core.entity.BallistaTurretStandEntity;
+import software.bernie.geckolib.core.animatable.model.CoreGeoBone;
+import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.model.GeoModel;
+
+public class BallistaTurretStandGeoModel extends GeoModel<BallistaTurretStandEntity> {
+   private static final ResourceLocation MODEL = AWCoreIds.id("geo/entity/vehicle/ballista_turret_stand.geo.json");
+   private static final ResourceLocation ANIMATION = AWCoreIds.id("animations/entity/vehicle/ballista_turret_stand.animation.json");
+   private static final ResourceLocation[] TEXTURES = new ResourceLocation[]{
+      AWCoreIds.id("textures/entity/vehicle/ballista_turret_stand/ballista_turret_stand.png"),
+      AWCoreIds.id("textures/entity/vehicle/ballista_turret_stand/ballista_turret_stand_iron_band_1.png"),
+      AWCoreIds.id("textures/entity/vehicle/ballista_turret_stand/ballista_turret_stand_iron_band_2.png"),
+      AWCoreIds.id("textures/entity/vehicle/ballista_turret_stand/ballista_turret_stand_iron.png"),
+      AWCoreIds.id("textures/entity/vehicle/ballista_turret_stand/ballista_turret_stand_steel.png")
+   };
+
+   public ResourceLocation getModelResource(BallistaTurretStandEntity animatable) {
+      return MODEL;
+   }
+
+   public ResourceLocation getTextureResource(BallistaTurretStandEntity animatable) {
+      return TEXTURES[animatable.getMaterialLevel()];
+   }
+
+   public ResourceLocation getAnimationResource(BallistaTurretStandEntity animatable) {
+      return ANIMATION;
+   }
+
+   public void handleAnimations(BallistaTurretStandEntity animatable, long instanceId, AnimationState<BallistaTurretStandEntity> animationState) {
+      super.handleAnimations(animatable, instanceId, animationState);
+      CoreGeoBone turret = this.getAnimationProcessor().getBone("armMain");
+      if (turret != null) {
+         turret.setRotX(degreesToRadians(animatable.getTurretPitch()));
+         turret.setRotY(degreesToRadians(-animatable.getTurretYaw()));
+      }
+
+      float partialTick = animationState.getPartialTick();
+      int animationTicks = animatable.getFireAnimationTicks();
+      float bowAngle = 67.5F;
+      if (animationTicks > 25) {
+         float releaseProgress = Mth.m_14036_(((float)(30 - animationTicks) + partialTick) / 5.0F, 0.0F, 1.0F);
+         bowAngle = Mth.m_14179_(releaseProgress, 67.5F, 30.0F);
+      } else if (animationTicks > 0) {
+         float reloadProgress = Mth.m_14036_(((float)(25 - animationTicks) + partialTick) / 25.0F, 0.0F, 1.0F);
+         bowAngle = Mth.m_14179_(reloadProgress, 30.0F, 67.5F);
+      }
+
+      float stringAngle = getLegacyStringAngle(bowAngle);
+      this.setRotationY("armLeftMain", bowAngle);
+      this.setRotationY("armRightMain", -bowAngle);
+      this.setRotationY("stringLeft", stringAngle);
+      this.setRotationY("stringRight", -stringAngle);
+      this.setRotationX("trigger1", animationTicks > 0 ? 0.0F : -70.0F);
+      float crankAngle = animatable.getCrankAngle();
+      if (animationTicks > 0 && animationTicks <= 25) {
+         crankAngle -= 4.0F * partialTick;
+      }
+
+      this.setRotationX("crankAxle", crankAngle);
+   }
+
+   private void setRotationX(String boneName, float degrees) {
+      CoreGeoBone bone = this.getAnimationProcessor().getBone(boneName);
+      if (bone != null) {
+         bone.setRotX(degreesToRadians(degrees));
+      }
+   }
+
+   private void setRotationY(String boneName, float degrees) {
+      CoreGeoBone bone = this.getAnimationProcessor().getBone(boneName);
+      if (bone != null) {
+         bone.setRotY(degreesToRadians(degrees));
+      }
+   }
+
+   private static float degreesToRadians(float degrees) {
+      return degrees * (float) (Math.PI / 180.0);
+   }
+
+   private static float getLegacyStringAngle(float bowAngle) {
+      float percentTravel = (bowAngle - 30.0F) / 37.5F;
+      return -30.0F - percentTravel * 1.305F * bowAngle;
+   }
+}

@@ -1,0 +1,57 @@
+﻿{
+    "multipart":  [
+                      {
+                          "when":  {
+                                       "facing":  "north"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_heavy"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "east"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_heavy",
+                                        "y":  90
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "south"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_heavy",
+                                        "y":  180
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "west"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_heavy",
+                                        "y":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "up"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_heavy",
+                                        "x":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "down"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_heavy",
+                                        "x":  90
+                                    }
+                      }
+                  ]
+}

@@ -1,0 +1,6 @@
+{
+    "parent": "ancientwarfare:item/shield_round_blocking",
+    "textures": {
+        "0": "ancientwarfare:item/shield_round_5"
+    }
+}

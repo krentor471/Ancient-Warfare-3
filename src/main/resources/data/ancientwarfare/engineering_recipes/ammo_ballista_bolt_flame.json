@@ -1,0 +1,34 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:stick"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:feather"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:flame_charge"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ammo_ballista_bolt_flame",
+                   "count":  8
+               }
+}

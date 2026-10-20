@@ -1,0 +1,17 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.torque_shaft.spin": {
+      "loop": true,
+      "animation_length": 2.0,
+      "bones": {
+        "shaft_rotating": {
+          "rotation": {
+            "0.0": [0, 0, 0],
+            "2.0": [0, 0, 360]
+          }
+        }
+      }
+    }
+  }
+}

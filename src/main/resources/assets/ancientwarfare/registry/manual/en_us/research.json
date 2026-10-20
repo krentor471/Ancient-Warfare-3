@@ -1,0 +1,430 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "research",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "I. Research",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Integration: Modernization Research in World War",
+          "category_link": "integrations",
+          "anchor": "world_war"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Treatise on the Principles of Ruling",
+          "category_link": "research",
+          "anchor": "entry_001"
+        },
+        {
+          "text": "Research Book",
+          "category_link": "research",
+          "anchor": "entry_002"
+        },
+        {
+          "text": "Research Station",
+          "category_link": "research",
+          "anchor": "entry_003"
+        },
+        {
+          "text": "Research Note",
+          "category_link": "research",
+          "anchor": "entry_004"
+        },
+        {
+          "text": "Engineering Station",
+          "category_link": "research",
+          "anchor": "entry_005"
+        },
+        {
+          "text": "Quills",
+          "category_link": "research",
+          "anchor": "entry_006"
+        },
+        {
+          "text": "Hammers",
+          "category_link": "research",
+          "anchor": "entry_007"
+        },
+        {
+          "text": "Backpack",
+          "category_link": "research",
+          "anchor": "entry_008"
+        },
+        {
+          "text": "Mailbox",
+          "category_link": "research",
+          "anchor": "entry_009"
+        },
+        {
+          "text": "Steel Ingots and Mechanical Components",
+          "category_link": "research",
+          "anchor": "entry_010"
+        },
+        {
+          "text": "Info Tool",
+          "category_link": "research",
+          "anchor": "entry_011"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "This chapter covers research and basic tools. The Research Book stores technological progress, the Research Station advances research, and the Engineering Station crafts items using learned technologies. These three items have different jobs and are not interchangeable."
+    },
+    {
+      "content_type": "heading",
+      "text": "Treatise on the Principles of Ruling",
+      "level": 2,
+      "anchor": "entry_001"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:manual"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: shapeless crafting with a Wooden Hammer and a vanilla Book in a normal crafting table."
+    },
+    {
+      "content_type": "text",
+      "text": "The manual explains the mod's items and facilities. Right-click while holding it and use the contents to choose a chapter. It does not store research progress, command NPCs or configure machines."
+    },
+    {
+      "content_type": "text",
+      "text": "Craft the manual by combining a Wooden Hammer and a vanilla Book in any arrangement in a normal crafting table. Use a Research Book to unlock engineering recipes."
+    },
+    {
+      "content_type": "heading",
+      "text": "Research Book",
+      "level": 2,
+      "anchor": "entry_002"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:research_book"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: crafting table; no research prerequisite."
+    },
+    {
+      "content_type": "text",
+      "text": "A Research Book records completed research, current progress and the research queue. The first right-click signs an unsigned book with your player name; right-click again to open research. Sneak-right-click to sign it again."
+    },
+    {
+      "content_type": "text",
+      "text": "Place the book in a Research Station to learn technologies. For engineering recipes with research requirements, put a book containing the required technology into the crafting facility's book slot. Progress belongs to that book; separate books are not live copies of a shared record."
+    },
+    {
+      "content_type": "heading",
+      "text": "Research Station",
+      "level": 2,
+      "anchor": "entry_003"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:research_station"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: crafting table; no research prerequisite."
+    },
+    {
+      "content_type": "text",
+      "text": "The Research Station consumes materials to complete research. Insert a signed Research Book, queue projects in the interface and supply their materials. Starting a project checks and consumes its required materials; a project cannot start normally if they are missing."
+    },
+    {
+      "content_type": "text",
+      "text": "The station advances research on its own. Researcher workers add extra progress: they speed up research but are not required to start it. Completed technologies are written into the book in the station; removing it also removes that research record."
+    },
+    {
+      "content_type": "heading",
+      "text": "Research Note",
+      "level": 2,
+      "anchor": "entry_004"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:research_note",
+          "tag": {
+            "researchName": "agriculture"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: some structure loot tables, such as archive loot, provide notes containing research. Blank or invalid notes grant no research."
+    },
+    {
+      "content_type": "text",
+      "text": "Each Research Note corresponds to a particular technology. Using it with a Research Book in your inventory targets the first book found. If you carry several books, arrange them first to avoid using the wrong one."
+    },
+    {
+      "content_type": "text",
+      "text": "If the book has not learned the note's technology, the note completes it and consumes one note. If it is already learned but another project is in progress, the note grants progress equal to one quarter of its corresponding technology's research duration. It is not consumed without a book, with invalid content, or when the technology is already learned and no project is running."
+    },
+    {
+      "content_type": "heading",
+      "text": "Engineering Station",
+      "level": 2,
+      "anchor": "entry_005"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:engineering_station"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: crafting table; no research prerequisite."
+    },
+    {
+      "content_type": "text",
+      "text": "The Engineering Station handles the mod's engineering recipes. Insert a Research Book, select or arrange the recipe and supply materials, then take the result. When a recipe requires research, the book inside the station must contain that technology."
+    },
+    {
+      "content_type": "text",
+      "text": "Engineering recipes and vanilla crafting-table recipes are separate. The same arrangement in the wrong station may produce nothing. Keeping a Research Book only in your inventory does not give every crafting interface access to its research."
+    },
+    {
+      "content_type": "heading",
+      "text": "Quills",
+      "level": 2,
+      "anchor": "entry_006"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_quill"
+        },
+        {
+          "name": "ancientwarfare:stone_quill"
+        },
+        {
+          "name": "ancientwarfare:iron_quill"
+        },
+        {
+          "name": "ancientwarfare:gold_quill"
+        },
+        {
+          "name": "ancientwarfare:diamond_quill"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Engineering research."
+    },
+    {
+      "content_type": "text",
+      "text": "Wooden, Stone, Iron, Gold and Diamond Quills are research tools. Equip a worker's main hand with a quill to identify them as a Researcher, then use a Work Order to assign them to a Research Station."
+    },
+    {
+      "content_type": "text",
+      "text": "A quill replaces neither the Research Book nor the materials. Before assigning a worker, check that the station has a book and a project that can start, and that the NPC can reach the work position."
+    },
+    {
+      "content_type": "heading",
+      "text": "Hammers",
+      "level": 2,
+      "anchor": "entry_007"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_hammer"
+        },
+        {
+          "name": "ancientwarfare:stone_hammer"
+        },
+        {
+          "name": "ancientwarfare:iron_hammer"
+        },
+        {
+          "name": "ancientwarfare:gold_hammer"
+        },
+        {
+          "name": "ancientwarfare:diamond_hammer"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Engineering research."
+    },
+    {
+      "content_type": "text",
+      "text": "Hammers serve as equipment-adjustment tools and Craftsman profession tools. Sneak-right-click in the air while holding one to switch between Rotation and Work modes. Check the mode message before use."
+    },
+    {
+      "content_type": "text",
+      "text": "Rotation mode adjusts facilities that support rotation. Sneak-click supported transmission devices, such as Junctions and Distributors, to change connection faces. Work mode provides manual construction energy to a Survival Structure Builder; it is not a universal machine speed boost. A worker holding a hammer in the main hand is identified as a Craftsman."
+    },
+    {
+      "content_type": "heading",
+      "text": "Backpack",
+      "level": 2,
+      "anchor": "entry_008"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:backpack"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "Backpacks provide portable storage; right-click while holding one to open it. The four tiers provide 9, 18, 27 and 36 slots, respectively."
+    },
+    {
+      "content_type": "text",
+      "text": "A backpack's tier and inventory are stored in its item data. When organizing, trading or replacing saved items, preserve the original backpack. A new look-alike does not contain the old inventory."
+    },
+    {
+      "content_type": "heading",
+      "text": "Mailbox",
+      "level": 2,
+      "anchor": "entry_009"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:mailbox"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Navigation research."
+    },
+    {
+      "content_type": "text",
+      "text": "A Mailbox sends items to another named Mailbox. Name the receiving mailbox first, then set that destination at the sender. Both ends must use matching public/private addressing rules; private addresses also depend on ownership."
+    },
+    {
+      "content_type": "text",
+      "text": "Put items into the slots marked for sending. Once a destination is set, the mailbox automatically attempts delivery. Configure access on each face to connect logistics. Address registration is currently stored separately per dimension, so build delivery routes within one dimension rather than relying on cross-dimensional mail."
+    },
+    {
+      "content_type": "heading",
+      "text": "Steel Ingots and Mechanical Components",
+      "level": 2,
+      "anchor": "entry_010"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:steel_ingot"
+        },
+        {
+          "name": "ancientwarfare:wooden_gear"
+        },
+        {
+          "name": "ancientwarfare:iron_gear"
+        },
+        {
+          "name": "ancientwarfare:steel_gear"
+        },
+        {
+          "name": "ancientwarfare:wooden_shaft"
+        },
+        {
+          "name": "ancientwarfare:iron_shaft"
+        },
+        {
+          "name": "ancientwarfare:steel_shaft"
+        },
+        {
+          "name": "ancientwarfare:wooden_bearings"
+        },
+        {
+          "name": "ancientwarfare:iron_bearings"
+        },
+        {
+          "name": "ancientwarfare:steel_bearings"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Steel Ingots use the Engineering Station and require Refining. Wooden/Iron/Steel Gear Sets, Shafts and Bushing Sets use the crafting table with no research prerequisite."
+    },
+    {
+      "content_type": "text",
+      "text": "Steel Ingots, Gear Sets, Shafts and Bushing Sets are crafting materials. Wooden, iron and steel parts occur in different recipes. Prepare the specified material rather than substituting parts because they look similar."
+    },
+    {
+      "content_type": "text",
+      "text": "These items are manufacturing inputs, not transmission devices that work when placed. To deliver power to machines, craft the Torque Shafts, Junctions and Distributors described in Chapter II."
+    },
+    {
+      "content_type": "heading",
+      "text": "Info Tool",
+      "level": 2,
+      "anchor": "entry_011"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:info_tool"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Status: registered, but currently has no dedicated inspection action."
+    },
+    {
+      "content_type": "text",
+      "text": "The Info Tool is currently a registered ordinary item without a dedicated inspection interaction. It does not replace machine interfaces, NPC interfaces or debugging commands for reading status."
+    },
+    {
+      "content_type": "text",
+      "text": "To investigate production or transport problems, open the relevant facility and check materials, output space, work bounds, connection directions and operating status."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:explosive_charge"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "ancientwarfare:clay_casing"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ammo_explosive_shot_10_big",
+                   "count":  2
+               }
+}

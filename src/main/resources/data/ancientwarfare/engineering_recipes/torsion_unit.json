@@ -1,0 +1,24 @@
+{
+    "required_research":  "the_wheel",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "tag":  "forge:ingots/iron"
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:stick"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  4
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:torsion_unit"
+               }
+}

@@ -1,0 +1,6 @@
+{
+    "parent": "ancientwarfare:item/wooden_shield_blocking",
+    "textures": {
+        "0": "ancientwarfare:item/iron_shield"
+    }
+}

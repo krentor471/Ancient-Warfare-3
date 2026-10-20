@@ -1,0 +1,22 @@
+{
+    "required_research":  "machinery",
+    "pattern":  [
+                    "PPP",
+                    "FIF",
+                    "FIF"
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "minecraft:planks"
+                      },
+                "F":  {
+                          "tag":  "minecraft:wooden_fences"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:worksite_upgrade_quarry_large"
+               }
+}

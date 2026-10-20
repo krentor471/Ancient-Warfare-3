@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,lit=false": { "model": "ancientwarfare:block/warehouse_stock_linker" },
+    "facing=east,lit=false": { "model": "ancientwarfare:block/warehouse_stock_linker", "y": 90 },
+    "facing=south,lit=false": { "model": "ancientwarfare:block/warehouse_stock_linker", "y": 180 },
+    "facing=west,lit=false": { "model": "ancientwarfare:block/warehouse_stock_linker", "y": 270 },
+    "facing=north,lit=true": { "model": "ancientwarfare:block/warehouse_stock_linker_on" },
+    "facing=east,lit=true": { "model": "ancientwarfare:block/warehouse_stock_linker_on", "y": 90 },
+    "facing=south,lit=true": { "model": "ancientwarfare:block/warehouse_stock_linker_on", "y": 180 },
+    "facing=west,lit=true": { "model": "ancientwarfare:block/warehouse_stock_linker_on", "y": 270 }
+  }
+}

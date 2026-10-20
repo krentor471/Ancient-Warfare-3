@@ -1,0 +1,21 @@
+{
+    "type":  "minecraft:crafting_shaped",
+    "category":  "combat",
+    "pattern":  [
+                    "## ",
+                    "#S ",
+                    "  S"
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "#":  {
+                          "tag":  "minecraft:stone_crafting_materials"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:stone_spear"
+               },
+    "show_notification":  true
+}

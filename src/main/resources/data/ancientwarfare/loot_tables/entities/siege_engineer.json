@@ -1,0 +1,14 @@
+{
+  "type":"minecraft:entity",
+  "pools":[
+    {"rolls":1,"entries":[{"type":"minecraft:item","name":"ancientwarfare:coin","functions":[{"function":"minecraft:set_count","count":{"min":1,"max":3}},{"function":"minecraft:set_nbt","tag":"{metal:\"gold\"}"}]}]},
+    {"rolls":1,"entries":[
+      {"type":"minecraft:item","name":"ancientwarfare:explosive_charge","weight":4,"functions":[{"function":"minecraft:set_count","count":{"min":1,"max":6}}]},
+      {"type":"minecraft:item","name":"ancientwarfare:iron_casing","weight":4,"functions":[{"function":"minecraft:set_count","count":{"min":1,"max":4}}]},
+      {"type":"minecraft:item","name":"ancientwarfare:cluster_charge","weight":3,"functions":[{"function":"minecraft:set_count","count":{"min":1,"max":4}}]},
+      {"type":"minecraft:item","name":"ancientwarfare:rocket_charge","weight":2,"functions":[{"function":"minecraft:set_count","count":{"min":1,"max":4}}]},
+      {"type":"minecraft:item","name":"ancientwarfare:flame_charge","weight":2,"functions":[{"function":"minecraft:set_count","count":{"min":1,"max":4}}]},
+      {"type":"minecraft:item","name":"ancientwarfare:napalm_charge","weight":1,"functions":[{"function":"minecraft:set_count","count":{"min":1,"max":2}}]}
+    ]}
+  ]
+}

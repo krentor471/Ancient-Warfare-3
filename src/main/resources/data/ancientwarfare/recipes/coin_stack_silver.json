@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["SSS", "S S", "SSS"],
+  "key": { "S": { "type": "forge:partial_nbt", "item": "ancientwarfare:coin", "nbt": { "metal": "silver" } } },
+  "result": { "item": "ancientwarfare:coin_stack_silver" }
+}

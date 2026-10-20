@@ -1,0 +1,26 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "siege_warfare",
+    "pattern":  [
+                    "GF ",
+                    "GT ",
+                    "   "
+                ],
+    "key":  {
+                "T":  {
+                          "item":  "ancientwarfare:torsion_unit"
+                      },
+                "F":  {
+                          "item":  "ancientwarfare:food_bundle"
+                      },
+                "G":  {
+                          "tag":  "forge:ingots/gold"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:npc_spawner",
+                   "tag":  {
+                               "npcType":  "siege_engineer"
+                           }
+               }
+}

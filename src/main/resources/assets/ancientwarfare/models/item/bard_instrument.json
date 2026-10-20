@@ -1,0 +1,26 @@
+{
+    "parent":  "minecraft:item/generated",
+    "textures":  {
+                     "layer0":  "ancientwarfare:item/instrument_lute"
+                 },
+    "overrides":  [
+                      {
+                          "predicate":  {
+                                            "ancientwarfare:instrument":  0.25
+                                        },
+                          "model":  "ancientwarfare:item/bard_instrument_flute"
+                      },
+                      {
+                          "predicate":  {
+                                            "ancientwarfare:instrument":  0.5
+                                        },
+                          "model":  "ancientwarfare:item/bard_instrument_harp"
+                      },
+                      {
+                          "predicate":  {
+                                            "ancientwarfare:instrument":  0.75
+                                        },
+                          "model":  "ancientwarfare:item/bard_instrument_drum"
+                      }
+                  ]
+}

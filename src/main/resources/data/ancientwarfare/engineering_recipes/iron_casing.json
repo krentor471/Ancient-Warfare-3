@@ -1,0 +1,19 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "tag":  "minecraft:wool"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:iron_casing",
+                   "count":  8
+               }
+}

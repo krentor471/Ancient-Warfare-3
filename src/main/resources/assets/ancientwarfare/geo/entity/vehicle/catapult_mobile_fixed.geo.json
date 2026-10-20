@@ -1,0 +1,2401 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.ancientwarfare.legacy.catapult_mobile_fixed",
+        "texture_width": 256,
+        "texture_height": 256,
+        "visible_bounds_width": 5.3125,
+        "visible_bounds_height": 2.9375,
+        "visible_bounds_offset": [
+          0,
+          2.46875,
+          0.15625
+        ]
+      },
+      "bones": [
+        {
+          "name": "turretMidBeam",
+          "pivot": [
+            0,
+            36,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -12,
+                35,
+                -1.5
+              ],
+              "size": [
+                24,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                128
+              ]
+            }
+          ]
+        },
+        {
+          "name": "upright1",
+          "pivot": [
+            -15,
+            55,
+            -1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                35,
+                -1.5
+              ],
+              "size": [
+                3,
+                20,
+                3
+              ],
+              "uv": [
+                9,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "upright2",
+          "pivot": [
+            12,
+            55,
+            -1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                12,
+                35,
+                -1.5
+              ],
+              "size": [
+                3,
+                20,
+                3
+              ],
+              "uv": [
+                9,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretTopHorizontal",
+          "pivot": [
+            -12,
+            55,
+            -1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -12,
+                52,
+                -1.5
+              ],
+              "size": [
+                24,
+                3,
+                3
+              ],
+              "uv": [
+                0,
+                140
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretLeftAngled",
+          "pivot": [
+            12.5,
+            55,
+            -1
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                12.5,
+                29,
+                -1
+              ],
+              "size": [
+                2,
+                26,
+                2
+              ],
+              "uv": [
+                0,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRightAngled",
+          "pivot": [
+            -14.5,
+            55,
+            -1
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            -44.999882,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -14.5,
+                29,
+                -1
+              ],
+              "size": [
+                2,
+                26,
+                2
+              ],
+              "uv": [
+                0,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pulleyAxle",
+          "pivot": [
+            2,
+            39,
+            0
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            -0.000283,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -16,
+                38.5,
+                -0.5
+              ],
+              "size": [
+                30,
+                1,
+                1
+              ],
+              "uv": [
+                0,
+                147
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pulleyArm1",
+          "pivot": [
+            -16,
+            39,
+            0
+          ],
+          "parent": "pulleyAxle",
+          "cubes": [
+            {
+              "origin": [
+                -16.5,
+                38.5,
+                -4.5
+              ],
+              "size": [
+                1,
+                1,
+                9
+              ],
+              "uv": [
+                68,
+                140
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pulleyArm2",
+          "pivot": [
+            -16,
+            39,
+            0
+          ],
+          "parent": "pulleyArm1",
+          "cubes": [
+            {
+              "origin": [
+                -16.5,
+                34.5,
+                -0.5
+              ],
+              "size": [
+                1,
+                9,
+                1
+              ],
+              "uv": [
+                63,
+                140
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretFrontBeam",
+          "pivot": [
+            0,
+            36,
+            -18
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                35,
+                -19.5
+              ],
+              "size": [
+                30,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                134
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRearBeam",
+          "pivot": [
+            0,
+            36,
+            18
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                35,
+                16.5
+              ],
+              "size": [
+                30,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                134
+              ]
+            }
+          ]
+        },
+        {
+          "name": "armMain",
+          "pivot": [
+            0,
+            39,
+            0
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                38,
+                -1.5
+              ],
+              "size": [
+                2,
+                2,
+                29
+              ],
+              "uv": [
+                0,
+                179
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket1",
+          "pivot": [
+            -4,
+            40.5,
+            27
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                -4,
+                36.5,
+                27
+              ],
+              "size": [
+                8,
+                4,
+                1
+              ],
+              "uv": [
+                63,
+                151
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket3",
+          "pivot": [
+            4,
+            40.5,
+            28
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                4,
+                36.5,
+                28
+              ],
+              "size": [
+                1,
+                4,
+                8
+              ],
+              "uv": [
+                83,
+                152
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket6",
+          "pivot": [
+            -4,
+            40.5,
+            36
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                -4,
+                36.5,
+                36
+              ],
+              "size": [
+                8,
+                4,
+                1
+              ],
+              "uv": [
+                63,
+                157
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket4",
+          "pivot": [
+            -4,
+            36.5,
+            28
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                -4,
+                35.5,
+                28
+              ],
+              "size": [
+                8,
+                1,
+                8
+              ],
+              "uv": [
+                50,
+                170
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket2",
+          "pivot": [
+            -5,
+            40.5,
+            28
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                -5,
+                36.5,
+                28
+              ],
+              "size": [
+                1,
+                4,
+                8
+              ],
+              "uv": [
+                83,
+                165
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretLeftBeam1",
+          "pivot": [
+            12,
+            36,
+            -16.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                12,
+                35,
+                -16.5
+              ],
+              "size": [
+                3,
+                2,
+                15
+              ],
+              "uv": [
+                22,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretLeftBeam2",
+          "pivot": [
+            12,
+            36,
+            1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                12,
+                35,
+                1.5
+              ],
+              "size": [
+                3,
+                2,
+                15
+              ],
+              "uv": [
+                22,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRightBeam1",
+          "pivot": [
+            -15,
+            36,
+            -16.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                35,
+                -16.5
+              ],
+              "size": [
+                3,
+                2,
+                15
+              ],
+              "uv": [
+                22,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRightBeam2",
+          "pivot": [
+            -15,
+            36,
+            1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                35,
+                1.5
+              ],
+              "size": [
+                3,
+                2,
+                15
+              ],
+              "uv": [
+                22,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretLeftAngle2",
+          "pivot": [
+            12.5,
+            55,
+            1
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                12.5,
+                29,
+                -1
+              ],
+              "size": [
+                2,
+                26,
+                2
+              ],
+              "uv": [
+                0,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRightAngle2",
+          "pivot": [
+            -14.5,
+            55,
+            1
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -14.5,
+                29,
+                -1
+              ],
+              "size": [
+                2,
+                26,
+                2
+              ],
+              "uv": [
+                0,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "frontCrossBeam",
+          "pivot": [
+            -12,
+            35,
+            -19
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -12,
+                32,
+                -19.5
+              ],
+              "size": [
+                24,
+                3,
+                3
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "rightBeam",
+          "pivot": [
+            -15,
+            35,
+            -19
+          ],
+          "parent": "frontCrossBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                32,
+                -24
+              ],
+              "size": [
+                3,
+                3,
+                48
+              ],
+              "uv": [
+                0,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pivotCrossBeam",
+          "pivot": [
+            -12,
+            35,
+            -1.5
+          ],
+          "parent": "frontCrossBeam",
+          "cubes": [
+            {
+              "origin": [
+                -12,
+                32,
+                -1.5
+              ],
+              "size": [
+                24,
+                3,
+                3
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "rearCrossBeam",
+          "pivot": [
+            -12,
+            35,
+            16.5
+          ],
+          "parent": "frontCrossBeam",
+          "cubes": [
+            {
+              "origin": [
+                -12,
+                32,
+                16.5
+              ],
+              "size": [
+                24,
+                3,
+                3
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "rearAxle",
+          "pivot": [
+            0,
+            32,
+            18
+          ],
+          "parent": "rearCrossBeam",
+          "cubes": [
+            {
+              "origin": [
+                -17,
+                31.5,
+                17.5
+              ],
+              "size": [
+                34,
+                1,
+                1
+              ],
+              "uv": [
+                0,
+                59
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRWheelPivot",
+          "pivot": [
+            -17,
+            32,
+            18
+          ],
+          "parent": "rearAxle",
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                25,
+                17.5
+              ],
+              "size": [
+                1,
+                14,
+                1
+              ],
+              "uv": [
+                0,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRS4",
+          "pivot": [
+            -17,
+            32,
+            18
+          ],
+          "parent": "RRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                11
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRS2",
+          "pivot": [
+            -17,
+            32,
+            18
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                11
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRS3",
+          "pivot": [
+            -17,
+            32,
+            18
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                11
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw1",
+          "pivot": [
+            -18,
+            40,
+            15
+          ],
+          "parent": "RRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                15
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw2",
+          "pivot": [
+            -18,
+            40,
+            21
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                21
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw3",
+          "pivot": [
+            -18,
+            35,
+            26
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                34,
+                26
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw8",
+          "pivot": [
+            -18,
+            29,
+            26
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                29,
+                19
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw7",
+          "pivot": [
+            -18,
+            25,
+            15
+          ],
+          "parent": "RRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                24,
+                15
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw6",
+          "pivot": [
+            -18,
+            29,
+            10
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                29,
+                10
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw4",
+          "pivot": [
+            -18,
+            40,
+            15
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                8
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw5",
+          "pivot": [
+            -18,
+            35,
+            10
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                34,
+                4
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLWheelPivot",
+          "pivot": [
+            17,
+            32,
+            18
+          ],
+          "parent": "rearAxle",
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                25,
+                17.5
+              ],
+              "size": [
+                1,
+                14,
+                1
+              ],
+              "uv": [
+                0,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLS2",
+          "pivot": [
+            17,
+            32,
+            18
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                11
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLS3",
+          "pivot": [
+            17,
+            32,
+            18
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                11
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLS4",
+          "pivot": [
+            17,
+            32,
+            18
+          ],
+          "parent": "RLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                11
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw1",
+          "pivot": [
+            16,
+            40,
+            15
+          ],
+          "parent": "RLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                15
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw2",
+          "pivot": [
+            16,
+            40,
+            21
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                21
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw3",
+          "pivot": [
+            16,
+            35,
+            26
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                34,
+                26
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw8",
+          "pivot": [
+            16,
+            29,
+            26
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                29,
+                19
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw7",
+          "pivot": [
+            16,
+            25,
+            15
+          ],
+          "parent": "RLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                24,
+                15
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw6",
+          "pivot": [
+            16,
+            29,
+            10
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                29,
+                10
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw5",
+          "pivot": [
+            16,
+            35,
+            10
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                34,
+                4
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw4",
+          "pivot": [
+            16,
+            40,
+            15
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                8
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "leftBeam",
+          "pivot": [
+            12,
+            35,
+            -19
+          ],
+          "parent": "frontCrossBeam",
+          "cubes": [
+            {
+              "origin": [
+                12,
+                32,
+                -24
+              ],
+              "size": [
+                3,
+                3,
+                48
+              ],
+              "uv": [
+                0,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "frontAxle",
+          "pivot": [
+            0,
+            32,
+            -18
+          ],
+          "parent": "frontCrossBeam",
+          "cubes": [
+            {
+              "origin": [
+                -17,
+                31.5,
+                -18.5
+              ],
+              "size": [
+                34,
+                1,
+                1
+              ],
+              "uv": [
+                0,
+                59
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FRWheelPivot",
+          "pivot": [
+            -17,
+            32,
+            -18
+          ],
+          "parent": "frontAxle",
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                25,
+                -18.5
+              ],
+              "size": [
+                1,
+                14,
+                1
+              ],
+              "uv": [
+                0,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FRS2",
+          "pivot": [
+            -17,
+            32,
+            -18
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                -25
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FRS3",
+          "pivot": [
+            -17,
+            32,
+            -18
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                -25
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FRS4",
+          "pivot": [
+            -17,
+            32,
+            -18
+          ],
+          "parent": "FRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                -25
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "frw1",
+          "pivot": [
+            -18,
+            40,
+            -21
+          ],
+          "parent": "FRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                -21
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw4",
+          "pivot": [
+            -18,
+            40,
+            -21
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                -28
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLr5",
+          "pivot": [
+            -18,
+            35,
+            -26
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                34,
+                -32
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw6",
+          "pivot": [
+            -18,
+            29,
+            -26
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                29,
+                -26
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw7",
+          "pivot": [
+            -18,
+            25,
+            -21
+          ],
+          "parent": "FRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                24,
+                -21
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw8",
+          "pivot": [
+            -18,
+            29,
+            -10
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                29,
+                -17
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw3",
+          "pivot": [
+            -18,
+            35,
+            -10
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                34,
+                -10
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw2",
+          "pivot": [
+            -18,
+            40,
+            -15
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                -15
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLWheelPivot",
+          "pivot": [
+            17,
+            32,
+            -18
+          ],
+          "parent": "frontAxle",
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                25,
+                -18.5
+              ],
+              "size": [
+                1,
+                14,
+                1
+              ],
+              "uv": [
+                0,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw3",
+          "pivot": [
+            16,
+            35,
+            -10
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                34,
+                -10
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw2",
+          "pivot": [
+            16,
+            40,
+            -15
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                -15
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FS4",
+          "pivot": [
+            17,
+            32,
+            -18
+          ],
+          "parent": "FLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                -25
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLS2",
+          "pivot": [
+            17,
+            32,
+            -18
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                -25
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FS3",
+          "pivot": [
+            17,
+            32,
+            -18
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                -25
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "flw1",
+          "pivot": [
+            16,
+            40,
+            -21
+          ],
+          "parent": "FLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                -21
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw4",
+          "pivot": [
+            16,
+            40,
+            -21
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                -28
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw5",
+          "pivot": [
+            16,
+            35,
+            -26
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                34,
+                -32
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw6",
+          "pivot": [
+            16,
+            29,
+            -26
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                29,
+                -26
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw7",
+          "pivot": [
+            16,
+            25,
+            -21
+          ],
+          "parent": "FLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                24,
+                -21
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw8",
+          "pivot": [
+            16,
+            29,
+            -10
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                29,
+                -17
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "chairBrace",
+          "pivot": [
+            -1.5,
+            37.5,
+            -16
+          ],
+          "parent": "frontCrossBeam",
+          "cubes": [
+            {
+              "origin": [
+                -1.5,
+                36.5,
+                -24
+              ],
+              "size": [
+                3,
+                1,
+                7
+              ],
+              "uv": [
+                70,
+                59
+              ]
+            }
+          ]
+        },
+        {
+          "name": "chairBottom",
+          "pivot": [
+            -5,
+            39,
+            -17
+          ],
+          "parent": "chairBrace",
+          "rotation": [
+            9,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -5,
+                38,
+                -26
+              ],
+              "size": [
+                10,
+                1,
+                9
+              ],
+              "uv": [
+                54,
+                68
+              ]
+            }
+          ]
+        },
+        {
+          "name": "chairBack",
+          "pivot": [
+            -5,
+            38.5,
+            -17
+          ],
+          "parent": "chairBrace",
+          "rotation": [
+            -10,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -5,
+                38.5,
+                -17
+              ],
+              "size": [
+                10,
+                10,
+                1
+              ],
+              "uv": [
+                49,
+                79
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

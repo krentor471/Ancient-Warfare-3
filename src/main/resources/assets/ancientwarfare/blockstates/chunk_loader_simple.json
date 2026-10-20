@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "ancientwarfare:block/chunk_loader_simple"
+    }
+  }
+}

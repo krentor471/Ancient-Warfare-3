@@ -1,0 +1,281 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.ancientwarfare.legacy.trebuchet_mobile_fixed.arm_rotations": {
+      "animation_length": 3,
+      "bones": {
+        "trebuchetAxle": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              117,
+              0,
+              0
+            ],
+            "1.15": [
+              117,
+              0,
+              0
+            ],
+            "3.0": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "trebuchetWeightAxle": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              -117,
+              0,
+              0
+            ],
+            "1.15": [
+              -117,
+              0,
+              0
+            ],
+            "3.0": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "trebuchetSlingString": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              154,
+              0,
+              0
+            ],
+            "1.15": [
+              154,
+              0,
+              0
+            ],
+            "3.0": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.ancientwarfare.legacy.trebuchet_mobile_fixed.wheel_rotations": {
+      "loop": true,
+      "animation_length": 1,
+      "bones": {
+        "FRWheelPivot": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.25": [
+              90,
+              0,
+              0
+            ],
+            "0.50": [
+              180,
+              0,
+              0
+            ],
+            "0.75": [
+              270,
+              0,
+              0
+            ],
+            "1.0": [
+              360,
+              0,
+              0
+            ]
+          }
+        },
+        "FLWheelPivot": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.25": [
+              90,
+              0,
+              0
+            ],
+            "0.50": [
+              180,
+              0,
+              0
+            ],
+            "0.75": [
+              270,
+              0,
+              0
+            ],
+            "1.0": [
+              360,
+              0,
+              0
+            ]
+          }
+        },
+        "RRWheelPivot": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.25": [
+              90,
+              0,
+              0
+            ],
+            "0.50": [
+              180,
+              0,
+              0
+            ],
+            "0.75": [
+              270,
+              0,
+              0
+            ],
+            "1.0": [
+              360,
+              0,
+              0
+            ]
+          }
+        },
+        "RLWheelPivot": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.25": [
+              90,
+              0,
+              0
+            ],
+            "0.50": [
+              180,
+              0,
+              0
+            ],
+            "0.75": [
+              270,
+              0,
+              0
+            ],
+            "1.0": [
+              360,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.ancientwarfare.legacy.trebuchet_mobile_fixed.firing_cycle": {
+      "animation_length": 3,
+      "bones": {
+        "trebuchetAxle": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              117,
+              0,
+              0
+            ],
+            "1.15": [
+              117,
+              0,
+              0
+            ],
+            "3.0": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "trebuchetWeightAxle": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              -117,
+              0,
+              0
+            ],
+            "1.15": [
+              -117,
+              0,
+              0
+            ],
+            "3.0": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "trebuchetSlingString": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "1.0": [
+              154,
+              0,
+              0
+            ],
+            "1.15": [
+              154,
+              0,
+              0
+            ],
+            "3.0": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

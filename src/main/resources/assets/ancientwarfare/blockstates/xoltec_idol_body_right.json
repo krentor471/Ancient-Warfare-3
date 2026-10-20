@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/xoltec_idol_body_right" },
+    "facing=south": { "model": "ancientwarfare:block/xoltec_idol_body_right", "y": 180 },
+    "facing=west": { "model": "ancientwarfare:block/xoltec_idol_body_right", "y": 270 },
+    "facing=east": { "model": "ancientwarfare:block/xoltec_idol_body_right", "y": 90 }
+  }
+}

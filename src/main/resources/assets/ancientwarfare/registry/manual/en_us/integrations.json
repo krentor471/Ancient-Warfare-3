@@ -1,0 +1,357 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "integrations",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "10 Mod Integrations",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "This chapter describes implemented integrations through their items, setup and limits. Install each relevant mod with its own dependencies. The core remains usable without optional mods; absent external item icons may be omitted."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Create: Hand Crank and Craftsman",
+          "category_link": "integrations",
+          "anchor": "create_crank"
+        },
+        {
+          "text": "SlashBlade: Combat NPC's Main-Hand Blade",
+          "category_link": "integrations",
+          "anchor": "slashblade"
+        },
+        {
+          "text": "Iron's Spells: Spellbooks and Spell Equipment",
+          "category_link": "integrations",
+          "anchor": "irons_spells"
+        },
+        {
+          "text": "Ice and Fire: Baton, Dragons, Hippogryphs and Hippocampi",
+          "category_link": "integrations",
+          "anchor": "icefire_mounts"
+        },
+        {
+          "text": "Ice and Fire: NPC Weapon Effects",
+          "category_link": "integrations",
+          "anchor": "icefire_weapons"
+        },
+        {
+          "text": "Structure Loot: Proud Souls and Ice and Fire Materials",
+          "category_link": "integrations",
+          "anchor": "structure_loot"
+        },
+        {
+          "text": "World War: Modern Professions, Equipment and Headquarters",
+          "category_link": "integrations",
+          "anchor": "world_war"
+        },
+        {
+          "text": "Valkyrien Skies: Helm, Hull and Carrier Aircraft",
+          "category_link": "integrations",
+          "anchor": "valkyrien_ships"
+        }
+      ]
+    },
+    {
+      "content_type": "heading",
+      "text": "Create: Hand Crank and Craftsman",
+      "level": 2,
+      "anchor": "create_crank"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "create:hand_crank"
+        },
+        {
+          "name": "ancientwarfare:iron_hammer"
+        },
+        {
+          "name": "ancientwarfare:work_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Requires Create. This is Create's Hand Crank, obtained through Create recipes, not the Ancient Warfare Hand-Cranked Generator."
+    },
+    {
+      "content_type": "text",
+      "text": "Equip a player-owned worker with a hammer to make a craftsman. Record the Hand Crank in a Work Order with the default Z key, check the entry, then give the order to the worker. Provide food and an accessible work position. The worker refreshes the crank's normal forward turn while working."
+    },
+    {
+      "content_type": "text",
+      "text": "The connected network uses Create's native rotation and load rules. Only the Hand Crank is integrated; this does not operate every Create machine or convert Ancient Warfare torque into Create speed or stress."
+    },
+    {
+      "content_type": "heading",
+      "text": "SlashBlade: Combat NPC's Main-Hand Blade",
+      "level": 2,
+      "anchor": "slashblade"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "combat"
+          }
+        },
+        {
+          "name": "slashblade:proudsoul"
+        },
+        {
+          "name": "slashblade:proudsoul_tiny"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Requires SlashBlade. Obtain and upgrade blades using SlashBlade's own systems. A real SlashBlade in a player-owned combat NPC's main hand selects the swordsman profession; a normal or renamed sword does not."
+    },
+    {
+      "content_type": "text",
+      "text": "Swordsmen use integrated combos, dashes, charged arts and summoned swords. Available moves depend on the held blade's bound art, enchantments, seal and state. Equipping one blade does not unlock every technique. Melee combo hits use the NPC's validated hostile target."
+    },
+    {
+      "content_type": "text",
+      "text": "Summoned swords require a suitable Bewitched blade, Power enchantment and usable blade state. Thorns enables integrated guard behavior. Applicable charged and summoned-sword arts consume Proud Souls stored in the blade."
+    },
+    {
+      "content_type": "text",
+      "text": "NPC swordsmen maintain blade durability and repair unsealed broken states, but do not bypass seals or Proud Soul costs. Configure the blade before equipping it; Proud Soul items in the NPC's backpack are not automatically injected into the blade."
+    },
+    {
+      "content_type": "heading",
+      "text": "Iron's Spells: Spellbooks and Spell Equipment",
+      "level": 2,
+      "anchor": "irons_spells"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "combat"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Requires Iron's Spells 'n Spellbooks and its own dependencies. Equip a player-owned combat NPC's main hand or offhand with a spellbook or spell-container item that already holds active spells. Items stored only in the backpack are not read."
+    },
+    {
+      "content_type": "text",
+      "text": "Craft, inscribe and upgrade equipment using Iron's Spells rules. The NPC reads enabled supported spells and levels from both hands; duplicate spells are merged rather than counted twice. Empty books, disabled spells and unsupported spells provide no usable skill."
+    },
+    {
+      "content_type": "text",
+      "text": "The NPC selects supported attack, control, defense, healing and summoning spells using range, enemy count and ally conditions, with cast times and cooldowns. Examples include Magic Missile, Fireball, Chain Lightning, healing and selected summons. New or addon spells are not automatically supported."
+    },
+    {
+      "content_type": "text",
+      "text": "Integrated held magic attributes, spellbook attributes and Iron's Spells upgrades are applied, but this is not a full player Curios inventory. An offhand spellbook with a main-hand melee weapon can support casting and melee fallback."
+    },
+    {
+      "content_type": "heading",
+      "text": "Ice and Fire: Baton, Dragons, Hippogryphs and Hippocampi",
+      "level": 2,
+      "anchor": "icefire_mounts"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:iron_command_baton"
+        },
+        {
+          "name": "minecraft:saddle"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Requires Ice and Fire. Obtain and tame mounts through that mod. Select a suitable controlled combat NPC with a Command Baton, sneak-right-click to Mount mode, then right-click the mount. The NPC must be within 16 blocks; one rider is assigned per command."
+    },
+    {
+      "content_type": "text",
+      "text": "Dragons must be tamed, owned by the commanding player, at least stage 3 and unoccupied by a real player. The rider must be a combat NPC with the ordinary soldier role, not an archer, swordsman or another special role."
+    },
+    {
+      "content_type": "text",
+      "text": "Hippogryphs and Hippocampi must be tamed, saddled, owned by the commanding player and unoccupied. Ordinary soldiers and combat NPCs holding a bow or crossbow are supported. Hippogryphs use flight control; Hippocampi use water-surface movement. These rules do not cover every modded mount."
+    },
+    {
+      "content_type": "text",
+      "text": "Use applicable baton orders and same-type formations after mounting. Integrated dragon flight, breath and block breaking still respect the relevant game and Ice and Fire configuration. Leave space for the mount, takeoff or water route. Use Dismount mode to leave the mount."
+    },
+    {
+      "content_type": "heading",
+      "text": "Ice and Fire: NPC Weapon Effects",
+      "level": 2,
+      "anchor": "icefire_weapons"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "iceandfire:dragonbone_sword_fire"
+        },
+        {
+          "name": "iceandfire:dragonsteel_ice_sword"
+        },
+        {
+          "name": "iceandfire:silver_sword"
+        },
+        {
+          "name": "iceandfire:myrmex_desert_sword_venom"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Requires Ice and Fire. Supported weapons on player-owned combat NPCs or applicable faction soldiers invoke their native on-hit effects after a successful melee hit, rather than only contributing displayed damage."
+    },
+    {
+      "content_type": "text",
+      "text": "Supported groups include elemental Dragonbone swords, elemental Dragonsteel swords and axes, Silver swords and axes, and Desert/Jungle Myrmex swords, venom swords and axes. Myrmex venom swords also apply the integrated poison effect. Damage, durability and native effects depend on the actual item and mod settings."
+    },
+    {
+      "content_type": "text",
+      "text": "Obtain weapons through Ice and Fire recipes or loot. This does not provide custom NPC AI for every Ice and Fire item, ranged weapon or third-party addon weapon."
+    },
+    {
+      "content_type": "heading",
+      "text": "Structure Loot: Proud Souls and Ice and Fire Materials",
+      "level": 2,
+      "anchor": "structure_loot"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:advanced_loot_chest"
+        },
+        {
+          "name": "slashblade:proudsoul"
+        },
+        {
+          "name": "iceandfire:dragonbone"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "SlashBlade and Ice and Fire enable their respective rewards. The integration applies to configured Ancient Warfare structure containers, not arbitrary player chests, and adds to rather than replaces original contents or loot tables."
+    },
+    {
+      "content_type": "text",
+      "text": "Configured SlashBlade containers roll one Tiny Proud Soul or Proud Soul fragment with a random level-one enchantment. Ice and Fire rewards are probabilistic and depend on structure theme and loot tier; an extra Ice and Fire reward is not guaranteed."
+    },
+    {
+      "content_type": "text",
+      "text": "Selected legacy AWS Ice and Fire entity and block names are remapped. Missing blocks may use vanilla fallbacks; this does not recreate missing modded creatures."
+    },
+    {
+      "content_type": "text",
+      "text": "Do not expect retroactive rewards in already-generated or opened structures. Containers still use their actual shared inventory, not a separate reward for every player."
+    },
+    {
+      "content_type": "heading",
+      "text": "World War: Modern Professions, Equipment and Headquarters",
+      "level": 2,
+      "anchor": "world_war"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "aw_addon:army_soldier"
+        },
+        {
+          "name": "aw_addon:ship_captain"
+        },
+        {
+          "name": "aw_addon:headquarters"
+        },
+        {
+          "name": "aw_addon:heavy_tank"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Requires the Ancient Warfare: World War addon (aw_addon). The core does not require the addon. When installed, the addon integrates NPC ownership, equipment, food, packing, research and engineering recipes."
+    },
+    {
+      "content_type": "text",
+      "text": "Modern equipment, profession items and Headquarters use their respective engineering recipes and Modernization research, which requires Advanced Siege Warfare. Modern Soldier and Ship Captain are distinct professions; their creative entries appear in the World War tab and are hidden without the addon."
+    },
+    {
+      "content_type": "text",
+      "text": "Deploy owned modern soldiers with suitable vehicles or guns and ammunition, then use applicable Headquarters formations and deployment. They are not core siege engineers. Aircraft use dedicated Headquarters flight orders, not ordinary infantry autonomous combat."
+    },
+    {
+      "content_type": "text",
+      "text": "Packed profession spawners preserve NPC data; supported Headquarters reserves can store crew and vehicles together. Captains operate ship helms rather than acting as renamed siege engineers. Ship physicalization additionally requires the integration described next."
+    },
+    {
+      "content_type": "heading",
+      "text": "Valkyrien Skies: Helm, Hull and Carrier Aircraft",
+      "level": 2,
+      "anchor": "valkyrien_ships"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "aw_addon:ship_helm"
+        },
+        {
+          "name": "aw_addon:ship_thruster"
+        },
+        {
+          "name": "aw_addon:ship_gyro"
+        },
+        {
+          "name": "aw_addon:ship_buoyancy"
+        },
+        {
+          "name": "aw_addon:escort_carrier"
+        },
+        {
+          "name": "aw_addon:test_battleship"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Requires both World War and Valkyrien Skies with their own dependencies. The Helm, Thruster, Gyro and Buoyancy blocks belong to World War, not the core torque network."
+    },
+    {
+      "content_type": "text",
+      "text": "Build an isolated hull with a helm and appropriate components, open the helm console and use Assemble/physicalize. The connected hull is handed to Valkyrien Skies physics, with a current limit of 4096 blocks per assembly. Keep it separate from shore and other builds, and test in open water. Assembly is unavailable without Valkyrien Skies."
+    },
+    {
+      "content_type": "text",
+      "text": "Thrusters provide integrated propulsion, gyros provide attitude control and submerged Buoyancy blocks add support; they stop adding buoyancy out of water. Distribute buoyancy around the hull bottom or waterline to suit its mass. One block cannot support every ship."
+    },
+    {
+      "content_type": "text",
+      "text": "Captains, helms, supported ship guns and aircraft use ship/world coordinate conversion. Headquarters can deploy supported aircraft to suitable physical ship decks, subject to deck support, body clearance, runway and loaded-chunk checks."
+    },
+    {
+      "content_type": "text",
+      "text": "Escort Carrier and Test Battleship templates are suitable for creative testing. They place many blocks, so use an empty test area. A generated hull does not automatically complete physicalization, balancing, ammunition or captain setup."
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["CSC", "SSS", "C C"],
+  "key": { "S": { "item": "minecraft:stick" }, "C": { "item": "minecraft:cobblestone" } },
+  "result": { "item": "ancientwarfare:fire_pit_square" }
+}

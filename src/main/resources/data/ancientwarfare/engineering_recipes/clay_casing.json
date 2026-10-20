@@ -1,0 +1,19 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:clay"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "tag":  "minecraft:wool"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:clay_casing",
+                   "count":  8
+               }
+}

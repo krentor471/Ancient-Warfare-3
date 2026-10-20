@@ -1,0 +1,19 @@
+{
+    "required_research":  "mass_production",
+    "pattern":  [
+                    "GPG",
+                    "PPP",
+                    "GGG"
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "forge:ingots/steel"
+                      },
+                "G":  {
+                          "tag":  "forge:glass_panes"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:flywheel_storage_heavy"
+               }
+}

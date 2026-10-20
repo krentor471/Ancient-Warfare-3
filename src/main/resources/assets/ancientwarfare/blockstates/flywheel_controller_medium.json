@@ -1,0 +1,8 @@
+﻿{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/flywheel_controller_medium" },
+    "facing=south": { "model": "ancientwarfare:block/flywheel_controller_medium", "y": 180 },
+    "facing=west": { "model": "ancientwarfare:block/flywheel_controller_medium", "y": 270 },
+    "facing=east": { "model": "ancientwarfare:block/flywheel_controller_medium", "y": 90 }
+  }
+}

@@ -1,0 +1,42 @@
+{
+    "required_research":  "naval_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:rough_iron"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:torsion_unit"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:equipment_bay"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "ancientwarfare:mobility_unit"
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:cactus"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ballista_boat_steel"
+               }
+}

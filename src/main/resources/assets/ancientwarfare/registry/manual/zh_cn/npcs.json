@@ -1,0 +1,571 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "npcs",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "五 NPC",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "联动说明：拔刀剑、铁魔法与冰火坐骑",
+          "category_link": "integrations",
+          "anchor": ""
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "NPC生成器",
+          "category_link": "npcs",
+          "anchor": "entry_036"
+        },
+        {
+          "text": "工作者与职业工具",
+          "category_link": "npcs",
+          "anchor": "entry_037"
+        },
+        {
+          "text": "战斗NPC与职业装备",
+          "category_link": "npcs",
+          "anchor": "entry_038"
+        },
+        {
+          "text": "指挥棒",
+          "category_link": "npcs",
+          "anchor": "entry_039"
+        },
+        {
+          "text": "工作指令",
+          "category_link": "npcs",
+          "anchor": "entry_040"
+        },
+        {
+          "text": "路线指令",
+          "category_link": "npcs",
+          "anchor": "entry_041"
+        },
+        {
+          "text": "食物供给点",
+          "category_link": "npcs",
+          "anchor": "entry_042"
+        },
+        {
+          "text": "作战指令",
+          "category_link": "npcs",
+          "anchor": "entry_043"
+        },
+        {
+          "text": "交易指令与玩家商人",
+          "category_link": "npcs",
+          "anchor": "entry_044"
+        },
+        {
+          "text": "市政厅",
+          "category_link": "npcs",
+          "anchor": "entry_045"
+        },
+        {
+          "text": "牧师生成器与复活",
+          "category_link": "npcs",
+          "anchor": "entry_046"
+        },
+        {
+          "text": "攻城工程师生成器",
+          "category_link": "npcs",
+          "anchor": "entry_047"
+        },
+        {
+          "text": "吟游诗人与乐器",
+          "category_link": "npcs",
+          "anchor": "entry_048"
+        },
+        {
+          "text": "食物包",
+          "category_link": "npcs",
+          "anchor": "entry_049"
+        },
+        {
+          "text": "NPC武器与盾牌",
+          "category_link": "npcs",
+          "anchor": "entry_050"
+        },
+        {
+          "text": "NPC通行与木门",
+          "category_link": "npcs",
+          "anchor": "entry_051"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "本章介绍玩家 NPC 及其配套物品。NPC 的归属、职业装备、指令、食物和可通行路线共同决定其行为。野外阵营 NPC 与玩家招募的 NPC 不完全相同，阵营交易见第六章。"
+    },
+    {
+      "content_type": "heading",
+      "text": "NPC生成器",
+      "level": 2,
+      "anchor": "entry_036"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "worker"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "combat"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "courier"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "trader"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "bard"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "priest"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "siege_engineer"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：在工程站制作对应角色的生成器。工作者、吟游诗人和牧师需要领导学，战斗人员需要征兵制，信使与商人需要贸易，攻城工程师需要攻城战。"
+    },
+    {
+      "content_type": "text",
+      "text": "NPC生成器用于部署对应角色。选择安全、可站立的位置右键放置，玩家 NPC 会记录归属；带有已打包数据的生成器还可恢复相应 NPC 的信息。"
+    },
+    {
+      "content_type": "text",
+      "text": "矿工、农夫、伐木工、研究员、工匠、战斗人员、信使、商人、吟游诗人、牧师和攻城工程师各有用途。阵营生成器带阵营身份，不应当作玩家 NPC 的通用替代品；刷怪蛋也不等于完整配置好的招募物品。"
+    },
+    {
+      "content_type": "heading",
+      "text": "工作者与职业工具",
+      "level": 2,
+      "anchor": "entry_037"
+    },
+    {
+      "content_type": "text",
+      "text": "工作者的职业与主手工具有关：镐对应矿工，锄对应农夫，斧对应伐木工，羽毛笔对应研究员，锤对应工匠。没有匹配工具时，不能仅凭名字或外观认定职业已经生效。"
+    },
+    {
+      "content_type": "text",
+      "text": "装备工具后，为 NPC 设置工作指令和食物供给。人员要能抵达工作目标，目标设施也必须有可做的工作；给空机器派更多工人不会自动补上材料。"
+    },
+    {
+      "content_type": "heading",
+      "text": "战斗NPC与职业装备",
+      "level": 2,
+      "anchor": "entry_038"
+    },
+    {
+      "content_type": "text",
+      "text": "战斗 NPC 根据主手装备识别职责：远程武器对应远程角色，指挥棒对应指挥官，苹果对应医疗兵，锤对应工兵，其余常规装备对应普通士兵。"
+    },
+    {
+      "content_type": "text",
+      "text": "给医疗兵配置的识别物品是苹果，不是玻璃瓶。装备和角色只是战斗行为的一部分，还要检查可攻击目标、命令、弹药以及与同伴之间的距离。"
+    },
+    {
+      "content_type": "heading",
+      "text": "指挥棒",
+      "level": 2,
+      "anchor": "entry_039"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_command_baton"
+        },
+        {
+          "name": "ancientwarfare:stone_command_baton"
+        },
+        {
+          "name": "ancientwarfare:iron_command_baton"
+        },
+        {
+          "name": "ancientwarfare:gold_command_baton"
+        },
+        {
+          "name": "ancientwarfare:diamond_command_baton"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为指挥学。"
+    },
+    {
+      "content_type": "text",
+      "text": "指挥棒用于选择并指挥有权限控制的 NPC。对己方 NPC 右键可选中或取消，普通选择上限为 16 名。潜行右键切换模式，默认 X 键清除选择；修改过按键时以控制设置为准。"
+    },
+    {
+      "content_type": "text",
+      "text": "当前模式包括清除命令、下马、攻击或移动攻击、移动、上马和战斗编组。移动类命令对准目的地方块右键；攻击模式下，左键点击生物可下达指定攻击命令。执行前先检查当前模式，避免把选择与下令混为一谈。"
+    },
+    {
+      "content_type": "text",
+      "text": "战斗编组只接受适用的战斗 NPC 与攻城工程师，并按同兵种限制组员。它不是把任意工人与士兵混在一起的通用选择框。"
+    },
+    {
+      "content_type": "heading",
+      "text": "工作指令",
+      "level": 2,
+      "anchor": "entry_040"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:work_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为领导学。"
+    },
+    {
+      "content_type": "text",
+      "text": "工作指令用于记录工作者需要访问的工作位置。手持指令，对准目标方块使用默认 Z 键记录位置，再右键打开界面检查和调整记录，最后把指令交给对应 NPC。"
+    },
+    {
+      "content_type": "text",
+      "text": "记录点应指向真正可以工作的设施，而不是它旁边的装饰方块。更改基地布局后，要更新已经失效的位置，并确认 NPC 的工具职业与工作站类型匹配。"
+    },
+    {
+      "content_type": "heading",
+      "text": "路线指令",
+      "level": 2,
+      "anchor": "entry_041"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:routing_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "路线指令用于信使搬运。对准容器的目标面按默认 Z 键记录，再在界面中设置每个点的搬运方式、过滤物品和数量，交给信使执行。"
+    },
+    {
+      "content_type": "text",
+      "text": "每张指令最多记录 16 个路线点，并保存侧面与维度；过滤区支持十二格配置。默认记录模式为补足目标数量，实际使用时应逐点检查取货与送货方向，不能把所有点都设成同一种操作后期待自动理解整条物流线路。"
+    },
+    {
+      "content_type": "heading",
+      "text": "食物供给点",
+      "level": 2,
+      "anchor": "entry_042"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:upkeep_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为领导学。"
+    },
+    {
+      "content_type": "text",
+      "text": "食物供给点记录 NPC 补充食物的位置。对准供给容器及其目标面按默认 Z 键标记，再打开界面检查取食量与相关设置，将其配置给需要补给的 NPC。"
+    },
+    {
+      "content_type": "text",
+      "text": "容器中应有可用食物，并留出可到达的位置。物品已经做出来但没有记录有效容器，或者食物在另一个无法到达的箱子里，都不能保证补给成功。"
+    },
+    {
+      "content_type": "heading",
+      "text": "作战指令",
+      "level": 2,
+      "anchor": "entry_043"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:combat_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为领导学。"
+    },
+    {
+      "content_type": "text",
+      "text": "作战指令用于记录战斗人员的活动点。默认 Z 键添加点位，潜行加 Z 清空已有记录，右键打开界面检查。最多可保存 32 个点。"
+    },
+    {
+      "content_type": "text",
+      "text": "在不同维度添加新点会清掉旧维度的点位，因此它不是跨维度巡逻路线。使用前还应确认地形、门口和台阶允许 NPC 通过。"
+    },
+    {
+      "content_type": "heading",
+      "text": "交易指令与玩家商人",
+      "level": 2,
+      "anchor": "entry_044"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:trade_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "交易指令服务于玩家商人，用于设置其经营的交易内容。按界面配置交易物品后交给相应商人，并保证交易所需的实际物资可以满足。"
+    },
+    {
+      "content_type": "text",
+      "text": "它与野外阵营商人的交易表是两套机制。阵营商人不需要先装备玩家交易指令；遇到阵营交易问题时，应检查该商人的交易条目、支付物品和背包空间。"
+    },
+    {
+      "content_type": "heading",
+      "text": "市政厅",
+      "level": 2,
+      "anchor": "entry_045"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:town_hall"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为领导学。"
+    },
+    {
+      "content_type": "text",
+      "text": "市政厅为玩家 NPC 提供基地管理与补给相关功能，并保留关联 NPC 的死亡记录。放置后打开界面，安排食物，并给需要归属此处的 NPC 设置对应市政厅。"
+    },
+    {
+      "content_type": "text",
+      "text": "市政厅不是无条件覆盖整个世界的补给网络。NPC 的归属与关联位置需要正确，食物要真实存在，路线也应可达；死亡记录则是牧师执行复活工作的依据。"
+    },
+    {
+      "content_type": "heading",
+      "text": "牧师生成器与复活",
+      "level": 2,
+      "anchor": "entry_046"
+    },
+    {
+      "content_type": "text",
+      "text": "牧师可处理关联市政厅中尚未完成、未被其他牧师认领且允许复活的死亡记录。在没有当前命令干扰时，牧师前往市政厅附近施法，再让对应 NPC 以半血状态重生。"
+    },
+    {
+      "content_type": "text",
+      "text": "已经复活过的记录不会再次被当作新任务。没有关联市政厅、没有可用记录或牧师无法到达时，不会仅因把牧师放在附近就复活任意死者。"
+    },
+    {
+      "content_type": "heading",
+      "text": "攻城工程师生成器",
+      "level": 2,
+      "anchor": "entry_047"
+    },
+    {
+      "content_type": "text",
+      "text": "攻城工程师负责寻找并操作适用的攻城器械，能够上车并参与器械攻击。先部署器械，准备适配弹药，并保持工程师与器械之间的通路。"
+    },
+    {
+      "content_type": "text",
+      "text": "工程师不是负责工程站研究的工匠。器械本身的射界、装填、弹药兼容和目标限制仍然生效；不能靠工程师让错误弹药变得可用。"
+    },
+    {
+      "content_type": "heading",
+      "text": "吟游诗人与乐器",
+      "level": 2,
+      "anchor": "entry_048"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:bard_instrument",
+          "tag": {
+            "instrument": "drum"
+          }
+        },
+        {
+          "name": "ancientwarfare:bard_instrument",
+          "tag": {
+            "instrument": "flute"
+          }
+        },
+        {
+          "name": "ancientwarfare:bard_instrument",
+          "tag": {
+            "instrument": "harp"
+          }
+        },
+        {
+          "name": "ancientwarfare:bard_instrument",
+          "tag": {
+            "instrument": "lute"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为领导学。"
+    },
+    {
+      "content_type": "text",
+      "text": "吟游诗人可配合鼓、笛、竖琴、琵琶等乐器与音乐设置使用。通过其音乐界面选择曲目并安排播放。"
+    },
+    {
+      "content_type": "text",
+      "text": "本地曲目放在当前游戏目录的 ancientwarfare_bard_music 文件夹，支持 MP3、OGG 和 WAV。文件由各客户端本地读取；服务器记录曲名并不等于已经把音乐文件自动发给所有玩家，联机使用时应准备一致的曲目文件。"
+    },
+    {
+      "content_type": "heading",
+      "text": "食物包",
+      "level": 2,
+      "anchor": "entry_049"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:food_bundle"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为领导学。"
+    },
+    {
+      "content_type": "text",
+      "text": "食物包是一种食物，当前营养值为 15。它可作为补给物资保存和分发，但不是能够再往里面装食物的小型容器。"
+    },
+    {
+      "content_type": "text",
+      "text": "建立补给线时，把实际食物放进有效的供给容器。食物包的外形不代表自动寻路、自动喂食或无限补给功能。"
+    },
+    {
+      "content_type": "heading",
+      "text": "NPC武器与盾牌",
+      "level": 2,
+      "anchor": "entry_050"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_spear"
+        },
+        {
+          "name": "ancientwarfare:iron_spear"
+        },
+        {
+          "name": "ancientwarfare:wooden_halberd"
+        },
+        {
+          "name": "ancientwarfare:iron_halberd"
+        },
+        {
+          "name": "ancientwarfare:wooden_lance"
+        },
+        {
+          "name": "ancientwarfare:iron_lance"
+        },
+        {
+          "name": "ancientwarfare:wooden_cleaver"
+        },
+        {
+          "name": "ancientwarfare:iron_cleaver"
+        },
+        {
+          "name": "ancientwarfare:shield_round_1"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：木矛、铁矛、木戟、铁戟、木枪、铁枪：工作台，无前置研究要求。本组其余变体不共用上述直接配方。"
+    },
+    {
+      "content_type": "text",
+      "text": "长矛、戟、骑枪、砍刀、镰刀、棍棒和各种盾牌为 NPC 与战斗提供装备选择。各材质与特殊武器应按实际属性及配方选用，外形相近不代表伤害、耐久和效果相同。"
+    },
+    {
+      "content_type": "text",
+      "text": "把装备放入对应槽位后检查主手职责。指挥棒、苹果和锤可能改变战斗角色；给工人换上武器也不等于自动把其实体类型改为战斗 NPC。"
+    },
+    {
+      "content_type": "heading",
+      "text": "NPC通行与木门",
+      "level": 2,
+      "anchor": "entry_051"
+    },
+    {
+      "content_type": "text",
+      "text": "NPC 在适用的寻路过程中能够处理普通木门的开关，使其通过后恢复通行区域的门状态。基地门口仍需留下足够空间，避免把碰撞体、箱子或台阶堆在门的两侧。"
+    },
+    {
+      "content_type": "text",
+      "text": "普通木门通行与第七章的大型动态城门不是同一套交互。不要据此假定 NPC 能自行开关铁门、所有模组门或大型吊桥；特殊入口可另行布置红石控制。"
+    }
+  ]
+}

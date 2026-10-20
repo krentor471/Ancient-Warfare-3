@@ -1,0 +1,18 @@
+{
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:planks"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "tag":  "forge:ingots/iron"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:vehicle_upgrade_pitch_up"
+               }
+}

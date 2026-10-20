@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "ancientwarfare:block/automation/chunk_loader_simple_side",
+    "down": "ancientwarfare:block/automation/chunk_loader_simple_bottom",
+    "up": "ancientwarfare:block/automation/chunk_loader_simple_top",
+    "north": "ancientwarfare:block/automation/chunk_loader_simple_side",
+    "south": "ancientwarfare:block/automation/chunk_loader_simple_side",
+    "west": "ancientwarfare:block/automation/chunk_loader_simple_side",
+    "east": "ancientwarfare:block/automation/chunk_loader_simple_side"
+  }
+}

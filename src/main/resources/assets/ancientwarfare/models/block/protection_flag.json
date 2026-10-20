@@ -1,0 +1,48 @@
+{
+  "textures": {
+    "pole": "minecraft:block/oak_planks",
+    "cloth": "minecraft:block/red_wool",
+    "particle": "minecraft:block/red_wool"
+  },
+  "elements": [
+    {
+      "from": [7, 0, 7],
+      "to": [9, 24, 9],
+      "faces": {
+        "north": { "uv": [0, 0, 2, 16], "texture": "#pole" },
+        "east": { "uv": [0, 0, 2, 16], "texture": "#pole" },
+        "south": { "uv": [0, 0, 2, 16], "texture": "#pole" },
+        "west": { "uv": [0, 0, 2, 16], "texture": "#pole" },
+        "up": { "uv": [0, 0, 2, 2], "texture": "#pole" },
+        "down": { "uv": [0, 0, 2, 2], "texture": "#pole" }
+      }
+    },
+    {
+      "from": [8, 12, 4],
+      "to": [8.5, 22, 14],
+      "faces": {
+        "north": { "uv": [0, 0, 10, 10], "texture": "#cloth" },
+        "south": { "uv": [0, 0, 10, 10], "texture": "#cloth" },
+        "east": { "uv": [0, 0, 1, 10], "texture": "#cloth" },
+        "west": { "uv": [0, 0, 1, 10], "texture": "#cloth" },
+        "up": { "uv": [0, 0, 10, 1], "texture": "#cloth" },
+        "down": { "uv": [0, 0, 10, 1], "texture": "#cloth" }
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 2.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "gui": {
+      "rotation": [30, 225, 0],
+      "scale": [0.625, 0.625, 0.625]
+    }
+  }
+}

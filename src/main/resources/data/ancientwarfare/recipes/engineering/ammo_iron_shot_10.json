@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:iron_casing"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "minecraft:gunpowder"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ammo_iron_shot_10",
+                   "count":  8
+               }
+}

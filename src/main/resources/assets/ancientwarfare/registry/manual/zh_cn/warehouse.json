@@ -1,0 +1,217 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "warehouse",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "四 仓库",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "仓库控制方块",
+          "category_link": "warehouse",
+          "anchor": "entry_030"
+        },
+        {
+          "text": "小型中型与大型储物仓",
+          "category_link": "warehouse",
+          "anchor": "entry_031"
+        },
+        {
+          "text": "仓库界面",
+          "category_link": "warehouse",
+          "anchor": "entry_032"
+        },
+        {
+          "text": "仓库制作站",
+          "category_link": "warehouse",
+          "anchor": "entry_033"
+        },
+        {
+          "text": "仓库库存查看器",
+          "category_link": "warehouse",
+          "anchor": "entry_034"
+        },
+        {
+          "text": "仓库库存链接器",
+          "category_link": "warehouse",
+          "anchor": "entry_035"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "仓库系统通过控制方块管理范围内的储物仓，再由仓库界面、制作站和库存设备提供存取与自动化功能。仓库容量、物流接口和红石检测是不同职责。"
+    },
+    {
+      "content_type": "heading",
+      "text": "仓库控制方块",
+      "level": 2,
+      "anchor": "entry_030"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_control"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "仓库控制方块是仓库网络的中心。调整管理范围，使储物仓和仓库设施位于范围内。每个组件只属于一个仓库；范围重叠时优先选择最近的控制器，已有归属保持稳定，可在组件界面切换所属仓库。"
+    },
+    {
+      "content_type": "text",
+      "text": "控制器只识别本模组的储物仓。界面支持搜索、排序、滚动和快捷存取，容量以占用槽位和总槽位显示。左键取最多一组，右键取该组的一半；手持物品点击可存入。未加载区块中的储物仓暂不计入可用库存，不会强制加载区块。"
+    },
+    {
+      "content_type": "heading",
+      "text": "小型中型与大型储物仓",
+      "level": 2,
+      "anchor": "entry_031"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_storage_small"
+        },
+        {
+          "name": "ancientwarfare:warehouse_storage_medium"
+        },
+        {
+          "name": "ancientwarfare:warehouse_storage_large"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "储物仓按物品和完整 NBT 汇总存储，不使用箱子式槽位。小型、中型和大型分别容纳 576、1152、1728 件物品；工具等不可堆叠物品也按每件占一份容量。放入控制方块的管理范围后供仓库系统使用。"
+    },
+    {
+      "content_type": "text",
+      "text": "储物仓可设置最多十条过滤器。控制器优先存入匹配的储物仓，其次使用无过滤器的储物仓，不会把不匹配的物品送进已过滤的储物仓。手动直接存入不受过滤器限制。扩容需增加储物仓；旧槽位库存会完整迁移，若超出容量则保留物品、暂停接收，取出后恢复。拆除时库存按正常堆叠掉落。"
+    },
+    {
+      "content_type": "heading",
+      "text": "仓库界面",
+      "level": 2,
+      "anchor": "entry_032"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_interface"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "仓库界面包含九格实际库存和最多九项过滤设置。库存保持模式会补足需求并回收多余物品；仅输入模式把接口物品送入仓库；仅输出模式按过滤条件补货、不自动回收。相同物品的多条目标数量相加，目标超过接口容量时显示警告。"
+    },
+    {
+      "content_type": "text",
+      "text": "例如需要为机器持续准备某种原料，可以让接口保持少量库存，再由搬运设施取走。仓库缺货时接口不能凭空补货；目标数量也不是给整个仓库设置的总库存上限。"
+    },
+    {
+      "content_type": "heading",
+      "text": "仓库制作站",
+      "level": 2,
+      "anchor": "entry_033"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_crafting"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "仓库制作站在控制器范围内即可连接，旧版放在控制器正上方的摆法也仍有效。配置制作模板，满足研究要求并安排工匠或供应工作能量。成品默认留在输出槽，开启成品自动入库后，自动制造的成品直接存入仓库。"
+    },
+    {
+      "content_type": "text",
+      "text": "制作站从仓库取得原料。材料、成品空间和空桶等返还物的存放条件全部满足才开始制造；满仓时会暂停，不会扣除部分材料或丢弃返还物。手动取走合成结果仍直接交给玩家。"
+    },
+    {
+      "content_type": "heading",
+      "text": "仓库库存查看器",
+      "level": 2,
+      "anchor": "entry_034"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_stock_viewer"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "仓库库存查看器用于查看仓库中物品的数量，可通过过滤条件关注特定物资。它适合放在管理区，用于观察粮食、建材和弹药库存。"
+    },
+    {
+      "content_type": "text",
+      "text": "查看器的统计不会制造或运输物品。显示数量不符合预期时，先检查连接的仓库和控制范围，再核对过滤物品是否正确。"
+    },
+    {
+      "content_type": "heading",
+      "text": "仓库库存链接器",
+      "level": 2,
+      "anchor": "entry_035"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_stock_linker"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "仓库库存链接器把库存条件转换成强度 15 的红石信号。默认任一已设置条件满足即可激活，也可切换为全部满足。数量阈值允许为零，可用于检测缺货。"
+    },
+    {
+      "content_type": "text",
+      "text": "它适合与报警或红石控制线路配合。多个条件不是默认全部同时满足的关系；链接器也不是物品输送管，不能靠它直接把仓库物资移到机器里。"
+    }
+  ]
+}

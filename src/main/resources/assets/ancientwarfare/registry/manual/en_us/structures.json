@@ -1,0 +1,324 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "structures",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "VII. Structures",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Integration: Structure Loot",
+          "category_link": "integrations",
+          "anchor": "structure_loot"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Structure Scanner",
+          "category_link": "structures",
+          "anchor": "entry_057"
+        },
+        {
+          "text": "Structure Scanner Block",
+          "category_link": "structures",
+          "anchor": "entry_058"
+        },
+        {
+          "text": "Drafting Station",
+          "category_link": "structures",
+          "anchor": "entry_059"
+        },
+        {
+          "text": "Survival Structure Builder",
+          "category_link": "structures",
+          "anchor": "entry_060"
+        },
+        {
+          "text": "Structure and Town Template Items",
+          "category_link": "structures",
+          "anchor": "entry_061"
+        },
+        {
+          "text": "Dynamic Gate Spawners",
+          "category_link": "structures",
+          "anchor": "entry_062"
+        },
+        {
+          "text": "Protection Flag",
+          "category_link": "structures",
+          "anchor": "entry_064"
+        },
+        {
+          "text": "Advanced Spawner",
+          "category_link": "structures",
+          "anchor": "entry_065"
+        },
+        {
+          "text": "Advanced Loot Chest",
+          "category_link": "structures",
+          "anchor": "entry_066"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "This chapter covers structure recording, template construction, gates and scene-configuration items. Before generating or rewriting large areas, check direction, bounds and results in an empty area or test world."
+    },
+    {
+      "content_type": "heading",
+      "text": "Structure Scanner",
+      "level": 2,
+      "anchor": "entry_057"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:structure_scanner"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Construction research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Structure Scanner records structure boundaries and the construction origin. Ordinary right-click selects the first and second points in sequence; sneak-right-click sets the construction origin."
+    },
+    {
+      "content_type": "text",
+      "text": "Boundaries determine which blocks are recorded; the origin determines how the template is positioned later. These are three separate coordinates. Check foundations, roofs and attachments are within the bounds before using them in structure recording."
+    },
+    {
+      "content_type": "heading",
+      "text": "Structure Scanner Block",
+      "level": 2,
+      "anchor": "entry_058"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:structure_scanner_block"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Construction research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Structure Scanner Block provides the recording interface and reads points and template data from the held scanner. Set bounds and origin with the scanner first, then open the block to check the name and recording settings."
+    },
+    {
+      "content_type": "text",
+      "text": "It creates or organizes building templates, not free supplies for an entire building. Use names that distinguish versions so an old template is not confused with a new structure."
+    },
+    {
+      "content_type": "heading",
+      "text": "Drafting Station",
+      "level": 2,
+      "anchor": "entry_059"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:drafting_station"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Construction research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Drafting Station turns a selected template and its materials into a buildable Survival Structure Builder. Select the template, review required materials, insert resources and start crafting. Take the result from output once requirements are met."
+    },
+    {
+      "content_type": "text",
+      "text": "Materials are collected for that template and output must be free. Confirm the template before inserting valuable supplies; the station is not merely a browser that can switch templates without material records."
+    },
+    {
+      "content_type": "heading",
+      "text": "Survival Structure Builder",
+      "level": 2,
+      "anchor": "entry_060"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:structure_builder_ticked"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: select a template and supply its materials in the Drafting Station. Preset template items are also available in Creative mode."
+    },
+    {
+      "content_type": "text",
+      "text": "A Survival Structure Builder carrying a template constructs it gradually. Check position and facing before placing it. Right-click with a Hammer in Work mode to provide manual construction energy and inspect progress."
+    },
+    {
+      "content_type": "text",
+      "text": "The builder item can preserve construction data, including template and progress. It is not an ordinary decoration. Confirm the area it will overwrite, especially underground foundations and existing chests, before using it in a base."
+    },
+    {
+      "content_type": "heading",
+      "text": "Structure and Town Template Items",
+      "level": 2,
+      "anchor": "entry_061"
+    },
+    {
+      "content_type": "text",
+      "text": "Structure template items store an AWS template identifier; town template items store an AWT town identifier for placement or generation. Different names correspond to different buildings; the common controls do not need separate instructions for each one."
+    },
+    {
+      "content_type": "text",
+      "text": "These items are useful for Creative building, mapmaking and content inspection. Read the template name in the tooltip and leave room before generating. They do not replace the survival workflow of preparing materials in the Drafting Station."
+    },
+    {
+      "content_type": "heading",
+      "text": "Dynamic Gate Spawners",
+      "level": 2,
+      "anchor": "entry_062"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:gate_spawner"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_iron"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_single_wood"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_single_iron"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_double_wood"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_double_iron"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_drawbridge"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Construction research."
+    },
+    {
+      "content_type": "text",
+      "text": "There are seven Gate Spawners: wooden and iron Vertical, Single Sliding and Double Sliding Gates, plus a wooden Drawbridge. Hold the appropriate spawner and right-click two opposite corners. The recorded position is the adjacent block outside the clicked face; both points must lie in the same vertical plane."
+    },
+    {
+      "content_type": "text",
+      "text": "Gate bounds can be up to 12x12 and must contain air or replaceable blocks. Selecting the second point creates the gate and consumes a spawner. Right-click the built gate to toggle it; redstone power holds it open and removing power updates it to closed. Leave room for movement."
+    },
+    {
+      "content_type": "text",
+      "text": "Panels, side frames and top frames are assembled according to the selected width and height without stretching textures. Wooden gates have solid panels; iron gates have bars. A closed Drawbridge stands upright and lowers around its bottom hinge when opened. The selection height determines its unfolded length; leave suitable passage space."
+    },
+    {
+      "content_type": "heading",
+      "text": "Protection Flag",
+      "level": 2,
+      "anchor": "entry_064"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:protection_flag"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "Protection Flags store territory or faction information. Before claiming a flag with configured territory bounds, it checks for faction NPCs hostile to the player inside the area. Remaining enemies are counted and highlighted with glowing to help locate them."
+    },
+    {
+      "content_type": "text",
+      "text": "Clear those enemies before completing the claim. A flag is not a universal server claim-plugin replacement; placing one does not guarantee that all breaking, interaction and explosions are prohibited."
+    },
+    {
+      "content_type": "heading",
+      "text": "Advanced Spawner",
+      "level": 2,
+      "anchor": "entry_065"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:advanced_spawner"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "The Advanced Spawner generates configured content for structures and maps through its interface. It is primarily a scene-building facility, not a recruitment item that gives ordinary players unlimited arbitrary NPCs."
+    },
+    {
+      "content_type": "text",
+      "text": "Its visualization is tied to Creative editing. Check configuration, area and spawn conditions when troubleshooting. An invisible model in Survival does not mean the facility is absent."
+    },
+    {
+      "content_type": "heading",
+      "text": "Advanced Loot Chest",
+      "level": 2,
+      "anchor": "entry_066"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:advanced_loot_chest"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition note: this group currently has no direct finished-item recipe in the ordinary crafting table or Engineering Station. Do not assume it is directly craftable."
+    },
+    {
+      "content_type": "text",
+      "text": "Advanced Loot Chests hold structure loot. Their configuration or template determines the loot source; after opening, players use the actual generated inventory."
+    },
+    {
+      "content_type": "text",
+      "text": "They are not currently Lootr-style chests with separate rewards for each player. In multiplayer, items taken by one player affect later players. Plan map rewards around shared inventory."
+    }
+  ]
+}

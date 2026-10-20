@@ -1,0 +1,39 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.hwacha.wheels_roll": {
+      "animation_length": 1,
+      "loop": true,
+      "bones": {
+        "left_wheel": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              360,
+              0,
+              0
+            ]
+          }
+        },
+        "right_wheel": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              360,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

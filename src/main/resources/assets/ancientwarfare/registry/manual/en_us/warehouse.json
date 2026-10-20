@@ -1,0 +1,217 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "warehouse",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "IV. Warehouse",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Warehouse Control",
+          "category_link": "warehouse",
+          "anchor": "entry_030"
+        },
+        {
+          "text": "Small, Medium and Large Warehouse Storage",
+          "category_link": "warehouse",
+          "anchor": "entry_031"
+        },
+        {
+          "text": "Warehouse Interface",
+          "category_link": "warehouse",
+          "anchor": "entry_032"
+        },
+        {
+          "text": "Warehouse Crafting Table",
+          "category_link": "warehouse",
+          "anchor": "entry_033"
+        },
+        {
+          "text": "Warehouse Stock Viewer",
+          "category_link": "warehouse",
+          "anchor": "entry_034"
+        },
+        {
+          "text": "Warehouse Stock Linker",
+          "category_link": "warehouse",
+          "anchor": "entry_035"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Warehouse Control manages Warehouse Storage within its bounds. Interfaces, crafting tables and stock devices provide access and automation. Capacity, logistics and redstone detection are separate functions."
+    },
+    {
+      "content_type": "heading",
+      "text": "Warehouse Control",
+      "level": 2,
+      "anchor": "entry_030"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_control"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "Warehouse Control is the network hub. Adjust its bounds to include storage and facilities. Each component belongs to one warehouse. New connections choose the nearest eligible controller, existing bindings remain stable, and component menus can change the binding when bounds overlap."
+    },
+    {
+      "content_type": "text",
+      "text": "Only this mod's storage is included. Search, sorting, scrolling and quick transfers are available; capacity shows occupied and total slots. Left-click takes up to one stack, right-click half of that stack, and clicking with a carried item deposits it. Unloaded storage is excluded from available stock; the warehouse never force-loads chunks."
+    },
+    {
+      "content_type": "heading",
+      "text": "Small, Medium and Large Warehouse Storage",
+      "level": 2,
+      "anchor": "entry_031"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_storage_small"
+        },
+        {
+          "name": "ancientwarfare:warehouse_storage_medium"
+        },
+        {
+          "name": "ancientwarfare:warehouse_storage_large"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "Warehouse Storage groups items by item type and complete NBT instead of using chest slots. Small, Medium and Large variants hold 576, 1152 and 1728 items. Each item uses one unit of capacity, including unstackable tools. Place storage within the Control's management bounds for the network to use."
+    },
+    {
+      "content_type": "text",
+      "text": "Storage supports up to ten filters. The Control prefers matching filtered storage, then unfiltered storage, and never routes nonmatching items into filtered storage. Direct manual insertion ignores filters. Add storage to expand capacity. Old slot inventories migrate without loss; excess stock is retained but blocks new deposits until there is room. Breaking storage drops its contents in legal stacks."
+    },
+    {
+      "content_type": "heading",
+      "text": "Warehouse Interface",
+      "level": 2,
+      "anchor": "entry_032"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_interface"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Interface has nine inventory slots and up to nine filters. Keep stock replenishes requested items and returns excess. Input only sends interface items into storage. Output only replenishes filters without returning other items. Duplicate filters add their target quantities; targets beyond interface capacity show a warning."
+    },
+    {
+      "content_type": "text",
+      "text": "For example, keep a small supply of a machine's material at the Interface and have logistics remove it. An out-of-stock warehouse cannot replenish items from nothing. Target quantities are not a total stock cap for the whole warehouse."
+    },
+    {
+      "content_type": "heading",
+      "text": "Warehouse Crafting Table",
+      "level": 2,
+      "anchor": "entry_033"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_crafting"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Crafting Table connects anywhere within warehouse bounds; the legacy placement directly above a controller also works. Configure a template, satisfy research and provide Craftsman work or energy. Results remain in local output by default; Store crafted output sends automatically produced items into the warehouse."
+    },
+    {
+      "content_type": "text",
+      "text": "Materials, output space and room for returned containers such as buckets are checked together before crafting. A full warehouse pauses work without partially consuming materials or discarding remainders. Manually taken crafting results are still delivered directly to the player."
+    },
+    {
+      "content_type": "heading",
+      "text": "Warehouse Stock Viewer",
+      "level": 2,
+      "anchor": "entry_034"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_stock_viewer"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Warehouse Stock Viewer displays stored item counts, with filters for particular supplies. Use it in a management area to monitor food, building materials and ammunition."
+    },
+    {
+      "content_type": "text",
+      "text": "Its statistics neither create nor transport items. If counts look wrong, check the connected warehouse, management bounds and filter items."
+    },
+    {
+      "content_type": "heading",
+      "text": "Warehouse Stock Linker",
+      "level": 2,
+      "anchor": "entry_035"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:warehouse_stock_linker"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Stock Linker converts stock conditions into redstone strength 15. Match any is the default; Match all requires every configured condition. Zero thresholds are supported for out-of-stock detection."
+    },
+    {
+      "content_type": "text",
+      "text": "Use it with alarms or redstone control. Multiple conditions are not an all-must-match test by default. The Linker is not an item pipe and does not move supplies directly into machines."
+    }
+  ]
+}

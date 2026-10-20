@@ -1,0 +1,25 @@
+{
+    "required_research":  "construction",
+    "pattern":  [
+                    "_P_",
+                    "_W_",
+                    "_S_"
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:paper"
+                      },
+                "S":  {
+                          "item":  "minecraft:stone"
+                      },
+                "W":  {
+                          "item":  "minecraft:crafting_table"
+                      },
+                "_":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:drafting_station"
+               }
+}

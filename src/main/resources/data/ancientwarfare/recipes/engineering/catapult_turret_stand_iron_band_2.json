@@ -1,0 +1,28 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:ironshod_wood"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:torsion_unit"
+                                           },
+                            "count":  3
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        },
+                        {
+                            "item":  "ancientwarfare:turret_components"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:catapult_turret_stand_iron_band_2"
+               }
+}

@@ -1,0 +1,324 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "structures",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "七 建筑结构",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "联动说明：结构战利品联动",
+          "category_link": "integrations",
+          "anchor": "structure_loot"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "结构扫描仪",
+          "category_link": "structures",
+          "anchor": "entry_057"
+        },
+        {
+          "text": "结构记录仪",
+          "category_link": "structures",
+          "anchor": "entry_058"
+        },
+        {
+          "text": "制图站",
+          "category_link": "structures",
+          "anchor": "entry_059"
+        },
+        {
+          "text": "生存结构创造器",
+          "category_link": "structures",
+          "anchor": "entry_060"
+        },
+        {
+          "text": "结构模板与城镇模板物品",
+          "category_link": "structures",
+          "anchor": "entry_061"
+        },
+        {
+          "text": "动态城门生成器",
+          "category_link": "structures",
+          "anchor": "entry_062"
+        },
+        {
+          "text": "保护旗帜",
+          "category_link": "structures",
+          "anchor": "entry_064"
+        },
+        {
+          "text": "高级刷怪笼",
+          "category_link": "structures",
+          "anchor": "entry_065"
+        },
+        {
+          "text": "高级战利品箱",
+          "category_link": "structures",
+          "anchor": "entry_066"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "本章介绍结构记录、模板施工、城门与场景配置物品。涉及生成或改写大范围方块的工具，应先在空地或测试存档中确认方向、边界和效果。"
+    },
+    {
+      "content_type": "heading",
+      "text": "结构扫描仪",
+      "level": 2,
+      "anchor": "entry_057"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:structure_scanner"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为建筑学。"
+    },
+    {
+      "content_type": "text",
+      "text": "结构扫描仪用于记录结构边界和建造原点。普通右键依次选取第一点与第二点，潜行右键设置建造原点。"
+    },
+    {
+      "content_type": "text",
+      "text": "边界决定记录哪些方块，原点决定模板以后如何定位。三者不是同一个坐标；扫描前检查地下基础、屋顶和附属部分是否都在范围内，再交给结构记录流程使用。"
+    },
+    {
+      "content_type": "heading",
+      "text": "结构记录仪",
+      "level": 2,
+      "anchor": "entry_058"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:structure_scanner_block"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为建筑学。"
+    },
+    {
+      "content_type": "text",
+      "text": "结构记录仪提供结构记录界面，能够读取手持扫描仪中的选点与模板相关数据。先用扫描仪确定范围和原点，再打开记录仪核对名称与记录设置。"
+    },
+    {
+      "content_type": "text",
+      "text": "它用于制作或整理建筑模板，不会自动给玩家发放一座建筑所需的所有材料。命名应能区分不同版本，避免把同名旧模板与新结构混用。"
+    },
+    {
+      "content_type": "heading",
+      "text": "制图站",
+      "level": 2,
+      "anchor": "entry_059"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:drafting_station"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为建筑学。"
+    },
+    {
+      "content_type": "text",
+      "text": "制图站把选定模板及其材料转换为可施工的生存结构创造器。选择模板后查看材料需求，放入相应资源并启动制作，满足要求后从输出位置取走成品。"
+    },
+    {
+      "content_type": "text",
+      "text": "材料会按该模板的需求收集，输出位置也必须空闲。先确认模板再投入贵重材料，不要把制图站当成可以任意切换模板而不涉及材料记录的浏览器。"
+    },
+    {
+      "content_type": "heading",
+      "text": "生存结构创造器",
+      "level": 2,
+      "anchor": "entry_060"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:structure_builder_ticked"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：在制图站选择模板并备齐材料后制作；创造模式另有预设模板物品。"
+    },
+    {
+      "content_type": "text",
+      "text": "带有模板的生存结构创造器用于逐步建造结构。先检查放置位置与朝向，再把物品放下。使用切到工作模式的锤子右键，可提供人工施工能量并查看进度。"
+    },
+    {
+      "content_type": "text",
+      "text": "施工记录可随创造器物品保存，包括模板与已进行的进度。它不是普通装饰块；在基地中使用前应确认结构会覆盖的区域，尤其是地下部分和已有箱子所在位置。"
+    },
+    {
+      "content_type": "heading",
+      "text": "结构模板与城镇模板物品",
+      "level": 2,
+      "anchor": "entry_061"
+    },
+    {
+      "content_type": "text",
+      "text": "结构模板物品保存单个 AWS 模板标识，城镇模板物品保存 AWT 城镇模板标识，用于相应结构或城镇的放置与生成。不同模板名称对应不同建筑内容，无需为每座建筑另写一套通用操作说明。"
+    },
+    {
+      "content_type": "text",
+      "text": "这些物品适合创造模式建造、地图制作与内容检查。选择模板前看清物品提示中的名称，生成前预留足够空间；它们不能替代制图站中准备材料的生存施工流程。"
+    },
+    {
+      "content_type": "heading",
+      "text": "动态城门生成器",
+      "level": 2,
+      "anchor": "entry_062"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:gate_spawner"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_iron"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_single_wood"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_single_iron"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_double_wood"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_double_iron"
+        },
+        {
+          "name": "ancientwarfare:gate_spawner_drawbridge"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为建筑学。"
+    },
+    {
+      "content_type": "text",
+      "text": "城门生成器共有七种：木制与铁制的垂直升降门、单侧滑动门、双侧滑动门，以及木制吊桥。手持相应生成器右键选取两个对角点；实际记录的是点击面外侧相邻的位置，两个点要处在同一竖直平面。"
+    },
+    {
+      "content_type": "text",
+      "text": "门区最大为 12×12，内部应为空气或可替换方块。第二点完成后生成城门并消耗一个生成器。右键已建好的门切换开关；有红石供电时会保持开启，断电后按红石状态关闭。建造时为门体运动预留空间。"
+    },
+    {
+      "content_type": "text",
+      "text": "城门按选区宽高拼接门板、侧框和顶框，改变大小不会拉伸贴图。木门使用实心门板，铁门使用栅栏。吊桥关闭时竖起，开启时绕底部转轴放下；选区高度决定桥面的展开长度，建造前应留出对应的通行空间。"
+    },
+    {
+      "content_type": "heading",
+      "text": "保护旗帜",
+      "level": 2,
+      "anchor": "entry_064"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:protection_flag"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "保护旗帜保存领地或阵营相关信息。对于已经配置领地范围的旗帜，认领前会检查范围内对玩家敌对的阵营 NPC；仍有敌人时会提示数量并使这些敌人发光，方便寻找。"
+    },
+    {
+      "content_type": "text",
+      "text": "清理敌人后才能完成对应认领。旗帜不是通用的服务器领地插件替代品，不应仅凭放下一面旗帜，就认为所有破坏、交互和爆炸都已被全面禁止。"
+    },
+    {
+      "content_type": "heading",
+      "text": "高级刷怪笼",
+      "level": 2,
+      "anchor": "entry_065"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:advanced_spawner"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "高级刷怪笼是结构与地图内容的生成设施，可通过界面配置相关刷怪内容。它主要用于场景制作，不是普通玩家放下就能无限产出任意 NPC 的招募物品。"
+    },
+    {
+      "content_type": "text",
+      "text": "其可视化与创造模式编辑有关。检查刷怪问题时应核对配置、区域和生成条件，不能只凭生存模式下看不见模型就认定设施不存在。"
+    },
+    {
+      "content_type": "heading",
+      "text": "高级战利品箱",
+      "level": 2,
+      "anchor": "entry_066"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:advanced_loot_chest"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取提示：当前普通工作台与工程站配方中没有该组物品的直接成品配方；不要按可直接合成物品理解。"
+    },
+    {
+      "content_type": "text",
+      "text": "高级战利品箱用于结构中的战利品内容。配置或模板决定其战利品来源，玩家打开后使用实际生成的箱内库存。"
+    },
+    {
+      "content_type": "text",
+      "text": "当前不要把它当作每名玩家都有独立奖励的 Lootr 箱子。多人共享世界时，前一名玩家取走的物品会影响后续玩家能拿到的内容，地图奖励分配应按共享库存考虑。"
+    }
+  ]
+}

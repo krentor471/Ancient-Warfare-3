@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "mass_production",
+    "pattern":  [
+                    " S ",
+                    "GGG",
+                    " S "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "ancientwarfare:steel_shaft"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:steel_gear"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:torque_distributor_heavy"
+               }
+}

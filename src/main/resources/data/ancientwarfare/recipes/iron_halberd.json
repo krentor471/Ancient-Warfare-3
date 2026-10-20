@@ -1,0 +1,21 @@
+{
+    "type":  "minecraft:crafting_shaped",
+    "category":  "combat",
+    "pattern":  [
+                    " ##",
+                    "#S#",
+                    " S "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "#":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:iron_halberd"
+               },
+    "show_notification":  true
+}

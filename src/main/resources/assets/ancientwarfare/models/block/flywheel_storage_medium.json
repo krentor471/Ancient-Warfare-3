@@ -1,0 +1,7 @@
+{
+  "parent": "ancientwarfare:block/flywheel_storage_light",
+  "textures": {
+    "particle": "ancientwarfare:block/automation/flywheel_storage_medium",
+    "all": "ancientwarfare:block/automation/flywheel_storage_medium"
+  }
+}

@@ -1,0 +1,359 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "machines",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "三 自动化机器",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "作物农场",
+          "category_link": "machines",
+          "anchor": "entry_020"
+        },
+        {
+          "text": "动物牧场",
+          "category_link": "machines",
+          "anchor": "entry_021"
+        },
+        {
+          "text": "伐木场",
+          "category_link": "machines",
+          "anchor": "entry_022"
+        },
+        {
+          "text": "水果农场",
+          "category_link": "machines",
+          "anchor": "entry_023"
+        },
+        {
+          "text": "养鱼场",
+          "category_link": "machines",
+          "anchor": "entry_024"
+        },
+        {
+          "text": "采石场",
+          "category_link": "machines",
+          "anchor": "entry_025"
+        },
+        {
+          "text": "自动合成台",
+          "category_link": "machines",
+          "anchor": "entry_026"
+        },
+        {
+          "text": "范围升级与采石场升级",
+          "category_link": "machines",
+          "anchor": "entry_027"
+        },
+        {
+          "text": "附魔工具升级与工具品质升级",
+          "category_link": "machines",
+          "anchor": "entry_028"
+        },
+        {
+          "text": "工作站区块加载升级",
+          "category_link": "machines",
+          "anchor": "entry_029"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "自动化机器按工作范围寻找目标，并消耗工作能量。多数工作站可由匹配职业的工人或扭矩供能。开工前应设置范围、功能开关和物品进出面，并给输出留出空间。"
+    },
+    {
+      "content_type": "heading",
+      "text": "作物农场",
+      "level": 2,
+      "anchor": "entry_020"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:crop_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为农业。"
+    },
+    {
+      "content_type": "text",
+      "text": "作物农场负责农田中的耕作、播种和成熟作物收获，也可以利用骨粉催熟。提供种子或可种植物品，把合适土地划入范围，再启用需要的工作内容。"
+    },
+    {
+      "content_type": "text",
+      "text": "农夫可以为它工作，也可以接入扭矩。水源、光照和植物自身的生长条件仍然重要；没有种子、没有合适土地、作物未成熟或输出已满，都可能使农场暂时无事可做。"
+    },
+    {
+      "content_type": "heading",
+      "text": "动物牧场",
+      "level": 2,
+      "anchor": "entry_021"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:animal_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为畜牧业。"
+    },
+    {
+      "content_type": "text",
+      "text": "动物牧场围绕已有动物执行繁殖、剪毛、挤奶、收集掉落物和数量管理等任务。先圈养动物，把围栏内部纳入范围，再提供相应饲料或容器，并检查功能开关。"
+    },
+    {
+      "content_type": "text",
+      "text": "牧场不会无限生成动物。用于控制数量的淘汰功能可能杀死范围内符合条件的牲畜，启用前应确认自己的养殖目标，避免把保留种群的区域一并划入。"
+    },
+    {
+      "content_type": "heading",
+      "text": "伐木场",
+      "level": 2,
+      "anchor": "entry_022"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:tree_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为耕作。"
+    },
+    {
+      "content_type": "text",
+      "text": "伐木场识别范围内树干及其相连枝干、自然树冠，按缓存计划采伐并补种。种植范围不变，树冠可向水平边界外延伸最多8格，采伐高度为底面向上32格。准备树苗，安排伐木工或连接动力；特殊槽可放骨粉或剪刀。产物直接进入机器，空间不足时保留目标并暂停，不向地面抛出产物。独立原木和玩家放置的持久树叶不会作为树木目标，但与真实树木连接的建筑木材仍可能被采伐。计划定期刷新发现新生长部分，并保留尚未处理的树干。"
+    },
+    {
+      "content_type": "text",
+      "text": "采伐范围应与建筑保持距离。输出堵塞、树苗耗尽、空间不足或树木超出范围都会影响循环；不能把外观像树的任意模组结构都视为受支持的树木。"
+    },
+    {
+      "content_type": "heading",
+      "text": "水果农场",
+      "level": 2,
+      "anchor": "entry_023"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:fruit_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为农业。"
+    },
+    {
+      "content_type": "text",
+      "text": "水果农场用于可可、甜浆果和发光浆果等当前支持的果实。可可需要合适的附着位置，甜浆果和发光浆果也必须满足各自的种植条件。"
+    },
+    {
+      "content_type": "text",
+      "text": "设置范围并提供对应种植物品后，机器处理种植与成熟收获。它不是对所有果树模组通用的采果器，遇到其他模组植物时应先用小范围验证。"
+    },
+    {
+      "content_type": "heading",
+      "text": "养鱼场",
+      "level": 2,
+      "anchor": "entry_024"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:fish_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为渔业。"
+    },
+    {
+      "content_type": "text",
+      "text": "养鱼场在设置范围内利用水进行渔业生产。准备可工作的水域，检查鱼类、墨囊等功能开关，再提供工作能量，并及时转移产物。"
+    },
+    {
+      "content_type": "text",
+      "text": "捕鱼产物使用原版钓鱼战利品子表，其中垃圾、宝物和鱼类的选择权重分别是 10%、5%、85%。这不是保底产出，也不是必须有实体鱼群才能工作；不要直接套用玩家鱼竿的开放水域判定来排查它。"
+    },
+    {
+      "content_type": "heading",
+      "text": "采石场",
+      "level": 2,
+      "anchor": "entry_025"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:quarry"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为工程学。"
+    },
+    {
+      "content_type": "text",
+      "text": "采石场按设定范围逐块挖掘，可切换只挖矿石。普通模式会处理范围内符合条件的方块，因此应先确认边界，再供能开工。"
+    },
+    {
+      "content_type": "text",
+      "text": "当前挖掘筛选排除空气、基岩和带流体的方块，但不会把所有建筑与容器都自动视为安全目标。不要把仓库、住宅或贵重设备圈进范围。输出空间不足时会暂停在当前目标，清理输出后可以继续。"
+    },
+    {
+      "content_type": "heading",
+      "text": "自动合成台",
+      "level": 2,
+      "anchor": "entry_026"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:auto_crafting"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为大规模生产。"
+    },
+    {
+      "content_type": "text",
+      "text": "自动合成台依照模板反复制造物品。界面包含研究之书位置、九格模板区、材料库存和输出区；配置模板后补充真实材料，并提供工匠工作或扭矩能量。"
+    },
+    {
+      "content_type": "text",
+      "text": "模板只描述要做什么，不等于免费提供材料。配方有研究条件时要放入合格的研究之书；缺材料、研究未满足或输出堵塞时，机器不会继续生成成品。"
+    },
+    {
+      "content_type": "heading",
+      "text": "范围升级与采石场升级",
+      "level": 2,
+      "anchor": "entry_027"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:worksite_upgrade_size_medium"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_size_large"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_quarry_medium"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_quarry_large"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：范围升级：中型：工程站，研究要求为工程学；范围升级：大型：工程站，研究要求为数学；采石场升级：中型：工程站，研究要求为采矿；采石场升级：大型：工程站，研究要求为机械学。"
+    },
+    {
+      "content_type": "text",
+      "text": "范围升级用于支持它的工作站，采石场升级用于采石场的范围扩展。把升级放入对应升级槽，再到范围界面调整工作区域。"
+    },
+    {
+      "content_type": "text",
+      "text": "升级决定可设置范围的上限，不等于自动把周边全部区域加入工作范围。同类升级有兼容与替换规则，不能按放入件数简单叠加成无限范围。"
+    },
+    {
+      "content_type": "heading",
+      "text": "附魔工具升级与工具品质升级",
+      "level": 2,
+      "anchor": "entry_028"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:worksite_upgrade_enchanted_tools_1"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_enchanted_tools_2"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_tool_quality_1"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_tool_quality_2"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_tool_quality_3"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：附魔工具升级 I：工程站，研究要求为数学；附魔工具升级 II：工程站，研究要求为大规模生产；工具品质升级 I：工程站，研究要求为工程学；工具品质升级 II：工程站，研究要求为建筑学；工具品质升级 III：工程站，研究要求为精炼。"
+    },
+    {
+      "content_type": "text",
+      "text": "这些升级改善支持工作站的工具效果或工作效率。把适配升级放进升级槽后，工作站会在执行相应采集或工作逻辑时使用其效果。"
+    },
+    {
+      "content_type": "text",
+      "text": "升级不会消除动力、材料、目标成熟度与输出空间的要求。不同工作站会使用不同效果，不能把某一台机器的增益原样套用到所有设备上。"
+    },
+    {
+      "content_type": "heading",
+      "text": "工作站区块加载升级",
+      "level": 2,
+      "anchor": "entry_029"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:worksite_upgrade_basic_chunk_loader"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_quarry_chunk_loader"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：基础区块加载升级：工程站，研究要求为数学；采石场区块加载升级：工程站，研究要求为机械学。"
+    },
+    {
+      "content_type": "text",
+      "text": "工作站区块加载升级安装在对应设施的升级槽内，用于保持该设施所需区域加载。基础型和采石场型应按适用设备选择。"
+    },
+    {
+      "content_type": "text",
+      "text": "这与第二章的独立低级区块加载器是两种物品。检查离线或远距离停工时，仍需确认跨区块的动力源、原料供应和输出目的地是否一起处于加载范围。"
+    }
+  ]
+}

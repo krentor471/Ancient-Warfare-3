@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "engineering",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "item":  "minecraft:leather"
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:planks"
+                                           },
+                            "count":  7
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:rough_wood",
+                   "count":  8
+               }
+}

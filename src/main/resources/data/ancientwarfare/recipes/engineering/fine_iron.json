@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:coal"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:fine_iron",
+                   "count":  8
+               }
+}

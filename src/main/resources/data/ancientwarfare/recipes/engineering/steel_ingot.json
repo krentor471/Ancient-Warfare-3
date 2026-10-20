@@ -1,0 +1,21 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "refining",
+    "pattern":  [
+                    "C  ",
+                    "I  ",
+                    "   "
+                ],
+    "key":  {
+                "C":  {
+                          "item":  "minecraft:coal"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:steel_ingot",
+                   "count":  2
+               }
+}

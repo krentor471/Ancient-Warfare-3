@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["B W", "RLY", " L "],
+  "key": { "B": { "item": "minecraft:black_dye" }, "W": { "item": "minecraft:white_dye" }, "R": { "item": "minecraft:red_dye" }, "Y": { "item": "minecraft:yellow_dye" }, "L": { "tag": "minecraft:logs" } },
+  "result": { "item": "ancientwarfare:totem_part_base" }
+}

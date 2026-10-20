@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "the_wheel",
+    "pattern":  [
+                    " S ",
+                    "GGG",
+                    " S "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "ancientwarfare:wooden_shaft"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:wooden_gear"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:torque_distributor_light"
+               }
+}

@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "size=8": {
+      "model": "ancientwarfare:block/coin_stack_8_copper"
+    },
+    "size=16": {
+      "model": "ancientwarfare:block/coin_stack_16_copper"
+    },
+    "size=24": {
+      "model": "ancientwarfare:block/coin_stack_24_copper"
+    },
+    "size=32": {
+      "model": "ancientwarfare:block/coin_stack_32_copper"
+    },
+    "size=40": {
+      "model": "ancientwarfare:block/coin_stack_40_copper"
+    },
+    "size=48": {
+      "model": "ancientwarfare:block/coin_stack_48_copper"
+    },
+    "size=56": {
+      "model": "ancientwarfare:block/coin_stack_56_copper"
+    },
+    "size=64": {
+      "model": "ancientwarfare:block/coin_stack_64_copper"
+    }
+  }
+}

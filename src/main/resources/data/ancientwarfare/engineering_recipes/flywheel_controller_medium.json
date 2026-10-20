@@ -1,0 +1,19 @@
+{
+    "required_research":  "theory_of_gravity",
+    "pattern":  [
+                    "IGI",
+                    "III",
+                    "IGI"
+                ],
+    "key":  {
+                "G":  {
+                          "item":  "ancientwarfare:iron_gear"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:flywheel_controller_medium"
+               }
+}

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "top": "ancientwarfare:block/structure/builder_top",
+    "bottom": "ancientwarfare:block/structure/builder_bottom",
+    "front": "ancientwarfare:block/structure/builder_front",
+    "side": "ancientwarfare:block/structure/builder_side"
+  }
+}

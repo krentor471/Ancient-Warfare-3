@@ -1,0 +1,25 @@
+{
+    "required_research":  "animal_husbandry",
+    "pattern":  [
+                    "___",
+                    "GWG",
+                    "_C_"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "W":  {
+                          "item":  "minecraft:iron_sword"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:wooden_gear"
+                      },
+                "_":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:animal_farm"
+               }
+}

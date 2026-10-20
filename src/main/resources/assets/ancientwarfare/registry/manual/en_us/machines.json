@@ -1,0 +1,359 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "machines",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "III. Automated Worksites",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Crop Farm",
+          "category_link": "machines",
+          "anchor": "entry_020"
+        },
+        {
+          "text": "Animal Farm",
+          "category_link": "machines",
+          "anchor": "entry_021"
+        },
+        {
+          "text": "Tree Farm",
+          "category_link": "machines",
+          "anchor": "entry_022"
+        },
+        {
+          "text": "Fruit Farm",
+          "category_link": "machines",
+          "anchor": "entry_023"
+        },
+        {
+          "text": "Fish Farm",
+          "category_link": "machines",
+          "anchor": "entry_024"
+        },
+        {
+          "text": "Quarry",
+          "category_link": "machines",
+          "anchor": "entry_025"
+        },
+        {
+          "text": "Automatic Crafting Station",
+          "category_link": "machines",
+          "anchor": "entry_026"
+        },
+        {
+          "text": "Bounds and Quarry Upgrades",
+          "category_link": "machines",
+          "anchor": "entry_027"
+        },
+        {
+          "text": "Enchanted Tools and Tool Quality Upgrades",
+          "category_link": "machines",
+          "anchor": "entry_028"
+        },
+        {
+          "text": "Worksite Chunk-Loading Upgrades",
+          "category_link": "machines",
+          "anchor": "entry_029"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Automated machines find targets within their work bounds and consume work energy. Most worksites accept work from a matching worker profession or torque. Set bounds, enabled tasks and item-access faces, and leave output space before starting."
+    },
+    {
+      "content_type": "heading",
+      "text": "Crop Farm",
+      "level": 2,
+      "anchor": "entry_020"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:crop_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Agriculture research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Crop Farm tills soil, plants and harvests mature crops, and can use Bone Meal to accelerate growth. Supply seeds or plantable items, include suitable ground in the bounds and enable the desired tasks."
+    },
+    {
+      "content_type": "text",
+      "text": "Farmers or torque can power it. Water, light and each plant's growth conditions still matter. Missing seeds, unsuitable ground, immature crops or full output can leave the farm with nothing to do."
+    },
+    {
+      "content_type": "heading",
+      "text": "Animal Farm",
+      "level": 2,
+      "anchor": "entry_021"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:animal_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Animal Husbandry research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Animal Farm breeds, shears, milks, collects drops and manages the population of existing animals. Enclose animals first, include the pen in the bounds, supply the appropriate feed or containers and check task switches."
+    },
+    {
+      "content_type": "text",
+      "text": "It does not create unlimited animals. Population-control culling can kill eligible livestock inside the bounds. Check your breeding goals before enabling it, and keep protected breeding stock outside that area."
+    },
+    {
+      "content_type": "heading",
+      "text": "Tree Farm",
+      "level": 2,
+      "anchor": "entry_022"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:tree_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Farming research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Tree Farm identifies trunks, connected branches and natural canopies, then harvests and replants using a cached plan. Planting bounds stay unchanged; canopy harvesting can extend up to 8 blocks beyond horizontal boundaries and 32 blocks above the bottom plane. Supply saplings and a Lumberjack or torque; the special slot accepts Bone Meal or Shears. Products go directly into the machine. If space is insufficient, it retains the target and pauses without dropping products on the ground. Isolated logs and player-placed persistent leaves are not tree targets, but building wood connected to a real tree can still be harvested. Plans periodically refresh to discover new growth while retaining unprocessed trunks."
+    },
+    {
+      "content_type": "text",
+      "text": "Keep harvesting areas away from buildings. Blocked output, depleted saplings, insufficient space or out-of-range trees interrupt the cycle. A modded structure that resembles a tree is not necessarily a supported tree."
+    },
+    {
+      "content_type": "heading",
+      "text": "Fruit Farm",
+      "level": 2,
+      "anchor": "entry_023"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:fruit_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Agriculture research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Fruit Farm handles currently supported produce such as Cocoa, Sweet Berries and Glow Berries. Cocoa needs suitable attachment blocks; each berry type also needs its own planting conditions."
+    },
+    {
+      "content_type": "text",
+      "text": "Set bounds and supply the corresponding planting items for planting and mature harvesting. It is not a universal harvester for every fruit-tree mod; test other modded plants in a small area first."
+    },
+    {
+      "content_type": "heading",
+      "text": "Fish Farm",
+      "level": 2,
+      "anchor": "entry_024"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:fish_farm"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Fishing research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Fish Farm uses water within its configured bounds for fishing production. Prepare a usable water area, check tasks such as fish and Ink Sacs, supply work energy and remove products promptly."
+    },
+    {
+      "content_type": "text",
+      "text": "Fishing uses vanilla loot subtables with selection weights of 10% junk, 5% treasure and 85% fish. These are not guaranteed yields. It does not require physical fish entities, and the player fishing rod's open-water checks should not be assumed to apply."
+    },
+    {
+      "content_type": "heading",
+      "text": "Quarry",
+      "level": 2,
+      "anchor": "entry_025"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:quarry"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Engineering research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Quarry mines blocks within its configured bounds and can switch to ores-only mode. Normal mode processes eligible blocks in that area, so confirm the boundaries before supplying power."
+    },
+    {
+      "content_type": "text",
+      "text": "Current mining filters exclude air, Bedrock and fluid-containing blocks, but do not automatically protect every building or container. Do not include warehouses, homes or valuable equipment. Full output pauses the current target; clearing it allows work to continue."
+    },
+    {
+      "content_type": "heading",
+      "text": "Automatic Crafting Station",
+      "level": 2,
+      "anchor": "entry_026"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:auto_crafting"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Mass Production research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Automatic Crafting Station repeatedly crafts a template recipe. Its interface contains a Research Book slot, a nine-slot template, material storage and output. Configure the template, supply real materials and provide Craftsman work or torque."
+    },
+    {
+      "content_type": "text",
+      "text": "A template specifies the recipe; it does not supply free materials. Insert a suitable Research Book for recipes with research requirements. Missing materials, unmet research or blocked output prevents further results."
+    },
+    {
+      "content_type": "heading",
+      "text": "Bounds and Quarry Upgrades",
+      "level": 2,
+      "anchor": "entry_027"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:worksite_upgrade_size_medium"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_size_large"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_quarry_medium"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_quarry_large"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station. Medium Bounds Upgrade requires Engineering; Large Bounds Upgrade requires Mathematics; Medium Quarry Upgrade requires Mining; Large Quarry Upgrade requires Machinery."
+    },
+    {
+      "content_type": "text",
+      "text": "Bounds Upgrades expand supported worksites; Quarry Upgrades expand the Quarry. Insert the appropriate upgrade into its slot, then adjust the work area in the bounds interface."
+    },
+    {
+      "content_type": "text",
+      "text": "An upgrade changes the maximum configurable bounds, not automatically the entire nearby area. Compatibility and replacement rules apply; stacking item counts does not give unlimited range."
+    },
+    {
+      "content_type": "heading",
+      "text": "Enchanted Tools and Tool Quality Upgrades",
+      "level": 2,
+      "anchor": "entry_028"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:worksite_upgrade_enchanted_tools_1"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_enchanted_tools_2"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_tool_quality_1"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_tool_quality_2"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_tool_quality_3"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station. Enchanted Tools I requires Mathematics; II requires Mass Production. Tool Quality I requires Engineering; II requires Construction; III requires Refining."
+    },
+    {
+      "content_type": "text",
+      "text": "These upgrades improve supported tool effects or work efficiency. Once an applicable upgrade is installed, the worksite uses its effect during the corresponding harvesting or work operation."
+    },
+    {
+      "content_type": "text",
+      "text": "Upgrades do not remove the need for power, materials, mature targets and output space. Different worksites use different effects; one machine's benefit is not universal."
+    },
+    {
+      "content_type": "heading",
+      "text": "Worksite Chunk-Loading Upgrades",
+      "level": 2,
+      "anchor": "entry_029"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:worksite_upgrade_basic_chunk_loader"
+        },
+        {
+          "name": "ancientwarfare:worksite_upgrade_quarry_chunk_loader"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station. Basic Chunk-Loading Upgrade requires Mathematics; Quarry Chunk-Loading Upgrade requires Machinery."
+    },
+    {
+      "content_type": "text",
+      "text": "Install Worksite Chunk-Loading Upgrades in the applicable facility's upgrade slot to keep its required area loaded. Choose the Basic or Quarry type for the supported device."
+    },
+    {
+      "content_type": "text",
+      "text": "These are different items from the standalone Basic Chunk Loader in Chapter II. When diagnosing work stopping at a distance or while offline, also check that power sources, supply routes and output destinations across chunk boundaries remain loaded."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+    "required_research":  "advanced_siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:rough_iron"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:torsion_unit"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        },
+                        {
+                            "item":  "ancientwarfare:mobility_unit"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ballista_mobile_fixed_steel"
+               }
+}

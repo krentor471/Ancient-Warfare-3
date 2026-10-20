@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "leadership",
+    "pattern":  [
+                    "S S",
+                    "_C_",
+                    "S_S"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "S":  {
+                          "item":  "minecraft:stone_bricks"
+                      },
+                "_":  {
+                          "tag":  "minecraft:logs"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:town_hall"
+               }
+}

@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "navigation",
+    "pattern":  [
+                    "ICI",
+                    "I I",
+                    "ICI"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:mailbox"
+               }
+}

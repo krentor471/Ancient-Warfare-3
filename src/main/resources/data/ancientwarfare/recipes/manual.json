@@ -1,0 +1,16 @@
+{
+    "ingredients":  [
+                        {
+                            "item":  "ancientwarfare:wooden_hammer"
+                        },
+                        {
+                            "item":  "minecraft:book"
+                        }
+                    ],
+    "category":  "misc",
+    "result":  {
+                   "item":  "ancientwarfare:manual"
+               },
+    "type":  "minecraft:crafting_shapeless",
+    "show_notification":  true
+}

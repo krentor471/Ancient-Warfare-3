@@ -1,0 +1,29 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "refining",
+    "pattern":  [
+                    "OTO",
+                    "PSA",
+                    "OTO"
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:diamond_pickaxe"
+                      },
+                "A":  {
+                          "item":  "minecraft:diamond_axe"
+                      },
+                "S":  {
+                          "item":  "minecraft:diamond_shovel"
+                      },
+                "T":  {
+                          "tag":  "forge:ingots/steel"
+                      },
+                "O":  {
+                          "item":  "minecraft:obsidian"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:worksite_upgrade_tool_quality_3"
+               }
+}

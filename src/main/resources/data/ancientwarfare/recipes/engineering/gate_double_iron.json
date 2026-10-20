@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "construction",
+    "pattern":  [
+                    "SSS",
+                    "PPP",
+                    "PRP"
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "forge:ingots/iron"
+                      },
+                "R":  {
+                          "item":  "minecraft:redstone"
+                      },
+                "S":  {
+                          "tag":  "minecraft:stone_crafting_materials"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:gate_spawner_double_iron"
+               }
+}

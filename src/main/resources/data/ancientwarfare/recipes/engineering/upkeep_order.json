@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "leadership",
+    "pattern":  [
+                    "D  ",
+                    "P  ",
+                    "W  "
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:paper"
+                      },
+                "D":  {
+                          "item":  "minecraft:black_dye"
+                      },
+                "W":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:upkeep_order"
+               }
+}

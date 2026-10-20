@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north,part=0": { "model": "ancientwarfare:block/stretching_rack_south", "y": 180 },
+    "facing=south,part=0": { "model": "ancientwarfare:block/stretching_rack_south" },
+    "facing=west,part=0": { "model": "ancientwarfare:block/stretching_rack_south", "y": 90 },
+    "facing=east,part=0": { "model": "ancientwarfare:block/stretching_rack_south", "y": 270 },
+    "facing=north,part=1": { "model": "ancientwarfare:block/empty" },
+    "facing=south,part=1": { "model": "ancientwarfare:block/empty" },
+    "facing=west,part=1": { "model": "ancientwarfare:block/empty" },
+    "facing=east,part=1": { "model": "ancientwarfare:block/empty" },
+    "facing=north,part=2": { "model": "ancientwarfare:block/stretching_rack_north", "y": 180 },
+    "facing=south,part=2": { "model": "ancientwarfare:block/stretching_rack_north" },
+    "facing=west,part=2": { "model": "ancientwarfare:block/stretching_rack_north", "y": 90 },
+    "facing=east,part=2": { "model": "ancientwarfare:block/stretching_rack_north", "y": 270 },
+    "facing=north,part=3": { "model": "ancientwarfare:block/empty" },
+    "facing=south,part=3": { "model": "ancientwarfare:block/empty" },
+    "facing=west,part=3": { "model": "ancientwarfare:block/empty" },
+    "facing=east,part=3": { "model": "ancientwarfare:block/empty" }
+  }
+}

@@ -1,0 +1,34 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "advanced_siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:rough_iron"
+                                           },
+                            "count":  20
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  24
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:leather"
+                                           },
+                            "count":  12
+                        },
+                        {
+                            "item":  "ancientwarfare:counter_weight_unit"
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:giant_trebuchet_steel"
+               }
+}

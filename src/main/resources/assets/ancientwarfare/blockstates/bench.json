@@ -1,0 +1,34 @@
+{
+  "multipart": [
+    { "when": { "axis": "x" }, "apply": { "model": "ancientwarfare:block/bench_top" } },
+    { "when": { "axis": "z" }, "apply": { "model": "ancientwarfare:block/bench_top", "y": 270 } },
+    { "when": { "axis": "x", "legs": "none" }, "apply": { "model": "ancientwarfare:block/bench_support_middle" } },
+    { "when": { "axis": "x", "legs": "both" }, "apply": [
+      { "model": "ancientwarfare:block/bench_leg_left" },
+      { "model": "ancientwarfare:block/bench_leg_right" },
+      { "model": "ancientwarfare:block/bench_support_two_side" }
+    ] },
+    { "when": { "axis": "x", "legs": "left" }, "apply": [
+      { "model": "ancientwarfare:block/bench_leg_left" },
+      { "model": "ancientwarfare:block/bench_support_one_side" }
+    ] },
+    { "when": { "axis": "x", "legs": "right" }, "apply": [
+      { "model": "ancientwarfare:block/bench_leg_right" },
+      { "model": "ancientwarfare:block/bench_support_one_side", "y": 180 }
+    ] },
+    { "when": { "axis": "z", "legs": "none" }, "apply": { "model": "ancientwarfare:block/bench_support_middle", "y": 270 } },
+    { "when": { "axis": "z", "legs": "both" }, "apply": [
+      { "model": "ancientwarfare:block/bench_leg_left", "y": 270 },
+      { "model": "ancientwarfare:block/bench_leg_right", "y": 270 },
+      { "model": "ancientwarfare:block/bench_support_two_side", "y": 270 }
+    ] },
+    { "when": { "axis": "z", "legs": "left" }, "apply": [
+      { "model": "ancientwarfare:block/bench_leg_left", "y": 270 },
+      { "model": "ancientwarfare:block/bench_support_one_side", "y": 270 }
+    ] },
+    { "when": { "axis": "z", "legs": "right" }, "apply": [
+      { "model": "ancientwarfare:block/bench_leg_right", "y": 270 },
+      { "model": "ancientwarfare:block/bench_support_one_side", "y": 90 }
+    ] }
+  ]
+}

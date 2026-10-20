@@ -1,0 +1,19 @@
+{
+    "required_research":  "trade",
+    "pattern":  [
+                    "P P",
+                    " C ",
+                    "P P"
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "minecraft:planks"
+                      },
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:warehouse_storage_small"
+               }
+}

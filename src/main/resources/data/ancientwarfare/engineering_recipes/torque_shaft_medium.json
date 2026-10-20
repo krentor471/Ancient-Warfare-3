@@ -1,0 +1,19 @@
+{
+    "required_research":  "the_wheel",
+    "pattern":  [
+                    "S  ",
+                    "S  ",
+                    "G  "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "ancientwarfare:iron_shaft"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:iron_gear"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:torque_shaft_medium"
+               }
+}

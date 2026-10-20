@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,half=lower": { "model": "ancientwarfare:block/wooden_throne", "y": 180 },
+    "facing=south,half=lower": { "model": "ancientwarfare:block/wooden_throne" },
+    "facing=west,half=lower": { "model": "ancientwarfare:block/wooden_throne", "y": 90 },
+    "facing=east,half=lower": { "model": "ancientwarfare:block/wooden_throne", "y": 270 },
+    "facing=north,half=upper": { "model": "ancientwarfare:block/empty" },
+    "facing=south,half=upper": { "model": "ancientwarfare:block/empty" },
+    "facing=west,half=upper": { "model": "ancientwarfare:block/empty" },
+    "facing=east,half=upper": { "model": "ancientwarfare:block/empty" }
+  }
+}

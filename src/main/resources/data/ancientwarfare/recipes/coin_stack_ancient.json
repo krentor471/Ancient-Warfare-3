@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["AAA", "A A", "AAA"],
+  "key": { "A": { "type": "forge:partial_nbt", "item": "ancientwarfare:coin", "nbt": { "metal": "ancient" } } },
+  "result": { "item": "ancientwarfare:coin_stack_ancient" }
+}

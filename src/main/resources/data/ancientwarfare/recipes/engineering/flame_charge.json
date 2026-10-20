@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "combustion",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:coal"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "tag":  "minecraft:wool"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:flame_charge",
+                   "count":  8
+               }
+}

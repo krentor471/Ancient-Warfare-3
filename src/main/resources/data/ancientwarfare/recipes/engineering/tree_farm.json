@@ -1,0 +1,26 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "farming",
+    "pattern":  [
+                    "___",
+                    "GWG",
+                    "_C_"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "W":  {
+                          "item":  "minecraft:iron_axe"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:wooden_gear"
+                      },
+                "_":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:tree_farm"
+               }
+}

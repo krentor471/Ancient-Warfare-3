@@ -1,0 +1,22 @@
+{
+    "required_research":  "engineering",
+    "pattern":  [
+                    "  F",
+                    " S ",
+                    "M  "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "F":  {
+                          "item":  "minecraft:feather"
+                      },
+                "M":  {
+                          "tag":  "forge:ingots/gold"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:gold_quill"
+               }
+}

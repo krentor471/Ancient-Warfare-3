@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "construction",
+    "pattern":  [
+                    "PPP",
+                    "PPP",
+                    "PRP"
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "minecraft:planks"
+                      },
+                "R":  {
+                          "item":  "minecraft:redstone"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:gate_spawner_drawbridge"
+               }
+}

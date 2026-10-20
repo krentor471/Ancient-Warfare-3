@@ -1,0 +1,322 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "torque",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "II. Torque",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Integration: Create Hand Cranks and Craftsmen",
+          "category_link": "integrations",
+          "anchor": "create_crank"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Hand Cranked Torque Generator",
+          "category_link": "torque",
+          "anchor": "entry_012"
+        },
+        {
+          "text": "Stirling Torque Generator",
+          "category_link": "torque",
+          "anchor": "entry_013"
+        },
+        {
+          "text": "Waterwheel Torque Generator",
+          "category_link": "torque",
+          "anchor": "entry_014"
+        },
+        {
+          "text": "Windmill Torque Generator and Blades",
+          "category_link": "torque",
+          "anchor": "entry_015"
+        },
+        {
+          "text": "Torque Shafts",
+          "category_link": "torque",
+          "anchor": "entry_016"
+        },
+        {
+          "text": "Torque Junctions and Distributors",
+          "category_link": "torque",
+          "anchor": "entry_017"
+        },
+        {
+          "text": "Flywheel Controllers and Storage",
+          "category_link": "torque",
+          "anchor": "entry_018"
+        },
+        {
+          "text": "Basic Chunk Loader",
+          "category_link": "torque",
+          "anchor": "entry_019"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Torque is this mod's mechanical power. Generators produce energy, transmission devices deliver it, flywheels store it and machines consume it. Check connection directions and whether the receiving facility accepts torque."
+    },
+    {
+      "content_type": "heading",
+      "text": "Hand Cranked Torque Generator",
+      "level": 2,
+      "anchor": "entry_012"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:hand_cranked_generator"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires The Wheel research."
+    },
+    {
+      "content_type": "text",
+      "text": "The hand-cranked generator supplies small amounts of manual power. Right-click with an empty hand to crank it and add energy, then connect its output shaft to transmission devices or a powered facility."
+    },
+    {
+      "content_type": "text",
+      "text": "It requires continued player operation, not just placement. If a machine is idle, also check transmission direction, power demand and materials rather than only cranking more."
+    },
+    {
+      "content_type": "heading",
+      "text": "Stirling Torque Generator",
+      "level": 2,
+      "anchor": "entry_013"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:stirling_generator"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Machinery research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Stirling generator burns fuel to produce torque. Right-click while holding fuel to insert it; use an empty hand to inspect status. Direct insertion is restricted when the fuel slot already contains an item."
+    },
+    {
+      "content_type": "text",
+      "text": "Power leaves both ends along the generator's axis. Exhausted fuel or an incorrectly oriented power line affects downstream machines. Fuel in a nearby chest has not necessarily been delivered to the generator."
+    },
+    {
+      "content_type": "heading",
+      "text": "Waterwheel Torque Generator",
+      "level": 2,
+      "anchor": "entry_014"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:waterwheel_generator"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Theory of Gravity research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Waterwheel uses nearby water to generate power. It currently checks the area within two blocks of the device in each direction; finding water satisfies its water-source condition. Right-click with an empty hand to inspect status."
+    },
+    {
+      "content_type": "text",
+      "text": "Output is along both ends of the device's axis. Water channels can serve your layout and appearance, but a specific old-version channel design is not the only way to start the current Waterwheel."
+    },
+    {
+      "content_type": "heading",
+      "text": "Windmill Torque Generator and Blades",
+      "level": 2,
+      "anchor": "entry_015"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:windmill_generator"
+        },
+        {
+          "name": "ancientwarfare:windmill_blade"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires The Wheel research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Windmill requires a complete blade plane. Build a 3x3, 5x5 or 7x7 blade structure and right-click the controller with an empty hand to assemble it. Operate it again to stop and restore the blades."
+    },
+    {
+      "content_type": "text",
+      "text": "Blade size and installation height affect output. Leave space for the complete blades and check the output shaft. A lone Windmill block does not provide a fully assembled windmill's production."
+    },
+    {
+      "content_type": "heading",
+      "text": "Torque Shafts",
+      "level": 2,
+      "anchor": "entry_016"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:torque_shaft_light"
+        },
+        {
+          "name": "ancientwarfare:torque_shaft_medium"
+        },
+        {
+          "name": "ancientwarfare:torque_shaft_heavy"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Light and Medium Torque Shafts use the Engineering Station and require The Wheel; Heavy Torque Shafts require Mass Production."
+    },
+    {
+      "content_type": "text",
+      "text": "Torque Shafts transmit power along their axis. Use a hammer to align the generator, shafts and receiving device into a continuous connection."
+    },
+    {
+      "content_type": "text",
+      "text": "Light, Medium and Heavy transmission devices have limits of 1000, 2000 and 5000 units per tick. Upgrading shafts can remove a transport bottleneck but does not increase generator output. Their energy buffers are not substitutes for long-term flywheel storage."
+    },
+    {
+      "content_type": "heading",
+      "text": "Torque Junctions and Distributors",
+      "level": 2,
+      "anchor": "entry_017"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:torque_junction_light"
+        },
+        {
+          "name": "ancientwarfare:torque_junction_medium"
+        },
+        {
+          "name": "ancientwarfare:torque_junction_heavy"
+        },
+        {
+          "name": "ancientwarfare:torque_distributor_light"
+        },
+        {
+          "name": "ancientwarfare:torque_distributor_medium"
+        },
+        {
+          "name": "ancientwarfare:torque_distributor_heavy"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Light/Medium Junctions and Distributors use the Engineering Station and require The Wheel; Heavy variants require Mass Production."
+    },
+    {
+      "content_type": "text",
+      "text": "A Junction combines multiple inputs into one output direction. A Distributor receives power at its back and distributes it to other enabled faces. Use a hammer to orient them and enable or disable connection faces as needed."
+    },
+    {
+      "content_type": "text",
+      "text": "Neither is a direction-free universal connector. Follow the line from the generator and check every input and output, especially the Distributor's back and the Junction's single outlet."
+    },
+    {
+      "content_type": "heading",
+      "text": "Flywheel Controllers and Storage",
+      "level": 2,
+      "anchor": "entry_018"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:flywheel_controller_light"
+        },
+        {
+          "name": "ancientwarfare:flywheel_controller_medium"
+        },
+        {
+          "name": "ancientwarfare:flywheel_controller_heavy"
+        },
+        {
+          "name": "ancientwarfare:flywheel_storage_light"
+        },
+        {
+          "name": "ancientwarfare:flywheel_storage_medium"
+        },
+        {
+          "name": "ancientwarfare:flywheel_storage_heavy"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Light/Medium Flywheel Controllers and Storage use the Engineering Station and require Theory of Gravity; Heavy variants require Mass Production."
+    },
+    {
+      "content_type": "text",
+      "text": "Flywheels store excess power and release it downstream as needed. Stack same-tier Flywheel Storage directly below its Controller as a continuous column with a 1x1 or 3x3 cross-section. The Controller sits at the center of the top; up to 21 storage layers are recognized."
+    },
+    {
+      "content_type": "text",
+      "text": "Each Light, Medium and Heavy Storage block adds 100000, 200000 and 500000 units of capacity, respectively. Controller and storage tiers must match. One isolated storage block neither generates power nor replaces the full flywheel structure."
+    },
+    {
+      "content_type": "heading",
+      "text": "Basic Chunk Loader",
+      "level": 2,
+      "anchor": "entry_019"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:chunk_loader_simple"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Mathematics research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Basic Chunk Loader keeps nearby areas loaded for facilities that should continue working while you are away. Its current coverage is a 3x3 chunk area centered on its own chunk."
+    },
+    {
+      "content_type": "text",
+      "text": "Chunk loading supplies neither power, materials nor NPC food. Production facilities, routes and destination containers outside its coverage may still stop participating when their chunks unload."
+    }
+  ]
+}

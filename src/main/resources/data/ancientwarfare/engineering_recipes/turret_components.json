@@ -1,0 +1,24 @@
+{
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "tag":  "forge:ingots/iron"
+                        },
+                        {
+                            "item":  "minecraft:piston"
+                        },
+                        {
+                            "item":  "minecraft:string"
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:redstone"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:turret_components"
+               }
+}

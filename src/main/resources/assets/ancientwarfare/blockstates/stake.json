@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "facing=north,part=0": { "model": "ancientwarfare:block/stake_bottom", "y": 180 },
+    "facing=south,part=0": { "model": "ancientwarfare:block/stake_bottom" },
+    "facing=west,part=0": { "model": "ancientwarfare:block/stake_bottom", "y": 90 },
+    "facing=east,part=0": { "model": "ancientwarfare:block/stake_bottom", "y": 270 },
+    "facing=north,part=1": { "model": "ancientwarfare:block/stake_top", "y": 180 },
+    "facing=south,part=1": { "model": "ancientwarfare:block/stake_top" },
+    "facing=west,part=1": { "model": "ancientwarfare:block/stake_top", "y": 90 },
+    "facing=east,part=1": { "model": "ancientwarfare:block/stake_top", "y": 270 },
+    "facing=north,part=2": { "model": "ancientwarfare:block/empty" },
+    "facing=south,part=2": { "model": "ancientwarfare:block/empty" },
+    "facing=west,part=2": { "model": "ancientwarfare:block/empty" },
+    "facing=east,part=2": { "model": "ancientwarfare:block/empty" }
+  }
+}

@@ -1,0 +1,22 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:iron_casing"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:gunpowder"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ammo_iron_shot_15",
+                   "count":  8
+               }
+}

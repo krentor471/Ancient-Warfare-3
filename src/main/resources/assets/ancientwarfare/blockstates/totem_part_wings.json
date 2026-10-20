@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/totem_part_wings" },
+    "facing=south": { "model": "ancientwarfare:block/totem_part_wings", "y": 180 },
+    "facing=west": { "model": "ancientwarfare:block/totem_part_wings", "y": 270 },
+    "facing=east": { "model": "ancientwarfare:block/totem_part_wings", "y": 90 }
+  }
+}

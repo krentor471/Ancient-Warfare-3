@@ -1,0 +1,1960 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.ancientwarfare.legacy.chest_cart",
+        "texture_width": 256,
+        "texture_height": 256,
+        "visible_bounds_width": 6.25,
+        "visible_bounds_height": 2.4375,
+        "visible_bounds_offset": [
+          -0.75,
+          2.21875,
+          -0.5
+        ]
+      },
+      "bones": [
+        {
+          "name": "frontAxle",
+          "pivot": [
+            0,
+            32,
+            -15
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17,
+                31.5,
+                -15.5
+              ],
+              "size": [
+                34,
+                1,
+                1
+              ],
+              "uv": [
+                0,
+                59
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FRWheelPivot",
+          "pivot": [
+            -17,
+            32,
+            -15
+          ],
+          "parent": "frontAxle",
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                25,
+                -15.5
+              ],
+              "size": [
+                1,
+                14,
+                1
+              ],
+              "uv": [
+                0,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FRS2",
+          "pivot": [
+            -17,
+            32,
+            -15
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                -22
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FRS3",
+          "pivot": [
+            -17,
+            32,
+            -15
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                -22
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FRS4",
+          "pivot": [
+            -17,
+            32,
+            -15
+          ],
+          "parent": "FRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                -22
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "frw1",
+          "pivot": [
+            -18,
+            40,
+            -18
+          ],
+          "parent": "FRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                -18
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw4",
+          "pivot": [
+            -18,
+            40,
+            -18
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                -25
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLr5",
+          "pivot": [
+            -18,
+            35,
+            -23
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                34,
+                -29
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw6",
+          "pivot": [
+            -18,
+            29,
+            -23
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                29,
+                -23
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw7",
+          "pivot": [
+            -18,
+            25,
+            -18
+          ],
+          "parent": "FRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                24,
+                -18
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw8",
+          "pivot": [
+            -18,
+            29,
+            -7
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                29,
+                -14
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw3",
+          "pivot": [
+            -18,
+            35,
+            -7
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                34,
+                -7
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Frw2",
+          "pivot": [
+            -18,
+            40,
+            -12
+          ],
+          "parent": "FRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                -12
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLWheelPivot",
+          "pivot": [
+            17,
+            32,
+            -15
+          ],
+          "parent": "frontAxle",
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                25,
+                -15.5
+              ],
+              "size": [
+                1,
+                14,
+                1
+              ],
+              "uv": [
+                0,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw3",
+          "pivot": [
+            16,
+            35,
+            -7
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                34,
+                -7
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw2",
+          "pivot": [
+            16,
+            40,
+            -12
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                -12
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FS4",
+          "pivot": [
+            17,
+            32,
+            -15
+          ],
+          "parent": "FLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                -22
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLS2",
+          "pivot": [
+            17,
+            32,
+            -15
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                -22
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FS3",
+          "pivot": [
+            17,
+            32,
+            -15
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                -22
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "flw1",
+          "pivot": [
+            16,
+            40,
+            -18
+          ],
+          "parent": "FLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                -18
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw4",
+          "pivot": [
+            16,
+            40,
+            -18
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                -25
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw5",
+          "pivot": [
+            16,
+            35,
+            -23
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                34,
+                -29
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw6",
+          "pivot": [
+            16,
+            29,
+            -23
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                29,
+                -23
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw7",
+          "pivot": [
+            16,
+            25,
+            -18
+          ],
+          "parent": "FLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                24,
+                -18
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "FLw8",
+          "pivot": [
+            16,
+            29,
+            -7
+          ],
+          "parent": "FLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                29,
+                -14
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "rearAxle",
+          "pivot": [
+            0,
+            32,
+            20
+          ],
+          "parent": "frontAxle",
+          "cubes": [
+            {
+              "origin": [
+                -17,
+                31.5,
+                19.5
+              ],
+              "size": [
+                34,
+                1,
+                1
+              ],
+              "uv": [
+                0,
+                59
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRWheelPivot",
+          "pivot": [
+            -17,
+            32,
+            20
+          ],
+          "parent": "rearAxle",
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                25,
+                19.5
+              ],
+              "size": [
+                1,
+                14,
+                1
+              ],
+              "uv": [
+                0,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRS4",
+          "pivot": [
+            -17,
+            32,
+            20
+          ],
+          "parent": "RRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                13
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRS2",
+          "pivot": [
+            -17,
+            32,
+            20
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                13
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRS3",
+          "pivot": [
+            -17,
+            32,
+            20
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -17.5,
+                31.5,
+                13
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw1",
+          "pivot": [
+            -18,
+            40,
+            17
+          ],
+          "parent": "RRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                17
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw2",
+          "pivot": [
+            -18,
+            40,
+            23
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                23
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw3",
+          "pivot": [
+            -18,
+            35,
+            28
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                34,
+                28
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw8",
+          "pivot": [
+            -18,
+            29,
+            28
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                29,
+                21
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw7",
+          "pivot": [
+            -18,
+            25,
+            17
+          ],
+          "parent": "RRWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                24,
+                17
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw6",
+          "pivot": [
+            -18,
+            29,
+            12
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                29,
+                12
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw4",
+          "pivot": [
+            -18,
+            40,
+            17
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                39,
+                10
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RRw5",
+          "pivot": [
+            -18,
+            35,
+            12
+          ],
+          "parent": "RRWheelPivot",
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                34,
+                6
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLWheelPivot",
+          "pivot": [
+            17,
+            32,
+            20
+          ],
+          "parent": "rearAxle",
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                25,
+                19.5
+              ],
+              "size": [
+                1,
+                14,
+                1
+              ],
+              "uv": [
+                0,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLS2",
+          "pivot": [
+            17,
+            32,
+            20
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                13
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLS3",
+          "pivot": [
+            17,
+            32,
+            20
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                13
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLS4",
+          "pivot": [
+            17,
+            32,
+            20
+          ],
+          "parent": "RLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                31.5,
+                13
+              ],
+              "size": [
+                1,
+                1,
+                14
+              ],
+              "uv": [
+                23,
+                62
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw1",
+          "pivot": [
+            16,
+            40,
+            17
+          ],
+          "parent": "RLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                17
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw2",
+          "pivot": [
+            16,
+            40,
+            23
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                23
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw3",
+          "pivot": [
+            16,
+            35,
+            28
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                34,
+                28
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw8",
+          "pivot": [
+            16,
+            29,
+            28
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                29,
+                21
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw7",
+          "pivot": [
+            16,
+            25,
+            17
+          ],
+          "parent": "RLWheelPivot",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                24,
+                17
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw6",
+          "pivot": [
+            16,
+            29,
+            12
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                29,
+                12
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw5",
+          "pivot": [
+            16,
+            35,
+            12
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                34,
+                6
+              ],
+              "size": [
+                2,
+                1,
+                6
+              ],
+              "uv": [
+                0,
+                84
+              ]
+            }
+          ]
+        },
+        {
+          "name": "RLw4",
+          "pivot": [
+            16,
+            40,
+            17
+          ],
+          "parent": "RLWheelPivot",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16,
+                39,
+                10
+              ],
+              "size": [
+                2,
+                1,
+                7
+              ],
+              "uv": [
+                0,
+                75
+              ]
+            }
+          ]
+        },
+        {
+          "name": "chest1",
+          "pivot": [
+            -14,
+            47,
+            -25.5
+          ],
+          "parent": "frontAxle",
+          "cubes": [
+            {
+              "origin": [
+                -14,
+                33,
+                -25.5
+              ],
+              "size": [
+                28,
+                14,
+                14
+              ],
+              "uv": [
+                0,
+                128
+              ]
+            }
+          ]
+        },
+        {
+          "name": "chest2",
+          "pivot": [
+            -14,
+            47,
+            -11.5
+          ],
+          "parent": "chest1",
+          "cubes": [
+            {
+              "origin": [
+                -14,
+                33,
+                -11.5
+              ],
+              "size": [
+                14,
+                14,
+                28
+              ],
+              "uv": [
+                85,
+                128
+              ]
+            }
+          ]
+        },
+        {
+          "name": "chest4",
+          "pivot": [
+            -14,
+            47,
+            16.5
+          ],
+          "parent": "chest1",
+          "rotation": [
+            0,
+            180,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -42,
+                33,
+                2.5
+              ],
+              "size": [
+                28,
+                14,
+                14
+              ],
+              "uv": [
+                0,
+                128
+              ]
+            }
+          ]
+        },
+        {
+          "name": "chest3",
+          "pivot": [
+            0,
+            47,
+            -11.5
+          ],
+          "parent": "chest1",
+          "rotation": [
+            0,
+            180,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -14,
+                33,
+                -39.5
+              ],
+              "size": [
+                14,
+                14,
+                28
+              ],
+              "uv": [
+                85,
+                128
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartBottom",
+          "pivot": [
+            0,
+            33,
+            -26.5
+          ],
+          "parent": "frontAxle",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                32,
+                -26.5
+              ],
+              "size": [
+                30,
+                1,
+                29
+              ],
+              "uv": [
+                0,
+                226
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartRight",
+          "pivot": [
+            -15,
+            41,
+            -26.5
+          ],
+          "parent": "cartBottom",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                33,
+                -26.5
+              ],
+              "size": [
+                1,
+                8,
+                29
+              ],
+              "uv": [
+                0,
+                157
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartFront",
+          "pivot": [
+            0,
+            33,
+            -26.5
+          ],
+          "parent": "cartBottom",
+          "cubes": [
+            {
+              "origin": [
+                -14,
+                33,
+                -26.5
+              ],
+              "size": [
+                28,
+                8,
+                1
+              ],
+              "uv": [
+                0,
+                195
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartRear",
+          "pivot": [
+            0,
+            33,
+            30.5
+          ],
+          "parent": "cartBottom",
+          "cubes": [
+            {
+              "origin": [
+                -14,
+                33,
+                30.5
+              ],
+              "size": [
+                28,
+                8,
+                1
+              ],
+              "uv": [
+                0,
+                195
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartHitchLeft",
+          "pivot": [
+            10,
+            34,
+            -26.5
+          ],
+          "parent": "cartBottom",
+          "rotation": [
+            25,
+            10,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                9.5,
+                33.5,
+                -50
+              ],
+              "size": [
+                1,
+                1,
+                24
+              ],
+              "uv": [
+                61,
+                171
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartHitchRight",
+          "pivot": [
+            -10,
+            34,
+            -26.5
+          ],
+          "parent": "cartBottom",
+          "rotation": [
+            25,
+            -10,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -10.5,
+                33.5,
+                -50
+              ],
+              "size": [
+                1,
+                1,
+                24
+              ],
+              "uv": [
+                61,
+                171
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartHitchFront",
+          "pivot": [
+            0,
+            34.5,
+            -26.5
+          ],
+          "parent": "cartBottom",
+          "rotation": [
+            25,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -11,
+                34,
+                -50
+              ],
+              "size": [
+                22,
+                1,
+                1
+              ],
+              "uv": [
+                61,
+                197
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartRight2",
+          "pivot": [
+            -15,
+            41,
+            2.5
+          ],
+          "parent": "cartBottom",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                33,
+                2.5
+              ],
+              "size": [
+                1,
+                8,
+                29
+              ],
+              "uv": [
+                0,
+                157
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartLeft",
+          "pivot": [
+            14,
+            41,
+            -26.5
+          ],
+          "parent": "cartBottom",
+          "cubes": [
+            {
+              "origin": [
+                14,
+                33,
+                -26.5
+              ],
+              "size": [
+                1,
+                8,
+                29
+              ],
+              "uv": [
+                0,
+                157
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartLeft2",
+          "pivot": [
+            14,
+            41,
+            2.5
+          ],
+          "parent": "cartBottom",
+          "cubes": [
+            {
+              "origin": [
+                14,
+                33,
+                2.5
+              ],
+              "size": [
+                1,
+                8,
+                29
+              ],
+              "uv": [
+                0,
+                157
+              ]
+            }
+          ]
+        },
+        {
+          "name": "cartBottom2",
+          "pivot": [
+            0,
+            33,
+            2.5
+          ],
+          "parent": "cartBottom",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                32,
+                2.5
+              ],
+              "size": [
+                30,
+                1,
+                29
+              ],
+              "uv": [
+                0,
+                226
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

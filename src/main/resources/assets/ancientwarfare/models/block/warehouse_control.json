@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "ancientwarfare:block/automation/warehouse_control_front",
+    "down": "ancientwarfare:block/automation/warehouse_control_bottom",
+    "up": "ancientwarfare:block/automation/warehouse_control_top",
+    "north": "ancientwarfare:block/automation/warehouse_control_front",
+    "south": "ancientwarfare:block/automation/warehouse_control_rear",
+    "west": "ancientwarfare:block/automation/warehouse_control_left",
+    "east": "ancientwarfare:block/automation/warehouse_control_right"
+  }
+}

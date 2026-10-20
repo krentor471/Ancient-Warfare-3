@@ -1,0 +1,322 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "torque",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "二 扭矩",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "联动说明：Create手摇曲柄与工匠",
+          "category_link": "integrations",
+          "anchor": "create_crank"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "手摇扭力发动机",
+          "category_link": "torque",
+          "anchor": "entry_012"
+        },
+        {
+          "text": "斯特林扭力发电机",
+          "category_link": "torque",
+          "anchor": "entry_013"
+        },
+        {
+          "text": "水车扭力发电机",
+          "category_link": "torque",
+          "anchor": "entry_014"
+        },
+        {
+          "text": "风车扭力发电机与风车叶片",
+          "category_link": "torque",
+          "anchor": "entry_015"
+        },
+        {
+          "text": "传动杆",
+          "category_link": "torque",
+          "anchor": "entry_016"
+        },
+        {
+          "text": "汇流器与分配器",
+          "category_link": "torque",
+          "anchor": "entry_017"
+        },
+        {
+          "text": "飞轮控制器与飞轮存储器",
+          "category_link": "torque",
+          "anchor": "entry_018"
+        },
+        {
+          "text": "低级区块加载器",
+          "category_link": "torque",
+          "anchor": "entry_019"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "扭矩是本模组的机械动力。动力源产生能量，传动设备送出能量，飞轮负责储存，机器负责消耗。连接时既要检查方向，也要检查接收设备是否支持扭矩。"
+    },
+    {
+      "content_type": "heading",
+      "text": "手摇扭力发动机",
+      "level": 2,
+      "anchor": "entry_012"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:hand_cranked_generator"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为轮轴技术。"
+    },
+    {
+      "content_type": "text",
+      "text": "手摇扭力发动机适合少量人工供能。空手右键摇动即可补充能量，再通过输出轴连接传动装置或用能设备。"
+    },
+    {
+      "content_type": "text",
+      "text": "它需要玩家持续操作，不是放置后永久运转的动力源。机器没有动作时，除了继续摇动，还应检查传动方向、设备需求和机器材料。"
+    },
+    {
+      "content_type": "heading",
+      "text": "斯特林扭力发电机",
+      "level": 2,
+      "anchor": "entry_013"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:stirling_generator"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为机械学。"
+    },
+    {
+      "content_type": "text",
+      "text": "斯特林扭力发电机消耗燃料产生扭矩。手持可燃物右键投入燃料，空手右键可查看状态；燃料槽已有物品时，直接右键投料会受到限制。"
+    },
+    {
+      "content_type": "text",
+      "text": "发电机沿自身轴线两端输出动力。燃料耗尽或动力线路方向不对，都会影响下游机器；把燃料堆在旁边的箱子里并不等于已经送入发动机。"
+    },
+    {
+      "content_type": "heading",
+      "text": "水车扭力发电机",
+      "level": 2,
+      "anchor": "entry_014"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:waterwheel_generator"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为重力理论。"
+    },
+    {
+      "content_type": "text",
+      "text": "水车扭力发电机依赖附近的水产生动力。当前检测范围是以设备为中心、各方向两格内的区域，检测到水即可满足水源条件。空手右键查看设备状态。"
+    },
+    {
+      "content_type": "text",
+      "text": "输出方向同样沿设备轴线两端。建造水道可以服务于外观和布置，但不要把旧版特定水道造型当作当前唯一的启动方式。"
+    },
+    {
+      "content_type": "heading",
+      "text": "风车扭力发电机与风车叶片",
+      "level": 2,
+      "anchor": "entry_015"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:windmill_generator"
+        },
+        {
+          "name": "ancientwarfare:windmill_blade"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为轮轴技术。"
+    },
+    {
+      "content_type": "text",
+      "text": "风车需要完整的叶片平面。按 3×3、5×5 或 7×7 的规格布置叶片结构后，空手右键风车控制部分进行组装；再次操作可以停止并恢复叶片。"
+    },
+    {
+      "content_type": "text",
+      "text": "叶片规模和安装高度会影响产能。留出完整的叶片位置并核对输出轴，不能只放一个风车方块就期待它达到完整风车的产量。"
+    },
+    {
+      "content_type": "heading",
+      "text": "传动杆",
+      "level": 2,
+      "anchor": "entry_016"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:torque_shaft_light"
+        },
+        {
+          "name": "ancientwarfare:torque_shaft_medium"
+        },
+        {
+          "name": "ancientwarfare:torque_shaft_heavy"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：轻型传动杆、中型传动杆：工程站，研究要求为轮轴技术；重型传动杆：工程站，研究要求为大规模生产。"
+    },
+    {
+      "content_type": "text",
+      "text": "传动杆沿自身轴向传递动力。用锤子调整轴向，使动力源、杆件和接收设备形成连续连接。"
+    },
+    {
+      "content_type": "text",
+      "text": "轻型、中型、重型传动设备的输送上限分别为每 tick 1000、2000、5000 单位。升级杆件能改善输送瓶颈，但不会凭空增加动力源的产量；传动杆中的缓冲能量也不能替代飞轮的长期储能。"
+    },
+    {
+      "content_type": "heading",
+      "text": "汇流器与分配器",
+      "level": 2,
+      "anchor": "entry_017"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:torque_junction_light"
+        },
+        {
+          "name": "ancientwarfare:torque_junction_medium"
+        },
+        {
+          "name": "ancientwarfare:torque_junction_heavy"
+        },
+        {
+          "name": "ancientwarfare:torque_distributor_light"
+        },
+        {
+          "name": "ancientwarfare:torque_distributor_medium"
+        },
+        {
+          "name": "ancientwarfare:torque_distributor_heavy"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：轻型汇流器、中型汇流器、轻型分配器、中型分配器：工程站，研究要求为轮轴技术；重型汇流器、重型分配器：工程站，研究要求为大规模生产。"
+    },
+    {
+      "content_type": "text",
+      "text": "汇流器用于把多路输入汇到一个输出方向；分配器从背面接收，再向其他允许连接的面分配。安装后用锤子调整朝向，并按需要启用或关闭连接面。"
+    },
+    {
+      "content_type": "text",
+      "text": "两者都不是忽略方向的万能连接块。接入后应从动力源顺着线路检查每个输入与输出面，特别注意分配器的背面与汇流器的单一出口。"
+    },
+    {
+      "content_type": "heading",
+      "text": "飞轮控制器与飞轮存储器",
+      "level": 2,
+      "anchor": "entry_018"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:flywheel_controller_light"
+        },
+        {
+          "name": "ancientwarfare:flywheel_controller_medium"
+        },
+        {
+          "name": "ancientwarfare:flywheel_controller_heavy"
+        },
+        {
+          "name": "ancientwarfare:flywheel_storage_light"
+        },
+        {
+          "name": "ancientwarfare:flywheel_storage_medium"
+        },
+        {
+          "name": "ancientwarfare:flywheel_storage_heavy"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：轻型飞轮控制器、中型飞轮控制器、轻型飞轮存储器、中型飞轮存储器：工程站，研究要求为重力理论；重型飞轮控制器、重型飞轮存储器：工程站，研究要求为大规模生产。"
+    },
+    {
+      "content_type": "text",
+      "text": "飞轮用于保存多余动力，并在下游需要时释放。把同等级飞轮存储器放在控制器正下方，连续堆成 1×1 或 3×3 截面的柱体；控制器位于柱顶中心，识别高度最多为 21 层。"
+    },
+    {
+      "content_type": "text",
+      "text": "每个轻型、中型、重型存储块分别提供 100000、200000、500000 单位容量。控制器和存储块必须配套；单独一块存储器既不会发电，也不能代替完整飞轮结构。"
+    },
+    {
+      "content_type": "heading",
+      "text": "低级区块加载器",
+      "level": 2,
+      "anchor": "entry_019"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:chunk_loader_simple"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为数学。"
+    },
+    {
+      "content_type": "text",
+      "text": "低级区块加载器用于让附近区域保持加载，适合需要离开后继续处理的基地设施。当前范围是以自身所在区块为中心的 3×3 区块。"
+    },
+    {
+      "content_type": "text",
+      "text": "加载区块不等于提供动力、材料或 NPC 食物。跨出这一范围的生产设备、搬运路线和目标容器，仍可能因所在区块未加载而停止参与工作。"
+    }
+  ]
+}

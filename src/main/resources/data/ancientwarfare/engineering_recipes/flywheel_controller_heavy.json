@@ -1,0 +1,19 @@
+{
+    "required_research":  "mass_production",
+    "pattern":  [
+                    "IGI",
+                    "III",
+                    "IGI"
+                ],
+    "key":  {
+                "G":  {
+                          "item":  "ancientwarfare:steel_gear"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/steel"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:flywheel_controller_heavy"
+               }
+}

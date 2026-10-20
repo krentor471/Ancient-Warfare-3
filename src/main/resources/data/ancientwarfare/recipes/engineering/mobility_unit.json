@@ -1,0 +1,25 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "the_wheel",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "minecraft:piston"
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:redstone"
+                                           },
+                            "count":  4
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:mobility_unit"
+               }
+}

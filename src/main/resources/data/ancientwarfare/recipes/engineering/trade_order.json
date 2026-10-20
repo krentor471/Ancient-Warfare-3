@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "trade",
+    "pattern":  [
+                    "D  ",
+                    "P  ",
+                    "W  "
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:paper"
+                      },
+                "D":  {
+                          "item":  "minecraft:green_dye"
+                      },
+                "W":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:trade_order"
+               }
+}

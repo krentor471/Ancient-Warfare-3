@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "ancientwarfare:item/structure/gates/gate_wood_double"
+  }
+}

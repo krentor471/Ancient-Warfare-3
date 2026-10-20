@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["GGG", "G G", "GGG"],
+  "key": { "G": { "type": "forge:partial_nbt", "item": "ancientwarfare:coin", "nbt": { "metal": "gold" } } },
+  "result": { "item": "ancientwarfare:coin_stack_gold" }
+}

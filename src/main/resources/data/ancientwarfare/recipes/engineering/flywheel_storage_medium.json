@@ -1,0 +1,20 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "theory_of_gravity",
+    "pattern":  [
+                    "GPG",
+                    "PPP",
+                    "GGG"
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "forge:ingots/iron"
+                      },
+                "G":  {
+                          "tag":  "forge:glass_panes"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:flywheel_storage_medium"
+               }
+}

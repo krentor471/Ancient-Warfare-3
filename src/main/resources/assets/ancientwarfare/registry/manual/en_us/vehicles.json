@@ -1,0 +1,687 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "vehicles",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "IX. Vehicles",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Integrations: World War and Physical Ships",
+          "category_link": "integrations",
+          "anchor": "world_war"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Deploying and Operating Vehicles",
+          "category_link": "vehicles",
+          "anchor": "entry_076"
+        },
+        {
+          "text": "Chest Pushcart",
+          "category_link": "vehicles",
+          "anchor": "entry_077"
+        },
+        {
+          "text": "Transport Boat",
+          "category_link": "vehicles",
+          "anchor": "entry_078"
+        },
+        {
+          "text": "Ballistas: Mobile, Stand and Boat Variants",
+          "category_link": "vehicles",
+          "anchor": "entry_079"
+        },
+        {
+          "text": "Catapults: Mobile, Stand and Boat Variants",
+          "category_link": "vehicles",
+          "anchor": "entry_080"
+        },
+        {
+          "text": "Trebuchets and Giant Trebuchet",
+          "category_link": "vehicles",
+          "anchor": "entry_081"
+        },
+        {
+          "text": "Cannons: Mobile and Turret Variants",
+          "category_link": "vehicles",
+          "anchor": "entry_082"
+        },
+        {
+          "text": "Battering Ram",
+          "category_link": "vehicles",
+          "anchor": "entry_083"
+        },
+        {
+          "text": "Hwacha",
+          "category_link": "vehicles",
+          "anchor": "entry_084"
+        },
+        {
+          "text": "Ballista Bolts",
+          "category_link": "vehicles",
+          "anchor": "entry_085"
+        },
+        {
+          "text": "Catapult and Trebuchet Ammunition",
+          "category_link": "vehicles",
+          "anchor": "entry_086"
+        },
+        {
+          "text": "Cannon Ammunition",
+          "category_link": "vehicles",
+          "anchor": "entry_087"
+        },
+        {
+          "text": "Hwacha Rockets",
+          "category_link": "vehicles",
+          "anchor": "entry_088"
+        },
+        {
+          "text": "Vehicle Armor",
+          "category_link": "vehicles",
+          "anchor": "entry_089"
+        },
+        {
+          "text": "Vehicle Performance Upgrades",
+          "category_link": "vehicles",
+          "anchor": "entry_090"
+        },
+        {
+          "text": "Vehicle Crafting Materials and Components",
+          "category_link": "vehicles",
+          "anchor": "entry_091"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Vehicles include transport and siege engines. Most engine families have five tiers: wooden, two iron-banded tiers, iron and steel. Ammunition, turning limits and upgrade compatibility depend on engine type, not just material."
+    },
+    {
+      "content_type": "heading",
+      "text": "Deploying and Operating Vehicles",
+      "level": 2,
+      "anchor": "entry_076"
+    },
+    {
+      "content_type": "text",
+      "text": "Hold the corresponding vehicle item to deploy it in a suitable position. Usually, right-click to mount and sneak-right-click to open inventory or configuration; mobile vehicles use movement controls. The interface's packing function collects supported vehicles while preserving their data."
+    },
+    {
+      "content_type": "text",
+      "text": "Siege engines use Z/C for horizontal aim, R/F for elevation and Space to fire by default. Check controls if another mod uses these keys. Before firing, check the seat, firing arc, ammunition and reload, and keep clear of allied buildings and personnel."
+    },
+    {
+      "content_type": "heading",
+      "text": "Chest Pushcart",
+      "level": 2,
+      "anchor": "entry_077"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:chest_pushcart"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Chest Pushcart carries supplies while moving. Sneak-right-click opens storage; ordinary right-click mounts it. It currently provides 216 storage slots and six upgrade positions."
+    },
+    {
+      "content_type": "text",
+      "text": "This capacity belongs specifically to the Chest Pushcart, not every Ballista or turret. Check vehicle state and stored items before moving or packing."
+    },
+    {
+      "content_type": "heading",
+      "text": "Transport Boat",
+      "level": 2,
+      "anchor": "entry_078"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:transport_boat"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Seafaring research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Transport Boat carries supplies over water. Deploy where there is sufficient water and navigation space, manage its available storage and seats through the interface, then travel on water."
+    },
+    {
+      "content_type": "text",
+      "text": "It is not an armed Boat Ballista and does not accept every siege ammunition type merely because it is a boat. Leave hull clearance at shore and avoid deploying in shallow narrow channels or building edges."
+    },
+    {
+      "content_type": "heading",
+      "text": "Ballistas: Mobile, Stand and Boat Variants",
+      "level": 2,
+      "anchor": "entry_079"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ballista_mobile"
+        },
+        {
+          "name": "ancientwarfare:ballista_mobile_fixed"
+        },
+        {
+          "name": "ancientwarfare:ballista_turret_stand"
+        },
+        {
+          "name": "ancientwarfare:ballista_stand_fixed"
+        },
+        {
+          "name": "ancientwarfare:ballista_boat"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Ballista Mobile Turret I, Mobile Fixed I, Stand Turret I and Stand Fixed I use the Engineering Station and require Siege Warfare. Boat Ballista I requires Naval Warfare."
+    },
+    {
+      "content_type": "text",
+      "text": "Ballistas fire bolts and include mobile, fixed-direction, rotating stand and boat variants. Choose mobile engines to accompany troops, stands to defend a position and boat variants for water combat."
+    },
+    {
+      "content_type": "text",
+      "text": "Fixed-direction models do not have rotating models' firing arcs. Load compatible bolts, set facing and elevation, wait for reload and fire. Ordinary player arrows are not automatically ammunition for every Ballista."
+    },
+    {
+      "content_type": "heading",
+      "text": "Catapults: Mobile, Stand and Boat Variants",
+      "level": 2,
+      "anchor": "entry_080"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:catapult_mobile"
+        },
+        {
+          "name": "ancientwarfare:catapult_mobile_fixed"
+        },
+        {
+          "name": "ancientwarfare:catapult_turret_stand"
+        },
+        {
+          "name": "ancientwarfare:catapult_stand_fixed"
+        },
+        {
+          "name": "ancientwarfare:catapult_boat"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Catapult Mobile Turret I, Mobile Fixed I, Stand Turret I and Stand Fixed I use the Engineering Station and require Siege Warfare. Boat Catapult I requires Naval Warfare."
+    },
+    {
+      "content_type": "text",
+      "text": "Catapults launch dedicated ammunition along an arc for indirect fire. Mobile, fixed, rotating stand and boat variants differ in mobility and firing arc; consider the deployment location first."
+    },
+    {
+      "content_type": "text",
+      "text": "Ordinary Catapults currently accept matching ammunition of weight 10 or 15. Heavier ammunition needs an engine that supports it, not merely a higher material tier. Range, elevation and obstacles affect trajectory and impact; test fire first."
+    },
+    {
+      "content_type": "heading",
+      "text": "Trebuchets and Giant Trebuchet",
+      "level": 2,
+      "anchor": "entry_081"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:trebuchet_mobile"
+        },
+        {
+          "name": "ancientwarfare:trebuchet_fixed"
+        },
+        {
+          "name": "ancientwarfare:trebuchet_turret"
+        },
+        {
+          "name": "ancientwarfare:giant_trebuchet"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Siege Warfare research."
+    },
+    {
+      "content_type": "text",
+      "text": "Trebuchets use counterweights to launch ammunition, with fixed, mobile, rotating and giant variants. They suit stationary bombardment and siege work. Each size has its own supported ammunition weights and firing arcs."
+    },
+    {
+      "content_type": "text",
+      "text": "Ordinary Trebuchets support ammunition weighing up to 30; the Giant Trebuchet supports up to 45. Leave room for large engines. Being able to put an item in inventory does not guarantee that the engine can fire it."
+    },
+    {
+      "content_type": "heading",
+      "text": "Cannons: Mobile and Turret Variants",
+      "level": 2,
+      "anchor": "entry_082"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:cannon_mobile"
+        },
+        {
+          "name": "ancientwarfare:cannon_turret_stand"
+        },
+        {
+          "name": "ancientwarfare:cannon_stand_fixed"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Advanced Siege Warfare research."
+    },
+    {
+      "content_type": "text",
+      "text": "Cannons use dedicated ammunition and include mobile, fixed and rotating turrets. Deploy, load compatible rounds, aim and wait for reload before firing."
+    },
+    {
+      "content_type": "text",
+      "text": "Fixed and rotating turrets have different horizontal aiming capabilities. Cannons do not use Catapult stones, and charge components are not finished rounds."
+    },
+    {
+      "content_type": "heading",
+      "text": "Battering Ram",
+      "level": 2,
+      "anchor": "entry_083"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:battering_ram"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Siege Warfare research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Battering Ram attacks fortifications at close range. Move it within reach of a valid target and use its attack control. It relies on close-range impact, not ranged projectiles."
+    },
+    {
+      "content_type": "text",
+      "text": "Clear the approach and face the target before advancing. Loading bolts or cannon rounds does not turn a Ram into a ranged weapon. Its function also differs from Chapter VII's gate access controls."
+    },
+    {
+      "content_type": "heading",
+      "text": "Hwacha",
+      "level": 2,
+      "anchor": "entry_084"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:hwacha"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Siege Warfare research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Hwacha attacks with dedicated rockets. Load compatible rockets, set direction and elevation and wait for reload before firing."
+    },
+    {
+      "content_type": "text",
+      "text": "Normal, Incendiary, Explosive and Airburst Rockets have distinct uses. Leave clearance in front of the launcher. Explosive and incendiary rounds especially need separation from allied troops, wooden buildings and flammable materials."
+    },
+    {
+      "content_type": "heading",
+      "text": "Ballista Bolts",
+      "level": 2,
+      "anchor": "entry_085"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ammo_ballista_bolt"
+        },
+        {
+          "name": "ancientwarfare:ammo_ballista_bolt_iron"
+        },
+        {
+          "name": "ancientwarfare:ammo_ballista_bolt_flame"
+        },
+        {
+          "name": "ancientwarfare:ammo_ballista_bolt_explosive"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Ballistics research."
+    },
+    {
+      "content_type": "text",
+      "text": "Ballista Bolts include wooden, iron, incendiary and explosive types. Consider both the target and fire/explosion effects on its surroundings."
+    },
+    {
+      "content_type": "text",
+      "text": "Bolts are Ballista ammunition, not reskinned ordinary arrows. Store ammunition separately by engine type so Couriers do not deliver incompatible rounds."
+    },
+    {
+      "content_type": "heading",
+      "text": "Catapult and Trebuchet Ammunition",
+      "level": 2,
+      "anchor": "entry_086"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ammo_stone_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_flame_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_pebble_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_cluster_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_explosive_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_explosive_shot_10_big"
+        },
+        {
+          "name": "ancientwarfare:ammo_napalm_shot_10"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Ballistics research."
+    },
+    {
+      "content_type": "text",
+      "text": "Projectile ammunition comes in weights such as 10, 15, 30 and 45, with Stone, Incendiary, Scatter, Cluster, Explosive, High Explosive and Napalm types. Weight and effect are separate properties."
+    },
+    {
+      "content_type": "text",
+      "text": "Choose a supported weight first, then the desired effect. Cluster, explosive and incendiary effects can spread around the impact. When defending, check nearby allies as well as whether the target is hostile."
+    },
+    {
+      "content_type": "heading",
+      "text": "Cannon Ammunition",
+      "level": 2,
+      "anchor": "entry_087"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ammo_iron_shot_5"
+        },
+        {
+          "name": "ancientwarfare:ammo_grape_shot_5"
+        },
+        {
+          "name": "ancientwarfare:ammo_canister_shot_5"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Ballistics research."
+    },
+    {
+      "content_type": "text",
+      "text": "Cannon ammunition includes Solid Iron Shot, Grape Shot and Canister Shot in weights such as 5, 10, 15 and 25. Grape Shot scatters at the muzzle; Canister Shot scatters on impact. Their useful ranges and target distributions differ."
+    },
+    {
+      "content_type": "text",
+      "text": "Prepare weights and types within the Cannon's compatibility limits. Do not mix in Catapult ammunition, Ballista Bolts or Hwacha Rockets simply because all are projectiles."
+    },
+    {
+      "content_type": "heading",
+      "text": "Hwacha Rockets",
+      "level": 2,
+      "anchor": "entry_088"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ammo_hwacha_rocket"
+        },
+        {
+          "name": "ancientwarfare:ammo_hwacha_rocket_flame"
+        },
+        {
+          "name": "ancientwarfare:ammo_hwacha_rocket_explosive"
+        },
+        {
+          "name": "ancientwarfare:ammo_hwacha_rocket_airburst"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Ballistics research."
+    },
+    {
+      "content_type": "text",
+      "text": "Hwacha Rockets form a separate ammunition family: Normal, Incendiary, Explosive and Airburst. Load them into a Hwacha that supports that family."
+    },
+    {
+      "content_type": "text",
+      "text": "Rocket charges in recipes are materials; finished rockets are the ammunition. Configure transport filters and supply containers for finished rounds rather than delivering intermediate components to weapons."
+    },
+    {
+      "content_type": "heading",
+      "text": "Vehicle Armor",
+      "level": 2,
+      "anchor": "entry_089"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:armor_stone"
+        },
+        {
+          "name": "ancientwarfare:armor_iron"
+        },
+        {
+          "name": "ancientwarfare:armor_obsidian"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Machinery research."
+    },
+    {
+      "content_type": "text",
+      "text": "Stone, Iron and Obsidian Armor favor different damage types. Each Stone Armor provides 2.5% general and 7% fire reduction; Iron Armor provides 7% general reduction; Obsidian Armor provides 2.5% general and 7% explosion reduction."
+    },
+    {
+      "content_type": "text",
+      "text": "Install according to vehicle upgrade-slot rules and choose for the main threat. A damage-specific value is not a universal reduction, and armor does not guarantee immunity."
+    },
+    {
+      "content_type": "heading",
+      "text": "Vehicle Performance Upgrades",
+      "level": 2,
+      "anchor": "entry_090"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:vehicle_upgrade_speed"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_aim"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_reload"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_power"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_turret_pitch"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_pitch_up"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_pitch_down"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station. Iron Bearings require The Wheel; Basic Trajectory Calculator requires Ballistics. Spring-Fed Reloader, Power Upgrade, Pitch Extension and Turret Wedges (+3' and -3') require Machinery."
+    },
+    {
+      "content_type": "text",
+      "text": "Performance upgrades cover movement, aiming, reload, power and elevation. Install applicable items in engine upgrade positions and check the resulting performance changes."
+    },
+    {
+      "content_type": "text",
+      "text": "Benefits depend on the engine: a fixed turret does not share the Pushcart's movement needs, and each weapon has elevation and firing-arc limits. Slot and recognition rules limit installed quantities; not every upgrade works on every vehicle."
+    },
+    {
+      "content_type": "heading",
+      "text": "Vehicle Crafting Materials and Components",
+      "level": 2,
+      "anchor": "entry_091"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:flame_charge"
+        },
+        {
+          "name": "ancientwarfare:explosive_charge"
+        },
+        {
+          "name": "ancientwarfare:rocket_charge"
+        },
+        {
+          "name": "ancientwarfare:cluster_charge"
+        },
+        {
+          "name": "ancientwarfare:napalm_charge"
+        },
+        {
+          "name": "ancientwarfare:clay_casing"
+        },
+        {
+          "name": "ancientwarfare:iron_casing"
+        },
+        {
+          "name": "ancientwarfare:mobility_unit"
+        },
+        {
+          "name": "ancientwarfare:turret_components"
+        },
+        {
+          "name": "ancientwarfare:torsion_unit"
+        },
+        {
+          "name": "ancientwarfare:counter_weight_unit"
+        },
+        {
+          "name": "ancientwarfare:powder_case"
+        },
+        {
+          "name": "ancientwarfare:equipment_bay"
+        },
+        {
+          "name": "ancientwarfare:rough_wood"
+        },
+        {
+          "name": "ancientwarfare:treated_wood"
+        },
+        {
+          "name": "ancientwarfare:ironshod_wood"
+        },
+        {
+          "name": "ancientwarfare:iron_core_wood"
+        },
+        {
+          "name": "ancientwarfare:rough_iron"
+        },
+        {
+          "name": "ancientwarfare:fine_iron"
+        },
+        {
+          "name": "ancientwarfare:tempered_iron"
+        },
+        {
+          "name": "ancientwarfare:minor_alloy"
+        },
+        {
+          "name": "ancientwarfare:major_alloy"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station. Combustion: Flame Charge and Napalm Charge. Explosives: Explosive Charge and Powder Case. Rocketry: Rocket Charge. Ballistics: Cluster Charge, Clay Casing and Iron Casing. The Wheel: Mobility Unit and Turret Unit. Machinery: Torsion Unit, Rough Iron, Fine Iron, Tempered Iron, Minor Alloy and Major Alloy. Theory of Gravity: Counterweight Unit. Engineering: Equipment Bay, Rough Wood, Treated Wood, Ironshod Wood and Iron Core Wood."
+    },
+    {
+      "content_type": "text",
+      "text": "Charges, shell casings, movement and rotation parts, torque components, counterweights, Powder Cases, equipment bays, processed wood, iron and alloys are materials for vehicles and ammunition."
+    },
+    {
+      "content_type": "text",
+      "text": "Process components through engineering recipes and craft complete vehicles, upgrades or ammunition. Components are not deployment tools, and an item named charge is not ammunition for any arbitrary weapon."
+    }
+  ]
+}

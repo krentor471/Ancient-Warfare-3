@@ -1,0 +1,28 @@
+﻿{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "ancientwarfare:item/spawner_base",
+    "layer1": "ancientwarfare:item/spawner_overlay_bottom",
+    "layer2": "ancientwarfare:item/spawner_overlay_top",
+    "layer3": "ancientwarfare:item/spawner_farmer"
+  },
+  "overrides": [
+    { "predicate": { "ancientwarfare:npc_type": 0.1 }, "model": "ancientwarfare:item/npc_spawner_combat" },
+    { "predicate": { "ancientwarfare:npc_type": 0.2 }, "model": "ancientwarfare:item/npc_spawner_courier" },
+    { "predicate": { "ancientwarfare:npc_type": 0.3 }, "model": "ancientwarfare:item/npc_spawner_trader" },
+    { "predicate": { "ancientwarfare:npc_type": 0.4 }, "model": "ancientwarfare:item/npc_spawner_bard" },
+    { "predicate": { "ancientwarfare:npc_type": 0.5 }, "model": "ancientwarfare:item/npc_spawner_priest" },
+    { "predicate": { "ancientwarfare:npc_type": 0.6 }, "model": "ancientwarfare:item/npc_spawner_faction_soldier" },
+    { "predicate": { "ancientwarfare:npc_type": 0.7 }, "model": "ancientwarfare:item/npc_spawner_faction_archer" },
+    { "predicate": { "ancientwarfare:npc_type": 0.8 }, "model": "ancientwarfare:item/npc_spawner_faction_leader" },
+    { "predicate": { "ancientwarfare:npc_type": 0.9 }, "model": "ancientwarfare:item/npc_spawner_faction_civilian" },
+    { "predicate": { "ancientwarfare:npc_type": 1.0 }, "model": "ancientwarfare:item/npc_spawner_faction_priest" },
+    { "predicate": { "ancientwarfare:npc_type": 1.1 }, "model": "ancientwarfare:item/npc_spawner_faction_bard" },
+    { "predicate": { "ancientwarfare:npc_type": 1.2 }, "model": "ancientwarfare:item/npc_spawner_siege_engineer" },
+    { "predicate": { "ancientwarfare:npc_type": 1.3 }, "model": "ancientwarfare:item/npc_spawner_modern_soldier" },
+    { "predicate": { "ancientwarfare:npc_type": 1.4 }, "model": "ancientwarfare:item/npc_spawner_ship_captain" },
+    { "predicate": { "ancientwarfare:npc_weapon": 1.0 }, "model": "ancientwarfare:item/npc_spawner_combat_ranged" }
+  ]
+}
+
+

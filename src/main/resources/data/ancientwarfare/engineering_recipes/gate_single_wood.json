@@ -1,0 +1,22 @@
+{
+    "required_research":  "construction",
+    "pattern":  [
+                    "SSS",
+                    "PPP",
+                    "SRS"
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "minecraft:planks"
+                      },
+                "R":  {
+                          "item":  "minecraft:redstone"
+                      },
+                "S":  {
+                          "tag":  "minecraft:stone_crafting_materials"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:gate_spawner_single_wood"
+               }
+}

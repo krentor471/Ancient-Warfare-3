@@ -1,0 +1,28 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:cluster_charge"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:explosive_charge"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:iron_casing"
+                                           },
+                            "count":  4
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ammo_grape_shot_15",
+                   "count":  4
+               }
+}

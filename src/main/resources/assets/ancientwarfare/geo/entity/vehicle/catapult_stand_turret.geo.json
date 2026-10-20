@@ -1,0 +1,1117 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.ancientwarfare.legacy.catapult_stand_turret",
+        "texture_width": 256,
+        "texture_height": 256,
+        "visible_bounds_width": 4.78125,
+        "visible_bounds_height": 2.78125,
+        "visible_bounds_offset": [
+          0,
+          2.390625,
+          0.421875
+        ]
+      },
+      "bones": [
+        {
+          "name": "standBaseMidBeam",
+          "pivot": [
+            0,
+            24,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                24,
+                -1.5
+              ],
+              "size": [
+                36,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standLeftBeam",
+          "pivot": [
+            19,
+            24,
+            0
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                18,
+                24,
+                -19.5
+              ],
+              "size": [
+                3,
+                2,
+                39
+              ],
+              "uv": [
+                0,
+                63
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standRightBeam",
+          "pivot": [
+            -20,
+            24,
+            0
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -21,
+                24,
+                -19.5
+              ],
+              "size": [
+                3,
+                2,
+                39
+              ],
+              "uv": [
+                0,
+                63
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standFrontBeam",
+          "pivot": [
+            0,
+            24,
+            -22.5
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -21,
+                24,
+                -23.5
+              ],
+              "size": [
+                42,
+                2,
+                4
+              ],
+              "uv": [
+                0,
+                6
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standRearBeam",
+          "pivot": [
+            0,
+            24,
+            19.5
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -21,
+                24,
+                19.5
+              ],
+              "size": [
+                42,
+                2,
+                4
+              ],
+              "uv": [
+                0,
+                6
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standTopMidBeam",
+          "pivot": [
+            0,
+            31.5,
+            0
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -16,
+                30.5,
+                -1.5
+              ],
+              "size": [
+                32,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                13
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standTopLeftBeam",
+          "pivot": [
+            16,
+            31.5,
+            0
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                30.5,
+                -17.5
+              ],
+              "size": [
+                3,
+                2,
+                35
+              ],
+              "uv": [
+                0,
+                25
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standTopRightBeam",
+          "pivot": [
+            -19,
+            31.5,
+            0
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -19,
+                30.5,
+                -17.5
+              ],
+              "size": [
+                3,
+                2,
+                35
+              ],
+              "uv": [
+                0,
+                25
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standTopFrontBeam",
+          "pivot": [
+            0,
+            31.5,
+            -20.5
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -19,
+                30.5,
+                -20.5
+              ],
+              "size": [
+                38,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                19
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standTopRearBeam",
+          "pivot": [
+            0,
+            31.5,
+            17.5
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -19,
+                30.5,
+                17.5
+              ],
+              "size": [
+                38,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                19
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standFlAngle",
+          "pivot": [
+            18.5,
+            32.5,
+            -20
+          ],
+          "parent": "standBaseMidBeam",
+          "rotation": [
+            -15,
+            0,
+            -15
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                25.5,
+                -20
+              ],
+              "size": [
+                2,
+                7,
+                2
+              ],
+              "uv": [
+                0,
+                105
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standFrAngle",
+          "pivot": [
+            -18.5,
+            32.5,
+            -20
+          ],
+          "parent": "standBaseMidBeam",
+          "rotation": [
+            -15,
+            0,
+            15
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18.5,
+                25.5,
+                -20
+              ],
+              "size": [
+                2,
+                7,
+                2
+              ],
+              "uv": [
+                0,
+                105
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standRrAngle",
+          "pivot": [
+            -18.5,
+            32.5,
+            20
+          ],
+          "parent": "standBaseMidBeam",
+          "rotation": [
+            15,
+            0,
+            15
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -18.5,
+                25.5,
+                18
+              ],
+              "size": [
+                2,
+                7,
+                2
+              ],
+              "uv": [
+                0,
+                105
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standRlAngle",
+          "pivot": [
+            18.5,
+            32.5,
+            20
+          ],
+          "parent": "standBaseMidBeam",
+          "rotation": [
+            15,
+            0,
+            -15
+          ],
+          "cubes": [
+            {
+              "origin": [
+                16.5,
+                25.5,
+                18
+              ],
+              "size": [
+                2,
+                7,
+                2
+              ],
+              "uv": [
+                0,
+                105
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standLBrace",
+          "pivot": [
+            16,
+            30.5,
+            -1
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                16,
+                25.5,
+                -1
+              ],
+              "size": [
+                2,
+                5,
+                2
+              ],
+              "uv": [
+                9,
+                105
+              ]
+            }
+          ]
+        },
+        {
+          "name": "standRBrace",
+          "pivot": [
+            -18,
+            30.5,
+            -1
+          ],
+          "parent": "standBaseMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -18,
+                25.5,
+                -1
+              ],
+              "size": [
+                2,
+                5,
+                2
+              ],
+              "uv": [
+                9,
+                105
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretMidBeam",
+          "pivot": [
+            0,
+            33.5,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -12,
+                32.5,
+                -1.5
+              ],
+              "size": [
+                24,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                128
+              ]
+            }
+          ]
+        },
+        {
+          "name": "upright1",
+          "pivot": [
+            -15,
+            52.5,
+            -1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                32.5,
+                -1.5
+              ],
+              "size": [
+                3,
+                20,
+                3
+              ],
+              "uv": [
+                9,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "upright2",
+          "pivot": [
+            12,
+            52.5,
+            -1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                12,
+                32.5,
+                -1.5
+              ],
+              "size": [
+                3,
+                20,
+                3
+              ],
+              "uv": [
+                9,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretTopHorizontal",
+          "pivot": [
+            -12,
+            52.5,
+            -1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -12,
+                49.5,
+                -1.5
+              ],
+              "size": [
+                24,
+                3,
+                3
+              ],
+              "uv": [
+                0,
+                140
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretLeftAngled",
+          "pivot": [
+            12.5,
+            52.5,
+            -1
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                12.5,
+                26.5,
+                -1
+              ],
+              "size": [
+                2,
+                26,
+                2
+              ],
+              "uv": [
+                0,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRightAngled",
+          "pivot": [
+            -14.5,
+            52.5,
+            -1
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            -44.999882,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -14.5,
+                26.5,
+                -1
+              ],
+              "size": [
+                2,
+                26,
+                2
+              ],
+              "uv": [
+                0,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pulleyAxle",
+          "pivot": [
+            2,
+            36.5,
+            0
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            -0.000283,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -16,
+                36,
+                -0.5
+              ],
+              "size": [
+                30,
+                1,
+                1
+              ],
+              "uv": [
+                0,
+                147
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pulleyArm1",
+          "pivot": [
+            -16,
+            36.5,
+            0
+          ],
+          "parent": "pulleyAxle",
+          "cubes": [
+            {
+              "origin": [
+                -16.5,
+                36,
+                -4.5
+              ],
+              "size": [
+                1,
+                1,
+                9
+              ],
+              "uv": [
+                68,
+                140
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pulleyArm2",
+          "pivot": [
+            -16,
+            36.5,
+            0
+          ],
+          "parent": "pulleyArm1",
+          "cubes": [
+            {
+              "origin": [
+                -16.5,
+                32,
+                -0.5
+              ],
+              "size": [
+                1,
+                9,
+                1
+              ],
+              "uv": [
+                63,
+                140
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretFrontBeam",
+          "pivot": [
+            0,
+            33.5,
+            -18
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                32.5,
+                -19.5
+              ],
+              "size": [
+                30,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                134
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRearBeam",
+          "pivot": [
+            0,
+            33.5,
+            18
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                32.5,
+                16.5
+              ],
+              "size": [
+                30,
+                2,
+                3
+              ],
+              "uv": [
+                0,
+                134
+              ]
+            }
+          ]
+        },
+        {
+          "name": "armMain",
+          "pivot": [
+            0,
+            36.5,
+            0
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                35.5,
+                -1.5
+              ],
+              "size": [
+                2,
+                2,
+                29
+              ],
+              "uv": [
+                0,
+                179
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket1",
+          "pivot": [
+            -4,
+            38,
+            27
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                -4,
+                34,
+                27
+              ],
+              "size": [
+                8,
+                4,
+                1
+              ],
+              "uv": [
+                63,
+                151
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket3",
+          "pivot": [
+            4,
+            38,
+            28
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                4,
+                34,
+                28
+              ],
+              "size": [
+                1,
+                4,
+                8
+              ],
+              "uv": [
+                83,
+                152
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket6",
+          "pivot": [
+            -4,
+            38,
+            36
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                -4,
+                34,
+                36
+              ],
+              "size": [
+                8,
+                4,
+                1
+              ],
+              "uv": [
+                63,
+                157
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket4",
+          "pivot": [
+            -4,
+            34,
+            28
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                -4,
+                33,
+                28
+              ],
+              "size": [
+                8,
+                1,
+                8
+              ],
+              "uv": [
+                50,
+                170
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bucket2",
+          "pivot": [
+            -5,
+            38,
+            28
+          ],
+          "parent": "armMain",
+          "cubes": [
+            {
+              "origin": [
+                -5,
+                34,
+                28
+              ],
+              "size": [
+                1,
+                4,
+                8
+              ],
+              "uv": [
+                83,
+                165
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretLeftBeam1",
+          "pivot": [
+            12,
+            33.5,
+            -16.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                12,
+                32.5,
+                -16.5
+              ],
+              "size": [
+                3,
+                2,
+                15
+              ],
+              "uv": [
+                22,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretLeftBeam2",
+          "pivot": [
+            12,
+            33.5,
+            1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                12,
+                32.5,
+                1.5
+              ],
+              "size": [
+                3,
+                2,
+                15
+              ],
+              "uv": [
+                22,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRightBeam1",
+          "pivot": [
+            -15,
+            33.5,
+            -16.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                32.5,
+                -16.5
+              ],
+              "size": [
+                3,
+                2,
+                15
+              ],
+              "uv": [
+                22,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRightBeam2",
+          "pivot": [
+            -15,
+            33.5,
+            1.5
+          ],
+          "parent": "turretMidBeam",
+          "cubes": [
+            {
+              "origin": [
+                -15,
+                32.5,
+                1.5
+              ],
+              "size": [
+                3,
+                2,
+                15
+              ],
+              "uv": [
+                22,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretLeftAngle2",
+          "pivot": [
+            12.5,
+            52.5,
+            1
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                12.5,
+                26.5,
+                -1
+              ],
+              "size": [
+                2,
+                26,
+                2
+              ],
+              "uv": [
+                0,
+                150
+              ]
+            }
+          ]
+        },
+        {
+          "name": "turretRightAngle2",
+          "pivot": [
+            -14.5,
+            52.5,
+            1
+          ],
+          "parent": "turretMidBeam",
+          "rotation": [
+            45,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -14.5,
+                26.5,
+                -1
+              ],
+              "size": [
+                2,
+                26,
+                2
+              ],
+              "uv": [
+                0,
+                150
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+    "required_research":  "the_wheel",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:planks"
+                                           },
+                            "count":  3
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  3
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:vehicle_upgrade_speed"
+               }
+}

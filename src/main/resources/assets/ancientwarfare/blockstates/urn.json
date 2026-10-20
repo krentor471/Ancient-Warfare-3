@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/urn" },
+    "facing=south": { "model": "ancientwarfare:block/urn" },
+    "facing=west": { "model": "ancientwarfare:block/urn" },
+    "facing=east": { "model": "ancientwarfare:block/urn" }
+  }
+}

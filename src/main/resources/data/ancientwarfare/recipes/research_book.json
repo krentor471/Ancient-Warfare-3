@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ILL",
+    "PPP",
+    "ILL"
+  ],
+  "key": {
+    "P": { "item": "minecraft:paper" },
+    "I": { "tag": "forge:ingots/iron" },
+    "L": { "item": "minecraft:leather" }
+  },
+  "result": { "item": "ancientwarfare:research_book" },
+  "show_notification": true
+}

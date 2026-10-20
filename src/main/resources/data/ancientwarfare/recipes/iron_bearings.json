@@ -1,0 +1,18 @@
+{
+    "pattern":  [
+                    " I ",
+                    "I I",
+                    " I "
+                ],
+    "show_notification":  true,
+    "type":  "minecraft:crafting_shaped",
+    "key":  {
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "category":  "misc",
+    "result":  {
+                   "item":  "ancientwarfare:iron_bearings"
+               }
+}

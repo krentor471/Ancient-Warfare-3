@@ -1,0 +1,19 @@
+{
+    "required_research":  "mathematics",
+    "pattern":  [
+                    " I ",
+                    "ICI",
+                    " I "
+                ],
+    "key":  {
+                "C":  {
+                          "item":  "ancientwarfare:chunk_loader_simple"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:worksite_upgrade_basic_chunk_loader"
+               }
+}

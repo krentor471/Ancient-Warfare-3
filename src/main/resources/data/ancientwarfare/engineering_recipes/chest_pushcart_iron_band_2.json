@@ -1,0 +1,24 @@
+{
+    "required_research":  "trade",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:ironshod_wood"
+                                           },
+                            "count":  3
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:chests/wooden"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:chest_pushcart_iron_band_2"
+               }
+}

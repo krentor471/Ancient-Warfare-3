@@ -1,0 +1,16 @@
+{
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "tag":  "forge:ingots/iron"
+                        },
+                        {
+                            "tag":  "minecraft:wool"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:cluster_charge",
+                   "count":  8
+               }
+}

@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "leadership",
+    "pattern":  [
+                    "TT ",
+                    "SST",
+                    "TT "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:string"
+                      },
+                "T":  {
+                          "item":  "minecraft:stick"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:bard_instrument",
+                   "tag":  {
+                               "instrument":  "harp"
+                           }
+               }
+}

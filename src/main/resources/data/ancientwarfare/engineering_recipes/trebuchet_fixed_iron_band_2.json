@@ -1,0 +1,33 @@
+{
+    "required_research":  "siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:ironshod_wood"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:leather"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "item":  "ancientwarfare:counter_weight_unit"
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:trebuchet_fixed_iron_band_2"
+               }
+}

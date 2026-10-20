@@ -1,0 +1,31 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "seafaring",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:rough_iron"
+                                           },
+                            "count":  5
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:chests/wooden"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:cactus"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:transport_boat_steel"
+               }
+}

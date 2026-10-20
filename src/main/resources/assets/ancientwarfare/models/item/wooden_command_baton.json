@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "ancientwarfare:item/wooden_command_baton"
+  }
+}

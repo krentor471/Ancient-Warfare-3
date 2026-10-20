@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "ancientwarfare:block/automation/quarry_front",
+    "down": "ancientwarfare:block/automation/quarry_bottom",
+    "up": "ancientwarfare:block/automation/quarry_top",
+    "north": "ancientwarfare:block/automation/quarry_front",
+    "south": "ancientwarfare:block/automation/quarry_rear",
+    "west": "ancientwarfare:block/automation/quarry_left",
+    "east": "ancientwarfare:block/automation/quarry_right"
+  }
+}

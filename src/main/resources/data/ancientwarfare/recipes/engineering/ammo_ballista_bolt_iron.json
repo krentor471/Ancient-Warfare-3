@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "ballistics",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  7
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:feather"
+                                           },
+                            "count":  5
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:ammo_ballista_bolt_iron",
+                   "count":  8
+               }
+}

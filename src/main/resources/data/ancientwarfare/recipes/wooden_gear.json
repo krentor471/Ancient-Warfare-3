@@ -1,0 +1,21 @@
+{
+    "pattern":  [
+                    "S S",
+                    " P ",
+                    "S S"
+                ],
+    "show_notification":  true,
+    "type":  "minecraft:crafting_shaped",
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "P":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "category":  "misc",
+    "result":  {
+                   "item":  "ancientwarfare:wooden_gear"
+               }
+}

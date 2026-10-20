@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "ancientwarfare:block/structure/orc_totem_front_2",
+    "down": "ancientwarfare:block/structure/totem_bottom",
+    "up": "ancientwarfare:block/structure/totem_top_2",
+    "north": "ancientwarfare:block/structure/orc_totem_front_2",
+    "south": "ancientwarfare:block/structure/orc_totem_front_2",
+    "west": "ancientwarfare:block/structure/totem_side_2",
+    "east": "ancientwarfare:block/structure/totem_side_2"
+  }
+}

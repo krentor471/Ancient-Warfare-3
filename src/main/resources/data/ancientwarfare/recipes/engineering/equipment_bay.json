@@ -1,0 +1,28 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "engineering",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  6
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:wool"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:planks"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:equipment_bay"
+               }
+}

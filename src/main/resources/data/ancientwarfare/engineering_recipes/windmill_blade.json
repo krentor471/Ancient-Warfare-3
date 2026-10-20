@@ -1,0 +1,19 @@
+{
+    "required_research":  "the_wheel",
+    "pattern":  [
+                    "SCS",
+                    "CSC",
+                    "SCS"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "minecraft:wool"
+                      },
+                "S":  {
+                          "item":  "minecraft:stick"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:windmill_blade"
+               }
+}

@@ -1,0 +1,22 @@
+{
+    "required_research":  "leadership",
+    "pattern":  [
+                    "D  ",
+                    "P  ",
+                    "W  "
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:paper"
+                      },
+                "D":  {
+                          "item":  "minecraft:red_dye"
+                      },
+                "W":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:combat_order"
+               }
+}

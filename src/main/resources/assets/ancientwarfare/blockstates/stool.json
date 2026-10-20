@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/stool" },
+    "facing=south": { "model": "ancientwarfare:block/stool" },
+    "facing=west": { "model": "ancientwarfare:block/stool" },
+    "facing=east": { "model": "ancientwarfare:block/stool" }
+  }
+}

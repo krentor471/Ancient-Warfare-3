@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "trade",
+    "pattern":  [
+                    "R  ",
+                    "P  ",
+                    "S  "
+                ],
+    "key":  {
+                "R":  {
+                          "item":  "ancientwarfare:routing_order"
+                      },
+                "P":  {
+                          "item":  "minecraft:paper"
+                      },
+                "S":  {
+                          "item":  "minecraft:oak_sign"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:warehouse_stock_linker"
+               }
+}

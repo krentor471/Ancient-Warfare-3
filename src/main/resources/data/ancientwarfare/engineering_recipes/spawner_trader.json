@@ -1,0 +1,28 @@
+{
+    "required_research":  "trade",
+    "pattern":  [
+                    "GF ",
+                    "GTB",
+                    "   "
+                ],
+    "key":  {
+                "B":  {
+                          "item":  "minecraft:book"
+                      },
+                "T":  {
+                          "tag":  "minecraft:wool"
+                      },
+                "F":  {
+                          "item":  "ancientwarfare:food_bundle"
+                      },
+                "G":  {
+                          "tag":  "forge:ingots/gold"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:npc_spawner",
+                   "tag":  {
+                               "npcType":  "trader"
+                           }
+               }
+}

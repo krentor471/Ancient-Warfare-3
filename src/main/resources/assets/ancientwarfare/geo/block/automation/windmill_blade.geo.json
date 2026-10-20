@@ -1,0 +1,38 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.ancientwarfare.windmill_blade",
+        "texture_width": 128,
+        "texture_height": 128,
+        "visible_bounds_width": 5,
+        "visible_bounds_height": 5,
+        "visible_bounds_offset": [0, 1.5, 0]
+      },
+      "bones": [
+        {
+          "name": "windmillShaft",
+          "pivot": [0, 8, 0],
+          "cubes": [
+            {"origin": [-2, 6, -2], "size": [4, 4, 4], "uv": {"north": {"uv": [96, 96], "uv_size": [16, 16]}, "east": {"uv": [96, 96], "uv_size": [16, 16]}, "south": {"uv": [96, 96], "uv_size": [16, 16]}, "west": {"uv": [96, 96], "uv_size": [16, 16]}, "up": {"uv": [96, 96], "uv_size": [16, 16]}, "down": {"uv": [96, 96], "uv_size": [16, 16]}}}
+          ]
+        },
+        {
+          "name": "rotating_assembly",
+          "pivot": [0, 8, 0],
+          "cubes": [
+            {"origin": [-1, 7, -1], "size": [2, 2, 2], "uv": {"north": {"uv": [0, 0], "uv_size": [16, 16]}, "east": {"uv": [0, 0], "uv_size": [16, 16]}, "south": {"uv": [0, 0], "uv_size": [16, 16]}, "west": {"uv": [0, 0], "uv_size": [16, 16]}, "up": {"uv": [0, 0], "uv_size": [16, 16]}, "down": {"uv": [0, 0], "uv_size": [16, 16]}}
+            }
+          ],
+          "children": [
+            {"name": "blade_north", "pivot": [0, 8, 0], "rotation": [0, 0, 0], "cubes": [{"origin": [-1, 8, -1], "size": [2, 32, 2], "uv": {"north": {"uv": [0, 16], "uv_size": [16, 64]}, "east": {"uv": [16, 16], "uv_size": [16, 64]}, "south": {"uv": [0, 16], "uv_size": [16, 64]}, "west": {"uv": [16, 16], "uv_size": [16, 64]}, "up": {"uv": [0, 0], "uv_size": [16, 16]}, "down": {"uv": [0, 0], "uv_size": [16, 16]}}}]},
+            {"name": "blade_east", "pivot": [0, 8, 0], "rotation": [0, 0, -90], "cubes": [{"origin": [-1, 8, -1], "size": [2, 32, 2], "uv": {"north": {"uv": [0, 16], "uv_size": [16, 64]}, "east": {"uv": [16, 16], "uv_size": [16, 64]}, "south": {"uv": [0, 16], "uv_size": [16, 64]}, "west": {"uv": [16, 16], "uv_size": [16, 64]}, "up": {"uv": [0, 0], "uv_size": [16, 16]}, "down": {"uv": [0, 0], "uv_size": [16, 16]}}}]},
+            {"name": "blade_south", "pivot": [0, 8, 0], "rotation": [0, 0, 180], "cubes": [{"origin": [-1, 8, -1], "size": [2, 32, 2], "uv": {"north": {"uv": [0, 16], "uv_size": [16, 64]}, "east": {"uv": [16, 16], "uv_size": [16, 64]}, "south": {"uv": [0, 16], "uv_size": [16, 64]}, "west": {"uv": [16, 16], "uv_size": [16, 64]}, "up": {"uv": [0, 0], "uv_size": [16, 16]}, "down": {"uv": [0, 0], "uv_size": [16, 16]}}}]},
+            {"name": "blade_west", "pivot": [0, 8, 0], "rotation": [0, 0, 90], "cubes": [{"origin": [-1, 8, -1], "size": [2, 32, 2], "uv": {"north": {"uv": [0, 16], "uv_size": [16, 64]}, "east": {"uv": [16, 16], "uv_size": [16, 64]}, "south": {"uv": [0, 16], "uv_size": [16, 64]}, "west": {"uv": [16, 16], "uv_size": [16, 64]}, "up": {"uv": [0, 0], "uv_size": [16, 16]}, "down": {"uv": [0, 0], "uv_size": [16, 16]}}}]}
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,568 @@
+package net.shadowmage.ancientwarfare.core.client;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.PoseStack.Pose;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
+import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
+import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
+import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
+import net.shadowmage.ancientwarfare.core.entity.BardNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.CourierNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionArcherEliteNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionArcherNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionBardNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionCavalryNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionCivilianFemaleNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionCivilianMaleNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionLeaderEliteNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionLeaderNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionMountedArcherNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionPriestNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionSiegeEngineerNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionSoldierEliteNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionSoldierNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionSpellcasterNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionTraderNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.ModernSoldierNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.NpcBaseEntity;
+import net.shadowmage.ancientwarfare.core.entity.PriestNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.ShipCaptainNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.SiegeEngineerNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.TraderNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.WorkerNpcEntity;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
+
+public final class AWCoreClientEntityRenderers {
+   private static AWCoreClientEntityRenderers.RendererRegistrar rendererRegistrar;
+
+   private AWCoreClientEntityRenderers() {
+   }
+
+   public static void setRendererRegistrar(AWCoreClientEntityRenderers.RendererRegistrar registrar) {
+      rendererRegistrar = registrar;
+   }
+
+   private static <T extends Entity> void register(EntityType<? extends T> entityType, EntityRendererProvider<T> provider) {
+      if (rendererRegistrar == null) {
+         throw new IllegalStateException("Entity renderer registrar has not been configured by the active loader");
+      } else {
+         rendererRegistrar.register(entityType, provider);
+      }
+   }
+
+   public static void registerRenderers() {
+      register(AWCoreRegistryAccess.entityType(AWCoreIds.id("chest_pushcart")), ChestPushcartGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("ballista_mobile")), BallistaMobileGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("ballista_boat")), BallistaBoatGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.id("ballista_turret_stand")), BallistaTurretStandGeoRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.id("ballista_stand_fixed")), BallistaTurretStandGeoRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("ballista_bolt")), BallistaBoltRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("trebuchet_mobile")), TrebuchetMobileGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("trebuchet_fixed")), TrebuchetFixedGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("trebuchet_turret")), TrebuchetTurretGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("giant_trebuchet")), GiantTrebuchetGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("catapult_mobile")), CatapultMobileGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.id("catapult_turret_stand")), CatapultTurretStandGeoRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("catapult_boat")), CatapultBoatGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("transport_boat")), TransportBoatGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("catapult_shot")), CatapultShotRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.id("cannon_turret_stand")), CannonTurretStandGeoRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("cannon_mobile")), CannonMobileGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("cannon_shot")), CannonShotRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("battering_ram")), BatteringRamGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("hwacha")), HwachaGeoRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.id("hwacha_rocket")), HwachaRocketRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.DYNAMIC_GATE), LegacyDynamicGateRenderer::new);
+      registerNpcRenderers();
+   }
+
+   public static void registerNpcRenderers() {
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.WORKER_NPC), AWCoreClientEntityRenderers.WorkerRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.COMBAT_NPC), AWCoreClientEntityRenderers.CombatRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.COURIER_NPC), AWCoreClientEntityRenderers.CourierRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.TRADER_NPC), AWCoreClientEntityRenderers.TraderRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(AWCoreRegistryAccess.entityType(AWCoreIds.BARD_NPC), AWCoreClientEntityRenderers.BardRenderer::new);
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.PRIEST_NPC), AWCoreClientEntityRenderers.PriestRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.SIEGE_ENGINEER_NPC), AWCoreClientEntityRenderers.SiegeEngineerRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.MODERN_SOLDIER_NPC), AWCoreClientEntityRenderers.ModernSoldierRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.SHIP_CAPTAIN_NPC), AWCoreClientEntityRenderers.ShipCaptainRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SOLDIER_NPC), AWCoreClientEntityRenderers.FactionSoldierRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SOLDIER_ELITE_NPC), AWCoreClientEntityRenderers.FactionSoldierEliteRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_ARCHER_NPC), AWCoreClientEntityRenderers.FactionArcherRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_ARCHER_ELITE_NPC), AWCoreClientEntityRenderers.FactionArcherEliteRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_CAVALRY_NPC), AWCoreClientEntityRenderers.FactionCavalryRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_MOUNTED_ARCHER_NPC), AWCoreClientEntityRenderers.FactionMountedArcherRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_LEADER_NPC), AWCoreClientEntityRenderers.FactionLeaderRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_LEADER_ELITE_NPC), AWCoreClientEntityRenderers.FactionLeaderEliteRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SIEGE_ENGINEER_NPC), AWCoreClientEntityRenderers.FactionSiegeEngineerRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_CIVILIAN_MALE_NPC), AWCoreClientEntityRenderers.FactionCivilianMaleRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_CIVILIAN_FEMALE_NPC), AWCoreClientEntityRenderers.FactionCivilianFemaleRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_PRIEST_NPC), AWCoreClientEntityRenderers.FactionPriestRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SPELLCASTER_NPC), AWCoreClientEntityRenderers.FactionSpellcasterRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_BARD_NPC), AWCoreClientEntityRenderers.FactionBardRenderer::new
+      );
+      AWCoreClientEntityRenderers.EntityRenderers.register(
+         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_TRADER_NPC), AWCoreClientEntityRenderers.FactionTraderRenderer::new
+      );
+   }
+
+   private static class BardRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<BardNpcEntity> {
+      private BardRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(BardNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private abstract static class BaseNpcRenderer<T extends NpcBaseEntity> extends HumanoidMobRenderer<T, HumanoidModel<T>> {
+      private final HumanoidModel<T> wideModel;
+      private final HumanoidModel<T> slimModel;
+
+      private BaseNpcRenderer(Context context, HumanoidModel<T> wideModel, HumanoidModel<T> slimModel) {
+         super(context, wideModel, 0.5F);
+         this.wideModel = wideModel;
+         this.slimModel = slimModel;
+         this.m_115326_(new ItemInHandLayer(this, context.m_234598_()));
+         this.m_115326_(
+            new HumanoidArmorLayer(
+               this,
+               new HumanoidModel(context.m_174023_(ModelLayers.f_171164_)),
+               new HumanoidModel(context.m_174023_(ModelLayers.f_171165_)),
+               context.m_266367_()
+            )
+         );
+      }
+
+      public void render(T entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+         this.f_115290_ = entity.isAlexModel() ? this.slimModel : this.wideModel;
+         super.m_7392_(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+         this.renderStatusIcons(entity, poseStack, bufferSource, packedLight);
+      }
+
+      private void renderStatusIcons(T entity, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+         if (this.f_114476_.f_114358_ != null
+            && !(this.f_114476_.m_114471_(entity) > 4096.0)
+            && Minecraft.m_91087_().f_91074_ != null
+            && Minecraft.m_91087_().f_91074_.m_142582_(entity)) {
+            List<ResourceLocation> icons = this.statusIcons(entity.getStatusIconFlags());
+            if (!icons.isEmpty()) {
+               float scale = 0.02666667F;
+               float startX = -((float)icons.size() * 10.0F / 2.0F) * scale;
+               float y = entity.m_20206_() + 0.5F;
+               poseStack.m_85836_();
+               poseStack.m_85837_(0.0, (double)y, 0.0);
+               poseStack.m_252781_(this.f_114476_.m_253208_());
+               poseStack.m_85841_(-scale, -scale, scale);
+
+               for (int i = 0; i < icons.size(); i++) {
+                  ResourceLocation icon = icons.get(i);
+                  VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110473_(icon));
+                  float x = startX / scale + (float)i * 20.0F;
+                  this.drawIcon(poseStack, consumer, x, -16.0F, packedLight);
+               }
+
+               poseStack.m_85849_();
+            }
+         }
+      }
+
+      private List<ResourceLocation> statusIcons(int flags) {
+         List<ResourceLocation> icons = new ArrayList<>();
+         this.addIcon(icons, flags, 1, "task_attack");
+         this.addIcon(icons, flags, 2, "task_upkeep");
+         this.addIcon(icons, flags, 4, "task_upkeep2");
+         this.addIcon(icons, flags, 8, "task_home");
+         this.addIcon(icons, flags, 16, "task_work");
+         this.addIcon(icons, flags, 32, "task_patrol");
+         this.addIcon(icons, flags, 64, "task_guard");
+         this.addIcon(icons, flags, 128, "task_follow");
+         this.addIcon(icons, flags, 256, "task_wander");
+         this.addIcon(icons, flags, 512, "task_move");
+         this.addIcon(icons, flags, 1024, "task_alarm");
+         this.addIcon(icons, flags, 2048, "task_flee");
+         this.addIcon(icons, flags, 4096, "task_sleep");
+         this.addIcon(icons, flags, 8192, "task_rain");
+         return icons;
+      }
+
+      private void addIcon(List<ResourceLocation> icons, int flags, int flag, String name) {
+         if ((flags & flag) != 0) {
+            icons.add(this.aiIcon(name));
+         }
+      }
+
+      private ResourceLocation aiIcon(String name) {
+         return AWCoreIds.id("textures/entity/npc/ai/" + name + ".png");
+      }
+
+      private void drawIcon(PoseStack poseStack, VertexConsumer consumer, float x, float y, int packedLight) {
+         Pose pose = poseStack.m_85850_();
+         Matrix4f matrix = pose.m_252922_();
+         Matrix3f normal = pose.m_252943_();
+         float left = x - 8.0F;
+         float right = x + 8.0F;
+         float bottom = y + 16.0F;
+         this.iconVertex(consumer, matrix, normal, left, bottom, 0.0F, 1.0F, 1.0F, packedLight);
+         this.iconVertex(consumer, matrix, normal, right, bottom, 1.0F, 1.0F, 1.0F, packedLight);
+         this.iconVertex(consumer, matrix, normal, right, y, 1.0F, 0.0F, 1.0F, packedLight);
+         this.iconVertex(consumer, matrix, normal, left, y, 0.0F, 0.0F, 1.0F, packedLight);
+      }
+
+      private void iconVertex(VertexConsumer consumer, Matrix4f matrix, Matrix3f normal, float x, float y, float u, float v, float normalZ, int packedLight) {
+         consumer.m_252986_(matrix, x, y, 0.0F)
+            .m_6122_(255, 255, 255, 255)
+            .m_7421_(u, v)
+            .m_86008_(OverlayTexture.f_118083_)
+            .m_85969_(packedLight)
+            .m_252939_(normal, 0.0F, 0.0F, normalZ)
+            .m_5752_();
+      }
+   }
+
+   private static class CombatRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<CombatNpcEntity> {
+      private CombatRenderer(Context context) {
+         super(
+            context,
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+         );
+      }
+
+      public ResourceLocation getTextureLocation(CombatNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class CourierRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<CourierNpcEntity> {
+      private CourierRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(CourierNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static final class EntityRenderers {
+      private static <T extends Entity> void register(EntityType<? extends T> entityType, EntityRendererProvider<T> provider) {
+         AWCoreClientEntityRenderers.register(entityType, provider);
+      }
+   }
+
+   private static class FactionArcherEliteRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionArcherEliteNpcEntity> {
+      private FactionArcherEliteRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionArcherEliteNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionArcherRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionArcherNpcEntity> {
+      private FactionArcherRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionArcherNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionBardRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionBardNpcEntity> {
+      private FactionBardRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionBardNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionCavalryRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionCavalryNpcEntity> {
+      private FactionCavalryRenderer(Context context) {
+         super(
+            context,
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+         );
+      }
+
+      public ResourceLocation getTextureLocation(FactionCavalryNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionCivilianFemaleRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionCivilianFemaleNpcEntity> {
+      private FactionCivilianFemaleRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionCivilianFemaleNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionCivilianMaleRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionCivilianMaleNpcEntity> {
+      private FactionCivilianMaleRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionCivilianMaleNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionLeaderEliteRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionLeaderEliteNpcEntity> {
+      private FactionLeaderEliteRenderer(Context context) {
+         super(
+            context,
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+         );
+      }
+
+      public ResourceLocation getTextureLocation(FactionLeaderEliteNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionLeaderRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionLeaderNpcEntity> {
+      private FactionLeaderRenderer(Context context) {
+         super(
+            context,
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+         );
+      }
+
+      public ResourceLocation getTextureLocation(FactionLeaderNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionMountedArcherRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionMountedArcherNpcEntity> {
+      private FactionMountedArcherRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionMountedArcherNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionPriestRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionPriestNpcEntity> {
+      private FactionPriestRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionPriestNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionSiegeEngineerRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionSiegeEngineerNpcEntity> {
+      private FactionSiegeEngineerRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionSiegeEngineerNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionSoldierEliteRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionSoldierEliteNpcEntity> {
+      private FactionSoldierEliteRenderer(Context context) {
+         super(
+            context,
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+         );
+      }
+
+      public ResourceLocation getTextureLocation(FactionSoldierEliteNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionSoldierRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionSoldierNpcEntity> {
+      private FactionSoldierRenderer(Context context) {
+         super(
+            context,
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+         );
+      }
+
+      public ResourceLocation getTextureLocation(FactionSoldierNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionSpellcasterRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionSpellcasterNpcEntity> {
+      private FactionSpellcasterRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionSpellcasterNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class FactionTraderRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionTraderNpcEntity> {
+      private FactionTraderRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(FactionTraderNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class ModernSoldierRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<ModernSoldierNpcEntity> {
+      private ModernSoldierRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(ModernSoldierNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class PriestRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<PriestNpcEntity> {
+      private PriestRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(PriestNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   @FunctionalInterface
+   public interface RendererRegistrar {
+      <T extends Entity> void register(EntityType<? extends T> var1, EntityRendererProvider<T> var2);
+   }
+
+   private static class ShieldingHumanoidModel<T extends NpcBaseEntity> extends NpcHumanoidModel<T> {
+      private ShieldingHumanoidModel(ModelPart root) {
+         super(root);
+      }
+
+      @Override
+      public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
+         super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+      }
+   }
+
+   private static class ShipCaptainRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<ShipCaptainNpcEntity> {
+      private ShipCaptainRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(ShipCaptainNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class SiegeEngineerRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<SiegeEngineerNpcEntity> {
+      private SiegeEngineerRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(SiegeEngineerNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class TraderRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<TraderNpcEntity> {
+      private TraderRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(TraderNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+
+   private static class WorkerRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<WorkerNpcEntity> {
+      private WorkerRenderer(Context context) {
+         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+      }
+
+      public ResourceLocation getTextureLocation(WorkerNpcEntity entity) {
+         return NpcSkinRegistry.textureFor(entity);
+      }
+   }
+}

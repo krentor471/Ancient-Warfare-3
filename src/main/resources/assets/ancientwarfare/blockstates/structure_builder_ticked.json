@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/structure_builder_ticked" },
+    "facing=east": { "model": "ancientwarfare:block/structure_builder_ticked", "y": 90 },
+    "facing=south": { "model": "ancientwarfare:block/structure_builder_ticked", "y": 180 },
+    "facing=west": { "model": "ancientwarfare:block/structure_builder_ticked", "y": 270 }
+  }
+}

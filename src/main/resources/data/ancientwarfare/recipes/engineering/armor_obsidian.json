@@ -1,0 +1,16 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:obsidian"
+                                           },
+                            "count":  5
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:armor_obsidian"
+               }
+}

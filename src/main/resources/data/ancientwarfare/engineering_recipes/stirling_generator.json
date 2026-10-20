@@ -1,0 +1,19 @@
+{
+    "required_research":  "machinery",
+    "pattern":  [
+                    "III",
+                    "GGG",
+                    "IGI"
+                ],
+    "key":  {
+                "G":  {
+                          "item":  "ancientwarfare:iron_gear"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:stirling_generator"
+               }
+}

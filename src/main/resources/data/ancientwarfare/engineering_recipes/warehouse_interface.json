@@ -1,0 +1,22 @@
+{
+    "required_research":  "trade",
+    "pattern":  [
+                    "_P_",
+                    "_C_",
+                    "___"
+                ],
+    "key":  {
+                "P":  {
+                          "item":  "minecraft:paper"
+                      },
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "_":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:warehouse_interface"
+               }
+}

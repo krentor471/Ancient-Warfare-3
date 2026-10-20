@@ -1,0 +1,24 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "trade",
+    "pattern":  [
+                    "LCL",
+                    "WCW",
+                    "LCL"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "W":  {
+                          "tag":  "minecraft:wool"
+                      },
+                "L":  {
+                          "item":  "minecraft:leather"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:backpack",
+                   "backpack_level":  3
+               }
+}

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/windmill_generator" },
+    "facing=east": { "model": "ancientwarfare:block/windmill_generator", "y": 90 },
+    "facing=south": { "model": "ancientwarfare:block/windmill_generator", "y": 180 },
+    "facing=west": { "model": "ancientwarfare:block/windmill_generator", "y": 270 }
+  }
+}

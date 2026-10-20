@@ -1,0 +1,36 @@
+{
+    "required_research":  "siege_warfare",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "ancientwarfare:iron_core_wood"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:string"
+                                           },
+                            "count":  8
+                        },
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:leather"
+                                           },
+                            "count":  4
+                        },
+                        {
+                            "item":  "ancientwarfare:counter_weight_unit"
+                        },
+                        {
+                            "item":  "ancientwarfare:equipment_bay"
+                        },
+                        {
+                            "item":  "ancientwarfare:mobility_unit"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:trebuchet_mobile_iron"
+               }
+}

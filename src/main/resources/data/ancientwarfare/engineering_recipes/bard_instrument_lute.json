@@ -1,0 +1,25 @@
+{
+    "required_research":  "leadership",
+    "pattern":  [
+                    "  S",
+                    "PI ",
+                    "PP "
+                ],
+    "key":  {
+                "P":  {
+                          "tag":  "minecraft:planks"
+                      },
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:bard_instrument",
+                   "tag":  {
+                               "instrument":  "lute"
+                           }
+               }
+}

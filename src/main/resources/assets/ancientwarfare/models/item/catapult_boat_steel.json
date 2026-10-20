@@ -1,0 +1,6 @@
+﻿{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "ancientwarfare:item/catapult_boat_steel"
+  }
+}

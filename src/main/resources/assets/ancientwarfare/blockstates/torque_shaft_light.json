@@ -1,0 +1,57 @@
+﻿{
+    "multipart":  [
+                      {
+                          "when":  {
+                                       "facing":  "north"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_light"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "east"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_light",
+                                        "y":  90
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "south"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_light",
+                                        "y":  180
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "west"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_light",
+                                        "y":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "up"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_light",
+                                        "x":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "down"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_shaft_light",
+                                        "x":  90
+                                    }
+                      }
+                  ]
+}

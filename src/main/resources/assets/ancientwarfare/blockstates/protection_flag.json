@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "rotation=0": { "model": "ancientwarfare:block/protection_flag", "y": 0 },
+    "rotation=1": { "model": "ancientwarfare:block/protection_flag", "y": 0 },
+    "rotation=2": { "model": "ancientwarfare:block/protection_flag", "y": 90 },
+    "rotation=3": { "model": "ancientwarfare:block/protection_flag", "y": 90 },
+    "rotation=4": { "model": "ancientwarfare:block/protection_flag", "y": 90 },
+    "rotation=5": { "model": "ancientwarfare:block/protection_flag", "y": 90 },
+    "rotation=6": { "model": "ancientwarfare:block/protection_flag", "y": 180 },
+    "rotation=7": { "model": "ancientwarfare:block/protection_flag", "y": 180 },
+    "rotation=8": { "model": "ancientwarfare:block/protection_flag", "y": 180 },
+    "rotation=9": { "model": "ancientwarfare:block/protection_flag", "y": 180 },
+    "rotation=10": { "model": "ancientwarfare:block/protection_flag", "y": 270 },
+    "rotation=11": { "model": "ancientwarfare:block/protection_flag", "y": 270 },
+    "rotation=12": { "model": "ancientwarfare:block/protection_flag", "y": 270 },
+    "rotation=13": { "model": "ancientwarfare:block/protection_flag", "y": 270 },
+    "rotation=14": { "model": "ancientwarfare:block/protection_flag", "y": 0 },
+    "rotation=15": { "model": "ancientwarfare:block/protection_flag", "y": 0 }
+  }
+}

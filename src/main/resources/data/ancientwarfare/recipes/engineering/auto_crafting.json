@@ -1,0 +1,29 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "mass_production",
+    "pattern":  [
+                    "_C_",
+                    "GWG",
+                    "_I_"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "W":  {
+                          "item":  "minecraft:crafting_table"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:wooden_gear"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      },
+                "_":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:auto_crafting"
+               }
+}

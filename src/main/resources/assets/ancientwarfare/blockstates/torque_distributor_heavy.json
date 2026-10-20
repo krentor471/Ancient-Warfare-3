@@ -1,0 +1,57 @@
+﻿{
+    "multipart":  [
+                      {
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_distributor_heavy_center"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_down":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_distributor_heavy_down"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_up":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_distributor_heavy_up"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_north":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_distributor_heavy_north"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_south":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_distributor_heavy_south"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_west":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_distributor_heavy_west"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_east":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_distributor_heavy_east"
+                                    }
+                      }
+                  ]
+}

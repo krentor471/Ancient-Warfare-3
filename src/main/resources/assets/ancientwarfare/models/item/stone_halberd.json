@@ -1,0 +1,6 @@
+{
+    "parent": "ancientwarfare:item/wooden_halberd",
+    "textures": {
+        "0": "ancientwarfare:item/stone_halberd"
+    }
+}

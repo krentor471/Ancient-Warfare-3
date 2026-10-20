@@ -1,0 +1,57 @@
+﻿{
+    "multipart":  [
+                      {
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_junction_light_center"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_down":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_junction_light_down"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_up":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_junction_light_up"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_north":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_junction_light_north"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_south":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_junction_light_south"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_west":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_junction_light_west"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "connection_east":  "true"
+                                   },
+                          "apply":  {
+                                        "model":  "ancientwarfare:block/torque_junction_light_east"
+                                    }
+                      }
+                  ]
+}

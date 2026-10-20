@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "rocketry",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:gunpowder"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "minecraft:paper"
+                        },
+                        {
+                            "item":  "minecraft:string"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:rocket_charge",
+                   "count":  8
+               }
+}

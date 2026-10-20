@@ -1,0 +1,21 @@
+{
+    "required_research":  "machinery",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "tag":  "minecraft:stone_crafting_materials"
+                                           },
+                            "count":  3
+                        },
+                        {
+                            "ingredient":  {
+                                               "tag":  "forge:ingots/iron"
+                                           },
+                            "count":  2
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:armor_stone"
+               }
+}

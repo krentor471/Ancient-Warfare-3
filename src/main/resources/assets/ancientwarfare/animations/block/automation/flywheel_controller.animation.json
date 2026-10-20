@@ -1,0 +1,17 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.flywheel_controller.spin": {
+      "loop": true,
+      "animation_length": 2,
+      "bones": {
+        "flywheel_controller_drive": {
+          "rotation": {
+            "0": [0, 0, 0],
+            "2": [0, 0, 360]
+          }
+        }
+      }
+    }
+  }
+}

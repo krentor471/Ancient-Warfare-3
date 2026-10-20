@@ -1,0 +1,571 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "npcs",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "V. NPCs",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Integrations: SlashBlade, Iron's Spells and Ice and Fire Mounts",
+          "category_link": "integrations",
+          "anchor": ""
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "NPC Spawners",
+          "category_link": "npcs",
+          "anchor": "entry_036"
+        },
+        {
+          "text": "Workers and Profession Tools",
+          "category_link": "npcs",
+          "anchor": "entry_037"
+        },
+        {
+          "text": "Combat NPCs and Role Equipment",
+          "category_link": "npcs",
+          "anchor": "entry_038"
+        },
+        {
+          "text": "Command Batons",
+          "category_link": "npcs",
+          "anchor": "entry_039"
+        },
+        {
+          "text": "Work Order",
+          "category_link": "npcs",
+          "anchor": "entry_040"
+        },
+        {
+          "text": "Routing Order",
+          "category_link": "npcs",
+          "anchor": "entry_041"
+        },
+        {
+          "text": "Food Order",
+          "category_link": "npcs",
+          "anchor": "entry_042"
+        },
+        {
+          "text": "Combat Order",
+          "category_link": "npcs",
+          "anchor": "entry_043"
+        },
+        {
+          "text": "Trade Order and Player Traders",
+          "category_link": "npcs",
+          "anchor": "entry_044"
+        },
+        {
+          "text": "Town Hall",
+          "category_link": "npcs",
+          "anchor": "entry_045"
+        },
+        {
+          "text": "Priest Spawner and Resurrection",
+          "category_link": "npcs",
+          "anchor": "entry_046"
+        },
+        {
+          "text": "Siege Engineer Spawner",
+          "category_link": "npcs",
+          "anchor": "entry_047"
+        },
+        {
+          "text": "Bards and Instruments",
+          "category_link": "npcs",
+          "anchor": "entry_048"
+        },
+        {
+          "text": "Food Bundle",
+          "category_link": "npcs",
+          "anchor": "entry_049"
+        },
+        {
+          "text": "NPC Weapons and Shields",
+          "category_link": "npcs",
+          "anchor": "entry_050"
+        },
+        {
+          "text": "NPC Pathfinding and Wooden Doors",
+          "category_link": "npcs",
+          "anchor": "entry_051"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "This chapter covers player-owned NPCs and their support items. Ownership, profession equipment, orders, food and accessible paths together determine behavior. World faction NPCs differ from recruited player NPCs; see Chapter VI for faction trading."
+    },
+    {
+      "content_type": "heading",
+      "text": "NPC Spawners",
+      "level": 2,
+      "anchor": "entry_036"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "worker"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "combat"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "courier"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "trader"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "bard"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "priest"
+          }
+        },
+        {
+          "name": "ancientwarfare:npc_spawner",
+          "tag": {
+            "npcType": "siege_engineer"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: craft the corresponding role's spawner in the Engineering Station. Workers, Bards and Priests require Leadership; combat personnel require Conscription; Couriers and Traders require Trade; Siege Engineers require Siege Warfare."
+    },
+    {
+      "content_type": "text",
+      "text": "NPC Spawners deploy their corresponding roles. Right-click a safe position with solid footing. Player NPCs record ownership; spawners carrying packed data can also restore the corresponding NPC's information."
+    },
+    {
+      "content_type": "text",
+      "text": "Miners, Farmers, Lumberjacks, Researchers, Craftsmen, combat personnel, Couriers, Traders, Bards, Priests and Siege Engineers have distinct uses. Faction spawners carry faction identity and are not general substitutes for player NPCs. Spawn eggs are not fully configured recruitment items."
+    },
+    {
+      "content_type": "heading",
+      "text": "Workers and Profession Tools",
+      "level": 2,
+      "anchor": "entry_037"
+    },
+    {
+      "content_type": "text",
+      "text": "A worker's profession depends on the main-hand tool: Pickaxe for Miner, Hoe for Farmer, Axe for Lumberjack, Quill for Researcher and Hammer for Craftsman. A name or appearance alone does not activate a profession without the matching tool."
+    },
+    {
+      "content_type": "text",
+      "text": "After equipping tools, configure Work Orders and food supply. The NPC must be able to reach its target, and that facility must have work available. Assigning more workers to an empty machine does not provide missing materials."
+    },
+    {
+      "content_type": "heading",
+      "text": "Combat NPCs and Role Equipment",
+      "level": 2,
+      "anchor": "entry_038"
+    },
+    {
+      "content_type": "text",
+      "text": "Combat NPC roles depend on main-hand equipment: a ranged weapon selects a ranged role, a Command Baton a Commander, an Apple a Medic, a Hammer an Engineer, and other ordinary equipment a regular Soldier."
+    },
+    {
+      "content_type": "text",
+      "text": "The Medic's identifying item is an Apple, not a Glass Bottle. Equipment and roles are only part of combat behavior: also check eligible targets, orders, ammunition and spacing between allies."
+    },
+    {
+      "content_type": "heading",
+      "text": "Command Batons",
+      "level": 2,
+      "anchor": "entry_039"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_command_baton"
+        },
+        {
+          "name": "ancientwarfare:stone_command_baton"
+        },
+        {
+          "name": "ancientwarfare:iron_command_baton"
+        },
+        {
+          "name": "ancientwarfare:gold_command_baton"
+        },
+        {
+          "name": "ancientwarfare:diamond_command_baton"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Command research."
+    },
+    {
+      "content_type": "text",
+      "text": "Use a Command Baton to select and command NPCs you are allowed to control. Right-click an allied NPC to select or deselect it; ordinary selection is limited to 16. Sneak-right-click cycles modes; X clears selections by default. Follow your control settings if rebound."
+    },
+    {
+      "content_type": "text",
+      "text": "Modes include Clear Orders, Dismount, Attack/Attack Move, Move, Mount and Combat Formation. Right-click a destination block for movement orders; left-click a creature in Attack mode for a specific attack order. Check the mode before acting: selecting and issuing orders are different actions."
+    },
+    {
+      "content_type": "text",
+      "text": "Combat Formation accepts applicable combat NPCs and Siege Engineers, with same-unit-type restrictions on members. It is not a universal group for mixing arbitrary workers and soldiers."
+    },
+    {
+      "content_type": "heading",
+      "text": "Work Order",
+      "level": 2,
+      "anchor": "entry_040"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:work_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Leadership research."
+    },
+    {
+      "content_type": "text",
+      "text": "Work Orders record positions a worker should visit. Hold the order, aim at a target block and press Z by default to record it. Right-click to review and adjust entries, then give it to the appropriate NPC."
+    },
+    {
+      "content_type": "text",
+      "text": "Record a real working facility rather than a nearby decoration. After changing your base, update obsolete positions and check that the NPC's tool profession matches the worksite."
+    },
+    {
+      "content_type": "heading",
+      "text": "Routing Order",
+      "level": 2,
+      "anchor": "entry_041"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:routing_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "Routing Orders direct Courier transport. Aim at a container's target face and press Z by default, then configure each point's operation, item filters and quantities in the interface. Give the order to a Courier."
+    },
+    {
+      "content_type": "text",
+      "text": "Each order stores up to 16 route points, including face and dimension; filters support twelve slots. New points default to replenishing a target quantity. Check pickup and delivery direction point by point rather than expecting identical operations to describe an entire route automatically."
+    },
+    {
+      "content_type": "heading",
+      "text": "Food Order",
+      "level": 2,
+      "anchor": "entry_042"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:upkeep_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Leadership research."
+    },
+    {
+      "content_type": "text",
+      "text": "A Food Order records where an NPC obtains food. Aim at the supply container and its target face, press Z by default, then review food quantities and settings in the interface and equip the NPC that needs supplies."
+    },
+    {
+      "content_type": "text",
+      "text": "The container must contain usable food and have an accessible position. Crafting the order without recording a valid container, or storing food in another unreachable chest, does not ensure resupply."
+    },
+    {
+      "content_type": "heading",
+      "text": "Combat Order",
+      "level": 2,
+      "anchor": "entry_043"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:combat_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Leadership research."
+    },
+    {
+      "content_type": "text",
+      "text": "Combat Orders record activity points for combat personnel. Z adds a point, sneak+Z clears entries, and right-click opens the review interface by default. Up to 32 points can be stored."
+    },
+    {
+      "content_type": "text",
+      "text": "Adding a point in another dimension clears points from the previous dimension; this is not a cross-dimensional patrol route. Check that terrain, doorways and steps are passable."
+    },
+    {
+      "content_type": "heading",
+      "text": "Trade Order and Player Traders",
+      "level": 2,
+      "anchor": "entry_044"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:trade_order"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Trade research."
+    },
+    {
+      "content_type": "text",
+      "text": "Trade Orders configure the trades offered by player-owned Traders. Set the traded items in the interface, give the order to the Trader and provide the actual supplies needed for trading."
+    },
+    {
+      "content_type": "text",
+      "text": "This is separate from world faction merchants' trade tables. Faction merchants do not need a player Trade Order. For faction trade problems, check that merchant's offers, payment items and inventory space."
+    },
+    {
+      "content_type": "heading",
+      "text": "Town Hall",
+      "level": 2,
+      "anchor": "entry_045"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:town_hall"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Leadership research."
+    },
+    {
+      "content_type": "text",
+      "text": "The Town Hall supports base management and supplies for player NPCs, and records associated NPC deaths. Place it, open the interface, supply food and assign the corresponding Town Hall to NPCs that belong there."
+    },
+    {
+      "content_type": "text",
+      "text": "It is not an unconditional worldwide supply network. Ownership and associated positions must be correct, real food must be available, and routes must be reachable. Its death records are the basis for Priest resurrection work."
+    },
+    {
+      "content_type": "heading",
+      "text": "Priest Spawner and Resurrection",
+      "level": 2,
+      "anchor": "entry_046"
+    },
+    {
+      "content_type": "text",
+      "text": "Priests can process unfinished, unclaimed and eligible death records at their associated Town Hall. When no current order interferes, the Priest travels near the Town Hall and casts, restoring the corresponding NPC at half health."
+    },
+    {
+      "content_type": "text",
+      "text": "A completed resurrection record is not a new task. Without an associated Town Hall, an available record or a reachable work position, placing a Priest nearby does not resurrect arbitrary dead NPCs."
+    },
+    {
+      "content_type": "heading",
+      "text": "Siege Engineer Spawner",
+      "level": 2,
+      "anchor": "entry_047"
+    },
+    {
+      "content_type": "text",
+      "text": "Siege Engineers find and operate supported siege engines, mount them and participate in attacks. Deploy the engine, supply compatible ammunition and keep a clear route between the Engineer and engine."
+    },
+    {
+      "content_type": "text",
+      "text": "A Siege Engineer is not the Craftsman who works on engineering facilities. The engine's firing arcs, reload, ammunition compatibility and target restrictions still apply; an Engineer cannot make incompatible ammunition work."
+    },
+    {
+      "content_type": "heading",
+      "text": "Bards and Instruments",
+      "level": 2,
+      "anchor": "entry_048"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:bard_instrument",
+          "tag": {
+            "instrument": "drum"
+          }
+        },
+        {
+          "name": "ancientwarfare:bard_instrument",
+          "tag": {
+            "instrument": "flute"
+          }
+        },
+        {
+          "name": "ancientwarfare:bard_instrument",
+          "tag": {
+            "instrument": "harp"
+          }
+        },
+        {
+          "name": "ancientwarfare:bard_instrument",
+          "tag": {
+            "instrument": "lute"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Leadership research."
+    },
+    {
+      "content_type": "text",
+      "text": "Bards use instruments such as Drums, Flutes, Harps and Lutes with music settings. Select tracks and configure playback through their music interface."
+    },
+    {
+      "content_type": "text",
+      "text": "Put local tracks in the ancientwarfare_bard_music folder of the current game directory. MP3, OGG and WAV are supported. Each client reads its own files; a track name recorded on the server does not distribute its audio automatically. Prepare matching files for multiplayer."
+    },
+    {
+      "content_type": "heading",
+      "text": "Food Bundle",
+      "level": 2,
+      "anchor": "entry_049"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:food_bundle"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Engineering Station; requires Leadership research."
+    },
+    {
+      "content_type": "text",
+      "text": "A Food Bundle is food with a current nutrition value of 15. Store and distribute it as supplies; it is not a small container that can be filled with more food."
+    },
+    {
+      "content_type": "text",
+      "text": "Build supply lines by putting real food in a valid supply container. The bundle's appearance does not grant automatic pathfinding, feeding or unlimited supplies."
+    },
+    {
+      "content_type": "heading",
+      "text": "NPC Weapons and Shields",
+      "level": 2,
+      "anchor": "entry_050"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:wooden_spear"
+        },
+        {
+          "name": "ancientwarfare:iron_spear"
+        },
+        {
+          "name": "ancientwarfare:wooden_halberd"
+        },
+        {
+          "name": "ancientwarfare:iron_halberd"
+        },
+        {
+          "name": "ancientwarfare:wooden_lance"
+        },
+        {
+          "name": "ancientwarfare:iron_lance"
+        },
+        {
+          "name": "ancientwarfare:wooden_cleaver"
+        },
+        {
+          "name": "ancientwarfare:iron_cleaver"
+        },
+        {
+          "name": "ancientwarfare:shield_round_1"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: Wooden/Iron Spears, Halberds and Lances use the crafting table with no research prerequisite. Other variants in this group do not share those direct recipes."
+    },
+    {
+      "content_type": "text",
+      "text": "Spears, Halberds, Lances, Cleavers, Scythes, Clubs and Shields provide equipment choices for NPCs and combat. Choose materials and special weapons by their actual attributes and recipes. Similar appearance does not imply equal damage, durability or effects."
+    },
+    {
+      "content_type": "text",
+      "text": "After equipping the corresponding slots, check the main-hand role. Command Batons, Apples and Hammers may change combat roles. Giving a worker a weapon does not change its entity type into a combat NPC."
+    },
+    {
+      "content_type": "heading",
+      "text": "NPC Pathfinding and Wooden Doors",
+      "level": 2,
+      "anchor": "entry_051"
+    },
+    {
+      "content_type": "text",
+      "text": "During supported pathfinding, NPCs can open and close ordinary wooden doors and restore the doorway's door state after passing. Leave space around entrances rather than blocking both sides with collision shapes, chests or steps."
+    },
+    {
+      "content_type": "text",
+      "text": "Ordinary wooden-door passage and Chapter VII's large dynamic gates are separate interactions. Do not assume NPCs can operate iron doors, every modded door or large drawbridges. Use separate redstone controls for special entrances."
+    }
+  ]
+}

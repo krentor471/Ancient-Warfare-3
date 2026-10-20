@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "leadership",
+    "pattern":  [
+                    "  S",
+                    " S ",
+                    "I  "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:bard_instrument",
+                   "tag":  {
+                               "instrument":  "flute"
+                           }
+               }
+}

@@ -1,0 +1,23 @@
+{
+    "type":  "ancientwarfare:engineering",
+    "required_research":  "command",
+    "pattern":  [
+                    "  M",
+                    " I ",
+                    "S  "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "I":  {
+                          "tag":  "forge:ingots/iron"
+                      },
+                "M":  {
+                          "item":  "minecraft:stone"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:stone_command_baton"
+               }
+}

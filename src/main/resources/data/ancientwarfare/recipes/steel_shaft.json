@@ -1,0 +1,18 @@
+{
+    "pattern":  [
+                    " P ",
+                    " P ",
+                    " P "
+                ],
+    "show_notification":  true,
+    "type":  "minecraft:crafting_shaped",
+    "key":  {
+                "P":  {
+                          "item":  "ancientwarfare:steel_ingot"
+                      }
+            },
+    "category":  "misc",
+    "result":  {
+                   "item":  "ancientwarfare:steel_shaft"
+               }
+}

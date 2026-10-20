@@ -1,0 +1,25 @@
+{
+    "required_research":  "agriculture",
+    "pattern":  [
+                    "___",
+                    "GWG",
+                    "_C_"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "W":  {
+                          "item":  "minecraft:iron_hoe"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:wooden_gear"
+                      },
+                "_":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:crop_farm"
+               }
+}

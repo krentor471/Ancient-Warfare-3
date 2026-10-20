@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:entity",
+  "pools": [
+    {"rolls": 1, "entries": [{"type":"minecraft:item","name":"ancientwarfare:coin","functions":[{"function":"minecraft:set_count","count":{"min":3,"max":16}},{"function":"minecraft:set_nbt","tag":"{metal:\"copper\"}"}]}]},
+    {"rolls": 1, "entries": [{"type":"minecraft:item","name":"minecraft:bone","functions":[{"function":"minecraft:set_count","count":{"min":0,"max":2}}]},{"type":"minecraft:item","name":"minecraft:arrow","functions":[{"function":"minecraft:set_count","count":{"min":0,"max":4}}]},{"type":"minecraft:item","name":"minecraft:tipped_arrow","functions":[{"function":"minecraft:set_count","count":{"min":0,"max":1}}]}]}
+  ]
+}

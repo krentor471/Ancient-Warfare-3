@@ -1,0 +1,19 @@
+{
+    "required_research":  "engineering",
+    "pattern":  [
+                    "MSM",
+                    " S ",
+                    " S "
+                ],
+    "key":  {
+                "S":  {
+                          "item":  "minecraft:stick"
+                      },
+                "M":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:wooden_hammer"
+               }
+}

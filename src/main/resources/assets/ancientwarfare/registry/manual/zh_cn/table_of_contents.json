@@ -1,0 +1,69 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "table_of_contents",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "统治者手册",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "按物品和设施查询用途、获取方式、操作与限制。点击章节进入本章索引。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "研究",
+          "category_link": "research"
+        },
+        {
+          "text": "扭矩",
+          "category_link": "torque"
+        },
+        {
+          "text": "自动化机器",
+          "category_link": "machines"
+        },
+        {
+          "text": "仓库",
+          "category_link": "warehouse"
+        },
+        {
+          "text": "NPC",
+          "category_link": "npcs"
+        },
+        {
+          "text": "部落与国家",
+          "category_link": "factions"
+        },
+        {
+          "text": "建筑结构",
+          "category_link": "structures"
+        },
+        {
+          "text": "装饰方块",
+          "category_link": "decoration"
+        },
+        {
+          "text": "载具",
+          "category_link": "vehicles"
+        },
+        {
+          "text": "模组联动",
+          "category_link": "integrations"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "点击底部箭头、滚动鼠标滚轮或使用左右方向键翻页。总目录返回章节目录，本章索引返回章节开头，返回可回到上一次跳转前的位置。"
+    },
+    {
+      "content_type": "text",
+      "text": "正文按当前默认配方与键位说明；服务器修改数据或玩家修改键位后，以实际设置为准。"
+    }
+  ]
+}

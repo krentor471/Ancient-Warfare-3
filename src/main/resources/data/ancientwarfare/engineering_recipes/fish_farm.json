@@ -1,0 +1,25 @@
+{
+    "required_research":  "fishing",
+    "pattern":  [
+                    "___",
+                    "GWG",
+                    "_C_"
+                ],
+    "key":  {
+                "C":  {
+                          "tag":  "forge:chests/wooden"
+                      },
+                "W":  {
+                          "item":  "minecraft:fishing_rod"
+                      },
+                "G":  {
+                          "item":  "ancientwarfare:wooden_gear"
+                      },
+                "_":  {
+                          "tag":  "minecraft:planks"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:fish_farm"
+               }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IWI",
+    "GTG",
+    "ICI"
+  ],
+  "key": {
+    "C": { "item": "minecraft:chest" },
+    "T": { "item": "minecraft:crafting_table" },
+    "W": { "tag": "minecraft:planks" },
+    "G": { "tag": "forge:ingots/gold" },
+    "I": { "tag": "forge:ingots/iron" }
+  },
+  "result": { "item": "ancientwarfare:research_station" },
+  "show_notification": true
+}

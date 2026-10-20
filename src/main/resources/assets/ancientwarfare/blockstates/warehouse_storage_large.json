@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ancientwarfare:block/warehouse_storage_large" },
+    "facing=east": { "model": "ancientwarfare:block/warehouse_storage_large", "y": 90 },
+    "facing=south": { "model": "ancientwarfare:block/warehouse_storage_large", "y": 180 },
+    "facing=west": { "model": "ancientwarfare:block/warehouse_storage_large", "y": 270 }
+  }
+}

@@ -1,0 +1,25 @@
+{
+    "required_research":  "leadership",
+    "pattern":  [
+                    "GF ",
+                    "GB ",
+                    "   "
+                ],
+    "key":  {
+                "B":  {
+                          "item":  "ancientwarfare:bard_instrument"
+                      },
+                "F":  {
+                          "item":  "ancientwarfare:food_bundle"
+                      },
+                "G":  {
+                          "tag":  "forge:ingots/gold"
+                      }
+            },
+    "result":  {
+                   "item":  "ancientwarfare:npc_spawner",
+                   "tag":  {
+                               "npcType":  "bard"
+                           }
+               }
+}

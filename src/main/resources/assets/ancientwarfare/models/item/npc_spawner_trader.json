@@ -1,0 +1,11 @@
+﻿{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "ancientwarfare:item/spawner_base",
+    "layer1": "ancientwarfare:item/spawner_overlay_bottom",
+    "layer2": "ancientwarfare:item/spawner_overlay_top",
+    "layer3": "ancientwarfare:item/spawner_trader"
+  }
+}
+
+

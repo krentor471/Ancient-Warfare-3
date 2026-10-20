@@ -1,0 +1,201 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "factions",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "六 部落与国家",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "阵营生成器与阵营角色",
+          "category_link": "factions",
+          "anchor": "entry_052"
+        },
+        {
+          "text": "硬币",
+          "category_link": "factions",
+          "anchor": "entry_053"
+        },
+        {
+          "text": "阵营商人",
+          "category_link": "factions",
+          "anchor": "entry_054"
+        },
+        {
+          "text": "阵营关系",
+          "category_link": "factions",
+          "anchor": "entry_055"
+        },
+        {
+          "text": "默认阵营名录",
+          "category_link": "factions",
+          "anchor": "entry_056"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "阵营代表世界中不同的部落、国家与生物群体。阵营身份会影响对玩家和其他阵营的态度，不能只凭服装、建筑风格或附近是否有商人判断安全。"
+    },
+    {
+      "content_type": "heading",
+      "text": "阵营生成器与阵营角色",
+      "level": 2,
+      "anchor": "entry_052"
+    },
+    {
+      "content_type": "text",
+      "text": "阵营生成器在部署时携带阵营和角色信息，用于生成士兵、弓箭手、领袖、平民、商人、牧师或其他适用角色。它们主要服务于世界内容与场景配置。"
+    },
+    {
+      "content_type": "text",
+      "text": "阵营 NPC 不会仅因被玩家放出来就自动成为玩家所属的工人或士兵。使用前检查阵营标签与角色，避免在基地里生成敌对单位。"
+    },
+    {
+      "content_type": "heading",
+      "text": "硬币",
+      "level": 2,
+      "anchor": "entry_053"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:coin",
+          "tag": {
+            "metal": "copper"
+          }
+        },
+        {
+          "name": "ancientwarfare:coin",
+          "tag": {
+            "metal": "silver"
+          }
+        },
+        {
+          "name": "ancientwarfare:coin",
+          "tag": {
+            "metal": "gold"
+          }
+        },
+        {
+          "name": "ancientwarfare:coin",
+          "tag": {
+            "metal": "ancient"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：通过使用对应币种的交易、结构战利品或已有币堆取得；不同币种不能按基础物品类型互换。"
+    },
+    {
+      "content_type": "text",
+      "text": "当前硬币包含铜鸮币、银鹿币、金龙币和古代硬币。它们共用基础物品类型，但材质身份保存在物品数据中，因此交易时必须使用条目要求的币种。"
+    },
+    {
+      "content_type": "text",
+      "text": "铜币不能只因物品基础类型相同，就代替银币或金币支付。金币堆与其他币堆属于第八章的可摆放物品；需要交易时应取回硬币，不要直接把币堆当作同等支付物。"
+    },
+    {
+      "content_type": "heading",
+      "text": "阵营商人",
+      "level": 2,
+      "anchor": "entry_054"
+    },
+    {
+      "content_type": "text",
+      "text": "右键阵营商人打开交易界面，选择可用条目，按要求放入支付物品并取出结果。商人可以使用自身保存的交易内容，未保存时使用对应交易表。"
+    },
+    {
+      "content_type": "text",
+      "text": "界面显示可交易后仍应检查支付物品的数量与完整数据、结果存放空间和交易条目条件。它不使用玩家商人的交易指令；商人属于某个阵营，也不代表该阵营所有成员都会保持中立。"
+    },
+    {
+      "content_type": "heading",
+      "text": "阵营关系",
+      "level": 2,
+      "anchor": "entry_055"
+    },
+    {
+      "content_type": "text",
+      "text": "玩家与阵营的初始关系及是否允许变化，由该阵营的设定决定。部分阵营允许通过相关行为改变关系，另一些阵营固定敌对，不能靠重复交易保证转为友好。"
+    },
+    {
+      "content_type": "text",
+      "text": "阵营对玩家的态度与阵营彼此之间的关系分开设置。两个阵营都没有立即攻击玩家，并不等于它们彼此结盟。以下列出当前默认的全部 44 个阵营标识，便于对照生成器与服务器内容；服务器修改数据后以实际设定为准。"
+    },
+    {
+      "content_type": "heading",
+      "text": "默认阵营名录",
+      "level": 2,
+      "anchor": "entry_056"
+    },
+    {
+      "content_type": "text",
+      "text": "nogg, reiksgard, good, elf\n初始关系：50；关系可变化：是。"
+    },
+    {
+      "content_type": "text",
+      "text": "dwarf\n初始关系：50；关系可变化：是。"
+    },
+    {
+      "content_type": "text",
+      "text": "shakayana, zamurai, guild, wizardly\n初始关系：20；关系可变化：是。"
+    },
+    {
+      "content_type": "text",
+      "text": "amazon, sealsker, vyncan, hobbit\n初始关系：20；关系可变化：是。"
+    },
+    {
+      "content_type": "text",
+      "text": "ent, gnome\n初始关系：20；关系可变化：是。"
+    },
+    {
+      "content_type": "text",
+      "text": "empire, norska, sarkonid, xoltec\n初始关系：-1000；关系可变化：否。"
+    },
+    {
+      "content_type": "text",
+      "text": "witchbane, buffloka, zimba, kong\n初始关系：-1000；关系可变化：否。"
+    },
+    {
+      "content_type": "text",
+      "text": "orc, brigand, pirate, evil\n初始关系：-1000；关系可变化：否。"
+    },
+    {
+      "content_type": "text",
+      "text": "undead, demon, coven, barbarian\n初始关系：-1000；关系可变化：否。"
+    },
+    {
+      "content_type": "text",
+      "text": "smingol, lizardman, mindflayer, rakshasa\n初始关系：-1000；关系可变化：否。"
+    },
+    {
+      "content_type": "text",
+      "text": "klown, ishtari, icelord, minossian\n初始关系：-1000；关系可变化：否。"
+    },
+    {
+      "content_type": "text",
+      "text": "monster, beast, gremlin, vampire\n初始关系：-1000；关系可变化：否。"
+    },
+    {
+      "content_type": "text",
+      "text": "giant\n初始关系：-1000；关系可变化：否。"
+    },
+    {
+      "content_type": "text",
+      "text": "正数和负数表示默认关系值。上表列的是对玩家的初始设置，不表示这些阵营之间彼此友好。"
+    }
+  ]
+}

@@ -1,0 +1,687 @@
+{
+  "type": "manual_content",
+  "lang": "zh_cn",
+  "category": "vehicles",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "九 载具",
+      "level": 1
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "联动说明：世界大战与物理船舶",
+          "category_link": "integrations",
+          "anchor": "world_war"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "点击下面的物品条目直接跳转。"
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "载具放置与操作",
+          "category_link": "vehicles",
+          "anchor": "entry_076"
+        },
+        {
+          "text": "箱子手推车",
+          "category_link": "vehicles",
+          "anchor": "entry_077"
+        },
+        {
+          "text": "运输船",
+          "category_link": "vehicles",
+          "anchor": "entry_078"
+        },
+        {
+          "text": "弩车弩架与船弩",
+          "category_link": "vehicles",
+          "anchor": "entry_079"
+        },
+        {
+          "text": "投石车投石器与船载投石器",
+          "category_link": "vehicles",
+          "anchor": "entry_080"
+        },
+        {
+          "text": "抛石车抛石机与巨型抛石车",
+          "category_link": "vehicles",
+          "anchor": "entry_081"
+        },
+        {
+          "text": "加农炮车与炮台",
+          "category_link": "vehicles",
+          "anchor": "entry_082"
+        },
+        {
+          "text": "攻城槌",
+          "category_link": "vehicles",
+          "anchor": "entry_083"
+        },
+        {
+          "text": "火箱车",
+          "category_link": "vehicles",
+          "anchor": "entry_084"
+        },
+        {
+          "text": "弩箭",
+          "category_link": "vehicles",
+          "anchor": "entry_085"
+        },
+        {
+          "text": "投石与抛石弹丸",
+          "category_link": "vehicles",
+          "anchor": "entry_086"
+        },
+        {
+          "text": "加农炮弹",
+          "category_link": "vehicles",
+          "anchor": "entry_087"
+        },
+        {
+          "text": "火箱车火箭弹",
+          "category_link": "vehicles",
+          "anchor": "entry_088"
+        },
+        {
+          "text": "载具装甲",
+          "category_link": "vehicles",
+          "anchor": "entry_089"
+        },
+        {
+          "text": "载具性能升级",
+          "category_link": "vehicles",
+          "anchor": "entry_090"
+        },
+        {
+          "text": "载具制造材料与组件",
+          "category_link": "vehicles",
+          "anchor": "entry_091"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "载具包括运输工具与攻城器械。多数器械系列具有木制、两档镶铁、铁制和钢制五个等级。具体弹药、转向范围和升级适配由器械类型决定，不能只按材质判断。"
+    },
+    {
+      "content_type": "heading",
+      "text": "载具放置与操作",
+      "level": 2,
+      "anchor": "entry_076"
+    },
+    {
+      "content_type": "text",
+      "text": "手持对应载具物品在合适位置部署。通常右键乘坐，潜行右键打开库存或配置界面；移动型载具通过移动键操控。界面中的打包功能用于收起支持打包的载具，并保留相关数据。"
+    },
+    {
+      "content_type": "text",
+      "text": "攻城器械默认用 Z 和 C 调整水平瞄准，用 R 和 F 调整仰俯，空格发射。若按键被其他模组占用，应先检查控制设置。发射前检查座位、射界、弹药和装填状态，并远离己方建筑与人员。"
+    },
+    {
+      "content_type": "heading",
+      "text": "箱子手推车",
+      "level": 2,
+      "anchor": "entry_077"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:chest_pushcart"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为贸易。"
+    },
+    {
+      "content_type": "text",
+      "text": "箱子手推车用于携带物资并随车移动。潜行右键打开存储界面，普通右键乘坐。当前手推车提供 216 格存储和六个升级位置。"
+    },
+    {
+      "content_type": "text",
+      "text": "容量属于箱子手推车这一具体实现，不应据此认定所有弩车和炮台都有同样的可用库存。移动与打包前，应确认载具状态及存放物品。"
+    },
+    {
+      "content_type": "heading",
+      "text": "运输船",
+      "level": 2,
+      "anchor": "entry_078"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:transport_boat"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为海洋航行。"
+    },
+    {
+      "content_type": "text",
+      "text": "运输船用于水上运输。选择有足够水面与航行空间的位置部署，按载具界面管理可用存储与乘坐位置，再进行水上移动。"
+    },
+    {
+      "content_type": "text",
+      "text": "运输船不是武装船弩，也不能因为同属船型就装填所有攻城弹药。靠岸时留出船体空间，避免在浅窄水道或建筑边缘强行部署。"
+    },
+    {
+      "content_type": "heading",
+      "text": "弩车弩架与船弩",
+      "level": 2,
+      "anchor": "entry_079"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ballista_mobile"
+        },
+        {
+          "name": "ancientwarfare:ballista_mobile_fixed"
+        },
+        {
+          "name": "ancientwarfare:ballista_turret_stand"
+        },
+        {
+          "name": "ancientwarfare:ballista_stand_fixed"
+        },
+        {
+          "name": "ancientwarfare:ballista_boat"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：转动弩车 I、固定弩车 I、转动弩车架 I、固定弩车架 I：工程站，研究要求为攻城战；船载弩车 I：工程站，研究要求为海战。"
+    },
+    {
+      "content_type": "text",
+      "text": "弩类器械发射弩箭，包含可移动、固定方向、转动支架和船载变体。需要追随部队时选择移动式，需要守卫固定位置时选择支架式，水面作战使用船载式。"
+    },
+    {
+      "content_type": "text",
+      "text": "固定方向型不能按转动型的射界使用。把适配弩箭放入库存，调整朝向和仰角，等待装填后发射；不会把普通玩家弓箭自动当作所有弩车弹药。"
+    },
+    {
+      "content_type": "heading",
+      "text": "投石车投石器与船载投石器",
+      "level": 2,
+      "anchor": "entry_080"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:catapult_mobile"
+        },
+        {
+          "name": "ancientwarfare:catapult_mobile_fixed"
+        },
+        {
+          "name": "ancientwarfare:catapult_turret_stand"
+        },
+        {
+          "name": "ancientwarfare:catapult_stand_fixed"
+        },
+        {
+          "name": "ancientwarfare:catapult_boat"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：转动投石车 I、固定投石车 I、转动投石器 I、固定投石器 I：工程站，研究要求为攻城战；船载投石器 I：工程站，研究要求为海战。"
+    },
+    {
+      "content_type": "text",
+      "text": "投石类器械以抛物线发射专用弹丸，适合间接火力。移动、固定、转动支架和船载版本的机动与射界不同，选型时先考虑部署位置。"
+    },
+    {
+      "content_type": "text",
+      "text": "普通投石车当前接受重量 10 或 15 的对应弹丸。重量更大的弹药应交给支持它们的器械，而不是单纯升级车体材质。射线与落点受距离、仰角和障碍物影响，先进行试射。"
+    },
+    {
+      "content_type": "heading",
+      "text": "抛石车抛石机与巨型抛石车",
+      "level": 2,
+      "anchor": "entry_081"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:trebuchet_mobile"
+        },
+        {
+          "name": "ancientwarfare:trebuchet_fixed"
+        },
+        {
+          "name": "ancientwarfare:trebuchet_turret"
+        },
+        {
+          "name": "ancientwarfare:giant_trebuchet"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为攻城战。"
+    },
+    {
+      "content_type": "text",
+      "text": "抛石器械使用配重结构投送弹丸，包含固定、移动、转动与巨型版本。它们的用途偏向阵地投射与攻城，不同规格有各自可接受的弹药重量和射界。"
+    },
+    {
+      "content_type": "text",
+      "text": "普通抛石系列支持重量不超过 30 的弹丸，巨型抛石车支持不超过 45 的弹丸。大型器械要预留充足空间；能把某件物品放进库存，不等于该器械一定能把它发射出去。"
+    },
+    {
+      "content_type": "heading",
+      "text": "加农炮车与炮台",
+      "level": 2,
+      "anchor": "entry_082"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:cannon_mobile"
+        },
+        {
+          "name": "ancientwarfare:cannon_turret_stand"
+        },
+        {
+          "name": "ancientwarfare:cannon_stand_fixed"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为高级攻城战。"
+    },
+    {
+      "content_type": "text",
+      "text": "加农炮使用专用炮弹，包含炮车和固定或可转动炮台。部署后装入兼容炮弹，调整射向并等待装填，再执行发射。"
+    },
+    {
+      "content_type": "text",
+      "text": "固定炮台与转动炮台的水平瞄准能力不同。加农炮不使用投石机的石弹，也不能把装药组件直接当成成品炮弹。"
+    },
+    {
+      "content_type": "heading",
+      "text": "攻城槌",
+      "level": 2,
+      "anchor": "entry_083"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:battering_ram"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为攻城战。"
+    },
+    {
+      "content_type": "text",
+      "text": "攻城槌用于近距离攻坚，需要把载具移动到有效目标附近，再按其攻击操作使用。它依靠近距离撞击，不是远程投射器。"
+    },
+    {
+      "content_type": "text",
+      "text": "推进前先清理道路，并让正面朝向目标。不要装填弩箭或炮弹来尝试把攻城槌变成远程武器；其用途与第七章的城门通行控制也不同。"
+    },
+    {
+      "content_type": "heading",
+      "text": "火箱车",
+      "level": 2,
+      "anchor": "entry_084"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:hwacha"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为攻城战。"
+    },
+    {
+      "content_type": "text",
+      "text": "火箱车使用专用火箭弹进行攻击。装入对应火箭弹后调整朝向与仰俯，再等待装填完成进行发射。"
+    },
+    {
+      "content_type": "text",
+      "text": "普通、燃烧、爆炸和空爆火箭弹有不同用途。发射区前方应留出空间，爆炸与燃烧弹尤其需要避开己方队伍、木制建筑和易燃物。"
+    },
+    {
+      "content_type": "heading",
+      "text": "弩箭",
+      "level": 2,
+      "anchor": "entry_085"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ammo_ballista_bolt"
+        },
+        {
+          "name": "ancientwarfare:ammo_ballista_bolt_iron"
+        },
+        {
+          "name": "ancientwarfare:ammo_ballista_bolt_flame"
+        },
+        {
+          "name": "ancientwarfare:ammo_ballista_bolt_explosive"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为弹道学。"
+    },
+    {
+      "content_type": "text",
+      "text": "弩箭包括木制、铁制、燃烧和爆炸类型。选择弹种时既要考虑目标，也要考虑附带火焰或爆炸对附近环境的影响。"
+    },
+    {
+      "content_type": "text",
+      "text": "弩箭是弩类器械弹药，不是普通弓箭的换皮物品。备弹时按器械类型分箱存放，避免信使把错误弹药送到阵地。"
+    },
+    {
+      "content_type": "heading",
+      "text": "投石与抛石弹丸",
+      "level": 2,
+      "anchor": "entry_086"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ammo_stone_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_flame_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_pebble_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_cluster_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_explosive_shot_10"
+        },
+        {
+          "name": "ancientwarfare:ammo_explosive_shot_10_big"
+        },
+        {
+          "name": "ancientwarfare:ammo_napalm_shot_10"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为弹道学。"
+    },
+    {
+      "content_type": "text",
+      "text": "投射弹丸有重量 10、15、30、45 等规格，弹种包括石弹、燃烧弹、碎石弹、集簇弹、爆炸弹、高爆弹和凝固汽油弹。重量规格与效果类型是两项独立属性。"
+    },
+    {
+      "content_type": "text",
+      "text": "先选择器械接受的重量，再选择所需效果。集簇、爆炸与燃烧效果可能波及落点周围，守城时不能只看目标是否是敌军，还要检查其附近是否有己方单位。"
+    },
+    {
+      "content_type": "heading",
+      "text": "加农炮弹",
+      "level": 2,
+      "anchor": "entry_087"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ammo_iron_shot_5"
+        },
+        {
+          "name": "ancientwarfare:ammo_grape_shot_5"
+        },
+        {
+          "name": "ancientwarfare:ammo_canister_shot_5"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为弹道学。"
+    },
+    {
+      "content_type": "text",
+      "text": "加农炮弹包含重量 5、10、15、25 等规格的实心铁弹、葡萄弹和霰弹罐。葡萄弹在出膛时散射，霰弹罐在命中后产生散射效果，适用距离与目标分布不同。"
+    },
+    {
+      "content_type": "text",
+      "text": "按炮的兼容范围准备重量和弹种。不要只根据名称里都有“弹”字，就混入投石弹丸、弩箭或火箱车火箭弹。"
+    },
+    {
+      "content_type": "heading",
+      "text": "火箱车火箭弹",
+      "level": 2,
+      "anchor": "entry_088"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:ammo_hwacha_rocket"
+        },
+        {
+          "name": "ancientwarfare:ammo_hwacha_rocket_flame"
+        },
+        {
+          "name": "ancientwarfare:ammo_hwacha_rocket_explosive"
+        },
+        {
+          "name": "ancientwarfare:ammo_hwacha_rocket_airburst"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为弹道学。"
+    },
+    {
+      "content_type": "text",
+      "text": "火箱车火箭弹是单独的弹药系列，包括普通、燃烧、爆炸和空爆类型，装填给支持该系列的火箱车使用。"
+    },
+    {
+      "content_type": "text",
+      "text": "制造配方中的火箭装药是材料，成品火箭弹才是装填物。搬运订单和补给箱应针对成品设置过滤，避免把半成品误送到武器库存。"
+    },
+    {
+      "content_type": "heading",
+      "text": "载具装甲",
+      "level": 2,
+      "anchor": "entry_089"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:armor_stone"
+        },
+        {
+          "name": "ancientwarfare:armor_iron"
+        },
+        {
+          "name": "ancientwarfare:armor_obsidian"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：工程站，研究要求为机械学。"
+    },
+    {
+      "content_type": "text",
+      "text": "石质、铁质和黑曜石装甲提供不同的减伤倾向。单件石质装甲的一般减伤为 2.5%，火焰减伤为 7%；铁质装甲的一般减伤为 7%；黑曜石装甲的一般减伤为 2.5%，爆炸减伤为 7%。"
+    },
+    {
+      "content_type": "text",
+      "text": "按载具升级槽规则安装，并结合主要威胁选择。不要把某一种伤害下的数值当成所有伤害都生效的统一减伤，也不要假定装甲能保证完全免伤。"
+    },
+    {
+      "content_type": "heading",
+      "text": "载具性能升级",
+      "level": 2,
+      "anchor": "entry_090"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:vehicle_upgrade_speed"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_aim"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_reload"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_power"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_turret_pitch"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_pitch_up"
+        },
+        {
+          "name": "ancientwarfare:vehicle_upgrade_pitch_down"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：铁轴承：工程站，研究要求为轮轴技术；基本弹道计算器：工程站，研究要求为弹道学；弹簧装弹机、功率升级、节距延长、转角楔板：+3'、转角楔板：-3'：工程站，研究要求为机械学。"
+    },
+    {
+      "content_type": "text",
+      "text": "性能升级覆盖移动、瞄准、装填、威力和俯仰等方向。把适配物品放入器械的升级位置，再查看对应性能变化。"
+    },
+    {
+      "content_type": "text",
+      "text": "升级的意义取决于器械：固定炮台没有与手推车相同的移动需求，不同武器也有各自的俯仰和射界限制。安装数量受槽位与识别规则约束，不能将所有升级视为对全部载具都有效。"
+    },
+    {
+      "content_type": "heading",
+      "text": "载具制造材料与组件",
+      "level": 2,
+      "anchor": "entry_091"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:flame_charge"
+        },
+        {
+          "name": "ancientwarfare:explosive_charge"
+        },
+        {
+          "name": "ancientwarfare:rocket_charge"
+        },
+        {
+          "name": "ancientwarfare:cluster_charge"
+        },
+        {
+          "name": "ancientwarfare:napalm_charge"
+        },
+        {
+          "name": "ancientwarfare:clay_casing"
+        },
+        {
+          "name": "ancientwarfare:iron_casing"
+        },
+        {
+          "name": "ancientwarfare:mobility_unit"
+        },
+        {
+          "name": "ancientwarfare:turret_components"
+        },
+        {
+          "name": "ancientwarfare:torsion_unit"
+        },
+        {
+          "name": "ancientwarfare:counter_weight_unit"
+        },
+        {
+          "name": "ancientwarfare:powder_case"
+        },
+        {
+          "name": "ancientwarfare:equipment_bay"
+        },
+        {
+          "name": "ancientwarfare:rough_wood"
+        },
+        {
+          "name": "ancientwarfare:treated_wood"
+        },
+        {
+          "name": "ancientwarfare:ironshod_wood"
+        },
+        {
+          "name": "ancientwarfare:iron_core_wood"
+        },
+        {
+          "name": "ancientwarfare:rough_iron"
+        },
+        {
+          "name": "ancientwarfare:fine_iron"
+        },
+        {
+          "name": "ancientwarfare:tempered_iron"
+        },
+        {
+          "name": "ancientwarfare:minor_alloy"
+        },
+        {
+          "name": "ancientwarfare:major_alloy"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "获取：未装填火药、未装填凝固汽油弹：工程站，研究要求为燃烧技术；未装填炸药、粉末盒：工程站，研究要求为爆炸物；未装填火箭：工程站，研究要求为火箭技术；未装填集簇弹、粘土炮弹壳、铁质炮弹壳：工程站，研究要求为弹道学；载具木轮、旋转结构：工程站，研究要求为轮轴技术；载具基座、普通铁板、精炼铁板、百锻铁板、次级合金板、高级合金板：工程站，研究要求为机械学；配重单元：工程站，研究要求为重力理论；弹药舱、粗糙的木头、被处理的木头、镶铁木板、包铁木板：工程站，研究要求为工程学。"
+    },
+    {
+      "content_type": "text",
+      "text": "装药、弹壳、移动组件、转动结构、扭力组件、配重、火药匣、设备舱，以及加工木材、铁料和合金，都服务于载具与弹药制造。"
+    },
+    {
+      "content_type": "text",
+      "text": "按工程配方逐级加工，再制作完整载具、升级或弹药。组件不能直接当作部署工具，也不能只因为名称带“装药”就装进任意武器发射。"
+    }
+  ]
+}

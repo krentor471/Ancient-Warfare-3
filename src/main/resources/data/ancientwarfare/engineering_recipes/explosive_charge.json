@@ -1,0 +1,22 @@
+{
+    "required_research":  "explosives",
+    "shapeless":  true,
+    "ingredients":  [
+                        {
+                            "ingredient":  {
+                                               "item":  "minecraft:gunpowder"
+                                           },
+                            "count":  2
+                        },
+                        {
+                            "item":  "minecraft:coal"
+                        },
+                        {
+                            "item":  "minecraft:string"
+                        }
+                    ],
+    "result":  {
+                   "item":  "ancientwarfare:explosive_charge",
+                   "count":  8
+               }
+}

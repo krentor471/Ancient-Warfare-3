@@ -1,0 +1,201 @@
+{
+  "type": "manual_content",
+  "lang": "en_us",
+  "category": "factions",
+  "content": [
+    {
+      "content_type": "heading",
+      "text": "VI. Tribes and Nations",
+      "level": 1
+    },
+    {
+      "content_type": "text",
+      "text": "Click an item entry below to jump to it."
+    },
+    {
+      "content_type": "toc_list",
+      "items": [
+        {
+          "text": "Faction Spawners and Roles",
+          "category_link": "factions",
+          "anchor": "entry_052"
+        },
+        {
+          "text": "Coins",
+          "category_link": "factions",
+          "anchor": "entry_053"
+        },
+        {
+          "text": "Faction Merchants",
+          "category_link": "factions",
+          "anchor": "entry_054"
+        },
+        {
+          "text": "Faction Relations",
+          "category_link": "factions",
+          "anchor": "entry_055"
+        },
+        {
+          "text": "Default Faction Directory",
+          "category_link": "factions",
+          "anchor": "entry_056"
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Factions represent different tribes, nations and creature groups. Identity affects attitudes to players and other factions. Clothing, architectural style or the presence of a merchant does not establish safety."
+    },
+    {
+      "content_type": "heading",
+      "text": "Faction Spawners and Roles",
+      "level": 2,
+      "anchor": "entry_052"
+    },
+    {
+      "content_type": "text",
+      "text": "Faction spawners carry faction and role data, deploying Soldiers, Archers, Leaders, Civilians, Merchants, Priests or other applicable roles. They primarily serve world content and scene configuration."
+    },
+    {
+      "content_type": "text",
+      "text": "Spawning a faction NPC does not automatically make it your worker or soldier. Check faction tags and roles before use to avoid hostile units in your base."
+    },
+    {
+      "content_type": "heading",
+      "text": "Coins",
+      "level": 2,
+      "anchor": "entry_053"
+    },
+    {
+      "content_type": "item",
+      "items": [
+        {
+          "name": "ancientwarfare:coin",
+          "tag": {
+            "metal": "copper"
+          }
+        },
+        {
+          "name": "ancientwarfare:coin",
+          "tag": {
+            "metal": "silver"
+          }
+        },
+        {
+          "name": "ancientwarfare:coin",
+          "tag": {
+            "metal": "gold"
+          }
+        },
+        {
+          "name": "ancientwarfare:coin",
+          "tag": {
+            "metal": "ancient"
+          }
+        }
+      ]
+    },
+    {
+      "content_type": "text",
+      "text": "Acquisition: trades using the corresponding currency, structure loot or existing coin stacks. Different currencies are not interchangeable by base item type."
+    },
+    {
+      "content_type": "text",
+      "text": "Coins currently include Copper Owl, Silver Stag, Gold Dragon and Ancient Coins. They share a base item type, but currency identity is stored in item data. Pay with the currency required by the offer."
+    },
+    {
+      "content_type": "text",
+      "text": "Copper does not replace silver or gold merely because the base item type matches. Placeable coin stacks are covered in Chapter VIII. Recover their coins for trading rather than using the stack itself as payment."
+    },
+    {
+      "content_type": "heading",
+      "text": "Faction Merchants",
+      "level": 2,
+      "anchor": "entry_054"
+    },
+    {
+      "content_type": "text",
+      "text": "Right-click a faction merchant to open trading, choose an available offer, provide the requested payment and take the result. Merchants can use saved offers or their corresponding trade table when none are saved."
+    },
+    {
+      "content_type": "text",
+      "text": "Even when an offer is shown as available, check payment quantity and full item data, output space and offer conditions. These merchants do not use player Traders' Trade Orders. One merchant's faction does not mean every member is neutral."
+    },
+    {
+      "content_type": "heading",
+      "text": "Faction Relations",
+      "level": 2,
+      "anchor": "entry_055"
+    },
+    {
+      "content_type": "text",
+      "text": "Each faction's settings determine the initial player relationship and whether it can change. Some allow actions to alter relations; others are permanently hostile. Repeated trades do not guarantee friendship."
+    },
+    {
+      "content_type": "text",
+      "text": "Attitudes to players and relationships between factions are separate settings. Two factions not immediately attacking you does not mean they are allied. The following lists all 44 default faction identifiers for comparison with spawners and server content. Server data changes take precedence."
+    },
+    {
+      "content_type": "heading",
+      "text": "Default Faction Directory",
+      "level": 2,
+      "anchor": "entry_056"
+    },
+    {
+      "content_type": "text",
+      "text": "nogg, reiksgard, good, elf\nInitial relation: 50; can change: yes."
+    },
+    {
+      "content_type": "text",
+      "text": "dwarf\nInitial relation: 50; can change: yes."
+    },
+    {
+      "content_type": "text",
+      "text": "shakayana, zamurai, guild, wizardly\nInitial relation: 20; can change: yes."
+    },
+    {
+      "content_type": "text",
+      "text": "amazon, sealsker, vyncan, hobbit\nInitial relation: 20; can change: yes."
+    },
+    {
+      "content_type": "text",
+      "text": "ent, gnome\nInitial relation: 20; can change: yes."
+    },
+    {
+      "content_type": "text",
+      "text": "empire, norska, sarkonid, xoltec\nInitial relation: -1000; can change: no."
+    },
+    {
+      "content_type": "text",
+      "text": "witchbane, buffloka, zimba, kong\nInitial relation: -1000; can change: no."
+    },
+    {
+      "content_type": "text",
+      "text": "orc, brigand, pirate, evil\nInitial relation: -1000; can change: no."
+    },
+    {
+      "content_type": "text",
+      "text": "undead, demon, coven, barbarian\nInitial relation: -1000; can change: no."
+    },
+    {
+      "content_type": "text",
+      "text": "smingol, lizardman, mindflayer, rakshasa\nInitial relation: -1000; can change: no."
+    },
+    {
+      "content_type": "text",
+      "text": "klown, ishtari, icelord, minossian\nInitial relation: -1000; can change: no."
+    },
+    {
+      "content_type": "text",
+      "text": "monster, beast, gremlin, vampire\nInitial relation: -1000; can change: no."
+    },
+    {
+      "content_type": "text",
+      "text": "giant\nInitial relation: -1000; can change: no."
+    },
+    {
+      "content_type": "text",
+      "text": "Positive and negative numbers are default relationship values. These are initial attitudes to players, not statements that the listed factions are friendly to one another."
+    }
+  ]
+}

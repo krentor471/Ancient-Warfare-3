@@ -1,0 +1,941 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "name": "main",
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "protection",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:protection\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "fire_protection",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:fire_protection\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:fire_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:fire_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:fire_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "feather_falling",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:feather_falling\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:feather_falling\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:feather_falling\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:feather_falling\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "blast_protection",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:blast_protection\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:blast_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:blast_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:blast_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "projectile_protection",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:projectile_protection\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:projectile_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:projectile_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:projectile_protection\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "respiration",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:respiration\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:respiration\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:respiration\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "aqua_affinity",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:aqua_affinity\"}]}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "thorns",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:thorns\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:thorns\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:thorns\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "depth_strider",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:depth_strider\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:depth_strider\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:depth_strider\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "sharpness",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:sharpness\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:sharpness\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:sharpness\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:sharpness\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:5s,id:\"minecraft:sharpness\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "smite",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:smite\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:smite\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:smite\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:smite\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:5s,id:\"minecraft:smite\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "bane_of_arthropods",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:bane_of_arthropods\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:bane_of_arthropods\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:bane_of_arthropods\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:bane_of_arthropods\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:5s,id:\"minecraft:bane_of_arthropods\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "knockback",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:knockback\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:knockback\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "fire_aspect",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:fire_aspect\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:fire_aspect\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "efficiency",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:efficiency\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:efficiency\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:efficiency\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:efficiency\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:5s,id:\"minecraft:efficiency\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "unbreaking",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:unbreaking\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:unbreaking\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:unbreaking\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "power",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:power\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:power\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:power\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:4s,id:\"minecraft:power\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:5s,id:\"minecraft:power\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "punch",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:punch\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:punch\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "flame",
+          "weight": 5,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:flame\"}]}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "frost_walker",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:frost_walker\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:frost_walker\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "binding_curse",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:binding_curse\"}]}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "looting",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:looting\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:looting\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:looting\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "sweeping",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:sweeping\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:sweeping\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:sweeping\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.15
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "silk_touch",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:silk_touch\"}]}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "fortune",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:fortune\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:fortune\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:fortune\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "infinity",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:infinity\"}]}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "luck_of_the_sea",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:luck_of_the_sea\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:luck_of_the_sea\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:luck_of_the_sea\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "lure",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:lure\"}]}"
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:2s,id:\"minecraft:lure\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.3
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:3s,id:\"minecraft:lure\"}]}",
+              "conditions": [
+                {
+                  "condition": "minecraft:random_chance",
+                  "chance": 0.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "mending",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:mending\"}]}"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:enchanted_book",
+          "entryName": "vanishing_curse",
+          "weight": 1,
+          "functions": [
+            {
+              "function": "minecraft:set_nbt",
+              "tag": "{StoredEnchantments:[{lvl:1s,id:\"minecraft:vanishing_curse\"}]}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
