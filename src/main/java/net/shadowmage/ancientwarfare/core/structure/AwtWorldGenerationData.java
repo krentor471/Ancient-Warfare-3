@@ -75,6 +75,7 @@ public final class AwtWorldGenerationData extends SavedData {
             value.putInt("MinSurface", town.minSurface);
             value.putInt("MaxSurface", town.maxSurface);
             value.putIntArray("SurfaceSamples", town.surfaceSamples);
+            value.putInt("Settlement", town.settlement);
             list.add(value);
          }
       }
@@ -101,6 +102,7 @@ public final class AwtWorldGenerationData extends SavedData {
          }
 
          town.progress = value.getInt("Progress");
+         town.settlement = value.getInt("Settlement");
          town.minSurface = value.getInt("MinSurface");
          town.maxSurface = value.getInt("MaxSurface");
 
@@ -153,6 +155,8 @@ public final class AwtWorldGenerationData extends SavedData {
       public int minSurface = Integer.MAX_VALUE;
       public int maxSurface = Integer.MIN_VALUE;
       public final List<Integer> surfaceSamples = new ArrayList<>();
+      /** The faction settlement this town is built for, still on paper until it completes; 0 for none. */
+      public int settlement;
 
       public TownTask(String path, String name, int x, int y, int z) {
          this.path = path;

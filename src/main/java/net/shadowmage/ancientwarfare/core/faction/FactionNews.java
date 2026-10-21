@@ -73,6 +73,11 @@ public final class FactionNews {
 
    static void tell(ServerLevel level, Component message) {
       AncientWarfareCore.LOG.info("Faction news: {}", message.getString());
+      if (FactionHistory.running()) {
+         // The world's past: nobody was there to hear it.
+         return;
+      }
+
       level.getServer().getPlayerList().broadcastSystemMessage(message, false);
    }
 }

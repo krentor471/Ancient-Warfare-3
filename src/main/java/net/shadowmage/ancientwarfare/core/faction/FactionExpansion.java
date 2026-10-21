@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
@@ -19,10 +21,10 @@ import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
 
 /**
  * Factions grow outward: a faction with gold to spare and a settlement big enough to send settlers
- * claims a wild province next to its land and founds a village there. Where its land meets a rival
- * that is not an ally, a faction with gold to spare builds a border fort facing that rival. The claim
- * is immediate; villages and forts are built later, one at a time, while no player is near enough
- * to watch them appear.
+ * founds a village in an empty province of its own or claims a wild one next to its land. Where its
+ * land meets a rival that is not an ally, a faction with gold to spare builds a border fort facing
+ * that rival. Capitals and villages live on paper first: they grow and fight in the daily
+ * simulation and are laid out as towns, nearest to a player first, before the player gets there.
  */
 public final class FactionExpansion {
    private static final int FOUND_COST = 80;
@@ -36,6 +38,8 @@ public final class FactionExpansion {
    private static final int FOUND_INTERVAL_DAYS = 3;
    private static final double PLAN_PLAYER_RANGE = 256.0;
    private static final double BUILD_PLAYER_RANGE = 192.0;
+   /** Settlements further than this from every player stay on paper. */
+   private static final double BUILD_REACH = 1000.0;
    private static final int BUILD_CHECK_TICKS = 100;
    public static final int FORT_COST = 60;
    /** A new fort's garrison is capped at this, whatever its template spawns. */
@@ -44,7 +48,8 @@ public final class FactionExpansion {
    /** How far from its own province's seed toward the rival's a fort stands. */
    private static final double FORT_BORDER_SHARE = 0.6;
    private static final String FORT_KEY = "fort:";
-   private static final double CAPITAL_PLAYER_RANGE = 320.0;
+   private static final int CAPITAL_POPULATION = 60;
+   private static final int CAPITAL_GARRISON = 15;
    private static final int CAPITAL_SEARCH_STEP = 64;
    /** Twice (a full capital, then a small one) the country's middle and ten rings around it, out to 640 blocks. */
    private static final int CAPITAL_SEARCH_POINTS = 162;
@@ -53,9 +58,10 @@ public final class FactionExpansion {
    /** Sites checked per build check; each loads the land under it. */
    private static final int SITE_CHECKS_PER_TICK = 3;
    private static final int SETTLEMENT_CLEARANCE = 32;
-   /** How far each search got; not saved, so a restart searches again from the centre. */
-   private static final Map<String, Integer> CAPITAL_SEARCH = new HashMap<>();
-   private static final Map<FactionWorldData.PlannedSettlement, Integer> SITE_SEARCH = new HashMap<>();
+   /** How far each settlement's site search got, by settlement; not saved, so a restart searches again from the centre. */
+   private static final Map<Integer, Integer> SITE_SEARCH = new HashMap<>();
+   /** Capitals that found no site this session. */
+   private static final Set<Integer> GIVEN_UP = new HashSet<>();
 
    private FactionExpansion() {
    }
@@ -84,11 +90,14 @@ public final class FactionExpansion {
                FactionRegions.Province province = pickProvince(level, data, faction);
                if (province != null) {
                   data.setProvinceOwner(province.key(), faction);
-                  data.addPlannedSettlement(new FactionWorldData.PlannedSettlement(faction, province.seedX(), province.seedZ(), province.key(), day, false));
+                  data.addUnbuiltSettlement(
+                     faction, FactionTowns.VILLAGE, province.seedX(), level.getSeaLevel(), province.seedZ(), province.key(), level.getGameTime(), 0, SETTLERS
+                  );
                   data.setTreasury(faction, data.treasury(faction) - cost);
                   source.population -= SETTLERS;
                   data.setLastFounding(faction, day);
-                  AncientWarfareCore.LOG.info("Faction {} claimed province {},{} and plans a village at {}, {}", faction, province.cellX(), province.cellZ(), province.seedX(), province.seedZ());
+                  FactionNews.founded(level, faction, province.seedX(), province.seedZ());
+                  AncientWarfareCore.LOG.info("Faction {} founded a village in province {},{} near {}, {}", faction, province.cellX(), province.cellZ(), province.seedX(), province.seedZ());
                }
             }
          }
@@ -174,128 +183,157 @@ public final class FactionExpansion {
    }
 
    /**
-    * Builds at most one planned village or fort whose site no player is near. A village is laid out
-    * as a small town on dry, flat land of its province; where none is found it falls back to one of
-    * the faction's non-military buildings.
+    * Founds capitals on paper, builds at most one planned fort no player is near, and lays out the
+    * unbuilt settlement nearest to a player (but not in sight of one) as a town.
     */
    public static void tick(ServerLevel level, FactionWorldData data) {
       if (level.getGameTime() % BUILD_CHECK_TICKS != 0L) {
          return;
       }
 
-      tickCapitals(level, data);
+      foundCapitals(level, data);
       Iterator<FactionWorldData.PlannedSettlement> iterator = data.plannedSettlements().iterator();
 
       while (iterator.hasNext()) {
          FactionWorldData.PlannedSettlement plan = iterator.next();
-         if (level.hasNearbyAlivePlayer(plan.x(), level.getSeaLevel(), plan.z(), BUILD_PLAYER_RANGE)) {
+         if (!plan.fort()) {
+            // A village planned before villages lived on paper.
+            iterator.remove();
+            data.addUnbuiltSettlement(plan.faction(), FactionTowns.VILLAGE, plan.x(), level.getSeaLevel(), plan.z(), plan.province(), level.getGameTime(), 0, SETTLERS);
             continue;
          }
 
-         if (!plan.fort()) {
-            if (AwtWorldGenerator.busy(level)) {
-               continue;
-            }
-
-            String path = FactionTowns.path(plan.faction(), false);
-            if (FactionTowns.canBuild(plan.faction(), false)) {
-               int chunks = AwtWorldGenerator.townChunks(path);
-               int checked = SITE_SEARCH.getOrDefault(plan, 0);
-               int[] site = null;
-
-               for (int i = 0; i < SITE_CHECKS_PER_TICK && site == null && checked < VILLAGE_SEARCH_POINTS; i++, checked++) {
-                  site = checkSite(level, data, plan.faction(), plan.x(), plan.z(), checked, VILLAGE_SEARCH_STEP, chunks);
-               }
-
-               SITE_SEARCH.put(plan, checked);
-               if (site != null) {
-                  iterator.remove();
-                  SITE_SEARCH.remove(plan);
-                  data.setDirty();
-                  AwtWorldGenerator.queueFactionTown(level, path, site[0], site[1]);
-                  return;
-               } else if (checked < VILLAGE_SEARCH_POINTS) {
-                  return;
-               }
-
-               SITE_SEARCH.remove(plan);
-            }
+         if (level.hasNearbyAlivePlayer(plan.x(), level.getSeaLevel(), plan.z(), BUILD_PLAYER_RANGE) || !withinReach(level, plan.x(), plan.z())) {
+            continue;
          }
 
          iterator.remove();
          data.setDirty();
-         boolean built = AwsWorldGenerator.generateSettlementAt(
-            level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction(), plan.fort() ? AwsWorldGenerator.Site.FORT : AwsWorldGenerator.Site.VILLAGE
-         );
-         if (built && plan.fort()) {
+         boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction(), AwsWorldGenerator.Site.FORT);
+         if (built) {
             FactionNews.fortified(level, plan.faction(), plan.x(), plan.z());
-         } else if (built) {
-            FactionNews.founded(level, plan.faction(), plan.x(), plan.z());
          }
 
-         AncientWarfareCore.LOG
-            .info("Faction {} {} its planned {} at {}, {}", plan.faction(), built ? "built" : "could not build", plan.fort() ? "fort" : "village", plan.x(), plan.z());
+         AncientWarfareCore.LOG.info("Faction {} {} its planned fort at {}, {}", plan.faction(), built ? "built" : "could not build", plan.x(), plan.z());
          return;
+      }
+
+      buildNearest(level, data);
+   }
+
+   private static boolean withinReach(ServerLevel level, double x, double z) {
+      for (ServerPlayer player : level.players()) {
+         double dx = player.getX() - x;
+         double dz = player.getZ() - z;
+         if (dx * dx + dz * dz <= BUILD_REACH * BUILD_REACH) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   /** Every faction with land and no capital founds one on paper, near the middle of its country. */
+   public static void foundCapitals(ServerLevel level, FactionWorldData data) {
+      for (String faction : new TreeSet<>(data.provinceOwners().values())) {
+         if (faction.isEmpty() || FactionDiplomacy.isOutlaw(faction) || hasCapital(data, faction) || !FactionTowns.canBuild(faction, true)) {
+            continue;
+         }
+
+         FactionRegions.Province middle = middleProvince(level, data, faction);
+         if (middle != null) {
+            data.addUnbuiltSettlement(
+               faction, FactionTowns.CAPITAL, middle.seedX(), level.getSeaLevel(), middle.seedZ(), middle.key(), level.getGameTime(), CAPITAL_GARRISON, CAPITAL_POPULATION
+            );
+            AncientWarfareCore.LOG.info("Faction {} founds its capital near {}, {}", faction, middle.seedX(), middle.seedZ());
+         }
       }
    }
 
-   /** A generated town was finished: tell the world. */
+   /**
+    * Lays out the unbuilt settlement nearest to any player, as long as it is within reach of one
+    * and none is close enough to watch, so the land ahead of a player fills first. Its site is searched near where it was
+    * founded on the faction's own dry, flat land, a few spots per check. A capital that finds no
+    * room for a full town looks again for room for one the size of a village, then stays on paper;
+    * a village that finds none becomes a single dry-land building of its faction.
+    */
+   private static void buildNearest(ServerLevel level, FactionWorldData data) {
+      if (AwtWorldGenerator.busy(level) || level.players().isEmpty()) {
+         return;
+      }
+
+      FactionWorldData.Settlement target = null;
+      double best = Double.MAX_VALUE;
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.built() || GIVEN_UP.contains(settlement.id())) {
+            continue;
+         }
+
+         double nearest = Double.MAX_VALUE;
+
+         for (ServerPlayer player : level.players()) {
+            nearest = Math.min(nearest, settlement.horizontalDistanceSquared(player.getX(), player.getZ()));
+         }
+
+         if (nearest >= BUILD_PLAYER_RANGE * BUILD_PLAYER_RANGE && nearest <= BUILD_REACH * BUILD_REACH && nearest < best) {
+            best = nearest;
+            target = settlement;
+         }
+      }
+
+      if (target == null) {
+         return;
+      }
+
+      String faction = target.faction();
+      boolean capital = FactionTowns.CAPITAL.equals(target.kind());
+      int points = capital ? CAPITAL_SEARCH_POINTS : VILLAGE_SEARCH_POINTS;
+      int checked = SITE_SEARCH.getOrDefault(target.id(), 0);
+      boolean small = capital && checked >= points / 2;
+      String path = small ? FactionTowns.smallCapitalPath(faction) : FactionTowns.path(faction, capital);
+      int chunks = FactionTowns.canBuild(faction, capital) ? AwtWorldGenerator.townChunks(path) : 0;
+      BlockPos center = target.center();
+
+      for (int i = 0; i < SITE_CHECKS_PER_TICK && checked < points && chunks > 0; i++, checked++) {
+         if (capital && !small && checked >= points / 2) {
+            break;
+         }
+
+         int index = small ? checked - points / 2 : checked;
+         int[] site = checkSite(level, data, faction, center.getX(), center.getZ(), index, capital ? CAPITAL_SEARCH_STEP : VILLAGE_SEARCH_STEP, chunks, target);
+         if (site != null) {
+            // Keep counting: if the town fails to build here, the next search starts further on.
+            SITE_SEARCH.put(target.id(), checked + 1);
+            AwtWorldGenerator.queueFactionTown(level, path, site[0], site[1], target.id());
+            AncientWarfareCore.LOG.info("Faction {} lays out its {} #{} at {}, {}", faction, target.kind(), target.id(), site[0], site[1]);
+            return;
+         }
+      }
+
+      if (chunks > 0 && checked < points) {
+         SITE_SEARCH.put(target.id(), checked);
+         return;
+      }
+
+      SITE_SEARCH.remove(target.id());
+      if (capital) {
+         GIVEN_UP.add(target.id());
+         AncientWarfareCore.LOG.info("Faction {} found no dry, flat land for its capital near {}, {}; it stays on paper", faction, center.getX(), center.getZ());
+         return;
+      }
+
+      data.removeSettlement(target);
+      boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(center.getX() >> 4, center.getZ() >> 4), faction, AwsWorldGenerator.Site.VILLAGE);
+      AncientWarfareCore.LOG.info("Faction {} {} a single building for village #{} near {}, {}", faction, built ? "built" : "could not build", target.id(), center.getX(), center.getZ());
+   }
+
+   /** A generated town nobody founded (the test command) was finished: tell the world. */
    public static void townBuilt(ServerLevel level, String faction, String kind, int x, int z) {
       if (FactionTowns.CAPITAL.equals(kind)) {
          FactionNews.capitalBuilt(level, faction, x, z);
       } else {
          FactionNews.founded(level, faction, x, z);
-      }
-   }
-
-   /**
-    * Every faction with land and no capital gets one, built as a town on dry, flat land of its own
-    * near the middle of its country while no player is near. Existing worlds get theirs the same way.
-    */
-   private static void tickCapitals(ServerLevel level, FactionWorldData data) {
-      if (AwtWorldGenerator.busy(level)) {
-         return;
-      }
-
-      for (String faction : new TreeSet<>(data.provinceOwners().values())) {
-         int checked = CAPITAL_SEARCH.getOrDefault(faction, 0);
-         if (faction.isEmpty() || FactionDiplomacy.isOutlaw(faction) || checked >= CAPITAL_SEARCH_POINTS || hasCapital(data, faction)
-            || !FactionTowns.canBuild(faction, true)) {
-            continue;
-         }
-
-         FactionRegions.Province middle = middleProvince(level, data, faction);
-         if (middle == null || level.hasNearbyAlivePlayer(middle.seedX(), level.getSeaLevel(), middle.seedZ(), CAPITAL_PLAYER_RANGE)) {
-            continue;
-         }
-
-         // A full capital first; where no land is wide and flat enough, a capital the size of a village.
-         boolean small = checked >= CAPITAL_SEARCH_POINTS / 2;
-         String path = small ? FactionTowns.smallCapitalPath(faction) : FactionTowns.path(faction, true);
-         int chunks = AwtWorldGenerator.townChunks(path);
-
-         for (int i = 0; i < SITE_CHECKS_PER_TICK && checked < CAPITAL_SEARCH_POINTS; i++, checked++) {
-            if (!small && checked >= CAPITAL_SEARCH_POINTS / 2) {
-               break;
-            }
-
-            int index = small ? checked - CAPITAL_SEARCH_POINTS / 2 : checked;
-            int[] site = checkSite(level, data, faction, middle.seedX(), middle.seedZ(), index, CAPITAL_SEARCH_STEP, chunks);
-            if (site != null) {
-               // Keep counting: if the town fails to build here, the next search starts further on.
-               CAPITAL_SEARCH.put(faction, checked + 1);
-               AwtWorldGenerator.queueFactionTown(level, path, site[0], site[1]);
-               AncientWarfareCore.LOG.info("Faction {} builds its capital at {}, {}", faction, site[0], site[1]);
-               return;
-            }
-         }
-
-         CAPITAL_SEARCH.put(faction, checked);
-         if (checked >= CAPITAL_SEARCH_POINTS) {
-            AncientWarfareCore.LOG.info("Faction {} found no dry, flat land for a capital near {}, {}", faction, middle.seedX(), middle.seedZ());
-         }
-
-         return;
       }
    }
 
@@ -338,7 +376,7 @@ public final class FactionExpansion {
       FactionWorldData data = FactionWorldData.get(level);
 
       for (int index = 0; index < VILLAGE_SEARCH_POINTS; index++) {
-         int[] site = checkSite(level, data, null, x, z, index, VILLAGE_SEARCH_STEP, chunks);
+         int[] site = checkSite(level, data, null, x, z, index, VILLAGE_SEARCH_STEP, chunks, null);
          if (site != null) {
             return site;
          }
@@ -351,7 +389,9 @@ public final class FactionExpansion {
     * The index-th point of a spiral around x, z (the centre first, then rings of eight), when it is
     * the faction's own land (any land for a null faction), clear of other settlements, dry and flat enough for a town of this size.
     */
-   private static int[] checkSite(ServerLevel level, FactionWorldData data, String faction, int x, int z, int index, int step, int chunks) {
+   private static int[] checkSite(
+      ServerLevel level, FactionWorldData data, String faction, int x, int z, int index, int step, int chunks, FactionWorldData.Settlement building
+   ) {
       if (chunks <= 0) {
          return null;
       }
@@ -373,7 +413,7 @@ public final class FactionExpansion {
       int clearance = chunks * 8 + SETTLEMENT_CLEARANCE;
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         if (settlement.contains(siteX, siteZ, clearance)) {
+         if (settlement != building && settlement.contains(siteX, siteZ, clearance)) {
             AncientWarfareCore.LOG.debug("Site {}, {} for {}: next to settlement #{}", siteX, siteZ, faction, settlement.id());
             return null;
          }
@@ -395,23 +435,31 @@ public final class FactionExpansion {
    }
 
    /**
-    * A wild province next to faction's land, away from players. Provinces whose climate suits the
-    * faction's buildings come first; once none is left it settles any other climate.
+    * Where the faction's next village goes: one of its own provinces that has no settlement yet,
+    * else a wild province next to its land. Wild provinces whose climate suits the faction's
+    * buildings come first; once none is left it settles any other climate. The village exists on
+    * paper until a player comes near, so players nearby do not matter here.
     */
    private static FactionRegions.Province pickProvince(ServerLevel level, FactionWorldData data, String faction) {
+      List<FactionRegions.Province> empty = new ArrayList<>();
       List<FactionRegions.Province> suited = new ArrayList<>();
       List<FactionRegions.Province> other = new ArrayList<>();
+      Set<Long> settled = new HashSet<>();
+      data.settlements().forEach(settlement -> settled.add(settlement.province()));
       Set<Long> seen = new HashSet<>();
 
       for (long owned : data.provincesOf(faction)) {
          int cellX = ChunkPos.getX(owned);
          int cellZ = ChunkPos.getZ(owned);
+         if (!settled.contains(owned)) {
+            empty.add(FactionRegions.provinceByCell(level, cellX, cellZ));
+         }
 
          for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                if ((dx != 0 || dz != 0) && seen.add(ChunkPos.asLong(cellX + dx, cellZ + dz))) {
                   FactionRegions.Province province = FactionRegions.provinceByCell(level, cellX + dx, cellZ + dz);
-                  if (province.owner().isEmpty() && !level.hasNearbyAlivePlayer(province.seedX(), level.getSeaLevel(), province.seedZ(), PLAN_PLAYER_RANGE)) {
+                  if (province.owner().isEmpty()) {
                      (FactionRegions.suits(level, faction, province.seedX(), province.seedZ()) ? suited : other).add(province);
                   }
                }
@@ -419,7 +467,7 @@ public final class FactionExpansion {
          }
       }
 
-      List<FactionRegions.Province> candidates = suited.isEmpty() ? other : suited;
+      List<FactionRegions.Province> candidates = !empty.isEmpty() ? empty : !suited.isEmpty() ? suited : other;
       if (candidates.isEmpty()) {
          return null;
       }

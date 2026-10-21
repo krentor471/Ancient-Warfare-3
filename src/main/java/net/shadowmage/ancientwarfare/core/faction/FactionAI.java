@@ -206,7 +206,7 @@ public final class FactionAI {
 
       // However large the country, one campaign can only feed and march so many soldiers.
       int force = Math.min(MAX_ARMY, (int)Math.ceil(strength.getOrDefault(attacker, 0) * ATTACK_SHARE));
-      if (level.hasNearbyAlivePlayer(target.center().getX(), target.center().getY(), target.center().getZ(), CAPTURE_PLAYER_RANGE)) {
+      if (target.built() && level.hasNearbyAlivePlayer(target.center().getX(), target.center().getY(), target.center().getZ(), CAPTURE_PLAYER_RANGE)) {
          // A player is watching: the battle is fought by real soldiers instead.
          FactionArmies.assault(level, data, attacker, target, force);
          return;

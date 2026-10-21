@@ -555,7 +555,7 @@ public final class ForgeFactionCommands {
       FactionWorldData data = FactionWorldData.get(source.getLevel());
 
       for (int i = 0; i < days; i++) {
-         // Runs ahead of the clock; the daily tick waits until real days catch up.
+         // Runs ahead of the clock; the daily tick counts these days as already past.
          data.setLastSimulatedDay(data.lastSimulatedDay() + 1);
          FactionSimulation.simulateDay(source.getLevel(), data);
       }

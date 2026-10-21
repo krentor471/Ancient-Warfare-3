@@ -164,13 +164,20 @@ public final class AwtWorldGenerator {
 
    /** Queues a faction's generated town (see FactionTowns) at a site already checked; false while another town is being built. */
    public static boolean queueFactionTown(ServerLevel level, String path, int x, int z) {
+      return queueFactionTown(level, path, x, z, 0);
+   }
+
+   /** As queueFactionTown, for a faction settlement that exists on paper and stands once the town is done. */
+   public static boolean queueFactionTown(ServerLevel level, String path, int x, int z, int settlement) {
       AwtWorldGenerationData data = AwtWorldGenerationData.get(level);
       if (data.active() != null || LargeIslandWorldGenerator.active(level)) {
          return false;
       }
 
       int y = NaturalGenerationContext.run(() -> level.getChunk(x >> 4, z >> 4).getHeight(Types.MOTION_BLOCKING_NO_LEAVES, x & 15, z & 15) + 1);
-      data.add(new AwtWorldGenerationData.TownTask(path, path, x, y, z));
+      AwtWorldGenerationData.TownTask task = new AwtWorldGenerationData.TownTask(path, path, x, y, z);
+      task.settlement = settlement;
+      data.add(task);
       AncientWarfareCore.LOG.info("Queued faction town {} at {}, {}, {}", new Object[]{path, x, y, z});
       return true;
    }
@@ -596,14 +603,24 @@ public final class AwtWorldGenerator {
          }
 
          BlockPos min = plan.min();
+         BlockPos max = min.offset(plan.totalSize() - 1, 0, plan.totalSize() - 1);
          String kind = !generated ? "town" : FactionTowns.isCapital(task.path) ? FactionTowns.CAPITAL : FactionTowns.VILLAGE;
-         FactionWorldData.get(level)
-            .addSettlement(
+         FactionWorldData data = FactionWorldData.get(level);
+         FactionWorldData.Settlement founded = task.settlement == 0 ? null : data.settlement(task.settlement);
+         if (founded != null && !founded.built()) {
+            // A settlement that lived on paper now stands; its people and garrison are the simulated ones.
+            founded.place(task.path, min, max);
+            data.setDirty();
+            FactionTowns.plantFields(level, plan, task.y - 1, faction, FactionTowns.CAPITAL.equals(kind));
+            return;
+         }
+
+         data.addSettlement(
                faction,
                kind,
                task.path,
                min,
-               min.offset(plan.totalSize() - 1, 0, plan.totalSize() - 1),
+               max,
                FactionRegions.provinceAt(level, task.x, task.z).key(),
                level.getGameTime(),
                soldiers,

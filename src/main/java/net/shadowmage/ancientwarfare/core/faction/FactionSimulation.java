@@ -66,7 +66,14 @@ public final class FactionSimulation {
 
    public static void tick(ServerLevel level) {
       FactionWorldData data = FactionWorldData.get(level);
-      long day = level.getGameTime() / DAY_TICKS;
+      FactionHistory.runIfNeeded(level, data);
+      long clockDay = level.getGameTime() / DAY_TICKS;
+      if (data.lastSimulatedDay() > clockDay + data.dayOffset()) {
+         // Days simulated ahead of the clock (the history, the test command) count as already past.
+         data.setDayOffset(data.lastSimulatedDay() - clockDay);
+      }
+
+      long day = clockDay + data.dayOffset();
       if (data.lastSimulatedDay() < 0L) {
          data.setLastSimulatedDay(day);
       } else if (day > data.lastSimulatedDay()) {
@@ -211,7 +218,7 @@ public final class FactionSimulation {
             }
          }
 
-         if (near && level.isLoaded(settlement.min()) && level.isLoaded(settlement.max())) {
+         if (near && settlement.built() && level.isLoaded(settlement.min()) && level.isLoaded(settlement.max())) {
             if (FactionTowns.CAPITAL.equals(settlement.kind())) {
                keepLeader(level, settlement);
             }

@@ -78,7 +78,7 @@ public final class WorldMap {
                   center.getZ(),
                   kind(settlement),
                   index(settlement.faction(), factions, indices),
-                  "#" + settlement.id() + " " + templateName(settlement.template()) + ", people " + settlement.population() + ", garrison " + settlement.garrison()
+                  "#" + settlement.id() + " " + (settlement.built() ? templateName(settlement.template()) : settlement.kind() + " (not built yet)") + ", people " + settlement.population() + ", garrison " + settlement.garrison()
                )
             );
          }

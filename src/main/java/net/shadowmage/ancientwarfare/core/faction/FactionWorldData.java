@@ -41,6 +41,11 @@ public final class FactionWorldData extends SavedData {
    private static final int PLAYER_VILLAGE_POPULATION = 20;
    private int nextRouteId = 1;
    private long lastSimulatedDay = -1L;
+   /** Faction days that passed before the clock started: the history simulated when the world began. */
+   private long dayOffset;
+   private boolean historyDone;
+   /** Half the width of the area an unbuilt settlement is taken to cover until it is built. */
+   private static final int UNBUILT_HALF_SIZE = 32;
 
    public static FactionWorldData get(ServerLevel level) {
       return level.getServer().overworld().getDataStorage().computeIfAbsent(FactionWorldData::load, FactionWorldData::new, DATA_NAME);
@@ -124,6 +129,44 @@ public final class FactionWorldData extends SavedData {
       this.settlements.add(settlement);
       this.setDirty();
       return settlement;
+   }
+
+   /**
+    * A settlement that exists on paper only: it lives, grows and fights in the daily simulation, and
+    * is built once a player comes near enough for it to matter, at a site found then near x, z.
+    */
+   public Settlement addUnbuiltSettlement(String faction, String kind, int x, int y, int z, long province, long gameTime, int garrison, int population) {
+      Settlement settlement = this.addSettlement(
+         faction,
+         kind,
+         "",
+         new BlockPos(x - UNBUILT_HALF_SIZE, y, z - UNBUILT_HALF_SIZE),
+         new BlockPos(x + UNBUILT_HALF_SIZE, y, z + UNBUILT_HALF_SIZE),
+         province,
+         gameTime,
+         garrison,
+         population
+      );
+      settlement.built = false;
+      return settlement;
+   }
+
+   public long dayOffset() {
+      return this.dayOffset;
+   }
+
+   public void setDayOffset(long dayOffset) {
+      this.dayOffset = dayOffset;
+      this.setDirty();
+   }
+
+   public boolean historyDone() {
+      return this.historyDone;
+   }
+
+   public void setHistoryDone() {
+      this.historyDone = true;
+      this.setDirty();
    }
 
    public void removeSettlement(Settlement settlement) {
@@ -313,6 +356,7 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Tier", settlement.tier);
          entry.putBoolean("Manned", settlement.manned);
          entry.putString("CapturedFrom", settlement.capturedFrom);
+         entry.putBoolean("Built", settlement.built);
          list.add(entry);
       }
 
@@ -322,6 +366,8 @@ public final class FactionWorldData extends SavedData {
       this.treasuries.forEach(gold::putInt);
       tag.put("Treasuries", gold);
       tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
+      tag.putLong("DayOffset", this.dayOffset);
+      tag.putBoolean("HistoryDone", this.historyDone);
       ListTag plans = new ListTag();
 
       for (PlannedSettlement plan : this.plannedSettlements) {
@@ -433,6 +479,7 @@ public final class FactionWorldData extends SavedData {
          settlement.tier = entry.getInt("Tier");
          settlement.manned = entry.getBoolean("Manned");
          settlement.capturedFrom = entry.getString("CapturedFrom");
+         settlement.built = !entry.contains("Built") || entry.getBoolean("Built");
          data.settlements.add(settlement);
       }
 
@@ -440,6 +487,8 @@ public final class FactionWorldData extends SavedData {
       CompoundTag gold = tag.getCompound("Treasuries");
       gold.getAllKeys().forEach(faction -> data.treasuries.put(faction, gold.getInt(faction)));
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
+      data.dayOffset = tag.getLong("DayOffset");
+      data.historyDone = tag.getBoolean("HistoryDone");
 
       for (Tag element : tag.getList("PlannedSettlements", Tag.TAG_COMPOUND)) {
          CompoundTag entry = (CompoundTag)element;
@@ -716,9 +765,9 @@ public final class FactionWorldData extends SavedData {
       private final int id;
       private String faction;
       private final String kind;
-      private final String template;
-      private final BlockPos min;
-      private final BlockPos max;
+      private String template;
+      private BlockPos min;
+      private BlockPos max;
       private final long province;
       private final long founded;
       int population;
@@ -728,6 +777,8 @@ public final class FactionWorldData extends SavedData {
       boolean manned;
       /** The faction this settlement was taken from; its NPCs found here when the land loads are gone. */
       String capturedFrom = "";
+      /** False while the settlement exists on paper only; see addUnbuiltSettlement. */
+      boolean built = true;
       /** Game time of the last garrison respawn; not saved. */
       long lastRespawn;
 
@@ -764,6 +815,20 @@ public final class FactionWorldData extends SavedData {
 
       public BlockPos min() {
          return this.min;
+      }
+
+      public boolean built() {
+         return this.built;
+      }
+
+      /** The settlement now stands: its buildings and the area they cover. */
+      public void place(String template, BlockPos min, BlockPos max) {
+         this.template = template;
+         this.min = min;
+         this.max = max;
+         this.built = true;
+         this.manned = false;
+         this.capturedFrom = "";
       }
 
       public BlockPos max() {

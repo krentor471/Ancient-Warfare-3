@@ -82,7 +82,8 @@ public final class FactionRoads {
 
          FactionWorldData.Settlement from = data.endpoint(route, true);
          FactionWorldData.Settlement to = data.endpoint(route, false);
-         if (from == null || to == null) {
+         if (from == null || to == null || !from.built() || !to.built()) {
+            // A road leads to where the settlement stands, so it waits until both ends are built.
             continue;
          }
 
