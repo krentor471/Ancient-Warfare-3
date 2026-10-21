@@ -68,9 +68,15 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    private static final double MOUNTED_ARCHER_MAX_RADIUS = 18.0;
    private static final int TARGET_SCAN_INTERVAL = 5;
    private static final double BARRAGE_RANGE = 48.0;
-   private static final double BARRAGE_SPREAD = 2.0;
+   public static final int DEFAULT_BARRAGE_RADIUS = 4;
    private static final double AGGRESSIVE_LEASH_SQ = 48.0 * 48.0;
+   /** A defensive soldier on a post fights only what comes this close to it. */
+   private static final double DEFENSIVE_LEASH_SQ = 12.0 * 12.0;
+   private static final double RANGED_LEASH_SQ = 24.0 * 24.0;
+   /** Within this of its post a holding soldier is not shoved out of line by others. */
+   private static final double AT_POST_SQ = 0.5;
    private BlockPos barragePoint;
+   private int barrageRadius = DEFAULT_BARRAGE_RADIUS;
    private NpcStance stance = NpcStance.DEFENSIVE;
    private int patrolIndex;
    private boolean patrolAtPoint;
@@ -192,7 +198,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
          if (!this.level().isClientSide && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.getItemInHand(hand), player, this);
+            CommandBatonItem.clickNpc(player.getItemInHand(hand), player, this);
          }
 
          return InteractionResult.sidedSuccess(this.level().isClientSide);
@@ -378,6 +384,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       tag.putInt("PatrolTicksAtPoint", this.patrolTicksAtPoint);
       if (this.barragePoint != null) {
          tag.putLong("BarragePoint", this.barragePoint.asLong());
+         tag.putInt("BarrageRadius", this.barrageRadius);
       }
 
       tag.putString("Stance", this.stance.serializedName());
@@ -390,6 +397,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.patrolAtPoint = tag.getBoolean("PatrolAtPoint");
       this.patrolTicksAtPoint = tag.getInt("PatrolTicksAtPoint");
       this.barragePoint = tag.contains("BarragePoint") ? BlockPos.of(tag.getLong("BarragePoint")) : null;
+      this.barrageRadius = tag.contains("BarrageRadius") ? tag.getInt("BarrageRadius") : DEFAULT_BARRAGE_RADIUS;
       this.stance = NpcStance.byName(tag.getString("Stance"));
    }
 
@@ -426,22 +434,47 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
    @Override
    protected double holdLeashSq() {
-      return this.stance == NpcStance.AGGRESSIVE ? AGGRESSIVE_LEASH_SQ : super.holdLeashSq();
+      if (this.stance == NpcStance.AGGRESSIVE) {
+         return AGGRESSIVE_LEASH_SQ;
+      } else {
+         // Archers shoot from the post, so they keep targets as far as a bow carries.
+         return this.isRangedCombatant() ? RANGED_LEASH_SQ : DEFENSIVE_LEASH_SQ;
+      }
    }
 
    /**
     * Area fire: a ranged soldier holds where it stands and shoots high arcs at the point until given another order.
     * Returns false for soldiers without a bow or crossbow.
     */
-   public boolean setBarrageCommand(BlockPos point) {
+   public boolean setBarrageCommand(BlockPos point, int radius) {
       if (!this.isRangedCombatant()) {
          return false;
       }
+
+      this.barrageRadius = Math.max(1, radius);
 
       float yaw = (float)(Mth.atan2(point.getZ() + 0.5 - this.getZ(), point.getX() + 0.5 - this.getX()) * 180.0F / (float)Math.PI) - 90.0F;
       this.setHoldCommand(this.blockPosition(), yaw);
       this.barragePoint = point.immutable();
       return true;
+   }
+
+   /** A soldier standing on its post holds the line: comrades and passers-by do not push it off its block. */
+   @Override
+   public boolean isPushable() {
+      if (this.isHoldingPosition() && !this.isPassenger() && (this.getTarget() == null || !this.getTarget().isAlive())) {
+         BlockPos post = this.getCommandTarget();
+         if (this.distanceToSqr(post.getX() + 0.5, post.getY(), post.getZ() + 0.5) <= AT_POST_SQ) {
+            return false;
+         }
+      }
+
+      return super.isPushable();
+   }
+
+   /** Shifts the post of a holding archer that walked into bow range, keeping its barrage order. */
+   private void moveHoldPosition(BlockPos pos) {
+      this.setCommandTarget(pos);
    }
 
    @Override
@@ -484,19 +517,23 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       AbstractArrow arrow = ProjectileUtil.getMobArrow(this, projectileStack, 1.0F);
       Vec3 start = new Vec3(this.getX(), arrow.getY(), this.getZ());
-      Vec3 aim = point.add(this.getRandom().nextGaussian() * BARRAGE_SPREAD, 0.0, this.getRandom().nextGaussian() * BARRAGE_SPREAD);
-      NpcRangedAttackHelper.findArcShot(start, aim, crossbow ? 3.15 : 3.0).ifPresent(shot -> {
-         this.recordCombatAttack();
-         arrow.shoot(shot.direction().x, shot.direction().y, shot.direction().z, shot.speed(), 1.5F);
-         if (crossbow) {
-            NpcRangedAttackHelper.configureCrossbowArrow(this, arrow, weapon);
-         } else {
-            NpcRangedAttackHelper.configureBowArrow(this, arrow, 1.0F);
-         }
+      // Spread evenly over the whole circle the player marked, not bunched in its middle.
+      double distance = this.barrageRadius * Math.sqrt(this.getRandom().nextDouble());
+      double angle = this.getRandom().nextDouble() * Math.PI * 2.0;
+      Vec3 aim = point.add(Math.cos(angle) * distance, 0.0, Math.sin(angle) * distance);
+      // Too close for a high arc: lob the arrow straight at the spot instead of drawing without shooting.
+      NpcRangedAttackHelper.BallisticShot shot = NpcRangedAttackHelper.findArcShot(start, aim, crossbow ? 3.15 : 3.0)
+         .orElseGet(() -> new NpcRangedAttackHelper.BallisticShot(aim.subtract(start).add(0.0, 1.5, 0.0).normalize(), 0.4F));
+      this.recordCombatAttack();
+      arrow.shoot(shot.direction().x, shot.direction().y, shot.direction().z, shot.speed(), 1.5F);
+      if (crossbow) {
+         NpcRangedAttackHelper.configureCrossbowArrow(this, arrow, weapon);
+      } else {
+         NpcRangedAttackHelper.configureBowArrow(this, arrow, 1.0F);
+      }
 
-         this.playSound(crossbow ? SoundEvents.CROSSBOW_SHOOT : SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-         this.level().addFreshEntity(arrow);
-      });
+      this.playSound(crossbow ? SoundEvents.CROSSBOW_SHOOT : SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+      this.level().addFreshEntity(arrow);
    }
 
    @Override
@@ -822,12 +859,30 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          }
 
          LivingEntity target = this.npc.getTarget();
-         return (target == null || this.npc.distanceToSqr(target) > CLOSE_ENEMY_SQ)
-            && this.npc.distanceToSqr(Vec3.atBottomCenterOf(point)) <= BARRAGE_RANGE * BARRAGE_RANGE;
+         return target == null || this.npc.distanceToSqr(target) > CLOSE_ENEMY_SQ;
       }
 
       public void tick() {
          Vec3 point = Vec3.atBottomCenterOf(this.npc.barragePoint);
+         if (this.npc.distanceToSqr(point) > BARRAGE_RANGE * BARRAGE_RANGE) {
+            // Out of bow range: close in along the line to the point, then hold there and shoot.
+            if (this.npc.isUsingItem()) {
+               this.npc.stopUsingItem();
+            }
+
+            Vec3 back = this.npc.position().subtract(point).normalize().scale(BARRAGE_RANGE - 6.0);
+            Vec3 stand = point.add(back);
+            if (this.npc.getNavigation().isDone()) {
+               this.npc.getNavigation().moveTo(stand.x, stand.y, stand.z, 1.0);
+            }
+
+            return;
+         }
+
+         if (!this.npc.getNavigation().isDone()) {
+            this.npc.moveHoldPosition(this.npc.blockPosition());
+         }
+
          this.npc.getNavigation().stop();
          this.npc.getLookControl().setLookAt(point.x, point.y + this.npc.distanceToSqr(point) * 0.02, point.z, 30.0F, 30.0F);
          if (this.cooldown > 0) {
@@ -933,7 +988,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
                this.stopUsingWeapon();
                this.clearRetreat();
                this.drawTicks = 0;
-               if (distanceSqr <= 144.0) {
+               if (distanceSqr <= 144.0 && !this.npc.isHoldingPosition()) {
                   this.npc.getNavigation().moveTo(this.target, this.npc.playerSprintNavigationSpeed());
                } else {
                   this.npc.getNavigation().stop();
@@ -946,6 +1001,13 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
                this.clearRetreat();
                this.npc.getNavigation().stop();
                if (this.cooldown <= 0 && NpcVolley.canStartDraw(this.npc)) {
+                  LivingEntity spread = NpcVolley.spreadTarget(this.npc, this.target, this.npc::hasBallisticRangedShot);
+                  if (spread != this.target) {
+                     this.npc.setTarget(spread);
+                     this.target = spread;
+                     this.resetBallisticCheck();
+                  }
+
                   this.npc.startUsingItem(InteractionHand.MAIN_HAND);
                   this.drawTicks = 0;
                }
@@ -1015,6 +1077,11 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
 
       private boolean shouldRetreat(double distanceSqr) {
+         if (this.npc.isHoldingPosition()) {
+            // Ordered to stand: an archer keeps its place in the line instead of backing off.
+            return false;
+         }
+
          double distance = Math.sqrt(distanceSqr);
          return this.retreatPosition != null ? distance < 10.0 : distance < 6.0;
       }

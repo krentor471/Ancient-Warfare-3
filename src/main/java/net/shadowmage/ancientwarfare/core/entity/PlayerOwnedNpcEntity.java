@@ -61,6 +61,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    private static final String TAG_CURRENT_COMMAND = "CurrentCommand";
    private static final int MAX_QUEUED_MOVES = 16;
    private static final double HOLD_LEASH_SQ = 400.0;
+   /** A rider is on its slot within this of it. */
+   private static final double MOUNTED_POST_SQ = 1.0;
    private static final String TAG_COMMAND_TARGET = "CommandTarget";
    private static final String TAG_HOME_SET = "HomeSet";
    private static final String TAG_HOME_POS = "HomePos";
@@ -418,6 +420,11 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
    /** How far from its post a holding NPC may follow a target before letting it go. */
    protected double holdLeashSq() {
       return HOLD_LEASH_SQ;
+   }
+
+   /** Turns the NPC's post: it keeps holding or going where it was, then faces this way. */
+   public void setFacingYaw(float yaw) {
+      this.holdYaw = yaw;
    }
 
    /** Direction a holding NPC faces when idle, or NaN when it may look around. */
@@ -1089,7 +1096,7 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
                }
 
                Vec3 destination = Vec3.atBottomCenterOf(target);
-               if (mount.distanceToSqr(destination) > 4.0) {
+               if (mount.distanceToSqr(destination) > MOUNTED_POST_SQ) {
                   this.driveMountToward(mount, destination);
                } else {
                   this.stopMount(mount, 0.4);
@@ -1114,10 +1121,17 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
             return false;
          } else if (this.getVehicle() instanceof Mob mount) {
             Vec3 destination = Vec3.atBottomCenterOf(this.getCommandTarget());
-            if (mount.distanceToSqr(destination) > 9.0) {
+            if (mount.distanceToSqr(destination) > MOUNTED_POST_SQ) {
                this.driveMountToward(mount, destination);
             } else {
                this.stopMount(mount, 0.4);
+               if (!Float.isNaN(this.holdYaw)) {
+                  // Turn the horse to the way the line faces, as a soldier on foot does.
+                  float yaw = Mth.rotLerp(0.2F, mount.getYRot(), this.holdYaw);
+                  mount.setYRot(yaw);
+                  mount.setYBodyRot(yaw);
+                  mount.setYHeadRot(yaw);
+               }
             }
 
             return true;
@@ -1172,6 +1186,8 @@ public abstract class PlayerOwnedNpcEntity extends NpcBaseEntity implements NpcO
             speed = Math.max(speed, speedAttribute.getValue() * 0.65);
          }
 
+         // Rein in over the last blocks so the horse stops on its slot instead of running past it.
+         speed = Math.min(speed, Math.max(0.08, horizontal.length() * 0.2));
          Vec3 direction = horizontal.normalize();
          Vec3 current = mount.getDeltaMovement();
          mount.setDeltaMovement(direction.x * speed, current.y, direction.z * speed);

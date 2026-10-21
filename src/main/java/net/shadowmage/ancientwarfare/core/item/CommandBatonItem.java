@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.ToDoubleFunction;
 import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -50,6 +51,8 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
+import net.shadowmage.ancientwarfare.core.common.npc.FormationPlanner;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcCommandType;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcFormation;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcSquadData;
@@ -110,12 +113,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       } else {
          CommandBatonItem.BatonMode mode = getMode(stack);
          if (target instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
-            if (player.isShiftKeyDown() && mode != CommandBatonItem.BatonMode.COMBAT_GROUP) {
-               selectNearby(stack, player, npc);
-            } else {
-               toggleNpcSelection(stack, player, npc);
-            }
-
+            clickNpc(stack, player, npc);
             return InteractionResult.SUCCESS;
          }
 
@@ -126,6 +124,15 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          } else {
             return InteractionResult.PASS;
          }
+      }
+   }
+
+   /** Right click on an own NPC with the baton: toggles it, or with Shift selects everyone of its kind around it. */
+   public static void clickNpc(ItemStack stack, Player player, PlayerOwnedNpcEntity npc) {
+      if (player.isShiftKeyDown() && getMode(stack) != CommandBatonItem.BatonMode.COMBAT_GROUP) {
+         selectNearby(stack, player, npc);
+      } else {
+         toggleNpcSelection(stack, player, npc);
       }
    }
 
@@ -250,8 +257,13 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
             }
             case BARRAGE -> {
                if (player.distanceToSqr(Vec3.atCenterOf(pos)) <= COMMAND_VIEW_RANGE_SQ) {
+                  if (!pos.equals(end)) {
+                     // Dragged out in the command view: the drag is the radius of the circle.
+                     setBarrageRadius(stack, (int)Math.round(Math.hypot(end.getX() - pos.getX(), end.getZ() - pos.getZ())));
+                  }
+
                   int commanded = issueBarrageCommand(level, player, stack, pos);
-                  player.displayClientMessage(Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded}), true);
+                  player.displayClientMessage(Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded, getBarrageRadius(stack)}), true);
                }
             }
             case CLEAR -> {
@@ -263,6 +275,36 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    }
 
    private static final double BARRAGE_PICK_RANGE = 64.0;
+   private static final String BARRAGE_RADIUS_TAG = "BarrageRadius";
+   private static final int[] BARRAGE_RADII = {2, 4, 6, 9, 12, 16};
+   public static final int MAX_BARRAGE_RADIUS = 16;
+   private static final double STRAIGHT_STROKE_TOLERANCE = 1.5;
+
+   public static int getBarrageRadius(ItemStack stack) {
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains(BARRAGE_RADIUS_TAG) ? tag.getInt(BARRAGE_RADIUS_TAG) : CombatNpcEntity.DEFAULT_BARRAGE_RADIUS;
+   }
+
+   private static void setBarrageRadius(ItemStack stack, int radius) {
+      stack.getOrCreateTag().putInt(BARRAGE_RADIUS_TAG, Math.max(1, Math.min(MAX_BARRAGE_RADIUS, radius)));
+   }
+
+   /** Next size of the circle archers spread their arrows over. */
+   public static void cycleBarrageRadius(ItemStack stack, Player player) {
+      if (stack.getItem() instanceof CommandBatonItem) {
+         int current = getBarrageRadius(stack);
+         int next = BARRAGE_RADII[0];
+         for (int radius : BARRAGE_RADII) {
+            if (radius > current) {
+               next = radius;
+               break;
+            }
+         }
+
+         setBarrageRadius(stack, next);
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.barrage_radius", new Object[]{next}), true);
+      }
+   }
 
    public static enum ViewOrder {
       MOVE,
@@ -307,7 +349,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       for (UUID uuid : getSelectedNpcs(stack)) {
          if (level.getEntity(uuid) instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
             stillValid.add(uuid);
-            if (npc instanceof CombatNpcEntity soldier && soldier.setBarrageCommand(point)) {
+            if (npc instanceof CombatNpcEntity soldier && soldier.setBarrageCommand(point, getBarrageRadius(stack))) {
                commanded++;
             }
          }
@@ -456,7 +498,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          } else {
             BlockPos target = context.getClickedPos().relative(context.getClickedFace());
             int commanded = executeBlockCommand((ServerLevel)level, player, context.getItemInHand(), target);
-            player.displayClientMessage(commandMessage(getMode(context.getItemInHand()), commanded), true);
+            player.displayClientMessage(commandMessage(context.getItemInHand(), getMode(context.getItemInHand()), commanded), true);
             return InteractionResult.SUCCESS;
          }
       } else {
@@ -497,7 +539,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
          // The point is usually far beyond arm's reach, so look along the player's view for it.
          if (player.pick(BARRAGE_PICK_RANGE, 1.0F, false) instanceof BlockHitResult blockHit && blockHit.getType() == HitResult.Type.BLOCK) {
             int commanded = issueBarrageCommand((ServerLevel)level, player, stack, blockHit.getBlockPos().relative(blockHit.getDirection()));
-            player.displayClientMessage(Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded}), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded, getBarrageRadius(stack)}), true);
          }
 
          return InteractionResultHolder.success(stack);
@@ -594,6 +636,39 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       return npcs.size();
    }
 
+   /** Where the selection would stand if sent to {@code target} now: the slots the client shows before the order. */
+   public static List<FormationPlanner.Spot> previewSpots(Level level, Player player, ItemStack stack, BlockPos target, List<PlayerOwnedNpcEntity> npcs) {
+      return npcs.isEmpty()
+         ? List.of()
+         : FormationPlanner.grid(level, target, formationFacing(player, npcs, target), getFormation(stack), npcs.size(), 0);
+   }
+
+   /** Line or loop being drawn in the command view, as {@link #commandViewShape} would place the selection along it. */
+   public static List<FormationPlanner.Spot> previewShapeSpots(Level level, ItemStack stack, List<BlockPos> points, int count) {
+      if (points.size() < 2 || count <= 0) {
+         return List.of();
+      } else if (FormationPlanner.isStraight(points, STRAIGHT_STROKE_TOLERANCE)) {
+         BlockPos start = points.get(0);
+         BlockPos end = points.get(points.size() - 1);
+         int dx = end.getX() - start.getX();
+         int dz = end.getZ() - start.getZ();
+         Direction right = Direction.getNearest((float)dx, 0.0F, (float)dz);
+         int length = Math.abs(dx * right.getStepX() + dz * right.getStepZ());
+         BlockPos center = new BlockPos(Math.floorDiv(start.getX() + end.getX(), 2), start.getY(), Math.floorDiv(start.getZ() + end.getZ(), 2));
+         return FormationPlanner.grid(level, center, right.getCounterClockWise(), getFormation(stack), count, length / getFormation(stack).sideSpacing() + 1);
+      } else {
+         return FormationPlanner.alongPath(level, points, count, getFormation(stack).sideSpacing());
+      }
+   }
+
+   public static boolean isMoveMode(ItemStack stack) {
+      return stack != null && stack.getItem() instanceof CommandBatonItem && getMode(stack) == CommandBatonItem.BatonMode.MOVE;
+   }
+
+   public static boolean isBarrageMode(ItemStack stack) {
+      return stack != null && stack.getItem() instanceof CommandBatonItem && getMode(stack) == CommandBatonItem.BatonMode.BARRAGE;
+   }
+
    /** The group faces the way it marches: from its centre to the target, or where the player looks for a short step. */
    private static Direction formationFacing(Player player, List<PlayerOwnedNpcEntity> npcs, BlockPos target) {
       double x = 0.0;
@@ -611,45 +686,146 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    /**
     * Gives every NPC a slot: melee in the front rows and ranged behind, and inside a row NPCs keep their left-to-right
-    * order so paths do not cross. Slots snap to the block grid, so the formation faces one of the four directions.
+    * order so paths do not cross. Slots snap to the block grid, so the formation faces one of the four directions; a slot
+    * on a tree, in water or on a ledge moves aside onto open ground.
     */
    private static List<BlockPos> assignFormation(
-      ServerLevel level, List<PlayerOwnedNpcEntity> npcs, BlockPos target, Direction facing, NpcFormation formation, int columns
+      Level level, List<PlayerOwnedNpcEntity> npcs, BlockPos target, Direction facing, NpcFormation formation, int columns
    ) {
       Direction right = facing.getClockWise();
+      List<FormationPlanner.Spot> spots = FormationPlanner.grid(level, target, facing, formation, npcs.size(), columns);
+      Map<PlayerOwnedNpcEntity, FormationPlanner.Spot> assigned = assignSpots(npcs, spots, npc -> along(npc, target, right), npc -> -along(npc, target, facing));
+      List<BlockPos> result = new ArrayList<>(npcs.size());
+      npcs.forEach(npc -> result.add(assigned.get(npc).pos()));
+      return result;
+   }
+
+   /**
+    * Matches NPCs to planned spots: melee take the front ranks, ranged the ones behind, those nearest the front first;
+    * inside a rank they keep their order across it ({@code across}) so no two cross paths.
+    */
+   private static Map<PlayerOwnedNpcEntity, FormationPlanner.Spot> assignSpots(
+      List<PlayerOwnedNpcEntity> npcs,
+      List<FormationPlanner.Spot> spots,
+      ToDoubleFunction<PlayerOwnedNpcEntity> across,
+      ToDoubleFunction<PlayerOwnedNpcEntity> back
+   ) {
       List<PlayerOwnedNpcEntity> ordered = new ArrayList<>(npcs);
-      ordered.sort(
-         Comparator.<PlayerOwnedNpcEntity>comparingInt(npc -> NpcEquipmentResolver.isRangedWeapon(npc.getMainHandItem()) ? 1 : 0)
-            .thenComparingDouble(npc -> -along(npc, target, facing))
-      );
-      List<NpcFormation.Slot> slots = formation.slots(ordered.size(), columns);
-      Map<PlayerOwnedNpcEntity, BlockPos> spots = new HashMap<>();
+      ordered.sort(Comparator.<PlayerOwnedNpcEntity>comparingInt(npc -> NpcEquipmentResolver.isRangedWeapon(npc.getMainHandItem()) ? 1 : 0).thenComparingDouble(back));
+      Map<PlayerOwnedNpcEntity, FormationPlanner.Spot> assigned = new HashMap<>();
       int start = 0;
 
-      while (start < slots.size()) {
-         int row = slots.get(start).row();
+      while (start < spots.size() && start < ordered.size()) {
+         int rank = spots.get(start).rank();
          int end = start;
-         while (end < slots.size() && slots.get(end).row() == row) {
+         while (end < spots.size() && spots.get(end).rank() == rank) {
             end++;
          }
 
-         List<PlayerOwnedNpcEntity> rowNpcs = new ArrayList<>(ordered.subList(start, end));
-         rowNpcs.sort(Comparator.comparingDouble(npc -> along(npc, target, right)));
+         end = Math.min(end, ordered.size());
+         List<FormationPlanner.Spot> rankSpots = new ArrayList<>(spots.subList(start, end));
+         rankSpots.sort(Comparator.comparingDouble(FormationPlanner.Spot::order));
+         List<PlayerOwnedNpcEntity> rankNpcs = new ArrayList<>(ordered.subList(start, end));
+         rankNpcs.sort(Comparator.comparingDouble(across));
 
-         for (int i = 0; i < rowNpcs.size(); i++) {
-            NpcFormation.Slot slot = slots.get(start + i);
-            int x = target.getX() + right.getStepX() * slot.side() - facing.getStepX() * slot.depth();
-            int z = target.getZ() + right.getStepZ() * slot.side() - facing.getStepZ() * slot.depth();
-            int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            spots.put(rowNpcs.get(i), new BlockPos(x, Math.abs(surface - target.getY()) <= 3 ? surface : target.getY(), z));
+         for (int i = 0; i < rankNpcs.size(); i++) {
+            assigned.put(rankNpcs.get(i), rankSpots.get(i));
          }
 
          start = end;
       }
 
-      List<BlockPos> result = new ArrayList<>(npcs.size());
-      npcs.forEach(npc -> result.add(spots.get(npc)));
-      return result;
+      return assigned;
+   }
+
+   /**
+    * Move along a line or loop the player drew in the command view: the selection spreads along it, facing away from
+    * the side the line was drawn from, or outwards for a loop.
+    */
+   private static int issueShapeMoveCommand(ServerLevel level, Player player, ItemStack stack, List<BlockPos> points, boolean queued) {
+      List<UUID> stillValid = new ArrayList<>();
+      List<PlayerOwnedNpcEntity> npcs = new ArrayList<>();
+
+      for (UUID uuid : getSelectedNpcs(stack)) {
+         if (level.getEntity(uuid) instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
+            npcs.add(npc);
+            stillValid.add(uuid);
+         }
+      }
+
+      if (!npcs.isEmpty()) {
+         List<FormationPlanner.Spot> spots = FormationPlanner.alongPath(level, points, npcs.size(), getFormation(stack).sideSpacing());
+         if (spots.size() < npcs.size()) {
+            return issueMoveCommand(level, player, stack, points.get(0), queued);
+         }
+
+         Map<PlayerOwnedNpcEntity, FormationPlanner.Spot> assigned = assignSpots(
+            npcs, spots, npc -> FormationPlanner.pathOrder(points, npc.getX(), npc.getZ()), npc -> 0.0
+         );
+
+         for (PlayerOwnedNpcEntity npc : npcs) {
+            FormationPlanner.Spot spot = assigned.get(npc);
+            if (queued) {
+               npc.queueMoveCommand(spot.pos(), spot.yaw());
+            } else {
+               npc.setMoveCommand(spot.pos(), spot.yaw());
+            }
+         }
+      }
+
+      setSelectedNpcs(stack, stillValid);
+      return npcs.size();
+   }
+
+   /** Line or loop drawn in the command view; a nearly straight stroke is a front for the chosen formation. */
+   public static void commandViewShape(ItemStack stack, ServerPlayer player, List<BlockPos> points, boolean queued) {
+      if (isAdvanced(stack) && points.size() >= 2) {
+         for (BlockPos point : points) {
+            if (player.distanceToSqr(Vec3.atCenterOf(point)) > COMMAND_VIEW_RANGE_SQ) {
+               return;
+            }
+         }
+
+         ServerLevel level = player.serverLevel();
+         int commanded = FormationPlanner.isStraight(points, STRAIGHT_STROKE_TOLERANCE)
+            ? issueFrontMoveCommand(level, player, stack, points.get(0), points.get(points.size() - 1), queued)
+            : issueShapeMoveCommand(level, player, stack, points, queued);
+         player.displayClientMessage(
+            Component.translatable(queued ? "guistrings.npc.baton.queued_move_command" : "guistrings.npc.baton.move_command", new Object[]{commanded}), true
+         );
+      }
+   }
+
+   /** The selection turns to face the point, all the same way, and holds where it stands or is going. */
+   public static void commandViewFace(ItemStack stack, ServerPlayer player, BlockPos point) {
+      if (isAdvanced(stack)) {
+         ServerLevel level = player.serverLevel();
+         List<PlayerOwnedNpcEntity> npcs = new ArrayList<>();
+         double x = 0.0;
+         double z = 0.0;
+
+         for (UUID uuid : getSelectedNpcs(stack)) {
+            if (level.getEntity(uuid) instanceof PlayerOwnedNpcEntity npc && npc.hasCommandPermission(player)) {
+               npcs.add(npc);
+               BlockPos post = npc.getCurrentCommand() == NpcCommandType.MOVE || npc.isHoldingPosition() ? npc.getCommandTarget() : npc.blockPosition();
+               x += post.getX() + 0.5;
+               z += post.getZ() + 0.5;
+            }
+         }
+
+         if (!npcs.isEmpty()) {
+            float yaw = (float)Math.toDegrees(Math.atan2(-(point.getX() + 0.5 - x / npcs.size()), point.getZ() + 0.5 - z / npcs.size()));
+            for (PlayerOwnedNpcEntity npc : npcs) {
+               if (npc.getCurrentCommand() == NpcCommandType.MOVE || npc.isHoldingPosition()) {
+                  npc.setFacingYaw(yaw);
+               } else {
+                  npc.setHoldCommand(npc.blockPosition(), yaw);
+               }
+            }
+         }
+
+         player.displayClientMessage(Component.translatable("guistrings.npc.baton.face_command", new Object[]{npcs.size()}), true);
+      }
    }
 
    private static double along(PlayerOwnedNpcEntity npc, BlockPos target, Direction direction) {
@@ -834,13 +1010,13 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       return npc != null && npc.isPassenger();
    }
 
-   private static Component commandMessage(CommandBatonItem.BatonMode mode, int commanded) {
+   private static Component commandMessage(ItemStack stack, CommandBatonItem.BatonMode mode, int commanded) {
       return switch (mode) {
          case CLEAR_COMMAND -> Component.translatable("guistrings.npc.baton.clear_command", new Object[]{commanded});
          case DISMOUNT -> Component.translatable("guistrings.npc.baton.dismount_command", new Object[]{commanded});
          case MOVE -> Component.translatable("guistrings.npc.baton.move_command", new Object[]{commanded});
          case HOLD -> Component.translatable("guistrings.npc.baton.hold_command", new Object[]{commanded});
-         case BARRAGE -> Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded});
+         case BARRAGE -> Component.translatable("guistrings.npc.baton.barrage_command", new Object[]{commanded, getBarrageRadius(stack)});
          case ATTACK -> Component.translatable("guistrings.npc.baton.move_attack_command", new Object[]{commanded});
          case MOUNT -> Component.translatable("guistrings.npc.baton.mount_command", new Object[]{commanded});
          case COMBAT_GROUP -> Component.translatable("guistrings.npc.baton.combat_group_ready", new Object[]{commanded});

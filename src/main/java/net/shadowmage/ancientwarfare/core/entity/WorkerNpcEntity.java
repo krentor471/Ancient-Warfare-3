@@ -141,7 +141,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
          if (!this.level().isClientSide && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.getItemInHand(hand), player, this);
+            CommandBatonItem.clickNpc(player.getItemInHand(hand), player, this);
          }
 
          return InteractionResult.sidedSuccess(this.level().isClientSide);

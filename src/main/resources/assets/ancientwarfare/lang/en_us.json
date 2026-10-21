@@ -240,7 +240,7 @@
   "guistrings.npc.baton.queued_move_command": "Waypoint queued for %d NPCs",
   "guistrings.npc.baton.hold_command": "%d soldiers hold their position",
   "guistrings.npc.baton.barrage": "Volley fire",
-  "guistrings.npc.baton.barrage_command": "Volley fire ordered for %d archers",
+  "guistrings.npc.baton.barrage_command": "Volley fire on an area of radius %2$d ordered for %1$d archers",
   "guistrings.npc.baton.area_selected": "Selected nearby NPCs: %d in total",
   "guistrings.npc.baton.squad_saved": "Squad %d saved: %d NPCs",
   "guistrings.npc.baton.squad_selected": "Squad %d selected: %d NPCs",
@@ -259,7 +259,7 @@
   "guistrings.npc.command_view": "Command View",
   "guistrings.npc.command_view.status": "Selected: %d | Formation: %s",
   "guistrings.npc.command_view.help1": "LMB select (drag for a box, Shift adds) | RMB move or attack (Shift queues)",
-  "guistrings.npc.command_view.help4": "Drag RMB to draw the front of the formation | Alt+RMB volley at a point",
+  "guistrings.npc.command_view.help4": "Drag RMB: formation as a line, curve or ring | Ctrl+RMB face there",
   "guistrings.npc.command_view.help2": "WASD or screen edges pan, Q/E turn, wheel zooms",
   "guistrings.npc.command_view.help3": "H hold, Backspace cancel, G formation, V stance, Ctrl+1..9 save squad, 1..9 select",
   "guistrings.npc.command_view.needs_advanced_baton": "The command view needs an iron, gold or diamond baton",
@@ -1532,5 +1532,9 @@
   "envoy.ancientwarfare.progress": "Task: %s of %s",
   "envoy.ancientwarfare.done": "Task done: %s pays %s emeralds and thanks you.",
   "envoy.ancientwarfare.failed": "Time is up: the task of %s is failed.",
-  "item.ancientwarfare.faction_banner": "Banner of %s"
+  "item.ancientwarfare.faction_banner": "Banner of %s",
+  "guistrings.npc.command_view.help5": "Alt+RMB volley, drag with Alt for the circle | Y radius (%d)",
+  "guistrings.npc.baton.barrage_radius": "Volley circle radius: %d",
+  "guistrings.npc.baton.face_command": "%d turned to face there",
+  "key.ancientwarfare.baton_barrage_radius": "Command Baton: Volley Radius"
 }

@@ -73,7 +73,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 public final class AWCoreNetwork {
    private static final String PROTOCOL_VERSION = "5";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-      new ResourceLocation("ancientwarfare", "main"), () -> "6", "6"::equals, "6"::equals
+      new ResourceLocation("ancientwarfare", "main"), () -> "7", "7"::equals, "7"::equals
    );
 
    private AWCoreNetwork() {
@@ -189,6 +189,21 @@ public final class AWCoreNetwork {
          .encoder(AWCoreNetwork.BatonFormationPacket::encode)
          .decoder(AWCoreNetwork.BatonFormationPacket::decode)
          .consumerMainThread(AWCoreNetwork.BatonFormationPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.BatonBarrageRadiusPacket.class, 38, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.BatonBarrageRadiusPacket::encode)
+         .decoder(AWCoreNetwork.BatonBarrageRadiusPacket::decode)
+         .consumerMainThread(AWCoreNetwork.BatonBarrageRadiusPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.CommandViewShapePacket.class, 39, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.CommandViewShapePacket::encode)
+         .decoder(AWCoreNetwork.CommandViewShapePacket::decode)
+         .consumerMainThread(AWCoreNetwork.CommandViewShapePacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.CommandViewFacePacket.class, 40, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.CommandViewFacePacket::encode)
+         .decoder(AWCoreNetwork.CommandViewFacePacket::decode)
+         .consumerMainThread(AWCoreNetwork.CommandViewFacePacket::handle)
          .add();
       CHANNEL.messageBuilder(AWCoreNetwork.BatonStancePacket.class, 29, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.BatonStancePacket::encode)
@@ -364,6 +379,11 @@ public final class AWCoreNetwork {
       CHANNEL.sendToServer(new AWCoreNetwork.CommandViewOrderPacket(order, pos, pos, entityId, queued));
    }
 
+   /** Area fire on {@code center}; when {@code edge} differs, the circle reaches out to it. */
+   public static void sendCommandViewBarrage(BlockPos center, BlockPos edge) {
+      CHANNEL.sendToServer(new AWCoreNetwork.CommandViewOrderPacket(CommandBatonItem.ViewOrder.BARRAGE, center, edge, -1, false));
+   }
+
    /** Move order with the front of the formation drawn from {@code start} to {@code end}. */
    public static void sendCommandViewFront(BlockPos start, BlockPos end, boolean queued) {
       CHANNEL.sendToServer(new AWCoreNetwork.CommandViewOrderPacket(CommandBatonItem.ViewOrder.FRONT, start, end, -1, queued));
@@ -403,6 +423,19 @@ public final class AWCoreNetwork {
 
    public static void sendDiplomacyData(ServerPlayer player, String focus, boolean open, List<PlayerDiplomacy.Entry> entries) {
       CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.DiplomacyDataPacket(focus, open, entries));
+   }
+
+   public static void sendBatonBarrageRadius() {
+      CHANNEL.sendToServer(new AWCoreNetwork.BatonBarrageRadiusPacket());
+   }
+
+   /** Move along a line or loop drawn in the command view. */
+   public static void sendCommandViewShape(List<BlockPos> points, boolean queued) {
+      CHANNEL.sendToServer(new AWCoreNetwork.CommandViewShapePacket(points, queued));
+   }
+
+   public static void sendCommandViewFace(BlockPos point) {
+      CHANNEL.sendToServer(new AWCoreNetwork.CommandViewFacePacket(point));
    }
 
    public static void sendBatonStance() {
@@ -956,6 +989,78 @@ public final class AWCoreNetwork {
          context.enqueueWork(() -> {
             if (context.getSender() == null) {
                DiplomacyScreen.accept(packet.focus, packet.open, packet.entries);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record BatonBarrageRadiusPacket() {
+      private static void encode(AWCoreNetwork.BatonBarrageRadiusPacket packet, FriendlyByteBuf buffer) {
+      }
+
+      private static AWCoreNetwork.BatonBarrageRadiusPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.BatonBarrageRadiusPacket();
+      }
+
+      private static void handle(AWCoreNetwork.BatonBarrageRadiusPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               CommandBatonItem.cycleBarrageRadius(heldBaton(player), player);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record CommandViewShapePacket(List<BlockPos> points, boolean queued) {
+      private static final int MAX_POINTS = 96;
+
+      private static void encode(AWCoreNetwork.CommandViewShapePacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarInt(packet.points.size());
+         packet.points.forEach(buffer::writeBlockPos);
+         buffer.writeBoolean(packet.queued);
+      }
+
+      private static AWCoreNetwork.CommandViewShapePacket decode(FriendlyByteBuf buffer) {
+         int size = Math.min(MAX_POINTS, buffer.readVarInt());
+         List<BlockPos> points = new ArrayList<>(size);
+         for (int i = 0; i < size; i++) {
+            points.add(buffer.readBlockPos());
+         }
+
+         return new AWCoreNetwork.CommandViewShapePacket(points, buffer.readBoolean());
+      }
+
+      private static void handle(AWCoreNetwork.CommandViewShapePacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               CommandBatonItem.commandViewShape(heldBaton(player), player, packet.points, packet.queued);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record CommandViewFacePacket(BlockPos point) {
+      private static void encode(AWCoreNetwork.CommandViewFacePacket packet, FriendlyByteBuf buffer) {
+         buffer.writeBlockPos(packet.point);
+      }
+
+      private static AWCoreNetwork.CommandViewFacePacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.CommandViewFacePacket(buffer.readBlockPos());
+      }
+
+      private static void handle(AWCoreNetwork.CommandViewFacePacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               CommandBatonItem.commandViewFace(heldBaton(player), player, packet.point);
             }
          });
          context.setPacketHandled(true);

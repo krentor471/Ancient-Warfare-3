@@ -174,6 +174,7 @@ public final class AWCoreClientEntityRenderers {
    }
 
    private abstract static class BaseNpcRenderer<T extends NpcBaseEntity> extends HumanoidMobRenderer<T, HumanoidModel<T>> {
+      private static final double MORALE_BAR_RANGE_SQ = 32.0 * 32.0;
       private final HumanoidModel<T> wideModel;
       private final HumanoidModel<T> slimModel;
 
@@ -204,7 +205,11 @@ public final class AWCoreClientEntityRenderers {
             && Minecraft.getInstance().player != null
             && Minecraft.getInstance().player.hasLineOfSight(entity)) {
             List<ResourceLocation> icons = this.statusIcons(entity.getStatusIconFlags());
-            if (!icons.isEmpty()) {
+            boolean routing = (entity.getStatusIconFlags() & NpcBaseEntity.ICON_ROUTING) != 0;
+            boolean moraleBar = entity.showsMorale()
+               && (routing || entity.getShownMorale() < 100)
+               && this.entityRenderDispatcher.distanceToSqr(entity) <= MORALE_BAR_RANGE_SQ;
+            if (!icons.isEmpty() || moraleBar) {
                float scale = 0.02666667F;
                float startX = -((float)icons.size() * 10.0F / 2.0F) * scale;
                float y = entity.getBbHeight() + 0.5F;
@@ -220,9 +225,43 @@ public final class AWCoreClientEntityRenderers {
                   this.drawIcon(poseStack, consumer, x, -16.0F, packedLight);
                }
 
+               if (moraleBar) {
+                  this.drawMoraleBar(poseStack, bufferSource, entity.getShownMorale(), routing, entity.tickCount, icons.isEmpty() ? -6.0F : -22.0F);
+               }
+
                poseStack.popPose();
             }
          }
+      }
+
+      /**
+       * Morale under the icons: green when steady, yellow when shaken, red when about to break. A routing soldier's bar
+       * blinks red, so a fleeing man stands out from far off.
+       */
+      private void drawMoraleBar(PoseStack poseStack, MultiBufferSource bufferSource, int morale, boolean routing, int tickCount, float y) {
+         VertexConsumer consumer = bufferSource.getBuffer(RenderType.textBackground());
+         Matrix4f matrix = poseStack.last().pose();
+         float half = 16.0F;
+         float fill = -half + 2.0F * half * Math.max(0, Math.min(100, morale)) / 100.0F;
+         int light = 15728880;
+         int frame = routing && tickCount / 5 % 2 == 0 ? 0xFFFF2020 : 0xFF000000;
+         this.quad(consumer, matrix, -half - 1.0F, y - 1.0F, half + 1.0F, y + 5.0F, frame, light, 0.0F);
+         this.quad(consumer, matrix, -half, y, half, y + 4.0F, 0xFF404040, light, -0.01F);
+         int color = morale > 60 ? 0xFF30D030 : (morale > 35 ? 0xFFE8C020 : 0xFFE02020);
+         if (fill > -half) {
+            this.quad(consumer, matrix, -half, y, fill, y + 4.0F, color, light, -0.02F);
+         }
+      }
+
+      private void quad(VertexConsumer consumer, Matrix4f matrix, float x0, float y0, float x1, float y1, int argb, int light, float z) {
+         int a = argb >>> 24 & 0xFF;
+         int r = argb >> 16 & 0xFF;
+         int g = argb >> 8 & 0xFF;
+         int b = argb & 0xFF;
+         consumer.vertex(matrix, x0, y1, z).color(r, g, b, a).uv2(light).endVertex();
+         consumer.vertex(matrix, x1, y1, z).color(r, g, b, a).uv2(light).endVertex();
+         consumer.vertex(matrix, x1, y0, z).color(r, g, b, a).uv2(light).endVertex();
+         consumer.vertex(matrix, x0, y0, z).color(r, g, b, a).uv2(light).endVertex();
       }
 
       private List<ResourceLocation> statusIcons(int flags) {
@@ -241,6 +280,9 @@ public final class AWCoreClientEntityRenderers {
          this.addIcon(icons, flags, 2048, "task_flee");
          this.addIcon(icons, flags, 4096, "task_sleep");
          this.addIcon(icons, flags, 8192, "task_rain");
+         this.addIcon(icons, flags, NpcBaseEntity.ICON_RELOADING, "task_reload");
+         this.addIcon(icons, flags, NpcBaseEntity.ICON_AIMING, "task_aim");
+         this.addIcon(icons, flags, NpcBaseEntity.ICON_SHOOTING, "task_shoot");
          return icons;
       }
 

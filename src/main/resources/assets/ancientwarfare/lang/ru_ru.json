@@ -44,7 +44,7 @@
   "guistrings.npc.baton.queued_move_command": "Точка добавлена в очередь %d NPC",
   "guistrings.npc.baton.hold_command": "Стоят на месте: %d бойцов",
   "guistrings.npc.baton.barrage": "Обстрел",
-  "guistrings.npc.baton.barrage_command": "Обстрел точки: %d стрелков",
+  "guistrings.npc.baton.barrage_command": "Обстрел зоны радиусом %2$d: %1$d стрелков",
   "guistrings.npc.baton.area_selected": "Выделены NPC рядом, всего %d",
   "guistrings.npc.baton.squad_saved": "Отряд %d сохранён: %d NPC",
   "guistrings.npc.baton.squad_selected": "Выбран отряд %d: %d NPC",
@@ -63,7 +63,7 @@
   "guistrings.npc.command_view": "Командный обзор",
   "guistrings.npc.command_view.status": "Выделено: %d | Построение: %s",
   "guistrings.npc.command_view.help1": "ЛКМ — выделить (протяни для рамки, Shift — добавить) | ПКМ — идти или атаковать (Shift — в очередь)",
-  "guistrings.npc.command_view.help4": "Протяни ПКМ — нарисовать фронт строя | Alt+ПКМ — обстрел точки",
+  "guistrings.npc.command_view.help4": "Протяни ПКМ — строй линией, дугой или кольцом | Ctrl+ПКМ — смотреть туда",
   "guistrings.npc.command_view.help2": "WASD или края экрана — сдвиг, Q/E — поворот, колесо — зум",
   "guistrings.npc.command_view.help3": "H — стоять, Backspace — отмена, G — построение, V — стойка, Ctrl+1..9 — сохранить отряд, 1..9 — выбрать",
   "guistrings.npc.command_view.needs_advanced_baton": "Для командного обзора нужен железный, золотой или алмазный жезл",
@@ -410,5 +410,9 @@
   "envoy.ancientwarfare.progress": "Поручение: %s из %s",
   "envoy.ancientwarfare.done": "Поручение выполнено: %s платит %s изумрудов и благодарит тебя.",
   "envoy.ancientwarfare.failed": "Время вышло: поручение фракции %s провалено.",
-  "item.ancientwarfare.faction_banner": "Знамя: %s"
+  "item.ancientwarfare.faction_banner": "Знамя: %s",
+  "guistrings.npc.command_view.help5": "Alt+ПКМ — обстрел, протяни с Alt — круг | Y — радиус (%d)",
+  "guistrings.npc.baton.barrage_radius": "Радиус обстрела: %d",
+  "guistrings.npc.baton.face_command": "%d повернулись лицом туда",
+  "key.ancientwarfare.baton_barrage_radius": "Жезл: радиус обстрела"
 }

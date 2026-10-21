@@ -110,7 +110,7 @@ final class NpcRangedAttackHelper {
       double dx = aim.x - start.x;
       double dz = aim.z - start.z;
       double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
-      if (horizontalDistance < 4.0) {
+      if (horizontalDistance < 0.5) {
          return Optional.empty();
       }
 
@@ -119,7 +119,7 @@ final class NpcRangedAttackHelper {
          return Optional.empty();
       }
 
-      double low = 0.3;
+      double low = 0.05;
       double high = maxSpeed;
 
       for (int iteration = 0; iteration < 16; iteration++) {

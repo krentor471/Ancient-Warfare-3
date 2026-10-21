@@ -273,6 +273,12 @@ public class FactionArcherNpcEntity extends FactionNpcEntity implements RangedAt
                this.clearFiringPosition();
                this.archer.getNavigation().stop();
                if (this.cooldown <= 0 && NpcVolley.canStartDraw(this.archer)) {
+                  LivingEntity spread = NpcVolley.spreadTarget(this.archer, this.target, this.archer::hasBallisticShot);
+                  if (spread != this.target) {
+                     this.archer.setTarget(spread);
+                     this.target = spread;
+                  }
+
                   this.archer.startUsingItem(InteractionHand.MAIN_HAND);
                   this.drawTicks = 0;
                }

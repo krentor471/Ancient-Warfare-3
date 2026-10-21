@@ -24,6 +24,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.Level;
@@ -34,6 +35,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcCombatRoles;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcCommandType;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcFactionAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcOwnerAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcShielding;
@@ -54,6 +56,15 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    private static final EntityDataAccessor<Integer> MELEE_ATTACK_ANIMATION = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.INT);
    private static final EntityDataAccessor<Integer> STATUS_ICONS = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.INT);
    private static final EntityDataAccessor<Integer> COMBAT_ATTACK_COUNT = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.INT);
+   /** Morale in whole points for the bar over the head; 100 for NPCs without morale. */
+   private static final EntityDataAccessor<Integer> SHOWN_MORALE = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.INT);
+   public static final int ICON_ROUTING = 2048;
+   public static final int ICON_RELOADING = 16384;
+   public static final int ICON_AIMING = 32768;
+   public static final int ICON_SHOOTING = 65536;
+   /** How long the "shooting" mark stays up after an arrow leaves, and how long after it the archer counts as reloading. */
+   private static final int SHOT_FLASH_TICKS = 10;
+   private static final int RELOAD_SHOWN_TICKS = 60;
    public static final int STATUS_ATTACK = 1;
    public static final int STATUS_UPKEEP = 2;
    public static final int STATUS_UPKEEP_2 = 4;
@@ -92,6 +103,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    private static final float COMBAT_MORALE_REGEN = 0.01F;
    private static final float LEADER_REGEN_FACTOR = 3.0F;
    private float morale = MAX_MORALE;
+   private long lastAttackTick = -1000L;
    private int routTicks;
    private Vec3 routThreat;
    private boolean leaderNearby;
@@ -142,6 +154,16 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       this.entityData.define(MELEE_ATTACK_ANIMATION, 0);
       this.entityData.define(STATUS_ICONS, 0);
       this.entityData.define(COMBAT_ATTACK_COUNT, 0);
+      this.entityData.define(SHOWN_MORALE, (int)MAX_MORALE);
+   }
+
+   public int getShownMorale() {
+      return (Integer)this.entityData.get(SHOWN_MORALE);
+   }
+
+   /** Morale bar only over fighters: the client cannot tell otherwise whether an NPC keeps morale at all. */
+   public boolean showsMorale() {
+      return this.usesMorale();
    }
 
    public void tick() {
@@ -165,6 +187,11 @@ public abstract class NpcBaseEntity extends PathfinderMob {
          int flags = this.calculateStatusIconFlags();
          if (flags != this.getStatusIconFlags()) {
             this.entityData.set(STATUS_ICONS, flags);
+         }
+
+         int shownMorale = this.usesMorale() ? Math.round(this.morale) : (int)MAX_MORALE;
+         if (shownMorale != this.getShownMorale()) {
+            this.entityData.set(SHOWN_MORALE, shownMorale);
          }
       }
    }
@@ -205,6 +232,12 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       if (this.isSleeping()) {
          flags |= 4096;
       }
+
+      if (this.isRouting()) {
+         flags |= ICON_ROUTING;
+      }
+
+      flags |= this.rangedStateFlag();
 
       if (!(this instanceof PlayerOwnedNpcEntity owned)) {
          return flags;
@@ -352,7 +385,26 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       return false;
    }
 
+   /** Bow or crossbow in three steps for the mark over the head: reloading, aiming, shooting. */
+   private int rangedStateFlag() {
+      ItemStack weapon = this.getMainHandItem();
+      if (!NpcEquipmentResolver.isRangedWeapon(weapon)) {
+         return 0;
+      } else {
+         long sinceShot = this.level().getGameTime() - this.lastAttackTick;
+         if (sinceShot < SHOT_FLASH_TICKS) {
+            return ICON_SHOOTING;
+         } else if (this.isUsingItem()) {
+            // A crossbow is being cranked while in use; a bow is being drawn and aimed.
+            return NpcEquipmentResolver.isCrossbow(weapon) ? ICON_RELOADING : ICON_AIMING;
+         } else {
+            return sinceShot < RELOAD_SHOWN_TICKS && this.getTarget() != null ? ICON_RELOADING : 0;
+         }
+      }
+   }
+
    protected final void recordCombatAttack() {
+      this.lastAttackTick = this.level().getGameTime();
       if (!this.level().isClientSide && this.supportsCombatPromotion()) {
          int previousRank = this.getCombatRank();
          int attacks = Math.min(100, this.getCombatAttackCount() + 1);

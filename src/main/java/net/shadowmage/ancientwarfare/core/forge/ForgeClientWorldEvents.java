@@ -30,6 +30,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -40,6 +42,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.shadowmage.ancientwarfare.core.client.BardMusicPlaybackManager;
+import net.shadowmage.ancientwarfare.core.common.npc.FormationPlanner;
 import net.shadowmage.ancientwarfare.core.common.worksite.BoundedArea;
 import net.shadowmage.ancientwarfare.core.entity.BallistaMobileEntity;
 import net.shadowmage.ancientwarfare.core.entity.BallistaTurretStandEntity;
@@ -303,6 +306,7 @@ public final class ForgeClientWorldEvents {
             }
 
             renderSelectedNpcBoxes(poseStack, consumer, minecraft);
+            renderOrderPreview(poseStack, consumer, minecraft, event.getPartialTick());
             bufferSource.endBatch(RenderType.lines());
             Set<ForgeClientWorldEvents.PreviewKey> visibleGhosts = new HashSet<>();
 
@@ -407,6 +411,10 @@ public final class ForgeClientWorldEvents {
       }
    }
 
+   private static final double BARRAGE_PREVIEW_RANGE = 64.0;
+   private static String previewKey = "";
+   private static List<FormationPlanner.Spot> previewSpots = List.of();
+
    private static void renderSelectedNpcBoxes(PoseStack poseStack, VertexConsumer consumer, Minecraft minecraft) {
       if (minecraft.player.getMainHandItem().getItem() instanceof CommandBatonItem || minecraft.player.getOffhandItem().getItem() instanceof CommandBatonItem) {
          ItemStack baton = minecraft.player.getMainHandItem().getItem() instanceof CommandBatonItem ? minecraft.player.getMainHandItem() : minecraft.player.getOffhandItem();
@@ -423,6 +431,100 @@ public final class ForgeClientWorldEvents {
             AABB box = npc.getBoundingBox().inflate(0.06);
             LevelRenderer.renderLineBox(poseStack, consumer, box, 1.0F, 1.0F, 1.0F, 1.0F);
          }
+      }
+   }
+
+   /**
+    * Shows an order before it is given: the slots the selection would take (moving with the baton or drawing a line in
+    * the command view) and the circle archers would cover with a barrage.
+    */
+   private static void renderOrderPreview(PoseStack poseStack, VertexConsumer consumer, Minecraft minecraft, float partialTick) {
+      ItemStack baton = CommandViewScreen.heldBaton(minecraft);
+      if (!(baton.getItem() instanceof CommandBatonItem)) {
+         return;
+      }
+
+      int selected = CommandBatonItem.selectionCount(baton);
+      if (CommandViewScreen.isOpen(minecraft)) {
+         List<BlockPos> stroke = CommandViewScreen.previewStroke();
+         if (stroke.size() >= 2 && selected > 0) {
+            String key = "shape" + stroke.hashCode() + "/" + selected + "/" + CommandBatonItem.getFormation(baton);
+            if (!key.equals(previewKey)) {
+               previewKey = key;
+               previewSpots = CommandBatonItem.previewShapeSpots(minecraft.level, baton, stroke, selected);
+            }
+
+            renderSpots(poseStack, consumer, previewSpots);
+         }
+
+         BlockPos center = CommandViewScreen.previewBarrageCenter();
+         if (center != null) {
+            renderCircle(poseStack, consumer, center, CommandViewScreen.previewBarrageRadius());
+         }
+      } else if (selected > 0 && CommandBatonItem.isMoveMode(baton) && minecraft.hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK) {
+         BlockPos target = hit.getBlockPos().relative(hit.getDirection());
+         List<PlayerOwnedNpcEntity> npcs = minecraft.level
+            .getEntitiesOfClass(
+               PlayerOwnedNpcEntity.class,
+               minecraft.player.getBoundingBox().inflate(CommandBatonItem.COMMAND_VIEW_RANGE),
+               npc -> npc.isAlive() && CommandBatonItem.selectsNpc(baton, npc.getUUID())
+            );
+         String key = "grid" + target + "/" + npcs.size() + "/" + CommandBatonItem.getFormation(baton) + "/" + minecraft.player.getDirection();
+         if (!key.equals(previewKey)) {
+            previewKey = key;
+            previewSpots = CommandBatonItem.previewSpots(minecraft.level, minecraft.player, baton, target, npcs);
+         }
+
+         renderSpots(poseStack, consumer, previewSpots);
+      } else if (CommandBatonItem.isBarrageMode(baton)
+         && minecraft.player.pick(BARRAGE_PREVIEW_RANGE, partialTick, false) instanceof BlockHitResult hit
+         && hit.getType() == HitResult.Type.BLOCK) {
+         renderCircle(poseStack, consumer, hit.getBlockPos().relative(hit.getDirection()), CommandBatonItem.getBarrageRadius(baton));
+      }
+   }
+
+   private static void renderSpots(PoseStack poseStack, VertexConsumer consumer, List<FormationPlanner.Spot> spots) {
+      for (FormationPlanner.Spot spot : spots) {
+         BlockPos pos = spot.pos();
+         LevelRenderer.renderLineBox(
+            poseStack, consumer, new AABB(pos.getX() + 0.2, pos.getY() + 0.02, pos.getZ() + 0.2, pos.getX() + 0.8, pos.getY() + 0.12, pos.getZ() + 0.8), 1.0F, 0.85F, 0.2F, 1.0F
+         );
+         // A short stroke shows which way the man in this slot will face.
+         double yaw = Math.toRadians(spot.yaw());
+         double cx = pos.getX() + 0.5;
+         double cz = pos.getZ() + 0.5;
+         line(poseStack, consumer, cx, pos.getY() + 0.07, cz, cx - Math.sin(yaw) * 0.7, pos.getY() + 0.07, cz + Math.cos(yaw) * 0.7, 1.0F, 0.85F, 0.2F);
+      }
+   }
+
+   private static void renderCircle(PoseStack poseStack, VertexConsumer consumer, BlockPos center, int radius) {
+      double cx = center.getX() + 0.5;
+      double cz = center.getZ() + 0.5;
+      double y = center.getY() + 0.1;
+      int segments = Math.max(16, radius * 6);
+
+      for (int i = 0; i < segments; i++) {
+         double a0 = Math.PI * 2.0 * i / segments;
+         double a1 = Math.PI * 2.0 * (i + 1) / segments;
+         line(poseStack, consumer, cx + Math.cos(a0) * radius, y, cz + Math.sin(a0) * radius, cx + Math.cos(a1) * radius, y, cz + Math.sin(a1) * radius, 1.0F, 0.3F, 0.2F);
+      }
+
+      line(poseStack, consumer, cx - 0.5, y, cz, cx + 0.5, y, cz, 1.0F, 0.3F, 0.2F);
+      line(poseStack, consumer, cx, y, cz - 0.5, cx, y, cz + 0.5, 1.0F, 0.3F, 0.2F);
+   }
+
+   private static void line(PoseStack poseStack, VertexConsumer consumer, double x0, double y0, double z0, double x1, double y1, double z1, float r, float g, float b) {
+      PoseStack.Pose pose = poseStack.last();
+      float nx = (float)(x1 - x0);
+      float ny = (float)(y1 - y0);
+      float nz = (float)(z1 - z0);
+      float length = (float)Math.sqrt(nx * nx + ny * ny + nz * nz);
+      if (length > 1.0E-4F) {
+         nx /= length;
+         ny /= length;
+         nz /= length;
+         consumer.vertex(pose.pose(), (float)x0, (float)y0, (float)z0).color(r, g, b, 1.0F).normal(pose.normal(), nx, ny, nz).endVertex();
+         consumer.vertex(pose.pose(), (float)x1, (float)y1, (float)z1).color(r, g, b, 1.0F).normal(pose.normal(), nx, ny, nz).endVertex();
       }
    }
 

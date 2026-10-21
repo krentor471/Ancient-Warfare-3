@@ -40,6 +40,7 @@ public final class ForgeClientInputEvents {
    private static final KeyMapping BATON_FORMATION = batonKey("key.ancientwarfare.baton_formation", 71);
    private static final KeyMapping COMMAND_VIEW = batonKey("key.ancientwarfare.command_view", 66);
    private static final KeyMapping BATON_STANCE = batonKey("key.ancientwarfare.baton_stance", 86);
+   static final KeyMapping BATON_BARRAGE_RADIUS = batonKey("key.ancientwarfare.baton_barrage_radius", 89);
    private static final KeyMapping DIPLOMACY = batonKey("key.ancientwarfare.diplomacy", 75);
    private static final KeyMapping WORLD_MAP = batonKey("key.ancientwarfare.world_map", 77);
 
@@ -123,6 +124,12 @@ public final class ForgeClientInputEvents {
             AWCoreNetwork.sendWorldMapOpen();
          }
 
+         while (BATON_BARRAGE_RADIUS.consumeClick()) {
+            if (isHoldingBaton(minecraft.player.getMainHandItem()) || isHoldingBaton(minecraft.player.getOffhandItem())) {
+               AWCoreNetwork.sendBatonBarrageRadius();
+            }
+         }
+
          while (BATON_STANCE.consumeClick()) {
             if (isHoldingBaton(minecraft.player.getMainHandItem()) || isHoldingBaton(minecraft.player.getOffhandItem())) {
                AWCoreNetwork.sendBatonStance();
@@ -173,6 +180,7 @@ public final class ForgeClientInputEvents {
          event.register(ForgeClientInputEvents.BATON_CLEAR_SELECTIONS);
          event.register(ForgeClientInputEvents.BATON_FORMATION);
          event.register(ForgeClientInputEvents.BATON_STANCE);
+         event.register(ForgeClientInputEvents.BATON_BARRAGE_RADIUS);
          event.register(ForgeClientInputEvents.COMMAND_VIEW);
          event.register(ForgeClientInputEvents.DIPLOMACY);
          event.register(ForgeClientInputEvents.WORLD_MAP);
