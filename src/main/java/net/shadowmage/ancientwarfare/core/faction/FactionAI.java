@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
+import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
 
 /**
  * The daily decisions of AI factions toward each other. Neighbours (factions whose provinces touch)
@@ -34,6 +35,8 @@ public final class FactionAI {
    private static final double CAPTURE_PLAYER_RANGE = 192.0;
    /** Walls make a fort's garrison count for more in a battle fought out of sight. */
    private static final double FORT_DEFENCE = 1.5;
+   private static final double CAPITAL_DEFENCE = 2.0;
+   private static final int MAX_ARMY = 60;
 
    private FactionAI() {
    }
@@ -148,14 +151,16 @@ public final class FactionAI {
          return;
       }
 
-      int force = (int)Math.ceil(strength.getOrDefault(attacker, 0) * ATTACK_SHARE);
+      // However large the country, one campaign can only feed and march so many soldiers.
+      int force = Math.min(MAX_ARMY, (int)Math.ceil(strength.getOrDefault(attacker, 0) * ATTACK_SHARE));
       if (level.hasNearbyAlivePlayer(target.center().getX(), target.center().getY(), target.center().getZ(), CAPTURE_PLAYER_RANGE)) {
          // A player is watching: the battle is fought by real soldiers instead.
          FactionArmies.assault(level, data, attacker, target, force);
          return;
       }
 
-      int defence = isFort(target) ? (int)Math.round(target.garrison * FORT_DEFENCE) : target.garrison;
+      double walls = isFort(target) ? FORT_DEFENCE : FactionTowns.CAPITAL.equals(target.kind()) ? CAPITAL_DEFENCE : 1.0;
+      int defence = (int)Math.round(target.garrison * walls);
       int attackerLosses = Math.min(force, (int)Math.round(defence * (0.3 + random.nextDouble() * 0.4)));
       int defenderLosses = Math.min(defence, (int)Math.round(force * (0.3 + random.nextDouble() * 0.4)));
       takeLosses(data, attacker, attackerLosses);

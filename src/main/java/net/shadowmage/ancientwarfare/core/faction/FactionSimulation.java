@@ -39,6 +39,8 @@ public final class FactionSimulation {
    private static final int MAX_RECRUITS_PER_DAY = 2;
    private static final int TIER_COST = 60;
    private static final int MAX_TIER = 3;
+   private static final int SMALL_FACTION_SETTLEMENTS = 10;
+   private static final int SMALL_FACTION_TAX_BONUS = 100;
    private static final long LEADER_RESPAWN_TICKS = DAY_TICKS;
    private static final int LEADER_SPREAD = 6;
    /** When each capital's leader was found missing; not saved. */
@@ -84,6 +86,8 @@ public final class FactionSimulation {
 
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       Map<String, Integer> recruited = new HashMap<>();
+      Map<String, Integer> settlements = new HashMap<>();
+      data.settlements().forEach(settlement -> settlements.merge(settlement.faction(), 1, Integer::sum));
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          int capacity = capacity(settlement);
@@ -92,7 +96,7 @@ public final class FactionSimulation {
          }
 
          String faction = settlement.faction();
-         int gold = data.treasury(faction) + settlement.population / 4;
+         int gold = data.treasury(faction) + settlement.population * taxPercent(settlements.getOrDefault(faction, 1)) / 400;
 
          // A fort is a garrison with a few hands to keep it; anywhere else a third of the people may serve.
          int maxGarrison = FactionAI.isFort(settlement) ? FactionExpansion.FORT_GARRISON + settlement.tier * 4 : settlement.population / 3;
@@ -119,6 +123,14 @@ public final class FactionSimulation {
       FactionTrade.simulateDay(level, data);
       data.setDirty();
       AncientWarfareCore.LOG.debug("Simulated faction day {}: recruits {}", data.lastSimulatedDay(), recruited);
+   }
+
+   /**
+    * Taxes in percent of the usual quarter of the people: a small faction (the guild, a tribe with
+    * a village or two) collects up to twice as much, so it can grow at all.
+    */
+   static int taxPercent(int settlements) {
+      return 100 + SMALL_FACTION_TAX_BONUS * Math.max(0, SMALL_FACTION_SETTLEMENTS - settlements) / SMALL_FACTION_SETTLEMENTS;
    }
 
    /** A faction NPC died: soldiers come off their settlement's garrison, civilians off its people. */

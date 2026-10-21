@@ -26,6 +26,11 @@ import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
  */
 public final class FactionExpansion {
    private static final int FOUND_COST = 80;
+   private static final int FOUND_COST_PER_PROVINCE = 8;
+   private static final String EMPIRE = "empire";
+   private static final int EMPIRE_MARKUP_PERCENT = 150;
+   /** Each this many provinces held adds a day to the wait between new villages. */
+   private static final int PROVINCES_PER_EXTRA_DAY = 12;
    private static final int SETTLERS = 8;
    private static final int MIN_SOURCE_POPULATION = 16;
    private static final int FOUND_INTERVAL_DAYS = 3;
@@ -69,16 +74,18 @@ public final class FactionExpansion {
             data.setTreasury(faction, data.treasury(faction) - FORT_COST);
          }
 
+         int provinces = data.provincesOf(faction).size();
+         int cost = foundingCost(faction, provinces);
          if (!FactionDiplomacy.isOutlaw(faction)
-            && data.treasury(faction) >= FOUND_COST
-            && day - data.lastFounding(faction) >= FOUND_INTERVAL_DAYS) {
+            && data.treasury(faction) >= cost
+            && day - data.lastFounding(faction) >= FOUND_INTERVAL_DAYS + provinces / PROVINCES_PER_EXTRA_DAY) {
             FactionWorldData.Settlement source = largestSettlement(data, faction);
             if (source != null && source.population >= MIN_SOURCE_POPULATION) {
                FactionRegions.Province province = pickProvince(level, data, faction);
                if (province != null) {
                   data.setProvinceOwner(province.key(), faction);
                   data.addPlannedSettlement(new FactionWorldData.PlannedSettlement(faction, province.seedX(), province.seedZ(), province.key(), day, false));
-                  data.setTreasury(faction, data.treasury(faction) - FOUND_COST);
+                  data.setTreasury(faction, data.treasury(faction) - cost);
                   source.population -= SETTLERS;
                   data.setLastFounding(faction, day);
                   AncientWarfareCore.LOG.info("Faction {} claimed province {},{} and plans a village at {}, {}", faction, province.cellX(), province.cellZ(), province.seedX(), province.seedZ());
@@ -86,6 +93,15 @@ public final class FactionExpansion {
             }
          }
       }
+   }
+
+   /**
+    * A new village costs more the more land the faction already holds, so big countries slow down
+    * and small ones catch up; the Empire, with buildings for nearly every climate, pays extra.
+    */
+   public static int foundingCost(String faction, int provinces) {
+      int cost = FOUND_COST + FOUND_COST_PER_PROVINCE * provinces;
+      return EMPIRE.equals(faction) ? cost * EMPIRE_MARKUP_PERCENT / 100 : cost;
    }
 
    /**
@@ -378,9 +394,13 @@ public final class FactionExpansion {
       return best;
    }
 
-   /** A wild province next to faction's land whose climate suits its buildings, away from players. */
+   /**
+    * A wild province next to faction's land, away from players. Provinces whose climate suits the
+    * faction's buildings come first; once none is left it settles any other climate.
+    */
    private static FactionRegions.Province pickProvince(ServerLevel level, FactionWorldData data, String faction) {
-      List<FactionRegions.Province> candidates = new ArrayList<>();
+      List<FactionRegions.Province> suited = new ArrayList<>();
+      List<FactionRegions.Province> other = new ArrayList<>();
       Set<Long> seen = new HashSet<>();
 
       for (long owned : data.provincesOf(faction)) {
@@ -391,16 +411,15 @@ public final class FactionExpansion {
             for (int dz = -1; dz <= 1; dz++) {
                if ((dx != 0 || dz != 0) && seen.add(ChunkPos.asLong(cellX + dx, cellZ + dz))) {
                   FactionRegions.Province province = FactionRegions.provinceByCell(level, cellX + dx, cellZ + dz);
-                  if (province.owner().isEmpty()
-                     && !level.hasNearbyAlivePlayer(province.seedX(), level.getSeaLevel(), province.seedZ(), PLAN_PLAYER_RANGE)
-                     && FactionRegions.suits(level, faction, province.seedX(), province.seedZ())) {
-                     candidates.add(province);
+                  if (province.owner().isEmpty() && !level.hasNearbyAlivePlayer(province.seedX(), level.getSeaLevel(), province.seedZ(), PLAN_PLAYER_RANGE)) {
+                     (FactionRegions.suits(level, faction, province.seedX(), province.seedZ()) ? suited : other).add(province);
                   }
                }
             }
          }
       }
 
+      List<FactionRegions.Province> candidates = suited.isEmpty() ? other : suited;
       if (candidates.isEmpty()) {
          return null;
       }
