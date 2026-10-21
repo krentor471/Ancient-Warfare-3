@@ -7,6 +7,7 @@ import java.util.Set;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
@@ -127,10 +128,21 @@ public final class FactionRegions {
       }
 
       Map<String, Integer> scores = new LinkedHashMap<>();
+      int sea = 0;
 
       for (int[] offset : SAMPLE_OFFSETS) {
          Holder<Biome> biome = level.getUncachedNoiseBiome((seedX + offset[0]) >> 2, 64 >> 2, (seedZ + offset[1]) >> 2);
+         if (biome.is(BiomeTags.IS_OCEAN)) {
+            sea++;
+            continue;
+         }
+
          biomeScores(biome).forEach((faction, score) -> scores.merge(faction, score, Integer::sum));
+      }
+
+      if (sea * 2 > SAMPLE_OFFSETS.length) {
+         // Mostly open sea: nobody's country.
+         return "";
       }
 
       // Square root, so a faction with many buildings for this climate (the Empire fits most forests)

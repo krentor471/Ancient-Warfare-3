@@ -188,5 +188,6 @@
   "news.ancientwarfare.alliance.enemy": "Союз: %s и %s стали союзниками против общего врага (%s)",
   "news.ancientwarfare.alliance.friends": "Союз: %s и %s стали союзниками",
   "news.ancientwarfare.tension": "Напряжение: ссоры на границе портят отношения между %s и %s",
-  "news.ancientwarfare.capital_captured": "Пала столица: фракция %s захватила столицу фракции %s у %s, %s"
+  "news.ancientwarfare.capital_captured": "Пала столица: фракция %s захватила столицу фракции %s у %s, %s",
+  "generator.ancientwarfare.continent": "AW3: континент"
 }
