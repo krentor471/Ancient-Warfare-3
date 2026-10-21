@@ -149,7 +149,7 @@ public final class PlayerDiplomacy {
       }
    }
 
-   private static boolean takeEmeralds(ServerPlayer player, int count) {
+   static boolean takeEmeralds(ServerPlayer player, int count) {
       if (player.isCreative()) {
          return true;
       } else if (player.getInventory().countItem(Items.EMERALD) < count) {

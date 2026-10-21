@@ -228,6 +228,11 @@ public final class WorldMap {
       });
    }
 
+   /** A standing inn or tavern, where mercenaries can be hired. */
+   static boolean isTavern(FactionWorldData.Settlement settlement) {
+      return settlement.built() && kind(settlement) == Kind.TAVERN;
+   }
+
    private static Kind kind(FactionWorldData.Settlement settlement) {
       if (FactionDiplomacy.isOutlaw(settlement.faction())) {
          return Kind.OUTLAW;

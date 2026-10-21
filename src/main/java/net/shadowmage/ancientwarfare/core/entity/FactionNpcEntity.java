@@ -118,6 +118,14 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    /** Talking to a faction's leader opens diplomacy with that faction. */
    @Override
    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+      if (hand == InteractionHand.MAIN_HAND && net.shadowmage.ancientwarfare.core.faction.FactionMercenaries.isCaptain(this)) {
+         if (player instanceof ServerPlayer serverPlayer) {
+            net.shadowmage.ancientwarfare.core.faction.FactionMercenaries.talk(serverPlayer, this);
+         }
+
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      }
+
       if (hand != InteractionHand.MAIN_HAND || !PlayerDiplomacy.isLeader(this)) {
          return super.mobInteract(player, hand);
       }

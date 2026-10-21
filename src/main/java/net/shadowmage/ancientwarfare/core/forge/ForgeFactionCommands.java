@@ -34,6 +34,7 @@ import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionCampaigns;
 import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
 import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
+import net.shadowmage.ancientwarfare.core.faction.FactionMercenaries;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
 import net.shadowmage.ancientwarfare.core.structure.AwtWorldGenerator;
 import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
@@ -109,6 +110,22 @@ public final class ForgeFactionCommands {
    }
 
    private static void registerWorldCommands(RegisterCommandsEvent event) {
+      // Run by clicking a mercenary captain's offer in chat.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awhire")
+               .then(
+                  Commands.argument("captain", IntegerArgumentType.integer())
+                     .then(
+                        Commands.argument("offer", StringArgumentType.word())
+                           .executes(
+                              context -> hire(
+                                 context.getSource(), IntegerArgumentType.getInteger(context, "captain"), StringArgumentType.getString(context, "offer")
+                              )
+                           )
+                     )
+               )
+         );
       event.getDispatcher()
          .register(
             Commands.literal("awfaction")
@@ -135,6 +152,11 @@ public final class ForgeFactionCommands {
                                  .executes(context -> found(context.getSource(), faction(context, "faction"), IntegerArgumentType.getInteger(context, "garrison")))
                            )
                      )
+               )
+               .then(
+                  Commands.literal("tavern")
+                     .requires(source -> source.hasPermission(2))
+                     .then(factionArgument("faction").executes(context -> tavern(context.getSource(), faction(context, "faction"))))
                )
                .then(
                   Commands.literal("raid")
@@ -367,6 +389,31 @@ public final class ForgeFactionCommands {
       }
 
       return settlements.size();
+   }
+
+   /** Builds a tavern of the faction near the command's position, for testing mercenaries. */
+   private static int tavern(CommandSourceStack source, String faction) {
+      BlockPos pos = BlockPos.containing(source.getPosition());
+      boolean built = net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator.generateSettlementAt(
+         source.getLevel(), new net.minecraft.world.level.ChunkPos(pos), faction, net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator.Site.TAVERN
+      );
+      tell(source, Component.literal(built ? "Built a tavern of " + faction : "Could not build a tavern here"));
+      return built ? 1 : 0;
+   }
+
+   private static int hire(CommandSourceStack source, int captain, String offer) {
+      if (!(source.getEntity() instanceof ServerPlayer player)) {
+         return 0;
+      }
+
+      for (FactionMercenaries.Offer candidate : FactionMercenaries.Offer.values()) {
+         if (candidate.name().equalsIgnoreCase(offer)) {
+            FactionMercenaries.hire(player, captain, candidate);
+            return 1;
+         }
+      }
+
+      return 0;
    }
 
    private static void tell(CommandSourceStack source, Component message) {

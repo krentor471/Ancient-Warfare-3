@@ -1494,5 +1494,17 @@
   "gui.ancientwarfare.chronicle.button": "Chronicle",
   "gui.ancientwarfare.chronicle.day": "Day %s",
   "gui.ancientwarfare.chronicle.empty": "Nothing has happened yet.",
-  "gui.ancientwarfare.chronicle.back": "Map"
+  "gui.ancientwarfare.chronicle.back": "Map",
+  "entity.ancientwarfare.mercenary_captain": "Mercenary captain",
+  "mercenary.ancientwarfare.greeting": "Mercenary captain: \"Swords and bows for honest coin. Free fighters: %s. A contract runs %s days.\"",
+  "mercenary.ancientwarfare.offer.swords": "3 swordsmen for %s emeralds",
+  "mercenary.ancientwarfare.offer.bows": "3 archers for %s emeralds",
+  "mercenary.ancientwarfare.offer.band": "A band: 5 swordsmen and 2 archers for %s emeralds",
+  "mercenary.ancientwarfare.click": "Click to hire",
+  "mercenary.ancientwarfare.enemy": "Mercenary captain: \"%s does not think well of you. Mend things with them first, then we talk.\"",
+  "mercenary.ancientwarfare.too_far": "Come closer to the captain to hire.",
+  "mercenary.ancientwarfare.none_left": "Mercenary captain: \"Only %s free fighters left. Come back in a few days.\"",
+  "mercenary.ancientwarfare.no_money": "You need %s emeralds.",
+  "mercenary.ancientwarfare.hired": "%s mercenaries follow you. The contract runs %s days.",
+  "mercenary.ancientwarfare.left": "The contract is over: %s mercenaries took their pay and left."
 }

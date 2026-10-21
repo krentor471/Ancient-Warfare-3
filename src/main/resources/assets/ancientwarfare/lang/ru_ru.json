@@ -372,5 +372,17 @@
   "gui.ancientwarfare.chronicle.button": "Летопись",
   "gui.ancientwarfare.chronicle.day": "День %s",
   "gui.ancientwarfare.chronicle.empty": "Пока ничего не произошло.",
-  "gui.ancientwarfare.chronicle.back": "Карта"
+  "gui.ancientwarfare.chronicle.back": "Карта",
+  "entity.ancientwarfare.mercenary_captain": "Капитан наёмников",
+  "mercenary.ancientwarfare.greeting": "Капитан наёмников: «Мечи и луки за звонкую монету. Свободных бойцов: %s. Контракт на %s дн.»",
+  "mercenary.ancientwarfare.offer.swords": "3 мечника за %s изумрудов",
+  "mercenary.ancientwarfare.offer.bows": "3 лучника за %s изумрудов",
+  "mercenary.ancientwarfare.offer.band": "Отряд: 5 мечников и 2 лучника за %s изумрудов",
+  "mercenary.ancientwarfare.click": "Нажми, чтобы нанять",
+  "mercenary.ancientwarfare.enemy": "Капитан наёмников: «Ты не в чести у фракции %s. Сначала наладь с ней отношения, потом поговорим.»",
+  "mercenary.ancientwarfare.too_far": "Подойди к капитану поближе, чтобы нанять.",
+  "mercenary.ancientwarfare.none_left": "Капитан наёмников: «Свободных бойцов осталось %s. Загляни через пару дней.»",
+  "mercenary.ancientwarfare.no_money": "Нужно %s изумрудов.",
+  "mercenary.ancientwarfare.hired": "Наёмников идёт за тобой: %s. Контракт на %s дн.",
+  "mercenary.ancientwarfare.left": "Контракт окончен: наёмники (%s) забрали плату и ушли."
 }
