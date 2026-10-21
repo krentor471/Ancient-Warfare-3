@@ -20,6 +20,7 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.shadowmage.ancientwarfare.core.entity.ChestPushcartEntity;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcDefaultsRegistry;
@@ -67,7 +68,9 @@ public final class ForgeFactionEvents {
 
    @SubscribeEvent
    public static void onCaravanAnimalJoin(EntityJoinLevelEvent event) {
-      if (event.getEntity() instanceof AbstractHorse animal && event.getLevel() instanceof ServerLevel && FactionCaravans.isStale(animal)) {
+      if ((event.getEntity() instanceof AbstractHorse || event.getEntity() instanceof ChestPushcartEntity)
+         && event.getLevel() instanceof ServerLevel
+         && FactionCaravans.isStale(event.getEntity())) {
          event.setCanceled(true);
       }
    }

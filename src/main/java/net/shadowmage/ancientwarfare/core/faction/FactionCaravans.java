@@ -17,9 +17,15 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.horse.AbstractChestedHorse;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+import net.shadowmage.ancientwarfare.core.entity.ChestPushcartEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionTraderNpcEntity;
 import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
@@ -29,7 +35,9 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
  * guards of one end's faction walk along it toward the other end, and can be traded with. On roads
  * outlaws prowl near and no guard post watches, bandits may lie in wait ahead. Killing bandits who
  * threaten a caravan earns its faction's thanks; killing its trader is robbery and means war.
- * A wealthy faction's caravan leads pack animals: donkeys with chests, then a mule, then horses.
+ * A wealthy faction's caravan leads pack animals: donkeys with chests, then a mule, then horses;
+ * a rich one adds carts of goods, each drawn by a horse in the string. Breaking a cart open is
+ * robbery, the same as killing the trader.
  * Caravans live only while a player is near; they are not saved.
  */
 public final class FactionCaravans {
@@ -60,6 +68,20 @@ public final class FactionCaravans {
    private static final int ROBBERY_STANDING = -40;
    /** Treasury a faction needs for each further pack animal in its caravans. */
    private static final int[] PACK_TREASURY = {300, 800, 1600, 3000};
+   /** Treasury a faction needs for each cart of goods in its caravans. */
+   private static final int[] CART_TREASURY = {5000, 12000};
+   /** How far behind its horse a cart rolls, and how far it may lag before it is set right behind. */
+   private static final double CART_GAP = 2.5;
+   private static final double CART_LAG = 10.0;
+   private static final double CART_SPEED = 0.35;
+   /** Lead lengths in the string of animals: past slack an animal is led on, past wait the trader stops, past lag it is set behind. */
+   private static final double STRING_SLACK = 6.0;
+   private static final double STRING_WAIT = 8.0;
+   private static final double STRING_LAG = 14.0;
+   /** Advance checks the trader waits for a straggler before it is set behind in plain sight. */
+   private static final int STRING_PATIENCE = 30;
+   /** A player this near when a cart is broken open is the robber. */
+   private static final double ROBBER_RANGE = 16.0;
    private static final Map<Integer, Caravan> ACTIVE = new HashMap<>();
    private static final Map<Integer, Long> LAST_CARAVAN = new HashMap<>();
    /** Set by the test command: the next caravan that can be ambushed is. */
@@ -90,6 +112,8 @@ public final class FactionCaravans {
 
    public static void tick(ServerLevel level, FactionWorldData data) {
       long now = level.getGameTime();
+      // Carts roll every tick, or they would jerk along behind their horses.
+      ACTIVE.values().forEach(caravan -> caravan.pullCarts(level));
       if (now % TICK_INTERVAL != 0L) {
          return;
       }
@@ -172,12 +196,23 @@ public final class FactionCaravans {
             PlayerDiplomacy.discover(player, caravan.faction);
             player.displayClientMessage(Component.translatable("caravan.ancientwarfare.rescue", name), true);
          }
-      } else if (npc instanceof FactionTraderNpcEntity && !FactionDiplomacy.isOutlaw(caravan.faction)) {
-         standings.adjustStanding(killer.getUUID(), caravan.faction, ROBBERY_STANDING);
-         if (standings.getTreaty(killer.getUUID(), caravan.faction) != RelationState.WAR) {
-            standings.setTreaty(killer.getUUID(), caravan.faction, RelationState.WAR);
-            killer.sendSystemMessage(Component.translatable("caravan.ancientwarfare.robbed", name));
-         }
+      } else if (npc instanceof FactionTraderNpcEntity) {
+         robbed(level, caravan, killer);
+      }
+   }
+
+   /** Killing the trader or breaking open a cart: the faction turns on the robber. */
+   private static void robbed(ServerLevel level, Caravan caravan, Player robber) {
+      if (FactionDiplomacy.isOutlaw(caravan.faction)) {
+         return;
+      }
+
+      AncientWarfareCore.LOG.info("{} robbed a caravan of {}", robber.getName().getString(), caravan.faction);
+      FactionStandingData standings = FactionStandingData.get(level);
+      standings.adjustStanding(robber.getUUID(), caravan.faction, ROBBERY_STANDING);
+      if (standings.getTreaty(robber.getUUID(), caravan.faction) != RelationState.WAR) {
+         standings.setTreaty(robber.getUUID(), caravan.faction, RelationState.WAR);
+         robber.sendSystemMessage(Component.translatable("caravan.ancientwarfare.robbed", FactionNews.factionName(caravan.faction)));
       }
    }
 
@@ -193,10 +228,15 @@ public final class FactionCaravans {
       private final int direction;
       private int index;
       private int stuck;
+      /** Advance checks the trader has waited for the string of animals. */
+      private int waits;
       private UUID trader;
       private final List<UUID> guards = new ArrayList<>();
       private final List<UUID> bandits = new ArrayList<>();
       private final List<UUID> animals = new ArrayList<>();
+      /** Carts of goods, each drawn by the animal at the same place in pullers. */
+      private final List<ChestPushcartEntity> carts = new ArrayList<>();
+      private final List<UUID> pullers = new ArrayList<>();
 
       Caravan(int routeId, String faction, int index, int direction) {
          this.routeId = routeId;
@@ -240,6 +280,23 @@ public final class FactionCaravans {
             animal.setLeashedTo(holder, true);
             holder = animal;
             this.animals.add(animal.getUUID());
+         }
+
+         for (int i = 0; i < CART_TREASURY.length && treasury >= CART_TREASURY[i]; i++) {
+            int offset = this.direction * (2 + (this.animals.size() + 1) * 3);
+            AbstractHorse horse = this.createAnimal(level, PACK_TREASURY.length - 1, x + offset, z);
+            if (horse == null) {
+               break;
+            }
+
+            horse.setLeashedTo(holder, true);
+            holder = horse;
+            this.animals.add(horse.getUUID());
+            ChestPushcartEntity cart = this.createCart(level, x + offset + this.direction * 3, z);
+            if (cart != null) {
+               this.carts.add(cart);
+               this.pullers.add(horse.getUUID());
+            }
          }
 
          String outlaw = nearbyOutlaws(data, route);
@@ -306,6 +363,129 @@ public final class FactionCaravans {
          return animal;
       }
 
+      /** A cart loaded with the goods the caravan trades. */
+      private ChestPushcartEntity createCart(ServerLevel level, int x, int z) {
+         ChestPushcartEntity cart = AWCoreEntityTypes.CHEST_PUSHCART.get().create(level);
+         if (cart == null) {
+            return null;
+         }
+
+         level.getChunk(x >> 4, z >> 4);
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         cart.moveTo(x + 0.5, y, z + 0.5, this.direction > 0 ? -90.0F : 90.0F, 0.0F);
+         RandomSource random = level.getRandom();
+         ItemStack[] goods = {
+            new ItemStack(Items.WHEAT, 16 + random.nextInt(32)),
+            new ItemStack(Items.BREAD, 8 + random.nextInt(16)),
+            new ItemStack(Items.WHITE_WOOL, 8 + random.nextInt(16)),
+            new ItemStack(Items.LEATHER, 4 + random.nextInt(12)),
+            new ItemStack(Items.IRON_INGOT, 4 + random.nextInt(8)),
+            new ItemStack(Items.EMERALD, 2 + random.nextInt(5))
+         };
+
+         for (int slot = 0; slot < goods.length; slot++) {
+            cart.setItem(slot, goods[slot]);
+         }
+
+         cart.addTag(this.tag());
+         level.addFreshEntity(cart);
+         return cart;
+      }
+
+      /**
+       * Each cart rolls after its horse, a little behind, facing it, along the ground: it is moved
+       * rather than pushed, so road steps and slopes do not hold it back. One left far behind out of
+       * sight is set right behind.
+       */
+      void pullCarts(ServerLevel level) {
+         for (int i = 0; i < this.carts.size(); i++) {
+            ChestPushcartEntity cart = this.carts.get(i);
+            Entity puller = level.getEntity(this.pullers.get(i));
+            if (!cart.isAlive() || cart.isVehicle() || puller == null || !puller.isAlive()) {
+               continue;
+            }
+
+            double dx = puller.getX() - cart.getX();
+            double dz = puller.getZ() - cart.getZ();
+            double distance = Math.sqrt(dx * dx + dz * dz);
+            if (distance < 0.01) {
+               continue;
+            }
+
+            cart.setNoGravity(true);
+            cart.setDeltaMovement(0.0, 0.0, 0.0);
+            cart.setYRot((float)(Math.atan2(-dx, dz) * (180.0 / Math.PI)));
+            double step = distance > CART_LAG && level.getNearestPlayer(cart, HIDDEN_RANGE) == null
+               ? distance - CART_GAP
+               : Math.max(0.0, Math.min(distance - CART_GAP, CART_SPEED));
+            double x = cart.getX() + dx / distance * step;
+            double z = cart.getZ() + dz / distance * step;
+            cart.setPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Mth.floor(x), Mth.floor(z)), z);
+         }
+      }
+
+      /**
+       * Keeps the string of animals on its leads: each follows the one in front (the first, the
+       * trader), a straggler is led back, out of sight set right behind, and a snapped lead is tied
+       * again once it is close. Returns whether the trader should wait for it.
+       */
+      private boolean keepStringTogether(ServerLevel level, Entity trader, boolean impatient) {
+         Entity holder = trader;
+         boolean waiting = false;
+
+         for (UUID id : this.animals) {
+            if (!(level.getEntity(id) instanceof AbstractHorse animal) || !animal.isAlive()) {
+               continue;
+            }
+
+            double distance = animal.distanceTo(holder);
+            // Stuck in plain sight for long, it is set behind all the same.
+            if (distance > STRING_LAG && (impatient || level.getNearestPlayer(animal, HIDDEN_RANGE) == null)
+               || impatient && distance > STRING_WAIT) {
+               double dx = animal.getX() - holder.getX();
+               double dz = animal.getZ() - holder.getZ();
+               double length = Math.max(0.01, Math.sqrt(dx * dx + dz * dz));
+               double x = holder.getX() + dx / length * 2.0;
+               double z = holder.getZ() + dz / length * 2.0;
+               animal.getNavigation().stop();
+               animal.moveTo(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Mth.floor(x), Mth.floor(z)), z);
+               distance = 2.0;
+            } else if (distance > STRING_SLACK) {
+               animal.getNavigation().moveTo(holder, 1.3);
+            }
+
+            if (!animal.isLeashed() && distance < STRING_SLACK) {
+               animal.setLeashedTo(holder, true);
+            }
+
+            waiting |= distance > STRING_WAIT;
+            holder = animal;
+         }
+
+         return waiting;
+      }
+
+      /** A cart broken open (not merely left behind) by a player near it is robbery. */
+      private void checkCarts(ServerLevel level) {
+         for (int i = this.carts.size() - 1; i >= 0; i--) {
+            // Held, not looked up: a cart broken apart is gone from the world but still says how it went.
+            ChestPushcartEntity cart = this.carts.get(i);
+            if (cart.isAlive()) {
+               continue;
+            }
+
+            if (cart.getRemovalReason() == Entity.RemovalReason.KILLED) {
+               Player robber = level.getNearestPlayer(cart, ROBBER_RANGE);
+               if (robber != null && !robber.isCreative()) {
+                  robbed(level, this, robber);
+               }
+            }
+
+            this.carts.remove(i);
+            this.pullers.remove(i);
+         }
+      }
+
       /** Walks the caravan on along its road. Returns false when it is done: arrived, lost or no player near. */
       boolean advance(ServerLevel level, FactionWorldData data) {
          FactionWorldData.Route route = null;
@@ -326,6 +506,10 @@ public final class FactionCaravans {
             return false;
          }
 
+         this.checkCarts(level);
+         boolean waiting = this.keepStringTogether(level, traderNpc, this.waits > STRING_PATIENCE);
+         this.waits = waiting ? this.waits + 1 : 0;
+
          List<Long> points = route.points();
          boolean next = false;
          if (distance(traderNpc, points.get(this.index)) < 3.0) {
@@ -340,7 +524,11 @@ public final class FactionCaravans {
             this.hop(level, traderNpc, points.get(this.index));
          }
 
-         if (traderNpc.getTarget() == null && (next || traderNpc.getNavigation().isDone())) {
+         if (waiting) {
+            // The string of animals has fallen behind: the trader waits for it.
+            traderNpc.getNavigation().stop();
+            this.stuck = 0;
+         } else if (traderNpc.getTarget() == null && (next || traderNpc.getNavigation().isDone())) {
             long point = points.get(this.index);
             int x = FactionRoads.unpackX(point);
             int z = FactionRoads.unpackZ(point);
@@ -416,12 +604,19 @@ public final class FactionCaravans {
                animal.moveTo(x + 0.5, y, z + 0.5);
             }
          }
+
+         for (ChestPushcartEntity cart : this.carts) {
+            if (cart.isAlive()) {
+               cart.moveTo(x + 0.5, y, z + 0.5);
+            }
+         }
       }
 
       void discard(ServerLevel level) {
          List<UUID> all = new ArrayList<>(this.guards);
          all.addAll(this.bandits);
          all.addAll(this.animals);
+         this.carts.forEach(Entity::discard);
          if (this.trader != null) {
             all.add(this.trader);
          }
