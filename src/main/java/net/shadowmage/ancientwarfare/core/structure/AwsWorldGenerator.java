@@ -29,6 +29,8 @@ public final class AwsWorldGenerator {
    private static final int SITE_ATTEMPTS = 8;
    private static final int SITE_SEARCH_RADIUS = 32;
    private static final int MAX_TEMPLATE_ATTEMPTS = 16;
+   private static final int ROADSIDE_MINIMUM_DISTANCE = 48;
+   private static final int ROADSIDE_DUPLICATE_DISTANCE = 150;
    private static boolean generating;
 
    private AwsWorldGenerator() {
@@ -193,6 +195,15 @@ public final class AwsWorldGenerator {
                         }
                      }
 
+                     if (candidates.isEmpty() && site == Site.TRADE_POST && !waterSite) {
+                        // A faction with no inn of its own keeps a plain roadside tavern.
+                        for (AwsWorldGenTemplateRegistry.Template templatex : AwsWorldGenTemplateRegistry.templates()) {
+                           if (!templatex.requiresPhasedPlacement() && templatex.ground() && TemplateFactions.isNeutralTradePost(templatex.path())) {
+                              candidates.add(templatex);
+                           }
+                        }
+                     }
+
                      if (candidates.isEmpty()) {
                         rejections.merge("no_template_for_" + biome.unwrapKey().map(key -> key.location().getPath()).orElse("biome"), 1, Integer::sum);
                      }
@@ -207,7 +218,7 @@ public final class AwsWorldGenerator {
                         maxZ = min.getZ() + template.rotatedSizeZ(facing) - 1;
                         String rejection = !template.fitsBuildHeight(min, level.getMinBuildHeight(), level.getMaxBuildHeight())
                            ? "build_height"
-                           : placementRejection(level, data, template, min, maxX, maxZ, x, z);
+                           : placementRejection(level, data, template, min, maxX, maxZ, x, z, site == Site.TRADE_POST || site == Site.GUARD_POST);
                         if (rejection == null && template.aquatic()) {
                            NaturalGenerationContext.markArea(min.offset(-16, 0, -16), maxX + 16, maxZ + 16);
                         }
@@ -254,10 +265,12 @@ public final class AwsWorldGenerator {
                )
             );
             TemplateFactions.TemplateInfo info = TemplateFactions.info(template.path());
-            if (!info.faction().isEmpty()) {
+            // A neutral tavern by a faction's road is that faction's post.
+            String owner = info.faction().isEmpty() && site == Site.TRADE_POST && requiredFaction != null ? requiredFaction : info.faction();
+            if (!owner.isEmpty()) {
                FactionWorldData.get(level)
                   .addSettlement(
-                     info.faction(),
+                     owner,
                      site.kind(),
                      template.path(),
                      min,
@@ -332,7 +345,7 @@ public final class AwsWorldGenerator {
    }
 
    private static String placementRejection(
-      ServerLevel level, AwsWorldGenerationData data, AwsWorldGenTemplateRegistry.Template template, BlockPos min, int maxX, int maxZ, int x, int z
+      ServerLevel level, AwsWorldGenerationData data, AwsWorldGenTemplateRegistry.Template template, BlockPos min, int maxX, int maxZ, int x, int z, boolean roadside
    ) {
       for (AwtWorldGenerationData.TownTask town : AwtWorldGenerationData.get(level).towns()) {
          if (town.phase != AwtWorldGenerationData.Phase.FAILED) {
@@ -352,15 +365,16 @@ public final class AwsWorldGenerator {
             return "aws_overlap";
          }
 
-         int minimumDistance = template.aquatic()
-            ? AWCorePlatform.gameplayConfig().awsAquaticMinimumDistance()
-            : AWCorePlatform.gameplayConfig().awsMinimumDistance();
+         // Roadside posts are spaced along their road by the road itself; only crowding is refused.
+         int minimumDistance = roadside
+            ? ROADSIDE_MINIMUM_DISTANCE
+            : template.aquatic() ? AWCorePlatform.gameplayConfig().awsAquaticMinimumDistance() : AWCorePlatform.gameplayConfig().awsMinimumDistance();
          if (entry.horizontalDistanceSquared(x, z) < (double)((long)minimumDistance * (long)minimumDistance)) {
             return "minimum_distance";
          }
 
          if (entry.template().equals(template.path())) {
-            long distance = (long)template.minDuplicateDistance();
+            long distance = roadside ? Math.min(template.minDuplicateDistance(), ROADSIDE_DUPLICATE_DISTANCE) : template.minDuplicateDistance();
             if (entry.horizontalDistanceSquared(x, z) < (double)(distance * distance)) {
                return "duplicate_distance";
             }

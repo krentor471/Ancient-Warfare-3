@@ -37,7 +37,7 @@ public final class FactionCaravans {
    private static final double MIN_SPAWN_DISTANCE = 48.0;
    private static final double MAX_SPAWN_DISTANCE = 96.0;
    private static final double DESPAWN_RANGE = 160.0;
-   private static final long COOLDOWN_TICKS = 6000L;
+   private static final long COOLDOWN_TICKS = 3600L;
    private static final int GUARDS = 2;
    private static final int BANDITS = 3;
    private static final double AMBUSH_CHANCE = 0.5;

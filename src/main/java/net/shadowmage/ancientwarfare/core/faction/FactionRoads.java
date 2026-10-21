@@ -19,7 +19,7 @@ import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator;
  * Lays the road of each trade route: a three-wide track of path and gravel following the land,
  * with plank bridges over short water. It is laid a short stretch at a time from one end, wherever
  * no player is near enough to see it appear, steering around steep ground, settlements and other
- * buildings toward the far end. A finished road gets roadside posts every few hundred blocks, trade
+ * buildings toward the far end. A finished road gets roadside posts every two hundred blocks or so, trade
  * posts and guard posts in turn, built by the faction of the nearer end.
  */
 public final class FactionRoads {
@@ -38,10 +38,13 @@ public final class FactionRoads {
    private static final double TURN_ANGLE = Math.PI / 8.0;
    /** Road points are recorded every two steps. */
    private static final int POINT_SPACING = STEP * 2;
-   private static final int POST_SPACING = 320;
+   private static final int POST_SPACING = 200;
    /** Posts keep this far from either end of the road. */
-   private static final int POST_END_GAP = 128;
+   private static final int POST_END_GAP = 80;
    private static final int POST_OFFSET = 22;
+   private static final int POST_OFFSET_STEP = 14;
+   /** Sites tried for a post: both sides of the road, at two distances. */
+   private static final int POST_ATTEMPTS = 4;
 
    private FactionRoads() {
    }
@@ -65,7 +68,8 @@ public final class FactionRoads {
       }
 
       for (FactionWorldData.Route route : data.routes()) {
-         if (route.road() == FactionWorldData.RoadState.DONE && !route.posts() && buildPost(level, data, route)) {
+         // Counted afresh rather than by the posts flag, so roads finished before posts stood closer get the rest.
+         if (route.road() == FactionWorldData.RoadState.DONE && route.postsBuilt < postSpots(route).size() && buildPost(level, data, route)) {
             data.setDirty();
             return;
          }
@@ -171,8 +175,6 @@ public final class FactionRoads {
       double dz = unpackZ(after) - unpackZ(before);
       double length = Math.max(1.0, Math.sqrt(dx * dx + dz * dz));
       int side = route.postsBuilt % 2 == 0 ? 1 : -1;
-      int siteX = x + (int)Math.round(-dz / length * POST_OFFSET * side);
-      int siteZ = z + (int)Math.round(dx / length * POST_OFFSET * side);
       FactionWorldData.Settlement a = data.endpoint(route, true);
       FactionWorldData.Settlement b = data.endpoint(route, false);
       route.postsBuilt++;
@@ -181,16 +183,26 @@ public final class FactionRoads {
       }
 
       String faction = a.horizontalDistanceSquared(x, z) <= b.horizontalDistanceSquared(x, z) ? a.faction() : b.faction();
-      AwsWorldGenerator.Site site = route.postsBuilt % 2 == 1 ? AwsWorldGenerator.Site.TRADE_POST : AwsWorldGenerator.Site.GUARD_POST;
-      ChunkPos chunk = new ChunkPos(siteX >> 4, siteZ >> 4);
-      boolean built = AwsWorldGenerator.generateSettlementAt(level, chunk, faction, site);
-      if (!built && site == AwsWorldGenerator.Site.TRADE_POST) {
-         site = AwsWorldGenerator.Site.GUARD_POST;
-         built = AwsWorldGenerator.generateSettlementAt(level, chunk, faction, site);
+      AwsWorldGenerator.Site wanted = route.postsBuilt % 2 == 1 ? AwsWorldGenerator.Site.TRADE_POST : AwsWorldGenerator.Site.GUARD_POST;
+      AwsWorldGenerator.Site site = wanted;
+      boolean built = false;
+
+      // Either side of the road, near and a little further off, before settling for a guard post or nothing.
+      for (int attempt = 0; attempt < POST_ATTEMPTS * 2 && !built; attempt++) {
+         site = attempt < POST_ATTEMPTS ? wanted : AwsWorldGenerator.Site.GUARD_POST;
+         if (attempt >= POST_ATTEMPTS && wanted == AwsWorldGenerator.Site.GUARD_POST) {
+            break;
+         }
+
+         int tried = attempt % POST_ATTEMPTS;
+         int along = side * (tried % 2 == 0 ? 1 : -1);
+         int offset = POST_OFFSET + tried / 2 * POST_OFFSET_STEP;
+         int siteX = x + (int)Math.round(-dz / length * offset * along);
+         int siteZ = z + (int)Math.round(dx / length * offset * along);
+         built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(siteX >> 4, siteZ >> 4), faction, site);
       }
 
-      AncientWarfareCore.LOG
-         .info("Road #{}: {} {} {} near {}, {}", route.id(), faction, built ? "built a" : "could not build a", site.kind(), siteX, siteZ);
+      AncientWarfareCore.LOG.info("Road #{}: {} {} {} near {}, {}", route.id(), faction, built ? "built a" : "could not build a", site.kind(), x, z);
       return true;
    }
 

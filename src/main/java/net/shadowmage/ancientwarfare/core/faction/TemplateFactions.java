@@ -30,6 +30,8 @@ public final class TemplateFactions {
    private static final List<String> TRADE_WORDS = List.of("inn", "tavern", "trader", "trading", "merchant", "market", "coaching", "stable", "caravan", "emporium");
    private static final List<String> GUARD_WORDS = List.of("watch", "guard", "toll", "sentry", "outpost", "beacon", "patrol", "camp", "tower");
    private static final List<String> LARGE_WORDS = List.of("castle", "fortress", "citadel", "palace", "capital", "village", "town", "city", "ship", "boat", "wizard", "church");
+   /** Name parts of faction-less templates that are no roadside inn, whatever else their name says. */
+   private static final List<String> NEUTRAL_EXCLUDED = List.of("ruin", "island", "smuggler", "nest", "dungeon", "pirate");
    private static Map<String, TemplateInfo> templates;
    private static Set<String> military;
 
@@ -87,6 +89,15 @@ public final class TemplateFactions {
    public static boolean isTradePost(String path) {
       String name = name(path);
       return !info(path).faction().isEmpty() && TRADE_WORDS.stream().anyMatch(name::contains) && LARGE_WORDS.stream().noneMatch(name::contains);
+   }
+
+   /** An inn or tavern of no faction, which any faction without one of its own may keep by its roads. */
+   public static boolean isNeutralTradePost(String path) {
+      String name = name(path);
+      return info(path).faction().isEmpty()
+         && (name.contains("inn") || name.contains("tavern"))
+         && LARGE_WORDS.stream().noneMatch(name::contains)
+         && NEUTRAL_EXCLUDED.stream().noneMatch(name::contains);
    }
 
    /** A small guard building for a road: a watchtower, toll gate, outpost; the faction's military buildings when it has none. */
