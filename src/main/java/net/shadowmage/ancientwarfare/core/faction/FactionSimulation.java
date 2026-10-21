@@ -87,6 +87,7 @@ public final class FactionSimulation {
       FactionRoads.tick(level, data);
       FactionCaravans.tick(level, data);
       FactionMercenaries.tick(level, data);
+      FactionEnvoys.tick(level);
 
       if (level.getGameTime() % GARRISON_CHECK_TICKS == 0L && !level.players().isEmpty()) {
          maintainGarrisons(level, data);

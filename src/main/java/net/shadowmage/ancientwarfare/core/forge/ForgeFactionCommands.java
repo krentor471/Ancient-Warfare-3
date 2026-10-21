@@ -33,6 +33,7 @@ import net.shadowmage.ancientwarfare.core.faction.FactionBandits;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionCampaigns;
 import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
+import net.shadowmage.ancientwarfare.core.faction.FactionEnvoys;
 import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
 import net.shadowmage.ancientwarfare.core.faction.FactionMercenaries;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
@@ -110,6 +111,13 @@ public final class ForgeFactionCommands {
    }
 
    private static void registerWorldCommands(RegisterCommandsEvent event) {
+      // Run by clicking an envoy's buttons in chat.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awenvoy")
+               .then(Commands.literal("accept").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, true))))
+               .then(Commands.literal("decline").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, false))))
+         );
       // Run by clicking a mercenary captain's offer in chat.
       event.getDispatcher()
          .register(
@@ -152,6 +160,12 @@ public final class ForgeFactionCommands {
                                  .executes(context -> found(context.getSource(), faction(context, "faction"), IntegerArgumentType.getInteger(context, "garrison")))
                            )
                      )
+               )
+               .then(
+                  Commands.literal("envoy")
+                     .requires(source -> source.hasPermission(2))
+                     .executes(context -> envoy(context.getSource(), ""))
+                     .then(Commands.argument("kind", StringArgumentType.word()).executes(context -> envoy(context.getSource(), StringArgumentType.getString(context, "kind"))))
                )
                .then(
                   Commands.literal("tavern")
@@ -399,6 +413,33 @@ public final class ForgeFactionCommands {
       );
       tell(source, Component.literal(built ? "Built a tavern of " + faction : "Could not build a tavern here"));
       return built ? 1 : 0;
+   }
+
+   private static int answerEnvoy(CommandContext<CommandSourceStack> context, boolean accepted) {
+      if (context.getSource().getEntity() instanceof ServerPlayer player) {
+         FactionEnvoys.answer(player, IntegerArgumentType.getInteger(context, "offer"), accepted);
+         return 1;
+      }
+
+      return 0;
+   }
+
+   /** Sends an envoy to the player running the command, of the kind named or any that fits. */
+   private static int envoy(CommandSourceStack source, String kind) {
+      if (!(source.getEntity() instanceof ServerPlayer player)) {
+         return 0;
+      }
+
+      FactionEnvoys.Kind wanted = null;
+      for (FactionEnvoys.Kind candidate : FactionEnvoys.Kind.values()) {
+         if (candidate.name().equalsIgnoreCase(kind)) {
+            wanted = candidate;
+         }
+      }
+
+      boolean sent = FactionEnvoys.send(source.getLevel(), player, wanted);
+      tell(source, Component.literal(sent ? "An envoy is on the way" : "No country has such an offer for you now"));
+      return sent ? 1 : 0;
    }
 
    private static int hire(CommandSourceStack source, int captain, String offer) {

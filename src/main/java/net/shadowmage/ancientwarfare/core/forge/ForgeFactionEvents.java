@@ -30,6 +30,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.FactionEnvoys;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 
@@ -53,7 +54,7 @@ public final class ForgeFactionEvents {
       if (event.getEntity() instanceof FactionNpcEntity npc
          && event.getLevel() instanceof ServerLevel serverLevel
          && serverLevel.dimension() == Level.OVERWORLD
-         && !FactionSimulation.onNpcJoin(serverLevel, npc)) {
+         && (FactionEnvoys.isStaleEnvoy(npc) || !FactionSimulation.onNpcJoin(serverLevel, npc))) {
          event.setCanceled(true);
       }
    }
@@ -82,6 +83,10 @@ public final class ForgeFactionEvents {
          FactionSimulation.onNpcDeath(serverLevel, npc);
          if (event.getSource().getEntity() instanceof Player player) {
             FactionCaravans.onNpcKilled(serverLevel, npc, player);
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+               FactionEnvoys.onKill(serverPlayer, npc);
+            }
+
             String faction = npc.getFactionName();
             FactionStandingData.get(serverLevel).adjustStanding(player.getUUID(), faction, FactionRegistry.get(faction).killStandingChange());
          } else if (event.getSource().getEntity() instanceof FactionNpcEntity killer) {
