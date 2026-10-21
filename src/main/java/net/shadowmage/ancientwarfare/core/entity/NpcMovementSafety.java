@@ -98,7 +98,7 @@ public final class NpcMovementSafety {
    }
 
    private static boolean hasSafeSupport(Entity entity, double x, double footY, double z) {
-      return hasSupportWithinDrop(entity, x, footY, z, 1.1);
+      return hasSupportWithinDrop(entity, x, footY, z, entity instanceof NpcBaseEntity npc ? npc.getMaxFallDistance() + 0.1 : 1.1);
    }
 
    private static Double findSupportTop(Entity entity, double x, double footY, double z, double maxDrop) {

@@ -25,6 +25,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
+import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 
@@ -59,6 +60,7 @@ public final class ForgeFactionEvents {
          generateConfiguredLoot(npc, serverLevel, event.getSource());
          FactionSimulation.onNpcDeath(serverLevel, npc);
          if (event.getSource().getEntity() instanceof Player player) {
+            FactionCaravans.onNpcKilled(serverLevel, npc, player);
             String faction = npc.getFactionName();
             FactionStandingData.get(serverLevel).adjustStanding(player.getUUID(), faction, FactionRegistry.get(faction).killStandingChange());
          } else if (event.getSource().getEntity() instanceof FactionNpcEntity killer) {

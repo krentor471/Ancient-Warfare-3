@@ -65,6 +65,7 @@ public final class FactionSimulation {
       FactionExpansion.tick(level, data);
       FactionArmies.tick(level, data);
       FactionRoads.tick(level, data);
+      FactionCaravans.tick(level, data);
 
       if (level.getGameTime() % GARRISON_CHECK_TICKS == 0L && !level.players().isEmpty()) {
          maintainGarrisons(level, data);
@@ -112,7 +113,7 @@ public final class FactionSimulation {
 
    /** A faction NPC died: soldiers come off their settlement's garrison, civilians off its people. */
    public static void onNpcDeath(ServerLevel level, FactionNpcEntity npc) {
-      if (FactionArmies.armyId(npc) != 0) {
+      if (FactionArmies.armyId(npc) != 0 || FactionCaravans.caravanId(npc) != 0) {
          return;
       }
 
@@ -136,6 +137,10 @@ public final class FactionSimulation {
     */
    public static boolean onNpcJoin(ServerLevel level, FactionNpcEntity npc) {
       FactionWorldData data = FactionWorldData.get(level);
+      if (FactionCaravans.isStale(npc)) {
+         return false;
+      }
+
       int army = FactionArmies.armyId(npc);
       if (army != 0) {
          // Soldiers of an army that has since gone home or fallen.

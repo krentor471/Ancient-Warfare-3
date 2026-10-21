@@ -30,6 +30,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.faction.FactionArmies;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
 import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
@@ -159,6 +160,12 @@ public final class ForgeFactionCommands {
                   Commands.literal("routes")
                      .executes(context -> showRoutes(context.getSource()))
                      .then(Commands.literal("retry").requires(source -> source.hasPermission(2)).executes(context -> retryRoads(context.getSource())))
+                     .then(
+                        Commands.literal("caravans")
+                           .requires(source -> source.hasPermission(2))
+                           .executes(context -> hurryCaravans(context.getSource(), false))
+                           .then(Commands.literal("ambush").executes(context -> hurryCaravans(context.getSource(), true)))
+                     )
                )
                .then(
                   Commands.literal("fortify")
@@ -443,6 +450,17 @@ public final class ForgeFactionCommands {
       }
 
       tell(source, Component.literal(faction + " plans a border fort at " + plan.x() + ", " + plan.z()));
+      return 1;
+   }
+
+   private static int hurryCaravans(CommandSourceStack source, boolean ambush) {
+      FactionCaravans.hurry(ambush);
+      tell(
+         source,
+         Component.literal(
+            FactionCaravans.active() + " caravan(s) on the road; the next ones set out near players now" + (ambush ? ", and outlaws wait for the first one" : "")
+         )
+      );
       return 1;
    }
 

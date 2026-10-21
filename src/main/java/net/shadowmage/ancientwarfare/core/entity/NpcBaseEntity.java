@@ -45,6 +45,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    public static final double PLAYER_WALK_SPEED = 0.1;
    public static final double PLAYER_SPRINT_SPEED = 0.13;
    private double movementSpeedBeforeShield = -1.0;
+   private int maxDrop = 1;
    private static final EntityDataAccessor<String> NPC_TYPE = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.STRING);
    private static final EntityDataAccessor<String> NPC_SUBTYPE = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.STRING);
    private static final EntityDataAccessor<String> SKIN_NAME = SynchedEntityData.defineId(NpcBaseEntity.class, EntityDataSerializers.STRING);
@@ -114,7 +115,12 @@ public abstract class NpcBaseEntity extends PathfinderMob {
    }
 
    public int getMaxFallDistance() {
-      return 1;
+      return this.maxDrop;
+   }
+
+   /** How far this NPC will step down; a caravan on a rough road takes drops others avoid. Not saved. */
+   public void setMaxDrop(int maxDrop) {
+      this.maxDrop = maxDrop;
    }
 
    public void move(MoverType moverType, Vec3 movement) {

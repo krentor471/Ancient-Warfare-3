@@ -32,7 +32,7 @@ public final class FactionTrade {
       for (FactionWorldData.Route route : new ArrayList<>(data.routes())) {
          FactionWorldData.Settlement a = data.settlement(route.a());
          FactionWorldData.Settlement b = data.settlement(route.b());
-         if (a == null || b == null || route.road() == FactionWorldData.RoadState.NONE && (partOfOlder(data, a) || partOfOlder(data, b))) {
+         if (a == null || b == null || partOfOlder(data, a) || partOfOlder(data, b)) {
             data.removeRoute(route);
             continue;
          }

@@ -1275,5 +1275,7 @@
   "news.ancientwarfare.village_held": "%s still hold this settlement: %s soldiers left in its garrison",
   "news.ancientwarfare.assault": "Battle: %s attack the settlement of %s at %s, %s",
   "news.ancientwarfare.assault_repelled": "%s beat off the attack of %s",
-  "news.ancientwarfare.fortified": "Border fort: %s built a fort at %s, %s"
+  "news.ancientwarfare.fortified": "Border fort: %s built a fort at %s, %s",
+  "caravan.ancientwarfare.rescue": "%s thank you for driving off the bandits",
+  "caravan.ancientwarfare.robbed": "You robbed a caravan of %s. This means war."
 }

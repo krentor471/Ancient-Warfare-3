@@ -27,6 +27,8 @@ public final class FactionRoads {
    private static final int SEGMENT_STEPS = 4;
    private static final int TICK_INTERVAL = 40;
    private static final double PLAYER_RANGE = 192.0;
+   /** Highest fill or cut that evens out one road cell. */
+   private static final int MAX_RAMP = 6;
    private static final int MAX_WATER_RUN = 24;
    private static final int ARRIVE_MARGIN = 6;
    private static final int OBSTACLE_MARGIN = 3;
@@ -242,6 +244,8 @@ public final class FactionRoads {
       double sideX = -dz / length;
       double sideZ = dx / length;
 
+      BlockPos[] previous = new BlockPos[3];
+
       for (int t = 1; t <= (int)Math.round(length); t++) {
          double cx = x0 + dx * t / length;
          double cz = z0 + dz * t / length;
@@ -252,6 +256,15 @@ public final class FactionRoads {
             int z = (int)Math.floor(cz + sideZ * side + 0.5);
             if (!blocked(obstacles, x, z) && !insideEndpoint(obstacles, x, z)) {
                water |= pave(level, x, z) && side == 0;
+               BlockPos here = new BlockPos(x, ground(level, x, z), z);
+               BlockPos before = previous[side + 1];
+               if (before != null && Math.abs(here.getY() - before.getY()) >= 2) {
+                  here = ramp(level, here, before.getY() + Integer.signum(here.getY() - before.getY()));
+               }
+
+               previous[side + 1] = here;
+            } else {
+               previous[side + 1] = null;
             }
          }
 
@@ -262,6 +275,49 @@ public final class FactionRoads {
       }
 
       return true;
+   }
+
+   /**
+    * Fills or cuts a road cell to one block from its neighbour, so a slope of any height becomes a ramp
+    * anyone can walk: each next cell is measured against this one. Leaves cells it would have to cut
+    * through trees, buildings or deep rock as they are.
+    */
+   private static BlockPos ramp(ServerLevel level, BlockPos cell, int targetY) {
+      int depth = cell.getY() - targetY;
+      if (Math.abs(depth) > MAX_RAMP) {
+         return cell;
+      }
+
+      for (int y = Math.min(cell.getY(), targetY) + 1; y <= Math.max(cell.getY(), targetY) + 2; y++) {
+         BlockState state = level.getBlockState(cell.atY(y));
+         if (state.hasBlockEntity() || state.is(BlockTags.LOGS)) {
+            return cell;
+         }
+      }
+
+      BlockState top = level.getBlockState(cell);
+      Block fill = top.is(Blocks.OAK_PLANKS) || top.is(Blocks.GRAVEL) ? top.getBlock() : Blocks.COARSE_DIRT;
+
+      for (int y = targetY; y > cell.getY(); y--) {
+         level.setBlock(cell.atY(y), fill.defaultBlockState(), Block.UPDATE_CLIENTS);
+      }
+
+      if (depth > 0) {
+         // Cut down: the road surface goes on whatever the cut uncovered.
+         Block surface = surface(level.getBlockState(cell.atY(targetY)));
+         if (surface != null) {
+            level.setBlock(cell.atY(targetY), surface.defaultBlockState(), Block.UPDATE_CLIENTS);
+         }
+      }
+
+      for (int y = targetY + 1; y <= Math.max(cell.getY(), targetY) + 2; y++) {
+         BlockState state = level.getBlockState(cell.atY(y));
+         if (!state.isAir() && state.getFluidState().isEmpty()) {
+            level.setBlock(cell.atY(y), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+         }
+      }
+
+      return cell.atY(targetY);
    }
 
    /** Paves one column; returns true when it bridged water. */
