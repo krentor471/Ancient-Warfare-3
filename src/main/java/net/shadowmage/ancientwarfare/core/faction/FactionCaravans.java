@@ -15,6 +15,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.animal.horse.AbstractChestedHorse;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
@@ -27,6 +29,7 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
  * guards of one end's faction walk along it toward the other end, and can be traded with. On roads
  * outlaws prowl near and no guard post watches, bandits may lie in wait ahead. Killing bandits who
  * threaten a caravan earns its faction's thanks; killing its trader is robbery and means war.
+ * A wealthy faction's caravan leads pack animals: donkeys with chests, then a mule, then horses.
  * Caravans live only while a player is near; they are not saved.
  */
 public final class FactionCaravans {
@@ -55,6 +58,8 @@ public final class FactionCaravans {
    private static final double LINGER_RANGE = 64.0;
    private static final int RESCUE_STANDING = 3;
    private static final int ROBBERY_STANDING = -40;
+   /** Treasury a faction needs for each further pack animal in its caravans. */
+   private static final int[] PACK_TREASURY = {300, 800, 1600, 3000};
    private static final Map<Integer, Caravan> ACTIVE = new HashMap<>();
    private static final Map<Integer, Long> LAST_CARAVAN = new HashMap<>();
    /** Set by the test command: the next caravan that can be ambushed is. */
@@ -77,9 +82,9 @@ public final class FactionCaravans {
       return 0;
    }
 
-   /** A caravan NPC loaded from an old save: caravans are not kept, so it goes. */
-   public static boolean isStale(FactionNpcEntity npc) {
-      int id = caravanId(npc);
+   /** A caravan NPC or pack animal loaded from an old save: caravans are not kept, so it goes. */
+   public static boolean isStale(Entity entity) {
+      int id = caravanId(entity);
       return id != 0 && !ACTIVE.containsKey(id);
    }
 
@@ -191,6 +196,7 @@ public final class FactionCaravans {
       private UUID trader;
       private final List<UUID> guards = new ArrayList<>();
       private final List<UUID> bandits = new ArrayList<>();
+      private final List<UUID> animals = new ArrayList<>();
 
       Caravan(int routeId, String faction, int index, int direction) {
          this.routeId = routeId;
@@ -219,6 +225,21 @@ public final class FactionCaravans {
             if (guard != null) {
                this.guards.add(guard.getUUID());
             }
+         }
+
+         Entity holder = traderNpc;
+         int treasury = data.treasury(this.faction);
+
+         for (int i = 0; i < PACK_TREASURY.length && treasury >= PACK_TREASURY[i]; i++) {
+            AbstractHorse animal = this.createAnimal(level, i, x + this.direction * (2 + i * 2), z);
+            if (animal == null) {
+               break;
+            }
+
+            // Led in a string: the first by the trader, each of the others by the one in front.
+            animal.setLeashedTo(holder, true);
+            holder = animal;
+            this.animals.add(animal.getUUID());
          }
 
          String outlaw = nearbyOutlaws(data, route);
@@ -261,6 +282,28 @@ public final class FactionCaravans {
          npc.setMaxDrop(CARAVAN_DROP);
          level.addFreshEntity(npc);
          return npc;
+      }
+
+      /** Donkeys with chests first, then a mule, then horses. */
+      private AbstractHorse createAnimal(ServerLevel level, int index, int x, int z) {
+         EntityType<? extends AbstractHorse> type = index < 2 ? EntityType.DONKEY : index == 2 ? EntityType.MULE : EntityType.HORSE;
+         AbstractHorse animal = type.create(level);
+         if (animal == null) {
+            return null;
+         }
+
+         level.getChunk(x >> 4, z >> 4);
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         animal.moveTo(x + 0.5, y, z + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+         animal.finalizeSpawn(level, level.getCurrentDifficultyAt(new BlockPos(x, y, z)), MobSpawnType.EVENT, null, null);
+         animal.setTamed(true);
+         if (animal instanceof AbstractChestedHorse chested) {
+            chested.setChest(true);
+         }
+
+         animal.addTag(this.tag());
+         level.addFreshEntity(animal);
+         return animal;
       }
 
       /** Walks the caravan on along its road. Returns false when it is done: arrived, lost or no player near. */
@@ -362,13 +405,23 @@ public final class FactionCaravans {
          int x = FactionRoads.unpackX(point);
          int z = FactionRoads.unpackZ(point);
          npc.getNavigation().stop();
-         npc.moveTo(x + 0.5, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z + 0.5);
+         double y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         npc.moveTo(x + 0.5, y, z + 0.5);
          this.stuck = 0;
+
+         // The string of pack animals comes along, or its leads would snap.
+         for (UUID id : this.animals) {
+            if (level.getEntity(id) instanceof AbstractHorse animal && animal.isAlive()) {
+               animal.getNavigation().stop();
+               animal.moveTo(x + 0.5, y, z + 0.5);
+            }
+         }
       }
 
       void discard(ServerLevel level) {
          List<UUID> all = new ArrayList<>(this.guards);
          all.addAll(this.bandits);
+         all.addAll(this.animals);
          if (this.trader != null) {
             all.add(this.trader);
          }

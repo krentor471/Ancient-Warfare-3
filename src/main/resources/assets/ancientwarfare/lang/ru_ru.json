@@ -189,5 +189,12 @@
   "news.ancientwarfare.alliance.friends": "Союз: %s и %s стали союзниками",
   "news.ancientwarfare.tension": "Напряжение: ссоры на границе портят отношения между %s и %s",
   "news.ancientwarfare.capital_captured": "Пала столица: фракция %s захватила столицу фракции %s у %s, %s",
-  "generator.ancientwarfare.continent": "AW3: континент"
+  "generator.ancientwarfare.continent": "AW3: континент",
+  "gui.ancientwarfare.world_map.kind.tavern": "Таверна",
+  "gui.ancientwarfare.world_map.kind.farm": "Ферма",
+  "gui.ancientwarfare.world_map.kind.mine": "Шахта",
+  "gui.ancientwarfare.world_map.kind.temple": "Храм",
+  "gui.ancientwarfare.world_map.kind.homestead": "Хутор",
+  "gui.ancientwarfare.world_map.center_player": "К игроку",
+  "news.ancientwarfare.ceded": "Условия мира: %1$s отдаёт %2$s поселения в их земле (%3$s)"
 }

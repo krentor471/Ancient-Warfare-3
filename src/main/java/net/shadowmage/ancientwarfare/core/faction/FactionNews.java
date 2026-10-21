@@ -29,6 +29,10 @@ public final class FactionNews {
       tell(level, Component.translatable("news.ancientwarfare." + state.serializedName() + "." + reason, args));
    }
 
+   public static void ceded(ServerLevel level, String from, String to, int settlements) {
+      tell(level, Component.translatable("news.ancientwarfare.ceded", factionName(from), factionName(to), settlements));
+   }
+
    public static void tension(ServerLevel level, String faction, String other) {
       tell(level, Component.translatable("news.ancientwarfare.tension", factionName(faction), factionName(other)));
    }

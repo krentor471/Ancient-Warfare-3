@@ -3,6 +3,7 @@ package net.shadowmage.ancientwarfare.core.faction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -12,15 +13,19 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
 
 /**
- * A map of the faction world around a player, for testing: who owns which land, where the
+ * A map of the faction world around its centre (0, 0), for testing: who owns which land, where the
  * settlements, capitals and roads are. Operators and creative players can teleport by clicking it.
  */
 public final class WorldMap {
    /** Blocks per map cell, and cells across the map. */
    public static final int STEP = 64;
-   public static final int SIZE = 128;
+   public static final int SIZE = 200;
    public static final int TELEPORT_Y = 90;
    private static final int ROAD_POINT_STRIDE = 4;
+   private static final List<String> MINE_WORDS = List.of("mine", "quarry", "smelt", "forge", "dig");
+   private static final List<String> FARM_WORDS = List.of("farm", "field", "barn", "pig", "granary", "mill", "orchard", "coop", "coup", "ranch", "pasture", "stable");
+   private static final List<String> TEMPLE_WORDS = List.of("temple", "shrine", "church", "chapel", "cathed", "monast", "altar", "reliqu", "abbey", "totem");
+   private static final List<String> VILLAGE_WORDS = List.of("village", "settlement", "town", "hamlet");
 
    private WorldMap() {
    }
@@ -30,6 +35,11 @@ public final class WorldMap {
       FORT,
       TRADE_POST,
       GUARD_POST,
+      TAVERN,
+      FARM,
+      MINE,
+      TEMPLE,
+      HOMESTEAD,
       CAPITAL,
       CAPITAL_AREA,
       PLAYER_VILLAGE,
@@ -50,8 +60,9 @@ public final class WorldMap {
    private static Data build(ServerPlayer player) {
       ServerLevel level = player.serverLevel();
       FactionWorldData data = FactionWorldData.get(level);
-      int originX = Math.floorDiv(player.getBlockX(), STEP) * STEP - SIZE / 2 * STEP;
-      int originZ = Math.floorDiv(player.getBlockZ(), STEP) * STEP - SIZE / 2 * STEP;
+      // Fixed on the world's centre, so the map does not shift as the player moves.
+      int originX = -SIZE / 2 * STEP;
+      int originZ = -SIZE / 2 * STEP;
       List<String> factions = new ArrayList<>();
       factions.add("");
       Map<String, Integer> indices = new HashMap<>();
@@ -84,8 +95,8 @@ public final class WorldMap {
          }
       }
 
-      for (int x = originX; x < maxX; x += FactionRegions.REALM_SIZE / 2) {
-         for (int z = originZ; z < maxZ; z += FactionRegions.REALM_SIZE / 2) {
+      for (int x = originX; x < maxX; x += FactionRegions.realmSize() / 2) {
+         for (int z = originZ; z < maxZ; z += FactionRegions.realmSize() / 2) {
             FactionRegions.Realm realm = FactionRegions.realmAt(level, x, z);
             boolean inside = realm.seedX() >= originX && realm.seedX() < maxX && realm.seedZ() >= originZ && realm.seedZ() < maxZ;
             if (inside && !realm.faction().isEmpty() && markers.stream().noneMatch(m -> m.kind() == Kind.CAPITAL_AREA && m.x() == realm.seedX() && m.z() == realm.seedZ())) {
@@ -143,13 +154,34 @@ public final class WorldMap {
          return Kind.OUTLAW;
       }
 
+      String name = templateName(settlement.template()).toLowerCase(Locale.ROOT);
       return switch (settlement.kind()) {
          case "fort" -> Kind.FORT;
-         case FactionTrade.TRADE_POST -> Kind.TRADE_POST;
+         case FactionTrade.TRADE_POST -> name.contains("inn") || name.contains("tavern") ? Kind.TAVERN : Kind.TRADE_POST;
          case FactionTrade.GUARD_POST -> Kind.GUARD_POST;
          case "capital" -> Kind.CAPITAL;
-         default -> Kind.VILLAGE;
+         case "village" -> Kind.VILLAGE;
+         default -> building(settlement.template(), name);
       };
+   }
+
+   /** What a settlement of one building is, by its building. */
+   private static Kind building(String template, String name) {
+      if (MINE_WORDS.stream().anyMatch(name::contains)) {
+         return Kind.MINE;
+      } else if (TEMPLE_WORDS.stream().anyMatch(name::contains)) {
+         return Kind.TEMPLE;
+      } else if (TemplateFactions.hasMilitaryName(template)) {
+         return Kind.FORT;
+      } else if (FARM_WORDS.stream().anyMatch(name::contains)) {
+         return Kind.FARM;
+      } else if (name.contains("inn") || name.contains("tavern")) {
+         return Kind.TAVERN;
+      } else if (VILLAGE_WORDS.stream().anyMatch(name::contains)) {
+         return Kind.VILLAGE;
+      }
+
+      return Kind.HOMESTEAD;
    }
 
    public static boolean canTeleport(ServerPlayer player) {

@@ -43,12 +43,18 @@ public final class FactionWorldData extends SavedData {
    private long lastSimulatedDay = -1L;
    /** Faction days that passed before the clock started: the history simulated when the world began. */
    private long dayOffset;
+   /** Settlements of new worlds stand this much further apart than at first. */
+   public static final int NEW_REGION_SCALE = 130;
    private boolean historyDone;
+   /** How far apart provinces, realms and natural structures are, in percent; worlds from before this was kept use 100. */
+   private int regionScale = NEW_REGION_SCALE;
    /** Half the width of the area an unbuilt settlement is taken to cover until it is built. */
    private static final int UNBUILT_HALF_SIZE = 32;
 
    public static FactionWorldData get(ServerLevel level) {
-      return level.getServer().overworld().getDataStorage().computeIfAbsent(FactionWorldData::load, FactionWorldData::new, DATA_NAME);
+      FactionWorldData data = level.getServer().overworld().getDataStorage().computeIfAbsent(FactionWorldData::load, FactionWorldData::new, DATA_NAME);
+      FactionRegions.setScale(data.regionScale);
+      return data;
    }
 
    /** Faction a realm started with, or null when it was never decided. "" means a wild realm. */
@@ -368,6 +374,7 @@ public final class FactionWorldData extends SavedData {
       tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
       tag.putLong("DayOffset", this.dayOffset);
       tag.putBoolean("HistoryDone", this.historyDone);
+      tag.putInt("RegionScale", this.regionScale);
       ListTag plans = new ListTag();
 
       for (PlannedSettlement plan : this.plannedSettlements) {
@@ -489,6 +496,7 @@ public final class FactionWorldData extends SavedData {
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
       data.dayOffset = tag.getLong("DayOffset");
       data.historyDone = tag.getBoolean("HistoryDone");
+      data.regionScale = tag.contains("RegionScale") ? tag.getInt("RegionScale") : 100;
 
       for (Tag element : tag.getList("PlannedSettlements", Tag.TAG_COMPOUND)) {
          CompoundTag entry = (CompoundTag)element;

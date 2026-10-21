@@ -3,8 +3,10 @@ package net.shadowmage.ancientwarfare.core.client;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
@@ -13,7 +15,10 @@ import net.minecraft.util.Mth;
 import net.shadowmage.ancientwarfare.core.faction.WorldMap;
 import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
 
-/** The faction world around the player: land by owner, settlements, capitals and roads. Click to teleport. */
+/**
+ * The faction world around its centre: land by owner, settlements, capitals and roads. Drag to move,
+ * scroll to zoom, click to teleport. The view is kept between openings.
+ */
 public class WorldMapScreen extends Screen {
    private static final ResourceLocation TEXTURE = new ResourceLocation("ancientwarfare", "dynamic/world_map");
    private static final int MARGIN = 24;
@@ -23,6 +28,10 @@ public class WorldMapScreen extends Screen {
    private static final double MIN_SCALE = 0.02;
    private static final double MAX_SCALE = 2.0;
    private static final double HOVER_RANGE = 6.0;
+   /** The last view, so reopening the map shows the same place; NaN until first opened. */
+   private static double savedX = Double.NaN;
+   private static double savedZ;
+   private static double savedScale;
    private final WorldMap.Data data;
    private DynamicTexture texture;
    /** World point at the middle of the map view, and screen pixels per block. */
@@ -34,8 +43,8 @@ public class WorldMapScreen extends Screen {
    private WorldMapScreen(WorldMap.Data data) {
       super(Component.translatable("gui.ancientwarfare.world_map.title"));
       this.data = data;
-      this.viewX = data.originX() + WorldMap.SIZE * WorldMap.STEP / 2.0;
-      this.viewZ = data.originZ() + WorldMap.SIZE * WorldMap.STEP / 2.0;
+      this.viewX = Double.isNaN(savedX) ? 0.0 : savedX;
+      this.viewZ = Double.isNaN(savedX) ? 0.0 : savedZ;
    }
 
    public static void open(WorldMap.Data data) {
@@ -56,12 +65,26 @@ public class WorldMapScreen extends Screen {
 
          this.texture = new DynamicTexture(image);
          this.minecraft.getTextureManager().register(TEXTURE, this.texture);
-         this.scale = Math.min(this.mapWidth(), this.mapHeight()) / (double)(WorldMap.SIZE * WorldMap.STEP);
+         this.scale = Double.isNaN(savedX) ? Math.min(this.mapWidth(), this.mapHeight()) / (double)(WorldMap.SIZE * WorldMap.STEP) : savedScale;
+      }
+
+      this.addRenderableWidget(
+         Button.builder(Component.translatable("gui.ancientwarfare.world_map.center_player"), button -> this.centerOnPlayer()).bounds(MARGIN, 2, 90, 18).build()
+      );
+   }
+
+   private void centerOnPlayer() {
+      if (this.minecraft.player != null) {
+         this.viewX = this.minecraft.player.getX();
+         this.viewZ = this.minecraft.player.getZ();
       }
    }
 
    @Override
    public void removed() {
+      savedX = this.viewX;
+      savedZ = this.viewZ;
+      savedScale = this.scale;
       this.minecraft.getTextureManager().release(TEXTURE);
       this.texture = null;
    }
@@ -200,6 +223,29 @@ public class WorldMapScreen extends Screen {
             graphics.fill(x - 2, y - 2, x + 3, y + 3, outline);
             graphics.fill(x - 1, y - 1, x + 2, y + 2, 0xFFB0B0B0);
          }
+         case TAVERN -> {
+            graphics.fill(x - 2, y - 2, x + 3, y + 3, outline);
+            graphics.fill(x - 1, y - 1, x + 2, y + 2, 0xFFE07020);
+         }
+         case FARM -> {
+            graphics.fill(x - 3, y - 3, x + 4, y + 4, outline);
+            graphics.fill(x - 2, y - 2, x + 3, y + 3, 0xFFC8D040);
+            graphics.fill(x, y, x + 1, y + 1, color);
+         }
+         case MINE -> {
+            graphics.fill(x - 3, y - 3, x + 4, y + 4, outline);
+            graphics.fill(x - 2, y - 2, x + 3, y + 3, 0xFF6A5030);
+            graphics.fill(x, y, x + 1, y + 1, color);
+         }
+         case TEMPLE -> {
+            graphics.fill(x - 3, y - 3, x + 4, y + 4, outline);
+            graphics.fill(x - 2, y - 2, x + 3, y + 3, 0xFFF0F0F0);
+            graphics.fill(x, y, x + 1, y + 1, color);
+         }
+         case HOMESTEAD -> {
+            graphics.fill(x - 2, y - 2, x + 3, y + 3, outline);
+            graphics.fill(x - 1, y - 1, x + 2, y + 2, color);
+         }
          case PLAYER_VILLAGE -> {
             graphics.fill(x - 4, y - 4, x + 5, y + 5, outline);
             graphics.fill(x - 3, y - 3, x + 4, y + 4, 0xFF40A0FF);
@@ -331,8 +377,35 @@ public class WorldMapScreen extends Screen {
       return this.viewZ + (screenY - this.centerY()) / this.scale;
    }
 
-   /** A steady colour per faction, picked from its name so it is the same in every world. */
+   /** Hand-picked colours, so neighbours never look alike; factions not listed get one from their name. */
+   private static final Map<String, Integer> COLORS = Map.ofEntries(
+      Map.entry("empire", 0xFFC03A3A),
+      Map.entry("nogg", 0xFF3A6FD0),
+      Map.entry("norska", 0xFF7FB8E8),
+      Map.entry("sarkonid", 0xFFE0A030),
+      Map.entry("zimba", 0xFF8A5A2A),
+      Map.entry("barbarian", 0xFF5FA03A),
+      Map.entry("buffloka", 0xFFD8D050),
+      Map.entry("witchbane", 0xFF9050C0),
+      Map.entry("vyncan", 0xFF2E8A6A),
+      Map.entry("kong", 0xFF4A4A9A),
+      Map.entry("sealsker", 0xFF50B0B0),
+      Map.entry("guild", 0xFFE070B0),
+      Map.entry("amazon", 0xFFA0D070),
+      Map.entry("reiksgard", 0xFFB07050),
+      Map.entry("shakayana", 0xFFF08040),
+      Map.entry("smingol", 0xFF708090),
+      Map.entry("xoltec", 0xFFD04080),
+      Map.entry("zamurai", 0xFFF0F0F0)
+   );
+
+   /** A steady colour per faction, the same in every world. */
    public static int factionColor(String faction) {
+      Integer fixed = COLORS.get(faction);
+      if (fixed != null) {
+         return fixed;
+      }
+
       int mixed = faction.hashCode() * 0x9E3779B9;
       float hue = ((mixed >>> 8) & 0xFFFF) / 65536.0F;
       return 0xFF000000 | Mth.hsvToRgb(hue, 0.6F, 0.8F);

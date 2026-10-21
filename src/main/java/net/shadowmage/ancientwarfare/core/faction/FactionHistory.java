@@ -16,7 +16,7 @@ import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
  */
 public final class FactionHistory {
    /** Half the width of the square whose countries are decided up front. */
-   public static final int RADIUS = 5000;
+   public static final int RADIUS = 6400;
    public static final int DAYS = 60;
    private static boolean running;
 
@@ -36,7 +36,7 @@ public final class FactionHistory {
       long started = System.currentTimeMillis();
       boolean fresh = data.settlements().isEmpty();
       BlockPos spawn = level.getSharedSpawnPos();
-      int size = FactionRegions.PROVINCE_SIZE;
+      int size = FactionRegions.provinceSize();
 
       for (int cellX = Math.floorDiv(spawn.getX() - RADIUS, size); cellX <= Math.floorDiv(spawn.getX() + RADIUS, size); cellX++) {
          for (int cellZ = Math.floorDiv(spawn.getZ() - RADIUS, size); cellZ <= Math.floorDiv(spawn.getZ() + RADIUS, size); cellZ++) {

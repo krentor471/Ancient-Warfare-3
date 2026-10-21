@@ -91,6 +91,12 @@ public final class TemplateFactions {
       return !info(path).faction().isEmpty() && TRADE_WORDS.stream().anyMatch(name::contains) && LARGE_WORDS.stream().noneMatch(name::contains);
    }
 
+   /** An inn or tavern, by its name. */
+   public static boolean isTavern(String path) {
+      String name = name(path);
+      return name.contains("inn") || name.contains("tavern");
+   }
+
    /** An inn or tavern of no faction, which any faction without one of its own may keep by its roads. */
    public static boolean isNeutralTradePost(String path) {
       String name = name(path);

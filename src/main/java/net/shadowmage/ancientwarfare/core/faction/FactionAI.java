@@ -37,6 +37,10 @@ public final class FactionAI {
    private static final double FORT_DEFENCE = 1.5;
    private static final double CAPITAL_DEFENCE = 2.0;
    private static final int MAX_ARMY = 60;
+   /** Days a newly taken settlement cannot be attacked, so it is not traded back and forth daily. */
+   private static final long HOLD_DAYS = 6L;
+   /** Day each settlement was last taken; not saved, a restart only shortens the respite. */
+   private static final Map<Integer, Long> TAKEN = new HashMap<>();
 
    private FactionAI() {
    }
@@ -125,6 +129,7 @@ public final class FactionAI {
             boolean beaten = mine == 0 || theirs == 0;
             if (beaten || days >= MIN_WAR_DAYS && random.nextDouble() < PEACE_CHANCE_PER_DAY * (days - MIN_WAR_DAYS + 1)) {
                if (FactionDiplomacy.setState(level, faction, other, RelationState.NEUTRAL)) {
+                  FactionBorders.settlePeace(level, data, faction, other);
                   if (beaten) {
                      FactionNews.relationChanged(level, faction, other, RelationState.NEUTRAL, "beaten", FactionNews.factionName(mine == 0 ? faction : other));
                   } else {
@@ -199,7 +204,7 @@ public final class FactionAI {
       boolean firstAttacks = random.nextInt(mine + theirs) < mine;
       String attacker = firstAttacks ? faction : other;
       String defender = firstAttacks ? other : faction;
-      FactionWorldData.Settlement target = borderSettlement(data, attacker, defender);
+      FactionWorldData.Settlement target = borderSettlement(data, attacker, defender, data.lastSimulatedDay());
       if (target == null) {
          return;
       }
@@ -234,6 +239,7 @@ public final class FactionAI {
    static void capture(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement target, String attacker, int garrison) {
       String defender = target.faction();
       target.capturedFrom = defender;
+      TAKEN.put(target.id(), data.lastSimulatedDay());
       target.setFaction(attacker);
       target.garrison = garrison;
       target.manned = true;
@@ -284,18 +290,21 @@ public final class FactionAI {
    }
 
    /**
-    * The defender's settlement in a province touching the attacker's land, the weakest first. While
+    * The defender's settlement in a province touching the attacker's land: the one most surrounded
+    * by it, so the front moves as one line instead of cutting holes, then the weakest. While
     * the defender holds a fort on that border, the attacker must take the fort first.
     */
-   private static FactionWorldData.Settlement borderSettlement(FactionWorldData data, String attacker, String defender) {
+   private static FactionWorldData.Settlement borderSettlement(FactionWorldData data, String attacker, String defender, long day) {
       Set<Long> attackerLand = new HashSet<>(data.provincesOf(attacker));
       FactionWorldData.Settlement best = null;
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         if (settlement.faction().equals(defender) && touches(settlement.province(), attackerLand)) {
+         int front = front(settlement.province(), attackerLand);
+         if (settlement.faction().equals(defender) && front > 0 && day - TAKEN.getOrDefault(settlement.id(), Long.MIN_VALUE / 2) >= HOLD_DAYS) {
+            int bestFront = best == null ? 0 : front(best.province(), attackerLand);
             boolean better = best == null
                || isFort(settlement) && !isFort(best)
-               || isFort(settlement) == isFort(best) && settlement.garrison < best.garrison;
+               || isFort(settlement) == isFort(best) && (front > bestFront || front == bestFront && settlement.garrison < best.garrison);
             if (better) {
                best = settlement;
             }
@@ -309,19 +318,21 @@ public final class FactionAI {
       return "fort".equals(settlement.kind());
    }
 
-   private static boolean touches(long province, Set<Long> land) {
+   /** How many of the eight provinces around this one are in land. */
+   private static int front(long province, Set<Long> land) {
       int cellX = ChunkPos.getX(province);
       int cellZ = ChunkPos.getZ(province);
+      int count = 0;
 
       for (int dx = -1; dx <= 1; dx++) {
          for (int dz = -1; dz <= 1; dz++) {
-            if (land.contains(ChunkPos.asLong(cellX + dx, cellZ + dz))) {
-               return true;
+            if ((dx != 0 || dz != 0) && land.contains(ChunkPos.asLong(cellX + dx, cellZ + dz))) {
+               count++;
             }
          }
       }
 
-      return false;
+      return count;
    }
 
    static Map<String, Integer> strengths(FactionWorldData data) {

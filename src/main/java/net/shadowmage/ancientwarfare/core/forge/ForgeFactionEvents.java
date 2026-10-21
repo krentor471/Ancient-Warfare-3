@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -17,6 +18,7 @@ import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.event.TickEvent.ServerTickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
@@ -28,6 +30,7 @@ import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
+import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 
 @EventBusSubscriber(
    modid = "ancientwarfare",
@@ -50,6 +53,21 @@ public final class ForgeFactionEvents {
          && event.getLevel() instanceof ServerLevel serverLevel
          && serverLevel.dimension() == Level.OVERWORLD
          && !FactionSimulation.onNpcJoin(serverLevel, npc)) {
+         event.setCanceled(true);
+      }
+   }
+
+   /** Loads the faction world with the overworld, so its region scale is known before any land is generated. */
+   @SubscribeEvent
+   public static void onLevelLoad(LevelEvent.Load event) {
+      if (event.getLevel() instanceof ServerLevel level && level.dimension() == Level.OVERWORLD) {
+         FactionWorldData.get(level);
+      }
+   }
+
+   @SubscribeEvent
+   public static void onCaravanAnimalJoin(EntityJoinLevelEvent event) {
+      if (event.getEntity() instanceof AbstractHorse animal && event.getLevel() instanceof ServerLevel && FactionCaravans.isStale(animal)) {
          event.setCanceled(true);
       }
    }

@@ -184,7 +184,12 @@ public final class FactionRoads {
       }
 
       String faction = a.horizontalDistanceSquared(x, z) <= b.horizontalDistanceSquared(x, z) ? a.faction() : b.faction();
-      AwsWorldGenerator.Site wanted = route.postsBuilt % 2 == 1 ? AwsWorldGenerator.Site.TRADE_POST : AwsWorldGenerator.Site.GUARD_POST;
+      // Guard posts every other spot; between them a tavern, then a trading post, in turn.
+      AwsWorldGenerator.Site wanted = switch (route.postsBuilt % 4) {
+         case 1 -> AwsWorldGenerator.Site.TAVERN;
+         case 3 -> AwsWorldGenerator.Site.TRADE_POST;
+         default -> AwsWorldGenerator.Site.GUARD_POST;
+      };
       AwsWorldGenerator.Site site = wanted;
       boolean built = false;
 
@@ -203,7 +208,7 @@ public final class FactionRoads {
          built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(siteX >> 4, siteZ >> 4), faction, site);
       }
 
-      AncientWarfareCore.LOG.info("Road #{}: {} {} {} near {}, {}", route.id(), faction, built ? "built a" : "could not build a", site.kind(), x, z);
+      AncientWarfareCore.LOG.info("Road #{}: {} {} {} near {}, {}", route.id(), faction, built ? "built a" : "could not build a", site.name().toLowerCase(java.util.Locale.ROOT), x, z);
       return true;
    }
 

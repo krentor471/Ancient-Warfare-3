@@ -1311,5 +1311,12 @@
   "news.ancientwarfare.alliance.friends": "Alliance: %s and %s became allies",
   "news.ancientwarfare.tension": "Tension: quarrels along the border sour relations between %s and %s",
   "news.ancientwarfare.capital_captured": "Capital fallen: %s took the capital of %s near %s, %s",
-  "generator.ancientwarfare.continent": "AW3: Continent"
+  "generator.ancientwarfare.continent": "AW3: Continent",
+  "gui.ancientwarfare.world_map.kind.tavern": "Tavern",
+  "gui.ancientwarfare.world_map.kind.farm": "Farm",
+  "gui.ancientwarfare.world_map.kind.mine": "Mine",
+  "gui.ancientwarfare.world_map.kind.temple": "Temple",
+  "gui.ancientwarfare.world_map.kind.homestead": "Homestead",
+  "gui.ancientwarfare.world_map.center_player": "Center on me",
+  "news.ancientwarfare.ceded": "Peace terms: %1$s hands %3$s settlement(s) deep in their land over to %2$s"
 }

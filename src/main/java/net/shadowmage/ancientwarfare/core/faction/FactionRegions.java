@@ -19,16 +19,18 @@ import net.shadowmage.ancientwarfare.core.structure.AwtWorldGenTemplateRegistry;
  * Splits the overworld into provinces held by one faction or left wild, so a faction's structures
  * cluster into one country instead of a patchwork.
  *
- * Two Voronoi layers, each with one jittered seed point per grid square: realms (REALM_SIZE) pick a
+ * Two Voronoi layers, each with one jittered seed point per grid square: realms (realmSize) pick a
  * faction from the climate around their seed point, which is the faction's starting capital area;
- * provinces (PROVINCE_SIZE) are the unit of land. At the start only provinces within CORE_RADIUS of a
+ * provinces (provinceSize) are the unit of land. At the start only provinces within coreRadius of a
  * realm's seed belong to that realm's faction, the rest is wild land for factions to expand into.
  * Province owners are stored once decided, so expansion and conquest can change them.
  */
 public final class FactionRegions {
-   public static final int REALM_SIZE = 2048;
-   public static final int PROVINCE_SIZE = 512;
-   public static final int CORE_RADIUS = 800;
+   private static final int BASE_REALM_SIZE = 2048;
+   private static final int BASE_PROVINCE_SIZE = 512;
+   private static final int BASE_CORE_RADIUS = 800;
+   /** Sizes for the loaded world, scaled by its region scale. */
+   private static volatile int scale = 100;
    /** Outlaws never own land and may camp anywhere. */
    public static final Set<String> OUTLAWS = Set.of("brigand", "pirate");
    private static final long REALM_SALT = 0x5EED_FAC7L;
@@ -43,15 +45,36 @@ public final class FactionRegions {
    private FactionRegions() {
    }
 
+   static void setScale(int percent) {
+      scale = percent;
+   }
+
+   /** The region scale of the loaded world, in percent. */
+   public static int scale() {
+      return scale;
+   }
+
+   public static int provinceSize() {
+      return BASE_PROVINCE_SIZE * scale / 100;
+   }
+
+   public static int realmSize() {
+      return BASE_REALM_SIZE * scale / 100;
+   }
+
+   private static int coreRadius() {
+      return BASE_CORE_RADIUS * scale / 100;
+   }
+
    public static Province provinceAt(ServerLevel level, int x, int z) {
-      Cell cell = nearestCell(level.getSeed(), x, z, PROVINCE_SIZE, PROVINCE_SALT);
+      Cell cell = nearestCell(level.getSeed(), x, z, provinceSize(), PROVINCE_SALT);
       FactionWorldData data = FactionWorldData.get(level);
       String owner = data.provinceOwner(cell.key());
       if (owner == null) {
          Realm realm = realmAt(level, cell.seedX(), cell.seedZ());
          long dx = (long)cell.seedX() - realm.seedX();
          long dz = (long)cell.seedZ() - realm.seedZ();
-         owner = dx * dx + dz * dz <= (long)CORE_RADIUS * CORE_RADIUS ? realm.faction() : "";
+         owner = dx * dx + dz * dz <= (long)coreRadius() * coreRadius() ? realm.faction() : "";
          data.setProvinceOwner(cell.key(), owner);
       }
 
@@ -64,7 +87,7 @@ public final class FactionRegions {
 
    /** The realm whose capital area covers this point; its faction is who the land starts with. */
    public static Realm realmAt(ServerLevel level, int x, int z) {
-      Cell cell = nearestCell(level.getSeed(), x, z, REALM_SIZE, REALM_SALT);
+      Cell cell = nearestCell(level.getSeed(), x, z, realmSize(), REALM_SALT);
       FactionWorldData data = FactionWorldData.get(level);
       String faction = data.realmFaction(cell.key());
       if (faction == null) {
@@ -112,7 +135,7 @@ public final class FactionRegions {
 
    /** The province of a grid cell, decided if it was not yet. */
    public static Province provinceByCell(ServerLevel level, int cellX, int cellZ) {
-      Cell cell = cell(level.getSeed(), cellX, cellZ, PROVINCE_SIZE, PROVINCE_SALT);
+      Cell cell = cell(level.getSeed(), cellX, cellZ, provinceSize(), PROVINCE_SALT);
       return provinceAt(level, cell.seedX(), cell.seedZ());
    }
 

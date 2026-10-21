@@ -59,6 +59,8 @@ public final class AwsWorldGenerator {
       VILLAGE("structure"),
       FORT("fort"),
       TRADE_POST("tradepost"),
+      /** An inn or tavern by a road: the faction's own, or a plain one any faction may keep. */
+      TAVERN("tradepost"),
       GUARD_POST("guardpost");
 
       private final String kind;
@@ -76,7 +78,8 @@ public final class AwsWorldGenerator {
             case SETTLEMENT -> true;
             case VILLAGE -> !TemplateFactions.hasMilitaryName(path) && !TemplateFactions.isMilitary(path);
             case FORT -> TemplateFactions.isMilitary(path);
-            case TRADE_POST -> TemplateFactions.isTradePost(path);
+            case TRADE_POST -> TemplateFactions.isTradePost(path) && !TemplateFactions.isTavern(path);
+            case TAVERN -> TemplateFactions.isTradePost(path) && TemplateFactions.isTavern(path);
             case GUARD_POST -> TemplateFactions.isGuardPost(path);
          };
       }
@@ -86,7 +89,7 @@ public final class AwsWorldGenerator {
          return switch (this) {
             case SETTLEMENT, VILLAGE -> soldiers;
             case FORT -> Math.min(soldiers, FactionExpansion.FORT_GARRISON);
-            case TRADE_POST -> Math.min(soldiers, 2);
+            case TRADE_POST, TAVERN -> Math.min(soldiers, 2);
             case GUARD_POST -> Math.min(soldiers, 6);
          };
       }
@@ -148,7 +151,7 @@ public final class AwsWorldGenerator {
                }
 
                // Roadside posts keep close to their spot so they do not land on the road.
-               int spread = site == Site.TRADE_POST || site == Site.GUARD_POST ? 8 : 32;
+               int spread = site == Site.TRADE_POST || site == Site.TAVERN || site == Site.GUARD_POST ? 8 : 32;
                int x = siteAttempt == 0 ? chunk.getMinBlockX() + random.nextInt(16) : chunk.getMiddleBlockX() + random.nextInt(spread * 2 + 1) - spread;
                int z = siteAttempt == 0 ? chunk.getMinBlockZ() + random.nextInt(16) : chunk.getMiddleBlockZ() + random.nextInt(spread * 2 + 1) - spread;
                long dx = (long)x - (long)spawn.getX();
@@ -195,8 +198,8 @@ public final class AwsWorldGenerator {
                         }
                      }
 
-                     if (candidates.isEmpty() && site == Site.TRADE_POST && !waterSite) {
-                        // A faction with no inn of its own keeps a plain roadside tavern.
+                     if ((site == Site.TAVERN || candidates.isEmpty() && site == Site.TRADE_POST) && !waterSite) {
+                        // Plain roadside taverns serve every faction; one with no trader of its own keeps one too.
                         for (AwsWorldGenTemplateRegistry.Template templatex : AwsWorldGenTemplateRegistry.templates()) {
                            if (!templatex.requiresPhasedPlacement() && templatex.ground() && TemplateFactions.isNeutralTradePost(templatex.path())) {
                               candidates.add(templatex);
@@ -218,7 +221,7 @@ public final class AwsWorldGenerator {
                         maxZ = min.getZ() + template.rotatedSizeZ(facing) - 1;
                         String rejection = !template.fitsBuildHeight(min, level.getMinBuildHeight(), level.getMaxBuildHeight())
                            ? "build_height"
-                           : placementRejection(level, data, template, min, maxX, maxZ, x, z, site == Site.TRADE_POST || site == Site.GUARD_POST);
+                           : placementRejection(level, data, template, min, maxX, maxZ, x, z, site == Site.TRADE_POST || site == Site.TAVERN || site == Site.GUARD_POST);
                         if (rejection == null && template.aquatic()) {
                            NaturalGenerationContext.markArea(min.offset(-16, 0, -16), maxX + 16, maxZ + 16);
                         }
@@ -266,7 +269,7 @@ public final class AwsWorldGenerator {
             );
             TemplateFactions.TemplateInfo info = TemplateFactions.info(template.path());
             // A neutral tavern by a faction's road is that faction's post.
-            String owner = info.faction().isEmpty() && site == Site.TRADE_POST && requiredFaction != null ? requiredFaction : info.faction();
+            String owner = info.faction().isEmpty() && (site == Site.TRADE_POST || site == Site.TAVERN) && requiredFaction != null ? requiredFaction : info.faction();
             if (!owner.isEmpty()) {
                FactionWorldData.get(level)
                   .addSettlement(
@@ -290,7 +293,8 @@ public final class AwsWorldGenerator {
    }
 
    public static boolean isCandidateChunk(long worldSeed, ChunkPos chunk) {
-      int regionSize = AWCorePlatform.gameplayConfig().awsRegionChunks();
+      // Worlds whose settlements stand further apart have their lone buildings further apart too.
+      int regionSize = Math.max(2, AWCorePlatform.gameplayConfig().awsRegionChunks() * FactionRegions.scale() / 100);
       int regionX = Math.floorDiv(chunk.x, regionSize);
       int regionZ = Math.floorDiv(chunk.z, regionSize);
       long regionSeed = worldSeed ^ (long)regionX * 341873128712L ^ (long)regionZ * 132897987541L ^ 72188768385693L;
