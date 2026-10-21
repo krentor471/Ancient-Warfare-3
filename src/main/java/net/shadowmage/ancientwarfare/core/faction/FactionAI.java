@@ -32,6 +32,8 @@ public final class FactionAI {
    private static final double TREATY_CHANCE = 0.2;
    private static final double ATTACK_SHARE = 0.4;
    private static final double CAPTURE_PLAYER_RANGE = 192.0;
+   /** Walls make a fort's garrison count for more in a battle fought out of sight. */
+   private static final double FORT_DEFENCE = 1.5;
 
    private FactionAI() {
    }
@@ -153,7 +155,7 @@ public final class FactionAI {
          return;
       }
 
-      int defence = target.garrison;
+      int defence = isFort(target) ? (int)Math.round(target.garrison * FORT_DEFENCE) : target.garrison;
       int attackerLosses = Math.min(force, (int)Math.round(defence * (0.3 + random.nextDouble() * 0.4)));
       int defenderLosses = Math.min(defence, (int)Math.round(force * (0.3 + random.nextDouble() * 0.4)));
       takeLosses(data, attacker, attackerLosses);
@@ -223,18 +225,30 @@ public final class FactionAI {
       return taken;
    }
 
-   /** The defender's settlement in a province touching the attacker's land, the weakest first. */
+   /**
+    * The defender's settlement in a province touching the attacker's land, the weakest first. While
+    * the defender holds a fort on that border, the attacker must take the fort first.
+    */
    private static FactionWorldData.Settlement borderSettlement(FactionWorldData data, String attacker, String defender) {
       Set<Long> attackerLand = new HashSet<>(data.provincesOf(attacker));
       FactionWorldData.Settlement best = null;
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         if (settlement.faction().equals(defender) && touches(settlement.province(), attackerLand) && (best == null || settlement.garrison < best.garrison)) {
-            best = settlement;
+         if (settlement.faction().equals(defender) && touches(settlement.province(), attackerLand)) {
+            boolean better = best == null
+               || isFort(settlement) && !isFort(best)
+               || isFort(settlement) == isFort(best) && settlement.garrison < best.garrison;
+            if (better) {
+               best = settlement;
+            }
          }
       }
 
       return best;
+   }
+
+   static boolean isFort(FactionWorldData.Settlement settlement) {
+      return "fort".equals(settlement.kind());
    }
 
    private static boolean touches(long province, Set<Long> land) {

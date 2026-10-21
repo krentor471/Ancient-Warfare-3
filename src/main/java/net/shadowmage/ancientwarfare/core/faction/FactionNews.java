@@ -30,6 +30,10 @@ public final class FactionNews {
       tell(level, Component.translatable("news.ancientwarfare.founded", factionName(faction), x, z));
    }
 
+   public static void fortified(ServerLevel level, String faction, int x, int z) {
+      tell(level, Component.translatable("news.ancientwarfare.fortified", factionName(faction), x, z));
+   }
+
    /** News for one player only, such as a raid on their village; lost while they are offline. */
    public static void tellPlayer(ServerLevel level, UUID playerId, Component message) {
       AncientWarfareCore.LOG.info("Faction news for {}: {}", playerId, message.getString());

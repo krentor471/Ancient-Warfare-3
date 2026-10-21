@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
+import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
@@ -40,12 +41,17 @@ public final class AwsWorldGenerator {
    public static boolean generateAt(ServerLevel level, ChunkPos chunk, boolean forced) {
       return NaturalGenerationContext.run(() -> {
          NaturalGenerationContext.markChunk(chunk);
-         return generateInternalAt(level, chunk, forced, null);
+         return generateInternalAt(level, chunk, forced, null, false);
       });
    }
 
    /** Builds one of faction's templates near chunk, for a settlement the faction founded. */
    public static boolean generateSettlementAt(ServerLevel level, ChunkPos chunk, String faction) {
+      return generateSettlementAt(level, chunk, faction, false);
+   }
+
+   /** As generateSettlementAt; a fort uses only the faction's military buildings. */
+   public static boolean generateSettlementAt(ServerLevel level, ChunkPos chunk, String faction, boolean fort) {
       return NaturalGenerationContext.run(() -> {
          // The site may be far from any player: load the land first, heights read as the void otherwise.
          for (int dx = -2; dx <= 2; dx++) {
@@ -55,11 +61,11 @@ public final class AwsWorldGenerator {
             }
          }
 
-         return generateInternalAt(level, chunk, false, faction);
+         return generateInternalAt(level, chunk, false, faction, fort);
       });
    }
 
-   private static boolean generateInternalAt(ServerLevel level, ChunkPos chunk, boolean forced, String requiredFaction) {
+   private static boolean generateInternalAt(ServerLevel level, ChunkPos chunk, boolean forced, String requiredFaction, boolean fort) {
       if (level.dimension() != Level.OVERWORLD) {
          return false;
       } else {
@@ -122,8 +128,21 @@ public final class AwsWorldGenerator {
                            && templatex.acceptsBiome(biome)
                            && templatex.aquatic() == waterSite
                            && FactionRegions.allows(regionOwner, TemplateFactions.ofTemplate(templatex.path()))
-                           && (requiredFaction == null || requiredFaction.equals(TemplateFactions.ofTemplate(templatex.path())))) {
+                           && (requiredFaction == null || requiredFaction.equals(TemplateFactions.ofTemplate(templatex.path())))
+                           && (!fort || TemplateFactions.isMilitary(templatex.path()))) {
                            candidates.add(templatex);
+                        }
+                     }
+
+                     if (candidates.isEmpty() && fort && !waterSite) {
+                        // Borders cross every climate: a fort may stand outside the biomes its faction usually builds in.
+                        for (AwsWorldGenTemplateRegistry.Template templatex : AwsWorldGenTemplateRegistry.templates()) {
+                           if (!templatex.requiresPhasedPlacement()
+                              && !templatex.aquatic()
+                              && requiredFaction.equals(TemplateFactions.ofTemplate(templatex.path()))
+                              && TemplateFactions.isMilitary(templatex.path())) {
+                              candidates.add(templatex);
+                           }
                         }
                      }
 
@@ -192,14 +211,14 @@ public final class AwsWorldGenerator {
                FactionWorldData.get(level)
                   .addSettlement(
                      info.faction(),
-                     "structure",
+                     fort ? "fort" : "structure",
                      template.path(),
                      min,
                      new BlockPos(maxX, min.getY() + template.sizeY() - 1, maxZ),
                      FactionRegions.provinceAt(level, origin.getX(), origin.getZ()).key(),
                      level.getGameTime(),
-                     info.soldiers(),
-                     FactionSimulation.startingPopulation(info.soldiers(), info.civilians())
+                     fort ? Math.min(info.soldiers(), FactionExpansion.FORT_GARRISON) : info.soldiers(),
+                     fort ? FactionSimulation.startingPopulation(0, 0) : FactionSimulation.startingPopulation(info.soldiers(), info.civilians())
                   );
             }
 

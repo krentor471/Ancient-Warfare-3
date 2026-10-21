@@ -237,6 +237,7 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Z", plan.z());
          entry.putLong("Province", plan.province());
          entry.putLong("Day", plan.day());
+         entry.putBoolean("Fort", plan.fort());
          plans.add(entry);
       }
 
@@ -322,7 +323,7 @@ public final class FactionWorldData extends SavedData {
       for (Tag element : tag.getList("PlannedSettlements", Tag.TAG_COMPOUND)) {
          CompoundTag entry = (CompoundTag)element;
          data.plannedSettlements
-            .add(new PlannedSettlement(entry.getString("Faction"), entry.getInt("X"), entry.getInt("Z"), entry.getLong("Province"), entry.getLong("Day")));
+            .add(new PlannedSettlement(entry.getString("Faction"), entry.getInt("X"), entry.getInt("Z"), entry.getLong("Province"), entry.getLong("Day"), entry.getBoolean("Fort")));
       }
 
       CompoundTag foundings = tag.getCompound("LastFounding");
@@ -460,8 +461,8 @@ public final class FactionWorldData extends SavedData {
       }
    }
 
-   /** A village a faction founded on paper; it is built the next time its land loads with no player near. */
-   public static record PlannedSettlement(String faction, int x, int z, long province, long day) {
+   /** A village (or border fort) a faction founded on paper; it is built once no player is near enough to watch. */
+   public static record PlannedSettlement(String faction, int x, int z, long province, long day, boolean fort) {
    }
 
    /**

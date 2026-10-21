@@ -82,7 +82,10 @@ public final class FactionSimulation {
          String faction = settlement.faction();
          int gold = data.treasury(faction) + settlement.population / 4;
 
-         for (int i = 0; i < MAX_RECRUITS_PER_DAY && settlement.garrison < settlement.population / 3 && gold >= RECRUIT_COST; i++) {
+         // A fort is a garrison with a few hands to keep it; anywhere else a third of the people may serve.
+         int maxGarrison = FactionAI.isFort(settlement) ? FactionExpansion.FORT_GARRISON + settlement.tier * 4 : settlement.population / 3;
+
+         for (int i = 0; i < MAX_RECRUITS_PER_DAY && settlement.garrison < maxGarrison && settlement.population > 1 && gold >= RECRUIT_COST; i++) {
             settlement.garrison++;
             settlement.population--;
             gold -= RECRUIT_COST;

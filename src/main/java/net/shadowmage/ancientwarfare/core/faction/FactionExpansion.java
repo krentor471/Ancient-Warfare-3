@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -13,8 +14,10 @@ import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator;
 
 /**
  * Factions grow outward: a faction with gold to spare and a settlement big enough to send settlers
- * claims a wild province next to its land and founds a village there. The claim is immediate; the
- * village is built later, one at a time, while no player is near enough to watch it appear.
+ * claims a wild province next to its land and founds a village there. Where its land meets a rival
+ * that is not an ally, a faction with gold to spare builds a border fort facing that rival. The claim
+ * is immediate; villages and forts are built later, one at a time, while no player is near enough
+ * to watch them appear.
  */
 public final class FactionExpansion {
    private static final int FOUND_COST = 80;
@@ -24,6 +27,13 @@ public final class FactionExpansion {
    private static final double PLAN_PLAYER_RANGE = 256.0;
    private static final double BUILD_PLAYER_RANGE = 192.0;
    private static final int BUILD_CHECK_TICKS = 100;
+   public static final int FORT_COST = 60;
+   /** A new fort's garrison is capped at this, whatever its template spawns. */
+   public static final int FORT_GARRISON = 12;
+   private static final int FORT_INTERVAL_DAYS = 4;
+   /** How far from its own province's seed toward the rival's a fort stands. */
+   private static final double FORT_BORDER_SHARE = 0.6;
+   private static final String FORT_KEY = "fort:";
 
    private FactionExpansion() {
    }
@@ -34,6 +44,14 @@ public final class FactionExpansion {
       data.settlements().forEach(settlement -> factions.add(settlement.faction()));
 
       for (String faction : factions) {
+         // Securing the border comes before new villages.
+         if (!FactionDiplomacy.isOutlaw(faction)
+            && data.treasury(faction) >= FORT_COST
+            && day - data.lastFounding(FORT_KEY + faction) >= FORT_INTERVAL_DAYS
+            && planFort(level, data, faction, day, false) != null) {
+            data.setTreasury(faction, data.treasury(faction) - FORT_COST);
+         }
+
          if (!FactionDiplomacy.isOutlaw(faction)
             && data.treasury(faction) >= FOUND_COST
             && day - data.lastFounding(faction) >= FOUND_INTERVAL_DAYS) {
@@ -42,7 +60,7 @@ public final class FactionExpansion {
                FactionRegions.Province province = pickProvince(level, data, faction);
                if (province != null) {
                   data.setProvinceOwner(province.key(), faction);
-                  data.addPlannedSettlement(new FactionWorldData.PlannedSettlement(faction, province.seedX(), province.seedZ(), province.key(), day));
+                  data.addPlannedSettlement(new FactionWorldData.PlannedSettlement(faction, province.seedX(), province.seedZ(), province.key(), day, false));
                   data.setTreasury(faction, data.treasury(faction) - FOUND_COST);
                   source.population -= SETTLERS;
                   data.setLastFounding(faction, day);
@@ -51,6 +69,75 @@ public final class FactionExpansion {
             }
          }
       }
+   }
+
+   /**
+    * Plans a fort in one of the faction's provinces that borders a rival (any other faction that is
+    * not its ally) and has no fort yet, placed toward that rival. Returns the plan, or null when no
+    * border needs one. Away from players unless anywhere is set (for the debug command).
+    */
+   public static FactionWorldData.PlannedSettlement planFort(ServerLevel level, FactionWorldData data, String faction, long day, boolean anywhere) {
+      Map<Long, String> owners = data.provinceOwners();
+      List<FactionWorldData.PlannedSettlement> candidates = new ArrayList<>();
+
+      for (long owned : data.provincesOf(faction)) {
+         if (hasFort(data, owned)) {
+            continue;
+         }
+
+         int cellX = ChunkPos.getX(owned);
+         int cellZ = ChunkPos.getZ(owned);
+         FactionRegions.Province home = FactionRegions.provinceByCell(level, cellX, cellZ);
+
+         for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+               String rival = owners.get(ChunkPos.asLong(cellX + dx, cellZ + dz));
+               if ((dx != 0 || dz != 0)
+                  && rival != null
+                  && !rival.isEmpty()
+                  && !rival.equals(faction)
+                  && FactionDiplomacy.relation(level, faction, rival).state() != RelationState.ALLIANCE) {
+                  FactionRegions.Province across = FactionRegions.provinceByCell(level, cellX + dx, cellZ + dz);
+                  int x = (int)Math.round(home.seedX() + (across.seedX() - home.seedX()) * FORT_BORDER_SHARE);
+                  int z = (int)Math.round(home.seedZ() + (across.seedZ() - home.seedZ()) * FORT_BORDER_SHARE);
+                  if (FactionRegions.provinceAt(level, x, z).key() != owned) {
+                     x = (home.seedX() + across.seedX()) / 2;
+                     z = (home.seedZ() + across.seedZ()) / 2;
+                  }
+
+                  if (anywhere || !level.hasNearbyAlivePlayer(x, level.getSeaLevel(), z, PLAN_PLAYER_RANGE)) {
+                     candidates.add(new FactionWorldData.PlannedSettlement(faction, x, z, owned, day, true));
+                  }
+               }
+            }
+         }
+      }
+
+      if (candidates.isEmpty()) {
+         return null;
+      }
+
+      FactionWorldData.PlannedSettlement plan = candidates.get(level.getRandom().nextInt(candidates.size()));
+      data.addPlannedSettlement(plan);
+      data.setLastFounding(FORT_KEY + faction, day);
+      AncientWarfareCore.LOG.info("Faction {} plans a border fort at {}, {}", faction, plan.x(), plan.z());
+      return plan;
+   }
+
+   private static boolean hasFort(FactionWorldData data, long province) {
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.province() == province && "fort".equals(settlement.kind())) {
+            return true;
+         }
+      }
+
+      for (FactionWorldData.PlannedSettlement plan : data.plannedSettlements()) {
+         if (plan.province() == province && plan.fort()) {
+            return true;
+         }
+      }
+
+      return false;
    }
 
    /** Builds at most one planned village whose site no player is near. */
@@ -66,12 +153,15 @@ public final class FactionExpansion {
          if (!level.hasNearbyAlivePlayer(plan.x(), level.getSeaLevel(), plan.z(), BUILD_PLAYER_RANGE)) {
             iterator.remove();
             data.setDirty();
-            boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction());
-            if (built) {
+            boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction(), plan.fort());
+            if (built && plan.fort()) {
+               FactionNews.fortified(level, plan.faction(), plan.x(), plan.z());
+            } else if (built) {
                FactionNews.founded(level, plan.faction(), plan.x(), plan.z());
             }
 
-            AncientWarfareCore.LOG.info("Faction {} {} its planned village at {}, {}", plan.faction(), built ? "built" : "could not build", plan.x(), plan.z());
+            AncientWarfareCore.LOG
+               .info("Faction {} {} its planned {} at {}, {}", plan.faction(), built ? "built" : "could not build", plan.fort() ? "fort" : "village", plan.x(), plan.z());
             return;
          }
       }

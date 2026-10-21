@@ -152,5 +152,6 @@
   "news.ancientwarfare.village_claimed": "Поселение фракции %s теперь твоё",
   "news.ancientwarfare.village_held": "%s ещё держат это поселение: в гарнизоне осталось %s солдат",
   "news.ancientwarfare.assault": "Битва: %s атакуют поселение фракции %s у %s, %s",
-  "news.ancientwarfare.assault_repelled": "%s отбили атаку фракции %s"
+  "news.ancientwarfare.assault_repelled": "%s отбили атаку фракции %s",
+  "news.ancientwarfare.fortified": "Пограничный форт: фракция %s построила форт у %s, %s"
 }

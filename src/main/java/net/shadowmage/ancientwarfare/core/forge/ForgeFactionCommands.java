@@ -30,6 +30,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.faction.FactionArmies;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
@@ -152,6 +153,11 @@ public final class ForgeFactionCommands {
                      )
                )
                .then(Commands.literal("armies").executes(context -> showArmies(context.getSource())))
+               .then(
+                  Commands.literal("fortify")
+                     .requires(source -> source.hasPermission(2))
+                     .then(factionArgument("faction").executes(context -> fortify(context.getSource(), faction(context, "faction"))))
+               )
                .then(
                   Commands.literal("simulate")
                      .requires(source -> source.hasPermission(2))
@@ -418,6 +424,19 @@ public final class ForgeFactionCommands {
 
       source.sendFailure(Component.literal("No settlement #" + settlementId));
       return 0;
+   }
+
+   /** Plans a border fort for the faction at once, free; it is built once no player is near the site. */
+   private static int fortify(CommandSourceStack source, String faction) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      FactionWorldData.PlannedSettlement plan = FactionExpansion.planFort(source.getLevel(), data, faction, data.lastSimulatedDay(), true);
+      if (plan == null) {
+         source.sendFailure(Component.literal(faction + " has no border with a rival that lacks a fort"));
+         return 0;
+      }
+
+      tell(source, Component.literal(faction + " plans a border fort at " + plan.x() + ", " + plan.z()));
+      return 1;
    }
 
    private static int showArmies(CommandSourceStack source) {
