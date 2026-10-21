@@ -327,8 +327,10 @@ public final class FactionCampaigns {
       BlockPos center = target.center();
       boolean watched = target.built() && level.hasNearbyAlivePlayer(center.getX(), center.getY(), center.getZ(), SIEGE_PLAYER_RANGE);
       if (watched) {
-         int storming = walkers.isEmpty() ? Math.min(MAX_WALKING, campaign.size) : walkers.size();
-         FactionWorldData.Army army = data.addArmy(campaign.faction(), campaign.defender(), target.id(), null, center, storming, level.getGameTime());
+         // The whole army lays siege: the column on the road forms up where it stands, the rest come on in waves.
+         FactionWorldData.Army army = data.addArmy(campaign.faction(), campaign.defender(), target.id(), null, center, campaign.size, level.getGameTime());
+         army.campX = Mth.floor(campaign.x);
+         army.campZ = Mth.floor(campaign.z);
          if (!walkers.isEmpty()) {
             // The column marches straight into the assault.
             for (FactionNpcEntity npc : walkers) {
@@ -340,12 +342,14 @@ public final class FactionCampaigns {
             army.spawned = true;
             army.started = level.getGameTime();
             army.alive = walkers.size();
+            army.reserve = campaign.size - walkers.size();
+            FactionArmies.siegeBegins(level, data, army, target);
          }
 
          army.raid = campaign.raid;
 
          campaign.walking = 0;
-         end(level, data, campaign, List.of(), campaign.size - storming);
+         end(level, data, campaign, List.of(), 0);
          return;
       }
 

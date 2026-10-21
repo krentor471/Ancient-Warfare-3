@@ -428,6 +428,10 @@ public final class FactionWorldData extends SavedData {
          entry.putLong("Started", army.started);
          entry.putInt("Alive", army.alive);
          entry.putBoolean("Raid", army.raid);
+         entry.putInt("Reserve", army.reserve);
+         entry.putInt("CampX", army.campX);
+         entry.putInt("CampZ", army.campZ);
+         entry.putBoolean("Engines", army.engines);
          armyList.add(entry);
       }
 
@@ -558,6 +562,10 @@ public final class FactionWorldData extends SavedData {
          army.started = entry.getLong("Started");
          army.alive = entry.getInt("Alive");
          army.raid = entry.getBoolean("Raid");
+         army.reserve = entry.getInt("Reserve");
+         army.campX = entry.getInt("CampX");
+         army.campZ = entry.getInt("CampZ");
+         army.engines = entry.getBoolean("Engines");
          data.armies.add(army);
          data.nextArmyId = Math.max(data.nextArmyId, army.id + 1);
       }
@@ -754,6 +762,13 @@ public final class FactionWorldData extends SavedData {
       int alive;
       /** A raid plunders the target and goes home instead of taking it. */
       boolean raid;
+      /** Soldiers waiting off the field to come on in the next wave. */
+      int reserve;
+      /** Where the army forms up before the storm; its engines stand behind it. */
+      int campX;
+      int campZ;
+      /** Whether its siege engines have been brought up. */
+      boolean engines;
 
       Army(int id, String faction, String defender, int targetSettlement, UUID villageOwner, BlockPos target, int size, long ready) {
          this.id = id;
@@ -813,6 +828,10 @@ public final class FactionWorldData extends SavedData {
 
       public int alive() {
          return this.alive;
+      }
+
+      public int reserve() {
+         return this.reserve;
       }
 
       public String tag() {

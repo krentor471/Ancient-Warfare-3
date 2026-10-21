@@ -1,6 +1,8 @@
 package net.shadowmage.ancientwarfare.core.faction;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -11,12 +13,21 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionArcherEliteNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionArcherNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionMountedArcherNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
+import net.shadowmage.ancientwarfare.core.entity.FactionSiegeEngineerNpcEntity;
+import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
+import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
 import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
 
 /**
@@ -29,6 +40,24 @@ import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
 public final class FactionArmies {
    public static final String TAG_PREFIX = "aw_army_";
    private static final int MAX_ARMY = 12;
+   /** The largest assault sent straight at a settlement; one that marched there brings all its soldiers. */
+   private static final int MAX_SIEGE = 60;
+   /** Soldiers of a siege on the field at once; the rest wait in reserve. */
+   private static final int MAX_ON_FIELD = 30;
+   /** When this few are left standing, the next wave comes on. */
+   private static final int WAVE_AT = 18;
+   /** How long the army stands in ranks before the storm, while its engines shoot. */
+   private static final long FORM_TICKS = 600L;
+   private static final int RANK_WIDTH = 8;
+   private static final double RANK_SPACING = 2.0;
+   /** How often soldiers at the walls put up ladders: one man falls, a defender up top or a climber. */
+   private static final long ESCALADE_TICKS = 300L;
+   private static final int WALL_MARGIN = 6;
+   private static final int MIN_CLIMBERS = 3;
+   /** When each siege last put up ladders; not saved. */
+   private static final Map<Integer, Long> LAST_ESCALADE = new HashMap<>();
+   /** An army this large brings a catapult even against a place without walls. */
+   private static final int ENGINE_ARMY = 30;
    private static final int MIN_RAID = 3;
    private static final double RAID_SHARE = 0.4;
    private static final int SPAWN_DISTANCE = 40;
@@ -77,7 +106,7 @@ public final class FactionArmies {
          }
       }
 
-      int taken = FactionAI.takeLosses(data, attacker, Math.min(MAX_ARMY, force));
+      int taken = FactionAI.takeLosses(data, attacker, Math.min(MAX_SIEGE, force));
       if (taken <= 0) {
          return null;
       }
@@ -161,13 +190,13 @@ public final class FactionArmies {
 
       BlockPos target = army.target();
       if (!stillStands(level, data, army)) {
-         goHome(data, army, army.size());
+         goHome(level, data, army, army.size());
          return;
       }
 
       if (!level.hasChunkAt(target) || !level.hasNearbyAlivePlayer(target.getX(), target.getY(), target.getZ(), ACTIVE_RANGE)) {
          if (!army.isRaid() && now - army.ready() > WAIT_TICKS) {
-            goHome(data, army, army.size());
+            goHome(level, data, army, army.size());
          }
 
          return;
@@ -181,7 +210,8 @@ public final class FactionArmies {
       army.spawned = true;
       army.started = now;
       army.alive = spawned.size();
-      FactionAI.returnSoldiers(data, army.faction(), army.size() - spawned.size());
+      // The rest wait in reserve and come on in waves as the first fall.
+      army.reserve = army.size() - spawned.size();
       data.setDirty();
       Component message = army.isRaid()
          ? Component.translatable("news.ancientwarfare.raid_arrived", FactionNews.factionName(army.faction()), target.getX(), target.getZ())
@@ -192,6 +222,10 @@ public final class FactionArmies {
          FactionNews.tellPlayer(level, army.villageOwner(), message);
       } else {
          tellNear(level, target, message);
+         FactionWorldData.Settlement settlement = settlementById(data, army.targetSettlement());
+         if (settlement != null) {
+            siegeBegins(level, data, army, settlement);
+         }
       }
    }
 
@@ -200,14 +234,31 @@ public final class FactionArmies {
       BlockPos target = army.target();
       if (!level.hasChunkAt(target)) {
          if (now - army.started > FIGHT_TICKS) {
-            goHome(data, army, army.alive());
+            goHome(level, data, army, army.alive());
          }
 
          return;
       }
 
       List<FactionNpcEntity> members = members(level, army);
-      if (members.isEmpty()) {
+      List<FactionNpcEntity> soldiers = members.stream().filter(npc -> !(npc instanceof FactionSiegeEngineerNpcEntity)).toList();
+      if (soldiers.size() <= WAVE_AT && army.reserve > 0) {
+         // The next wave comes up from the camp.
+         int wave = Math.min(army.reserve, MAX_ON_FIELD - soldiers.size());
+         List<FactionNpcEntity> fresh = spawnAt(level, army, army.campX, army.campZ, wave);
+         army.reserve -= fresh.size();
+         members = new ArrayList<>(members);
+         members.addAll(fresh);
+         soldiers = new ArrayList<>(soldiers);
+         soldiers.addAll(fresh);
+         if (!fresh.isEmpty()) {
+            tellNear(level, target, Component.translatable("news.ancientwarfare.siege_wave", FactionNews.factionName(army.faction()), fresh.size(), army.reserve));
+         }
+      }
+
+      if (soldiers.isEmpty()) {
+         members.forEach(FactionNpcEntity::discard);
+         dismissEngines(level, army);
          data.removeArmy(army);
          if (army.isRaid()) {
             FactionNews.tellPlayer(level, army.villageOwner(), Component.translatable("news.ancientwarfare.raid_repelled", FactionNews.factionName(army.faction())));
@@ -222,7 +273,7 @@ public final class FactionArmies {
       data.setDirty();
       if (now - army.started > FIGHT_TICKS || !stillStands(level, data, army)) {
          members.forEach(FactionNpcEntity::discard);
-         goHome(data, army, members.size());
+         goHome(level, data, army, soldiers.size());
          if (army.isRaid()) {
             FactionNews.tellPlayer(level, army.villageOwner(), Component.translatable("news.ancientwarfare.raid_retreat", FactionNews.factionName(army.faction())));
          }
@@ -230,11 +281,48 @@ public final class FactionArmies {
          return;
       }
 
-      march(level, members, target);
+      if (!army.isRaid() && now - army.started < FORM_TICKS) {
+         formUp(level, army, soldiers);
+      } else {
+         march(level, soldiers, target);
+      }
+
       if (army.isRaid()) {
          checkVillageTaken(level, data, army, members);
       } else {
-         checkSettlementTaken(level, data, army, members);
+         if (now - army.started >= FORM_TICKS) {
+            escalade(level, data, army, soldiers);
+         }
+
+         checkSettlementTaken(level, data, army, soldiers);
+      }
+   }
+
+   /**
+    * Defenders on a tower top or a wall walk are out of a swordsman's reach, so soldiers who have
+    * reached the walls climb: now and then the highest defender falls to them, or a climber falls,
+    * by how many there are on each side.
+    */
+   private static void escalade(ServerLevel level, FactionWorldData data, FactionWorldData.Army army, List<FactionNpcEntity> soldiers) {
+      FactionWorldData.Settlement settlement = settlementById(data, army.targetSettlement());
+      long now = level.getGameTime();
+      Long last = LAST_ESCALADE.putIfAbsent(army.id(), now);
+      if (settlement == null || last == null || now - last < ESCALADE_TICKS) {
+         return;
+      }
+
+      LAST_ESCALADE.put(army.id(), now);
+      List<FactionNpcEntity> climbers = soldiers.stream().filter(npc -> settlement.contains(npc.getX(), npc.getZ(), WALL_MARGIN)).toList();
+      List<FactionNpcEntity> defenders = FactionSimulation.liveSoldierList(level, settlement);
+      if (climbers.size() < MIN_CLIMBERS || defenders.isEmpty()) {
+         return;
+      }
+
+      RandomSource random = level.getRandom();
+      if (random.nextInt(climbers.size() + defenders.size()) < climbers.size()) {
+         defenders.stream().max(Comparator.comparingDouble(FactionNpcEntity::getY)).ifPresent(FactionNpcEntity::kill);
+      } else {
+         climbers.get(random.nextInt(climbers.size())).kill();
       }
    }
 
@@ -268,21 +356,23 @@ public final class FactionArmies {
       if (inside > 0 && army.raid) {
          // Raiders loot the place and make for home.
          members.forEach(FactionNpcEntity::discard);
-         goHome(data, army, members.size());
+         goHome(level, data, army, members.size());
          FactionRaids.plunder(level, data, army.faction(), settlement);
       } else if (inside > 0 && FactionDiplomacy.isOutlaw(army.faction())) {
          // Bandits plunder and make off with the loot.
          members.forEach(FactionNpcEntity::discard);
-         goHome(data, army, members.size());
+         goHome(level, data, army, members.size());
          FactionBandits.plunder(level, data, army.faction(), settlement, 3);
       } else if (inside > 0 && FactionDiplomacy.isOutlaw(settlement.faction())) {
          // A bandit lair is scattered, not kept.
          members.forEach(FactionNpcEntity::discard);
-         goHome(data, army, members.size());
+         goHome(level, data, army, members.size());
          FactionBandits.scatter(level, data, army.faction(), settlement);
       } else if (inside > 0) {
          disband(members, army);
+         dismissEngines(level, army);
          data.removeArmy(army);
+         FactionAI.returnSoldiers(data, army.faction(), army.reserve);
          FactionAI.capture(level, data, settlement, army.faction(), members.size());
       }
    }
@@ -369,23 +459,152 @@ public final class FactionArmies {
             continue;
          }
 
-         for (int i = 0; i < army.size() * 3 && spawned.size() < army.size(); i++) {
-            int x = cx + random.nextInt(9) - 4;
-            int z = cz + random.nextInt(9) - 4;
-            if (!level.hasChunkAt(new BlockPos(x, target.getY(), z))) {
-               continue;
-            }
+         spawned = spawnAt(level, army, cx, cz, Math.min(army.size(), MAX_ON_FIELD));
+         army.campX = cx;
+         army.campZ = cz;
+      }
 
-            FactionNpcEntity npc = FactionSimulation.spawnSoldier(level, army.faction(), x, z);
-            if (npc != null) {
-               npc.addTag(army.tag());
-               npc.setPersistenceRequired();
-               spawned.add(npc);
-            }
+      return spawned;
+   }
+
+   /** Up to count soldiers of the army, around a point. */
+   private static List<FactionNpcEntity> spawnAt(ServerLevel level, FactionWorldData.Army army, int cx, int cz, int count) {
+      RandomSource random = level.getRandom();
+      List<FactionNpcEntity> spawned = new ArrayList<>();
+
+      for (int i = 0; i < count * 3 && spawned.size() < count; i++) {
+         int x = cx + random.nextInt(9) - 4;
+         int z = cz + random.nextInt(9) - 4;
+         if (!level.hasChunkAt(new BlockPos(x, army.target().getY(), z))) {
+            continue;
+         }
+
+         FactionNpcEntity npc = FactionSimulation.spawnSoldier(level, army.faction(), x, z);
+         if (npc != null) {
+            npc.addTag(army.tag());
+            npc.setPersistenceRequired();
+            spawned.add(npc);
          }
       }
 
       return spawned;
+   }
+
+   /**
+    * Before the storm the soldiers draw up in ranks at the camp, facing the settlement: men with
+    * blades in front, archers behind. Anyone already fighting keeps fighting.
+    */
+   private static void formUp(ServerLevel level, FactionWorldData.Army army, List<FactionNpcEntity> soldiers) {
+      double[] facing = facing(army);
+      double fx = facing[0];
+      double fz = facing[1];
+      List<FactionNpcEntity> ranks = new ArrayList<>(soldiers);
+      ranks.sort(Comparator.comparingInt(npc -> isArcher(npc) ? 1 : 0));
+
+      for (int i = 0; i < ranks.size(); i++) {
+         FactionNpcEntity npc = ranks.get(i);
+         if (npc.getTarget() != null) {
+            continue;
+         }
+
+         int row = i / RANK_WIDTH;
+         double column = i % RANK_WIDTH - (RANK_WIDTH - 1) / 2.0;
+         double x = army.campX + 0.5 - fz * column * RANK_SPACING - fx * row * RANK_SPACING;
+         double z = army.campZ + 0.5 + fx * column * RANK_SPACING - fz * row * RANK_SPACING;
+         if (npc.distanceToSqr(x, npc.getY(), z) > 2.0) {
+            npc.getNavigation().moveTo(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Mth.floor(x), Mth.floor(z)), z, 1.0);
+         } else {
+            npc.getNavigation().stop();
+            npc.getLookControl().setLookAt(army.target().getX() + 0.5, npc.getEyeY(), army.target().getZ() + 0.5);
+         }
+      }
+   }
+
+   private static boolean isArcher(FactionNpcEntity npc) {
+      return npc instanceof FactionArcherNpcEntity || npc instanceof FactionArcherEliteNpcEntity || npc instanceof FactionMountedArcherNpcEntity;
+   }
+
+   /** The unit direction from the camp toward the target. */
+   private static double[] facing(FactionWorldData.Army army) {
+      double dx = army.target().getX() - army.campX;
+      double dz = army.target().getZ() - army.campZ;
+      double length = Math.sqrt(dx * dx + dz * dz);
+      return length < 1.0 ? new double[]{1.0, 0.0} : new double[]{dx / length, dz / length};
+   }
+
+   /**
+    * A siege of walls brings engines: a fort a catapult and a ram for its gate, a capital a
+    * trebuchet and a ram, and any other place a catapult when the army is large. Each comes with an
+    * engineer, and they stand behind the ranks.
+    */
+   static void siegeBegins(ServerLevel level, FactionWorldData data, FactionWorldData.Army army, FactionWorldData.Settlement target) {
+      if (army.engines) {
+         return;
+      }
+
+      List<EntityType<? extends Entity>> engines = new ArrayList<>();
+      if (FactionTowns.CAPITAL.equals(target.kind())) {
+         engines.add(AWCoreEntityTypes.TREBUCHET_MOBILE.get());
+         engines.add(AWCoreEntityTypes.BATTERING_RAM.get());
+      } else if (FactionAI.isFort(target)) {
+         engines.add(AWCoreEntityTypes.CATAPULT_MOBILE.get());
+         engines.add(AWCoreEntityTypes.BATTERING_RAM.get());
+      } else if (army.size() >= ENGINE_ARMY) {
+         engines.add(AWCoreEntityTypes.CATAPULT_MOBILE.get());
+      }
+
+      army.engines = true;
+      data.setDirty();
+      if (engines.isEmpty()) {
+         return;
+      }
+
+      double[] facing = facing(army);
+      int depth = (Math.min(army.size(), MAX_ON_FIELD) + RANK_WIDTH - 1) / RANK_WIDTH * (int)RANK_SPACING + 6;
+      int placed = 0;
+
+      for (int i = 0; i < engines.size(); i++) {
+         double side = (i - (engines.size() - 1) / 2.0) * 6.0;
+         int x = Mth.floor(army.campX - facing[0] * depth - facing[1] * side);
+         int z = Mth.floor(army.campZ - facing[1] * depth + facing[0] * side);
+         if (placeEngine(level, army, engines.get(i), x, z)) {
+            placed++;
+         }
+      }
+
+      if (placed > 0) {
+         tellNear(
+            level,
+            army.target(),
+            Component.translatable("news.ancientwarfare.siege_camp", FactionNews.factionName(army.faction()), FactionNews.factionName(army.defender()), placed)
+         );
+      }
+   }
+
+   private static boolean placeEngine(ServerLevel level, FactionWorldData.Army army, EntityType<? extends Entity> type, int x, int z) {
+      BlockPos pos = new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z);
+      if (!level.hasChunkAt(pos) || !level.getBlockState(pos.below()).getFluidState().isEmpty()) {
+         return false;
+      }
+
+      Entity engine = type.create(level);
+      FactionSiegeEngineerNpcEntity engineer = AWCoreEntityTypes.FACTION_SIEGE_ENGINEER_NPC.get().create(level);
+      if (engine == null || engineer == null) {
+         return false;
+      }
+
+      double[] facing = facing(army);
+      float yaw = (float)(Mth.atan2(facing[1], facing[0]) * Mth.RAD_TO_DEG) - 90.0F;
+      engine.moveTo(x + 0.5, pos.getY(), z + 0.5, yaw, 0.0F);
+      engine.addTag(army.tag());
+      level.addFreshEntity(engine);
+      engineer.moveTo(x + 0.5 - facing[0] * 2, pos.getY(), z + 0.5 - facing[1] * 2, yaw, 0.0F);
+      engineer.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+      engineer.setFactionName(army.faction());
+      engineer.addTag(army.tag());
+      engineer.setPersistenceRequired();
+      level.addFreshEntity(engineer);
+      return true;
    }
 
    private static List<FactionNpcEntity> members(ServerLevel level, FactionWorldData.Army army) {
@@ -398,9 +617,25 @@ public final class FactionArmies {
       members.forEach(npc -> npc.removeTag(army.tag()));
    }
 
-   private static void goHome(FactionWorldData data, FactionWorldData.Army army, int soldiers) {
+   /** The army is done: its engines are left behind and the soldiers on the field and in reserve go home. */
+   private static void goHome(ServerLevel level, FactionWorldData data, FactionWorldData.Army army, int soldiers) {
+      dismissEngines(level, army);
       data.removeArmy(army);
-      FactionAI.returnSoldiers(data, army.faction(), soldiers);
+      FactionAI.returnSoldiers(data, army.faction(), soldiers + army.reserve);
+   }
+
+   private static void dismissEngines(ServerLevel level, FactionWorldData.Army army) {
+      if (!army.engines) {
+         return;
+      }
+
+      AABB area = new AABB(army.target()).inflate(SPAWN_DISTANCE * 4, 64.0, SPAWN_DISTANCE * 4);
+      for (Entity entity : level.getEntities((Entity)null, area, entity -> entity.getTags().contains(army.tag()) && (!(entity instanceof FactionNpcEntity) || entity instanceof FactionSiegeEngineerNpcEntity))) {
+         entity.ejectPassengers();
+         entity.discard();
+      }
+
+      army.engines = false;
    }
 
    private static boolean isTargeted(FactionWorldData data, BlockPos village) {

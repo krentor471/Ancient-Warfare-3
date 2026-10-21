@@ -323,9 +323,12 @@ public final class FactionSimulation {
    }
 
    static int liveSoldiers(ServerLevel level, FactionWorldData.Settlement settlement) {
+      return liveSoldierList(level, settlement).size();
+   }
+
+   static List<FactionNpcEntity> liveSoldierList(ServerLevel level, FactionWorldData.Settlement settlement) {
       AABB area = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(GARRISON_MARGIN, 32.0, GARRISON_MARGIN);
-      return level.getEntitiesOfClass(FactionNpcEntity.class, area, npc -> npc.isAlive() && npc.getFactionName().equals(settlement.faction()) && !isCivilian(npc))
-         .size();
+      return level.getEntitiesOfClass(FactionNpcEntity.class, area, npc -> npc.isAlive() && npc.getFactionName().equals(settlement.faction()) && !isCivilian(npc));
    }
 
    private static void respawnSoldier(ServerLevel level, FactionWorldData.Settlement settlement) {

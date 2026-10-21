@@ -176,7 +176,7 @@ public final class ForgeFactionCommands {
                            .then(
                               Commands.argument("settlement", IntegerArgumentType.integer(1))
                                  .then(
-                                    Commands.argument("size", IntegerArgumentType.integer(1, 12))
+                                    Commands.argument("size", IntegerArgumentType.integer(1, 60))
                                        .executes(
                                           context -> assault(
                                              context.getSource(),

@@ -1326,5 +1326,7 @@
   "news.ancientwarfare.plundered": "Bandits: %1$s plundered a settlement of %2$s near %3$s, %4$s and carried off %5$s gold",
   "news.ancientwarfare.lair_scattered": "Bandit hunt: %1$s scattered a bandit lair near %2$s, %3$s and took %4$s gold",
   "news.ancientwarfare.lair_destroyed": "Bandit hunt: %1$s wiped out a bandit lair near %2$s, %3$s and took %4$s gold",
-  "news.ancientwarfare.raided": "Raid: %1$s plundered a settlement of %2$s near %3$s, %4$s, carried off %5$s gold and led away %6$s captives"
+  "news.ancientwarfare.raided": "Raid: %1$s plundered a settlement of %2$s near %3$s, %4$s, carried off %5$s gold and led away %6$s captives",
+  "news.ancientwarfare.siege_camp": "Siege: %1$s set up camp before the settlement of %2$s and brought up %3$s siege engines",
+  "news.ancientwarfare.siege_wave": "Siege: %2$s more soldiers of %1$s come up from the camp, %3$s still in reserve"
 }
