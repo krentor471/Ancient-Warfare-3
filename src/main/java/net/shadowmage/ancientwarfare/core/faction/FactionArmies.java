@@ -41,11 +41,11 @@ public final class FactionArmies {
    public static final String TAG_PREFIX = "aw_army_";
    private static final int MAX_ARMY = 12;
    /** The largest assault sent straight at a settlement; one that marched there brings all its soldiers. */
-   private static final int MAX_SIEGE = 60;
+   private static final int MAX_SIEGE = 100;
    /** Soldiers of a siege on the field at once; the rest wait in reserve. */
-   private static final int MAX_ON_FIELD = 30;
+   private static final int MAX_ON_FIELD = 50;
    /** When this few are left standing, the next wave comes on. */
-   private static final int WAVE_AT = 18;
+   private static final int WAVE_AT = 30;
    /** How long the army stands in ranks before the storm, while its engines shoot. */
    private static final long FORM_TICKS = 600L;
    private static final int RANK_WIDTH = 8;
@@ -472,9 +472,11 @@ public final class FactionArmies {
       RandomSource random = level.getRandom();
       List<FactionNpcEntity> spawned = new ArrayList<>();
 
-      for (int i = 0; i < count * 3 && spawned.size() < count; i++) {
-         int x = cx + random.nextInt(9) - 4;
-         int z = cz + random.nextInt(9) - 4;
+      // A bigger band needs more ground to stand on.
+      int spread = 4 + count / 6;
+      for (int i = 0; i < count * 5 && spawned.size() < count; i++) {
+         int x = cx + random.nextInt(2 * spread + 1) - spread;
+         int z = cz + random.nextInt(2 * spread + 1) - spread;
          if (!level.hasChunkAt(new BlockPos(x, army.target().getY(), z))) {
             continue;
          }

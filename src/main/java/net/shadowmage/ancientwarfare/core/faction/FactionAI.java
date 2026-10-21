@@ -35,7 +35,7 @@ public final class FactionAI {
    /** Walls make a fort's garrison count for more in a battle fought out of sight. */
    private static final double FORT_DEFENCE = 1.5;
    private static final double CAPITAL_DEFENCE = 2.0;
-   private static final int MAX_ARMY = 60;
+   private static final int MAX_ARMY = 100;
    /** Days a newly taken settlement cannot be attacked, so it is not traded back and forth daily. */
    private static final long HOLD_DAYS = 6L;
    /** Day each settlement was last taken; not saved, a restart only shortens the respite. */
