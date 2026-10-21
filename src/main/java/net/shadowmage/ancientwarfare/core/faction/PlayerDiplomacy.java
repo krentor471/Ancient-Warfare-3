@@ -24,6 +24,7 @@ public final class PlayerDiplomacy {
    public static final int PEACE_RESTORED_STANDING = -20;
    public static final int PACT_STANDING = 30;
    public static final int ALLIANCE_STANDING = 60;
+   public static final int TRADE_STANDING = 0;
    public static final int GIFT_EMERALDS = 5;
    public static final int GIFT_STANDING = 10;
    public static final int MAX_GIFT_STANDING = 100;
@@ -41,7 +42,9 @@ public final class PlayerDiplomacy {
       PACT,
       ALLIANCE,
       GIFT,
-      WAR;
+      WAR,
+      /** Signs a trade agreement, or ends the one in force. */
+      TRADE;
 
       public static Action byId(int id) {
          return id >= 0 && id < values().length ? values()[id] : null;
@@ -65,7 +68,8 @@ public final class PlayerDiplomacy {
          return;
       }
 
-      if (action != Action.WAR && !leaderNear(player, faction)) {
+      boolean ending = action == Action.WAR || action == Action.TRADE && standings.hasTrade(player.getUUID(), faction);
+      if (!ending && !leaderNear(player, faction)) {
          player.sendSystemMessage(Component.translatable("diplomacy.ancientwarfare.need_leader", FactionNews.factionName(faction)));
       } else {
          player.sendSystemMessage(perform(player, standings, faction, action));
@@ -109,6 +113,19 @@ public final class PlayerDiplomacy {
 
             standings.setTreaty(player.getUUID(), faction, RelationState.ALLIANCE);
             return Component.translatable("diplomacy.ancientwarfare.alliance", name);
+         }
+         case TRADE -> {
+            if (standings.hasTrade(player.getUUID(), faction)) {
+               standings.setTrade(player.getUUID(), faction, false);
+               return Component.translatable("diplomacy.ancientwarfare.trade_ended", name);
+            } else if (treaty == RelationState.WAR) {
+               return Component.translatable("diplomacy.ancientwarfare.trade_at_war", name);
+            } else if (standing < TRADE_STANDING) {
+               return Component.translatable("diplomacy.ancientwarfare.refused", name, standing, TRADE_STANDING);
+            }
+
+            standings.setTrade(player.getUUID(), faction, true);
+            return Component.translatable("diplomacy.ancientwarfare.trade", name);
          }
          case GIFT -> {
             if (!takeEmeralds(player, GIFT_EMERALDS)) {
@@ -189,7 +206,9 @@ public final class PlayerDiplomacy {
                standings.getTreaty(player.getUUID(), faction),
                wars,
                settlements,
-               leaderNear(player, faction)
+               leaderNear(player, faction),
+               standings.hasTrade(player.getUUID(), faction),
+               FactionTrade.playerRoutes(data, player.getUUID(), faction)
             )
          );
       }
@@ -197,6 +216,8 @@ public final class PlayerDiplomacy {
       return entries;
    }
 
-   public static record Entry(String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear) {
+   public static record Entry(
+      String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes
+   ) {
    }
 }

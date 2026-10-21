@@ -75,16 +75,22 @@ public class DiplomacyScreen extends Screen {
          this.addAction(entry, PlayerDiplomacy.Action.PEACE, x, y, width, entry.treaty() == RelationState.WAR);
          this.addAction(entry, PlayerDiplomacy.Action.PACT, x + width + 2, y, width, entry.treaty() == RelationState.NEUTRAL);
          this.addAction(entry, PlayerDiplomacy.Action.ALLIANCE, x + (width + 2) * 2, y, width, entry.treaty() == RelationState.PACT);
-         this.addAction(entry, PlayerDiplomacy.Action.GIFT, x, y + 22, width * 2 + 2, true);
+         this.addAction(entry, PlayerDiplomacy.Action.GIFT, x, y + 22, width, true);
+         this.addAction(entry, PlayerDiplomacy.Action.TRADE, x + width + 2, y + 22, width, entry.trade() || entry.treaty() != RelationState.WAR);
          this.addAction(entry, PlayerDiplomacy.Action.WAR, x + (width + 2) * 2, y + 22, width, entry.treaty() != RelationState.WAR);
       }
    }
 
    private void addAction(PlayerDiplomacy.Entry entry, PlayerDiplomacy.Action action, int x, int y, int width, boolean applicable) {
       String key = "gui.ancientwarfare.diplomacy.action." + action.name().toLowerCase(java.util.Locale.ROOT);
+      if (action == PlayerDiplomacy.Action.TRADE && entry.trade()) {
+         key += "_end";
+      }
+
       Component label = action == PlayerDiplomacy.Action.GIFT ? Component.translatable(key, PlayerDiplomacy.GIFT_EMERALDS) : Component.translatable(key);
       Button button = Button.builder(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 20).build();
-      button.active = applicable && (action == PlayerDiplomacy.Action.WAR || entry.leaderNear());
+      boolean anywhere = action == PlayerDiplomacy.Action.WAR || action == PlayerDiplomacy.Action.TRADE && entry.trade();
+      button.active = applicable && (anywhere || entry.leaderNear());
       this.addRenderableWidget(button);
    }
 
@@ -119,6 +125,11 @@ public class DiplomacyScreen extends Screen {
       graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.standing", standingText(entry.standing())), x, y, TEXT_COLOR);
       y += 11;
       graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.settlements", entry.settlements()), x, y, TEXT_COLOR);
+      y += 11;
+      Component trade = entry.trade()
+         ? Component.translatable("gui.ancientwarfare.diplomacy.trade", entry.routes())
+         : Component.translatable("gui.ancientwarfare.diplomacy.trade_none");
+      graphics.drawString(this.font, trade, x, y, entry.trade() ? 0xFF80FF80 : MUTED_COLOR);
       y += 11;
       Component wars;
       if (entry.wars().isEmpty()) {

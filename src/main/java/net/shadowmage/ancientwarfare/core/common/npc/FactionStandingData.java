@@ -24,6 +24,8 @@ public final class FactionStandingData extends SavedData {
    private final Map<UUID, Map<String, RelationState>> treaties = new HashMap<>();
    /** Factions the player has met, the ones the diplomacy screen lists. */
    private final Map<UUID, Set<String>> known = new HashMap<>();
+   /** Factions the player has a trade agreement with; war ends it. */
+   private final Map<UUID, Set<String>> trade = new HashMap<>();
 
    public static FactionStandingData get(ServerLevel level) {
       MinecraftServer server = level.getServer();
@@ -69,7 +71,27 @@ public final class FactionStandingData extends SavedData {
 
    public void setTreaty(UUID playerId, String factionName, RelationState state) {
       this.treaties.computeIfAbsent(playerId, ignored -> new HashMap<>()).put(normalize(factionName), state);
+      if (state == RelationState.WAR) {
+         this.setTrade(playerId, factionName, false);
+      }
+
       this.setDirty();
+   }
+
+   public boolean hasTrade(UUID playerId, String factionName) {
+      return this.trade.getOrDefault(playerId, Set.of()).contains(normalize(factionName));
+   }
+
+   public void setTrade(UUID playerId, String factionName, boolean agreed) {
+      Set<String> factions = this.trade.computeIfAbsent(playerId, ignored -> new HashSet<>());
+      if (agreed ? factions.add(normalize(factionName)) : factions.remove(normalize(factionName))) {
+         this.setDirty();
+      }
+   }
+
+   /** Every player's trade partners, by player. */
+   public Map<UUID, Set<String>> tradeAgreements() {
+      return Collections.unmodifiableMap(this.trade);
    }
 
    public Set<String> knownFactions(UUID playerId) {
@@ -92,6 +114,7 @@ public final class FactionStandingData extends SavedData {
       Set<UUID> playerIds = new HashSet<>(this.standings.keySet());
       playerIds.addAll(this.treaties.keySet());
       playerIds.addAll(this.known.keySet());
+      playerIds.addAll(this.trade.keySet());
       playerIds.forEach(playerId -> {
          CompoundTag playerTag = new CompoundTag();
          playerTag.putUUID("Player", playerId);
@@ -104,6 +127,9 @@ public final class FactionStandingData extends SavedData {
          ListTag knownTag = new ListTag();
          this.known.getOrDefault(playerId, Set.of()).forEach(faction -> knownTag.add(StringTag.valueOf(faction)));
          playerTag.put("Known", knownTag);
+         ListTag tradeTag = new ListTag();
+         this.trade.getOrDefault(playerId, Set.of()).forEach(faction -> tradeTag.add(StringTag.valueOf(faction)));
+         playerTag.put("Trade", tradeTag);
          players.add(playerTag);
       });
       tag.put("Players", players);
@@ -128,6 +154,9 @@ public final class FactionStandingData extends SavedData {
             Set<String> knownFactions = new HashSet<>();
             playerTag.getList("Known", Tag.TAG_STRING).forEach(element -> knownFactions.add(element.getAsString()));
             data.known.put(playerId, knownFactions);
+            Set<String> partners = new HashSet<>();
+            playerTag.getList("Trade", Tag.TAG_STRING).forEach(element -> partners.add(element.getAsString()));
+            data.trade.put(playerId, partners);
          }
       }
 

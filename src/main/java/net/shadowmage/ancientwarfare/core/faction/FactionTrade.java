@@ -3,8 +3,17 @@ package net.shadowmage.ancientwarfare.core.faction;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
+import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
 
 /**
  * Trade between settlements. Each settlement keeps routes to its nearest trading partners: its own
@@ -22,18 +31,31 @@ public final class FactionTrade {
    private static final int INCOME_DIVISOR = 20;
    private static final int ROBBERY_RANGE = 320;
    private static final double ROBBERY_CHANCE = 0.3;
+   /** Daily trade with a player's village raises the faction's standing up to here, not further. */
+   private static final int TRADE_STANDING_CAP = 40;
 
    private FactionTrade() {
    }
 
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       updateRoutes(level, data);
+      FactionStandingData standings = FactionStandingData.get(level);
 
       for (FactionWorldData.Route route : new ArrayList<>(data.routes())) {
-         FactionWorldData.Settlement a = data.settlement(route.a());
-         FactionWorldData.Settlement b = data.settlement(route.b());
-         if (a == null || b == null || partOfOlder(data, a) || partOfOlder(data, b)) {
+         FactionWorldData.Settlement a = data.endpoint(route, true);
+         FactionWorldData.Settlement b = data.endpoint(route, false);
+         if (a == null || b == null || partOfOlder(data, a) || route.village() == null && partOfOlder(data, b)) {
             data.removeRoute(route);
+            continue;
+         }
+
+         if (route.village() != null) {
+            if (!standings.hasTrade(route.owner(), a.faction())) {
+               data.removeRoute(route);
+            } else {
+               payVillage(level, data, standings, route, a, b);
+            }
+
             continue;
          }
 
@@ -85,6 +107,80 @@ public final class FactionTrade {
             }
          }
       }
+
+      updatePlayerRoutes(level, data, traders);
+   }
+
+   /** Links each player village to the nearest settlements of the factions its owner trades with. */
+   private static void updatePlayerRoutes(ServerLevel level, FactionWorldData data, List<FactionWorldData.Settlement> traders) {
+      Map<UUID, Set<String>> agreements = FactionStandingData.get(level).tradeAgreements();
+
+      for (Map.Entry<BlockPos, UUID> village : data.villages().entrySet()) {
+         Set<String> partners = agreements.getOrDefault(village.getValue(), Set.of());
+         if (partners.isEmpty()) {
+            continue;
+         }
+
+         BlockPos pos = village.getKey();
+         List<FactionWorldData.Settlement> candidates = new ArrayList<>();
+
+         for (FactionWorldData.Settlement settlement : traders) {
+            double distance = settlement.horizontalDistanceSquared(pos.getX(), pos.getZ());
+            if (partners.contains(settlement.faction())
+               && distance >= (double)MIN_ROUTE * MIN_ROUTE
+               && distance <= (double)ROUTE_RANGE * ROUTE_RANGE) {
+               candidates.add(settlement);
+            }
+         }
+
+         candidates.sort(Comparator.comparingDouble(settlement -> settlement.horizontalDistanceSquared(pos.getX(), pos.getZ())));
+
+         for (FactionWorldData.Settlement partner : candidates.subList(0, Math.min(LINKS, candidates.size()))) {
+            if (data.playerRoute(partner.id(), pos) == null) {
+               data.addPlayerRoute(partner.id(), pos, village.getValue());
+            }
+         }
+      }
+   }
+
+   /**
+    * A day's trade between a faction settlement and a player's village: the faction's half goes to
+    * its treasury, the player's half to the town hall as emeralds, and steady trade warms the faction.
+    */
+   private static void payVillage(
+      ServerLevel level, FactionWorldData data, FactionStandingData standings, FactionWorldData.Route route, FactionWorldData.Settlement settlement, FactionWorldData.Settlement village
+   ) {
+      route.blocked = false;
+      route.income = 0;
+      int gold = 1 + (settlement.population + village.population) / INCOME_DIVISOR;
+      if (robbed(level, data, settlement, village)) {
+         return;
+      }
+
+      route.income = gold;
+      data.setTreasury(settlement.faction(), data.treasury(settlement.faction()) + (gold + 1) / 2);
+      if (level.getBlockEntity(route.village()) instanceof TownHallBlockEntity townHall) {
+         // Whatever does not fit in a full town hall is lost.
+         HopperBlockEntity.addItem(null, townHall, new ItemStack(Items.EMERALD, Math.max(1, gold / 2)), null);
+      }
+
+      if (standings.getStanding(route.owner(), settlement.faction()) < TRADE_STANDING_CAP) {
+         standings.adjustStanding(route.owner(), settlement.faction(), 1);
+      }
+   }
+
+   /** Trade routes the player's villages keep with this faction. */
+   public static int playerRoutes(FactionWorldData data, UUID owner, String faction) {
+      int count = 0;
+
+      for (FactionWorldData.Route route : data.routes()) {
+         FactionWorldData.Settlement settlement = route.village() == null ? null : data.settlement(route.a());
+         if (settlement != null && owner.equals(route.owner()) && settlement.faction().equals(faction)) {
+            count++;
+         }
+      }
+
+      return count;
    }
 
    /** A building of a town another settlement already speaks for: the town trades once, under its oldest settlement. */
@@ -135,8 +231,8 @@ public final class FactionTrade {
    }
 
    public static int length(FactionWorldData data, FactionWorldData.Route route) {
-      FactionWorldData.Settlement a = data.settlement(route.a());
-      FactionWorldData.Settlement b = data.settlement(route.b());
+      FactionWorldData.Settlement a = data.endpoint(route, true);
+      FactionWorldData.Settlement b = data.endpoint(route, false);
       return a == null || b == null ? 0 : (int)Math.sqrt(a.horizontalDistanceSquared(b.center().getX(), b.center().getZ()));
    }
 }

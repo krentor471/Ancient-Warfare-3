@@ -1262,7 +1262,7 @@
   "gui.ancientwarfare.diplomacy.action.peace": "Peace",
   "gui.ancientwarfare.diplomacy.action.pact": "Pact",
   "gui.ancientwarfare.diplomacy.action.alliance": "Alliance",
-  "gui.ancientwarfare.diplomacy.action.gift": "Gift %s emeralds",
+  "gui.ancientwarfare.diplomacy.action.gift": "Gift (%s)",
   "gui.ancientwarfare.diplomacy.action.war": "Declare war",
   "diplomacy.ancientwarfare.betrayal": "You broke your treaty with %s. They will not forget it.",
   "news.ancientwarfare.war_on_you": "War: %s declared war on you",
@@ -1277,5 +1277,12 @@
   "news.ancientwarfare.assault_repelled": "%s beat off the attack of %s",
   "news.ancientwarfare.fortified": "Border fort: %s built a fort at %s, %s",
   "caravan.ancientwarfare.rescue": "%s thank you for driving off the bandits",
-  "caravan.ancientwarfare.robbed": "You robbed a caravan of %s. This means war."
+  "caravan.ancientwarfare.robbed": "You robbed a caravan of %s. This means war.",
+  "gui.ancientwarfare.diplomacy.action.trade": "Trade",
+  "gui.ancientwarfare.diplomacy.action.trade_end": "End trade",
+  "gui.ancientwarfare.diplomacy.trade": "Trade agreement: %s route(s)",
+  "gui.ancientwarfare.diplomacy.trade_none": "No trade agreement",
+  "diplomacy.ancientwarfare.trade": "%s agreed to trade. Their caravans will come to your villages, and part of the profit goes to your town halls.",
+  "diplomacy.ancientwarfare.trade_ended": "You ended the trade agreement with %s.",
+  "diplomacy.ancientwarfare.trade_at_war": "%s will not trade while you are at war."
 }

@@ -479,13 +479,17 @@ public final class ForgeFactionCommands {
       long done = routes.stream().filter(route -> route.road() == FactionWorldData.RoadState.DONE).count();
       tell(source, Component.literal(routes.size() + " route(s), " + done + " road(s) finished"));
 
-      for (FactionWorldData.Route route : routes.subList(0, Math.min(24, routes.size()))) {
-         FactionWorldData.Settlement a = data.settlement(route.a());
-         FactionWorldData.Settlement b = data.settlement(route.b());
+      // Routes to player villages first: those are the ones a player looks for.
+      List<FactionWorldData.Route> shown = new ArrayList<>(routes);
+      shown.sort(Comparator.comparing(route -> route.village() == null));
+
+      for (FactionWorldData.Route route : shown.subList(0, Math.min(24, shown.size()))) {
+         FactionWorldData.Settlement a = data.endpoint(route, true);
+         FactionWorldData.Settlement b = data.endpoint(route, false);
          tell(
             source,
             Component.literal(
-               "  #" + route.id() + " " + (a == null ? "?" : a.faction() + " #" + a.id()) + " - " + (b == null ? "?" : b.faction() + " #" + b.id()) + ", "
+               "  #" + route.id() + " " + (a == null ? "?" : a.faction() + " #" + a.id()) + " - " + (b == null ? "?" : route.village() != null ? "player village at " + route.village().getX() + " " + route.village().getZ() : b.faction() + " #" + b.id()) + ", "
                   + FactionTrade.length(data, route) + " blocks, road " + route.road().name().toLowerCase(Locale.ROOT)
                   + (route.points().isEmpty() ? "" : " via " + FactionRoads.unpackX(route.points().get(route.points().size() / 2)) + " "
                      + FactionRoads.unpackZ(route.points().get(route.points().size() / 2)))

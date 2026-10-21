@@ -140,7 +140,7 @@
   "gui.ancientwarfare.diplomacy.action.peace": "Мир",
   "gui.ancientwarfare.diplomacy.action.pact": "Договор",
   "gui.ancientwarfare.diplomacy.action.alliance": "Союз",
-  "gui.ancientwarfare.diplomacy.action.gift": "Подарить %s изумрудов",
+  "gui.ancientwarfare.diplomacy.action.gift": "Подарок (%s)",
   "gui.ancientwarfare.diplomacy.action.war": "Объявить войну",
   "diplomacy.ancientwarfare.betrayal": "Вы нарушили договор с фракцией %s. Этого не забудут.",
   "news.ancientwarfare.war_on_you": "Война: фракция %s объявила тебе войну",
@@ -155,5 +155,12 @@
   "news.ancientwarfare.assault_repelled": "%s отбили атаку фракции %s",
   "news.ancientwarfare.fortified": "Пограничный форт: фракция %s построила форт у %s, %s",
   "caravan.ancientwarfare.rescue": "Фракция %s благодарит за защиту каравана",
-  "caravan.ancientwarfare.robbed": "Ты ограбил караван фракции %s. Это война."
+  "caravan.ancientwarfare.robbed": "Ты ограбил караван фракции %s. Это война.",
+  "gui.ancientwarfare.diplomacy.action.trade": "Торговать",
+  "gui.ancientwarfare.diplomacy.action.trade_end": "Разорвать",
+  "gui.ancientwarfare.diplomacy.trade": "Договор о торговле, путей: %s",
+  "gui.ancientwarfare.diplomacy.trade_none": "Договора о торговле нет",
+  "diplomacy.ancientwarfare.trade": "%s согласились торговать. Их караваны пойдут к твоим деревням, а часть дохода придёт в ратуши.",
+  "diplomacy.ancientwarfare.trade_ended": "Договор о торговле с %s разорван.",
+  "diplomacy.ancientwarfare.trade_at_war": "%s не торгуют, пока вы воюете."
 }

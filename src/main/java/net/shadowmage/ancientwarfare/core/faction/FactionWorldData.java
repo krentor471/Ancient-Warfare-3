@@ -33,6 +33,12 @@ public final class FactionWorldData extends SavedData {
    private int nextSettlementId = 1;
    private int nextArmyId = 1;
    private final List<Route> routes = new ArrayList<>();
+   /** The b end of a route to a player's village, and that village's id as an endpoint. */
+   public static final int PLAYER_VILLAGE = -1;
+   public static final String PLAYER_VILLAGE_KIND = "playervillage";
+   private static final int VILLAGE_HALF_SIZE = 24;
+   /** What a player's village counts as in trade income; its villagers are not counted. */
+   private static final int PLAYER_VILLAGE_POPULATION = 20;
    private int nextRouteId = 1;
    private long lastSimulatedDay = -1L;
 
@@ -170,6 +176,55 @@ public final class FactionWorldData extends SavedData {
       this.routes.add(route);
       this.setDirty();
       return route;
+   }
+
+   /** A route from a faction settlement to a player's village, under the player's trade agreement. */
+   public Route addPlayerRoute(int settlement, BlockPos village, UUID owner) {
+      Route route = new Route(this.nextRouteId++, settlement, PLAYER_VILLAGE);
+      route.village = village.immutable();
+      route.owner = owner;
+      this.routes.add(route);
+      this.setDirty();
+      return route;
+   }
+
+   public Route playerRoute(int settlement, BlockPos village) {
+      for (Route route : this.routes) {
+         if (route.a == settlement && village.equals(route.village)) {
+            return route;
+         }
+      }
+
+      return null;
+   }
+
+   /**
+    * One end of a route as a settlement; a player's village stands in as a settlement of the faction
+    * trading with it, so roads, posts and caravans treat both ends alike. Null when that end is gone.
+    */
+   public Settlement endpoint(Route route, boolean first) {
+      if (first || route.village == null) {
+         return this.settlement(first ? route.a : route.b);
+      }
+
+      Settlement partner = this.settlement(route.a);
+      if (partner == null || !route.owner.equals(this.villages.get(route.village))) {
+         return null;
+      }
+
+      BlockPos v = route.village;
+      Settlement village = new Settlement(
+         PLAYER_VILLAGE,
+         partner.faction(),
+         PLAYER_VILLAGE_KIND,
+         "",
+         new BlockPos(v.getX() - VILLAGE_HALF_SIZE, v.getY(), v.getZ() - VILLAGE_HALF_SIZE),
+         new BlockPos(v.getX() + VILLAGE_HALF_SIZE, v.getY(), v.getZ() + VILLAGE_HALF_SIZE),
+         0L,
+         0L
+      );
+      village.population = PLAYER_VILLAGE_POPULATION;
+      return village;
    }
 
    public void removeRoute(Route route) {
@@ -333,6 +388,11 @@ public final class FactionWorldData extends SavedData {
          entry.putBoolean("Posts", route.posts);
          entry.putInt("PostsBuilt", route.postsBuilt);
          entry.putInt("Income", route.income);
+         if (route.village != null) {
+            entry.putLong("Village", route.village.asLong());
+            entry.putUUID("Owner", route.owner);
+         }
+
          routeList.add(entry);
       }
 
@@ -428,6 +488,13 @@ public final class FactionWorldData extends SavedData {
          route.posts = entry.getBoolean("Posts");
          route.postsBuilt = entry.getInt("PostsBuilt");
          route.income = entry.getInt("Income");
+         if (entry.contains("Village") && entry.hasUUID("Owner")) {
+            route.village = BlockPos.of(entry.getLong("Village"));
+            route.owner = entry.getUUID("Owner");
+         } else if (route.b == PLAYER_VILLAGE) {
+            continue;
+         }
+
          data.routes.add(route);
          data.nextRouteId = Math.max(data.nextRouteId, route.id + 1);
       }
@@ -491,6 +558,9 @@ public final class FactionWorldData extends SavedData {
       int postsBuilt;
       /** Gold the route brought in on its last day. */
       int income;
+      /** For a route to a player's village: its town hall and owner. */
+      BlockPos village;
+      UUID owner;
 
       Route(int id, int a, int b) {
          this.id = id;
@@ -528,6 +598,14 @@ public final class FactionWorldData extends SavedData {
 
       public int income() {
          return this.income;
+      }
+
+      public BlockPos village() {
+         return this.village;
+      }
+
+      public UUID owner() {
+         return this.owner;
       }
 
       /** Starts the road over from its first end, after it failed; what was paved stays. */

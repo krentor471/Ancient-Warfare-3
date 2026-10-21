@@ -687,6 +687,8 @@ public final class AWCoreNetwork {
             entry.wars().stream().limit(MAX_ENTRIES).forEach(war -> buffer.writeUtf(war, 64));
             buffer.writeVarInt(entry.settlements());
             buffer.writeBoolean(entry.leaderNear());
+            buffer.writeBoolean(entry.trade());
+            buffer.writeVarInt(entry.routes());
          }
       }
 
@@ -707,7 +709,9 @@ public final class AWCoreNetwork {
                wars.add(buffer.readUtf(64));
             }
 
-            entries.add(new PlayerDiplomacy.Entry(faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean()));
+            entries.add(
+               new PlayerDiplomacy.Entry(faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt())
+            );
          }
 
          return new AWCoreNetwork.DiplomacyDataPacket(focus, open, entries);

@@ -76,8 +76,8 @@ public final class FactionRoads {
             continue;
          }
 
-         FactionWorldData.Settlement from = data.settlement(route.a());
-         FactionWorldData.Settlement to = data.settlement(route.b());
+         FactionWorldData.Settlement from = data.endpoint(route, true);
+         FactionWorldData.Settlement to = data.endpoint(route, false);
          if (from == null || to == null) {
             continue;
          }
@@ -173,8 +173,8 @@ public final class FactionRoads {
       int side = route.postsBuilt % 2 == 0 ? 1 : -1;
       int siteX = x + (int)Math.round(-dz / length * POST_OFFSET * side);
       int siteZ = z + (int)Math.round(dx / length * POST_OFFSET * side);
-      FactionWorldData.Settlement a = data.settlement(route.a());
-      FactionWorldData.Settlement b = data.settlement(route.b());
+      FactionWorldData.Settlement a = data.endpoint(route, true);
+      FactionWorldData.Settlement b = data.endpoint(route, false);
       route.postsBuilt++;
       if (a == null || b == null) {
          return true;
@@ -408,7 +408,7 @@ public final class FactionRoads {
       }
 
       data.villages().keySet().forEach(village -> {
-         if (village.distToCenterSqr(x, village.getY(), z) < (double)(reach + VILLAGE_RADIUS) * (reach + VILLAGE_RADIUS)) {
+         if (!from.contains(village.getX(), village.getZ(), 0) && !to.contains(village.getX(), village.getZ(), 0) && village.distToCenterSqr(x, village.getY(), z) < (double)(reach + VILLAGE_RADIUS) * (reach + VILLAGE_RADIUS)) {
             obstacles.add(
                new int[]{village.getX() - VILLAGE_RADIUS, village.getZ() - VILLAGE_RADIUS, village.getX() + VILLAGE_RADIUS, village.getZ() + VILLAGE_RADIUS}
             );

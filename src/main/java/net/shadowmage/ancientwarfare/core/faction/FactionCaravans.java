@@ -133,7 +133,7 @@ public final class FactionCaravans {
 
          // Head for whichever end is farther, so the caravan passes the player.
          int direction = start < points.size() / 2 ? 1 : -1;
-         FactionWorldData.Settlement home = data.settlement(direction > 0 ? route.a() : route.b());
+         FactionWorldData.Settlement home = data.endpoint(route, direction < 0);
          if (home == null) {
             continue;
          }
