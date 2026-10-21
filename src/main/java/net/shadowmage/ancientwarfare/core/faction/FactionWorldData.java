@@ -9,6 +9,7 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
@@ -31,6 +32,8 @@ public final class FactionWorldData extends SavedData {
    private final Map<BlockPos, Long> lastRaid = new HashMap<>();
    private int nextSettlementId = 1;
    private int nextArmyId = 1;
+   private final List<Route> routes = new ArrayList<>();
+   private int nextRouteId = 1;
    private long lastSimulatedDay = -1L;
 
    public static FactionWorldData get(ServerLevel level) {
@@ -146,6 +149,42 @@ public final class FactionWorldData extends SavedData {
    public void removeArmy(Army army) {
       this.armies.remove(army);
       this.setDirty();
+   }
+
+   public List<Route> routes() {
+      return Collections.unmodifiableList(this.routes);
+   }
+
+   public Route route(int a, int b) {
+      for (Route route : this.routes) {
+         if (route.a == a && route.b == b || route.a == b && route.b == a) {
+            return route;
+         }
+      }
+
+      return null;
+   }
+
+   public Route addRoute(int a, int b) {
+      Route route = new Route(this.nextRouteId++, Math.min(a, b), Math.max(a, b));
+      this.routes.add(route);
+      this.setDirty();
+      return route;
+   }
+
+   public void removeRoute(Route route) {
+      this.routes.remove(route);
+      this.setDirty();
+   }
+
+   public Settlement settlement(int id) {
+      for (Settlement settlement : this.settlements) {
+         if (settlement.id == id) {
+            return settlement;
+         }
+      }
+
+      return null;
    }
 
    public Map<BlockPos, UUID> villages() {
@@ -277,6 +316,28 @@ public final class FactionWorldData extends SavedData {
          villageList.add(entry);
       });
       tag.put("Villages", villageList);
+      ListTag routeList = new ListTag();
+
+      for (Route route : this.routes) {
+         CompoundTag entry = new CompoundTag();
+         entry.putInt("Id", route.id);
+         entry.putInt("A", route.a);
+         entry.putInt("B", route.b);
+         entry.putBoolean("Blocked", route.blocked);
+         entry.putInt("Road", route.road.ordinal());
+         entry.putInt("CursorX", route.cursorX);
+         entry.putInt("CursorZ", route.cursorZ);
+         entry.putInt("Steps", route.steps);
+         entry.putInt("WaterRun", route.waterRun);
+         entry.put("Points", new LongArrayTag(route.points));
+         entry.putBoolean("Posts", route.posts);
+         entry.putInt("PostsBuilt", route.postsBuilt);
+         entry.putInt("Income", route.income);
+         routeList.add(entry);
+      }
+
+      tag.put("Routes", routeList);
+      tag.putInt("NextRouteId", this.nextRouteId);
       return tag;
    }
 
@@ -350,6 +411,29 @@ public final class FactionWorldData extends SavedData {
 
       data.nextArmyId = Math.max(data.nextArmyId, tag.getInt("NextArmyId"));
 
+      for (Tag element : tag.getList("Routes", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         Route route = new Route(entry.getInt("Id"), entry.getInt("A"), entry.getInt("B"));
+         route.blocked = entry.getBoolean("Blocked");
+         route.road = RoadState.values()[Math.floorMod(entry.getInt("Road"), RoadState.values().length)];
+         route.cursorX = entry.getInt("CursorX");
+         route.cursorZ = entry.getInt("CursorZ");
+         route.steps = entry.getInt("Steps");
+         route.waterRun = entry.getInt("WaterRun");
+
+         for (long point : entry.getLongArray("Points")) {
+            route.points.add(point);
+         }
+
+         route.posts = entry.getBoolean("Posts");
+         route.postsBuilt = entry.getInt("PostsBuilt");
+         route.income = entry.getInt("Income");
+         data.routes.add(route);
+         data.nextRouteId = Math.max(data.nextRouteId, route.id + 1);
+      }
+
+      data.nextRouteId = Math.max(data.nextRouteId, tag.getInt("NextRouteId"));
+
       for (Tag element : tag.getList("Villages", Tag.TAG_COMPOUND)) {
          CompoundTag entry = (CompoundTag)element;
          if (entry.hasUUID("Owner")) {
@@ -377,6 +461,87 @@ public final class FactionWorldData extends SavedData {
       for (Tag element : list) {
          CompoundTag entry = (CompoundTag)element;
          owners.put(entry.getLong("Key"), entry.getString("Owner"));
+      }
+   }
+
+   public enum RoadState {
+      NONE,
+      BUILDING,
+      DONE,
+      FAILED
+   }
+
+   /**
+    * A trade route between two settlements (by id, a below b). It pays both treasuries daily unless
+    * blocked by war. Its road is laid in stages from a's side; points holds the road's course, one
+    * packed x/z position every few blocks, for posts and caravans to follow.
+    */
+   public static final class Route {
+      private final int id;
+      private final int a;
+      private final int b;
+      boolean blocked;
+      RoadState road = RoadState.NONE;
+      int cursorX;
+      int cursorZ;
+      int steps;
+      int waterRun;
+      final List<Long> points = new ArrayList<>();
+      boolean posts;
+      int postsBuilt;
+      /** Gold the route brought in on its last day. */
+      int income;
+
+      Route(int id, int a, int b) {
+         this.id = id;
+         this.a = a;
+         this.b = b;
+      }
+
+      public int id() {
+         return this.id;
+      }
+
+      public int a() {
+         return this.a;
+      }
+
+      public int b() {
+         return this.b;
+      }
+
+      public boolean blocked() {
+         return this.blocked;
+      }
+
+      public RoadState road() {
+         return this.road;
+      }
+
+      public List<Long> points() {
+         return Collections.unmodifiableList(this.points);
+      }
+
+      public boolean posts() {
+         return this.posts;
+      }
+
+      public int income() {
+         return this.income;
+      }
+
+      /** Starts the road over from its first end, after it failed; what was paved stays. */
+      public void resetRoad() {
+         if (this.road == RoadState.FAILED) {
+            this.road = RoadState.NONE;
+            this.steps = 0;
+            this.waterRun = 0;
+            this.points.clear();
+         }
+      }
+
+      public int other(int settlement) {
+         return settlement == this.a ? this.b : this.a;
       }
    }
 

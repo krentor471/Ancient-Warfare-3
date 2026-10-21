@@ -33,6 +33,8 @@ import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
+import net.shadowmage.ancientwarfare.core.faction.FactionRoads;
+import net.shadowmage.ancientwarfare.core.faction.FactionTrade;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 import net.shadowmage.ancientwarfare.core.faction.RelationState;
 
@@ -153,6 +155,11 @@ public final class ForgeFactionCommands {
                      )
                )
                .then(Commands.literal("armies").executes(context -> showArmies(context.getSource())))
+               .then(
+                  Commands.literal("routes")
+                     .executes(context -> showRoutes(context.getSource()))
+                     .then(Commands.literal("retry").requires(source -> source.hasPermission(2)).executes(context -> retryRoads(context.getSource())))
+               )
                .then(
                   Commands.literal("fortify")
                      .requires(source -> source.hasPermission(2))
@@ -437,6 +444,39 @@ public final class ForgeFactionCommands {
 
       tell(source, Component.literal(faction + " plans a border fort at " + plan.x() + ", " + plan.z()));
       return 1;
+   }
+
+   private static int retryRoads(CommandSourceStack source) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      data.routes().forEach(FactionWorldData.Route::resetRoad);
+      data.setDirty();
+      tell(source, Component.literal("Failed roads will be laid again"));
+      return 1;
+   }
+
+   private static int showRoutes(CommandSourceStack source) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      FactionTrade.updateRoutes(source.getLevel(), data);
+      List<FactionWorldData.Route> routes = data.routes();
+      long done = routes.stream().filter(route -> route.road() == FactionWorldData.RoadState.DONE).count();
+      tell(source, Component.literal(routes.size() + " route(s), " + done + " road(s) finished"));
+
+      for (FactionWorldData.Route route : routes.subList(0, Math.min(24, routes.size()))) {
+         FactionWorldData.Settlement a = data.settlement(route.a());
+         FactionWorldData.Settlement b = data.settlement(route.b());
+         tell(
+            source,
+            Component.literal(
+               "  #" + route.id() + " " + (a == null ? "?" : a.faction() + " #" + a.id()) + " - " + (b == null ? "?" : b.faction() + " #" + b.id()) + ", "
+                  + FactionTrade.length(data, route) + " blocks, road " + route.road().name().toLowerCase(Locale.ROOT)
+                  + (route.points().isEmpty() ? "" : " via " + FactionRoads.unpackX(route.points().get(route.points().size() / 2)) + " "
+                     + FactionRoads.unpackZ(route.points().get(route.points().size() / 2)))
+                  + (route.blocked() ? ", blocked by war" : ", " + route.income() + " gold/day")
+            )
+         );
+      }
+
+      return routes.size();
    }
 
    private static int showArmies(CommandSourceStack source) {

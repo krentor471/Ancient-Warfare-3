@@ -27,6 +27,9 @@ public final class TemplateFactions {
    );
    /** Factions without a named military building fall back to their most guarded templates. */
    private static final int FALLBACK_MILITARY = 3;
+   private static final List<String> TRADE_WORDS = List.of("inn", "tavern", "trader", "trading", "merchant", "market", "coaching", "stable", "caravan", "emporium");
+   private static final List<String> GUARD_WORDS = List.of("watch", "guard", "toll", "sentry", "outpost", "beacon", "patrol", "camp", "tower");
+   private static final List<String> LARGE_WORDS = List.of("castle", "fortress", "citadel", "palace", "capital", "village", "town", "city", "ship", "boat", "wizard", "church");
    private static Map<String, TemplateInfo> templates;
    private static Set<String> military;
 
@@ -56,6 +59,40 @@ public final class TemplateFactions {
       }
 
       return military.contains(path);
+   }
+
+   /** A roadside inn, tavern, market or trader's place; never a whole village. */
+   public static boolean isTradePost(String path) {
+      String name = name(path);
+      return !info(path).faction().isEmpty() && TRADE_WORDS.stream().anyMatch(name::contains) && LARGE_WORDS.stream().noneMatch(name::contains);
+   }
+
+   /** A small guard building for a road: a watchtower, toll gate, outpost; the faction's military buildings when it has none. */
+   public static boolean isGuardPost(String path) {
+      String name = name(path);
+      String faction = info(path).faction();
+      if (faction.isEmpty()) {
+         return false;
+      } else if (GUARD_WORDS.stream().anyMatch(name::contains) && LARGE_WORDS.stream().noneMatch(name::contains)) {
+         return true;
+      }
+
+      return isMilitary(path) && !hasGuardPost(faction);
+   }
+
+   private static synchronized boolean hasGuardPost(String faction) {
+      for (Map.Entry<String, TemplateInfo> entry : templates.entrySet()) {
+         String name = name(entry.getKey());
+         if (entry.getValue().faction().equals(faction) && GUARD_WORDS.stream().anyMatch(name::contains) && LARGE_WORDS.stream().noneMatch(name::contains)) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   private static String name(String path) {
+      return path.substring(path.lastIndexOf('/') + 1).toLowerCase(Locale.ROOT);
    }
 
    private static Set<String> findMilitary(Map<String, TemplateInfo> all) {

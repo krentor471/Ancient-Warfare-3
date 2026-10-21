@@ -41,7 +41,7 @@ public final class AwsWorldGenerator {
    public static boolean generateAt(ServerLevel level, ChunkPos chunk, boolean forced) {
       return NaturalGenerationContext.run(() -> {
          NaturalGenerationContext.markChunk(chunk);
-         return generateInternalAt(level, chunk, forced, null, false);
+         return generateInternalAt(level, chunk, forced, null, Site.SETTLEMENT);
       });
    }
 
@@ -50,8 +50,49 @@ public final class AwsWorldGenerator {
       return generateSettlementAt(level, chunk, faction, false);
    }
 
-   /** As generateSettlementAt; a fort uses only the faction's military buildings. */
+   /** What a faction is building: the kind decides which of its templates fit and how the settlement is registered. */
+   public enum Site {
+      SETTLEMENT("structure"),
+      FORT("fort"),
+      TRADE_POST("tradepost"),
+      GUARD_POST("guardpost");
+
+      private final String kind;
+
+      Site(String kind) {
+         this.kind = kind;
+      }
+
+      public String kind() {
+         return this.kind;
+      }
+
+      boolean accepts(String path) {
+         return switch (this) {
+            case SETTLEMENT -> true;
+            case FORT -> TemplateFactions.isMilitary(path);
+            case TRADE_POST -> TemplateFactions.isTradePost(path);
+            case GUARD_POST -> TemplateFactions.isGuardPost(path);
+         };
+      }
+
+      /** Garrison a new site starts with, from its template's soldiers. */
+      int garrison(int soldiers) {
+         return switch (this) {
+            case SETTLEMENT -> soldiers;
+            case FORT -> Math.min(soldiers, FactionExpansion.FORT_GARRISON);
+            case TRADE_POST -> Math.min(soldiers, 2);
+            case GUARD_POST -> Math.min(soldiers, 6);
+         };
+      }
+   }
+
    public static boolean generateSettlementAt(ServerLevel level, ChunkPos chunk, String faction, boolean fort) {
+      return generateSettlementAt(level, chunk, faction, fort ? Site.FORT : Site.SETTLEMENT);
+   }
+
+   /** As generateSettlementAt, building only the faction's templates that suit the site. */
+   public static boolean generateSettlementAt(ServerLevel level, ChunkPos chunk, String faction, Site site) {
       return NaturalGenerationContext.run(() -> {
          // The site may be far from any player: load the land first, heights read as the void otherwise.
          for (int dx = -2; dx <= 2; dx++) {
@@ -61,11 +102,11 @@ public final class AwsWorldGenerator {
             }
          }
 
-         return generateInternalAt(level, chunk, false, faction, fort);
+         return generateInternalAt(level, chunk, false, faction, site);
       });
    }
 
-   private static boolean generateInternalAt(ServerLevel level, ChunkPos chunk, boolean forced, String requiredFaction, boolean fort) {
+   private static boolean generateInternalAt(ServerLevel level, ChunkPos chunk, boolean forced, String requiredFaction, Site site) {
       if (level.dimension() != Level.OVERWORLD) {
          return false;
       } else {
@@ -101,8 +142,10 @@ public final class AwsWorldGenerator {
                   return false;
                }
 
-               int x = siteAttempt == 0 ? chunk.getMinBlockX() + random.nextInt(16) : chunk.getMiddleBlockX() + random.nextInt(65) - 32;
-               int z = siteAttempt == 0 ? chunk.getMinBlockZ() + random.nextInt(16) : chunk.getMiddleBlockZ() + random.nextInt(65) - 32;
+               // Roadside posts keep close to their spot so they do not land on the road.
+               int spread = site == Site.TRADE_POST || site == Site.GUARD_POST ? 8 : 32;
+               int x = siteAttempt == 0 ? chunk.getMinBlockX() + random.nextInt(16) : chunk.getMiddleBlockX() + random.nextInt(spread * 2 + 1) - spread;
+               int z = siteAttempt == 0 ? chunk.getMinBlockZ() + random.nextInt(16) : chunk.getMiddleBlockZ() + random.nextInt(spread * 2 + 1) - spread;
                long dx = (long)x - (long)spawn.getX();
                long dz = (long)z - (long)spawn.getZ();
                int spawnProtection = AWCorePlatform.gameplayConfig().awsSpawnProtectionDistance();
@@ -127,20 +170,21 @@ public final class AwsWorldGenerator {
                         if (!templatex.requiresPhasedPlacement()
                            && templatex.acceptsBiome(biome)
                            && templatex.aquatic() == waterSite
+                           && !(waterSite && site != Site.SETTLEMENT && site != Site.FORT)
                            && FactionRegions.allows(regionOwner, TemplateFactions.ofTemplate(templatex.path()))
                            && (requiredFaction == null || requiredFaction.equals(TemplateFactions.ofTemplate(templatex.path())))
-                           && (!fort || TemplateFactions.isMilitary(templatex.path()))) {
+                           && site.accepts(templatex.path())) {
                            candidates.add(templatex);
                         }
                      }
 
-                     if (candidates.isEmpty() && fort && !waterSite) {
-                        // Borders cross every climate: a fort may stand outside the biomes its faction usually builds in.
+                     if (candidates.isEmpty() && site != Site.SETTLEMENT && !waterSite) {
+                        // Borders and roads cross every climate: forts and posts may stand outside the biomes their faction usually builds in.
                         for (AwsWorldGenTemplateRegistry.Template templatex : AwsWorldGenTemplateRegistry.templates()) {
                            if (!templatex.requiresPhasedPlacement()
                               && !templatex.aquatic()
                               && requiredFaction.equals(TemplateFactions.ofTemplate(templatex.path()))
-                              && TemplateFactions.isMilitary(templatex.path())) {
+                              && site.accepts(templatex.path())) {
                               candidates.add(templatex);
                            }
                         }
@@ -211,14 +255,14 @@ public final class AwsWorldGenerator {
                FactionWorldData.get(level)
                   .addSettlement(
                      info.faction(),
-                     fort ? "fort" : "structure",
+                     site.kind(),
                      template.path(),
                      min,
                      new BlockPos(maxX, min.getY() + template.sizeY() - 1, maxZ),
                      FactionRegions.provinceAt(level, origin.getX(), origin.getZ()).key(),
                      level.getGameTime(),
-                     fort ? Math.min(info.soldiers(), FactionExpansion.FORT_GARRISON) : info.soldiers(),
-                     fort ? FactionSimulation.startingPopulation(0, 0) : FactionSimulation.startingPopulation(info.soldiers(), info.civilians())
+                     site.garrison(info.soldiers()),
+                     site == Site.SETTLEMENT ? FactionSimulation.startingPopulation(info.soldiers(), info.civilians()) : FactionSimulation.startingPopulation(0, 0)
                   );
             }
 
