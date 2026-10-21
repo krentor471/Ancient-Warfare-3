@@ -17,6 +17,7 @@ import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
+import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
 import net.shadowmage.ancientwarfare.core.tile.AdvancedSpawnerBlockEntity;
 
 /**
@@ -38,6 +39,10 @@ public final class FactionSimulation {
    private static final int MAX_RECRUITS_PER_DAY = 2;
    private static final int TIER_COST = 60;
    private static final int MAX_TIER = 3;
+   private static final long LEADER_RESPAWN_TICKS = DAY_TICKS;
+   private static final int LEADER_SPREAD = 6;
+   /** When each capital's leader was found missing; not saved. */
+   private static final Map<Integer, Long> LEADER_LOST = new HashMap<>();
 
    private FactionSimulation() {
    }
@@ -48,7 +53,12 @@ public final class FactionSimulation {
 
    /** People a settlement can hold: grows with its starting size and tier. */
    public static int capacity(FactionWorldData.Settlement settlement) {
-      int base = "town".equals(settlement.kind()) ? 60 : 12;
+      int base = switch (settlement.kind()) {
+         case FactionTowns.CAPITAL -> 90;
+         case "town" -> 60;
+         case FactionTowns.VILLAGE -> 30;
+         default -> 12;
+      };
       return base + settlement.tier() * base / 2 + settlement.garrison();
    }
 
@@ -190,6 +200,10 @@ public final class FactionSimulation {
          }
 
          if (near && level.isLoaded(settlement.min()) && level.isLoaded(settlement.max())) {
+            if (FactionTowns.CAPITAL.equals(settlement.kind())) {
+               keepLeader(level, settlement);
+            }
+
             if (!settlement.manned) {
                if (spawnersRemain(level, settlement)) {
                   continue;
@@ -204,6 +218,55 @@ public final class FactionSimulation {
                respawnSoldier(level, settlement);
             }
          }
+      }
+   }
+
+   /** A capital always has its leader: one stands near the town's centre, back a day after he falls. */
+   private static void keepLeader(ServerLevel level, FactionWorldData.Settlement settlement) {
+      AABB area = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(GARRISON_MARGIN, 32.0, GARRISON_MARGIN);
+      if (!level.getEntitiesOfClass(
+            FactionNpcEntity.class, area, npc -> npc.isAlive() && PlayerDiplomacy.isLeader(npc) && npc.getFactionName().equals(settlement.faction())
+         )
+         .isEmpty()) {
+         return;
+      }
+
+      Long fell = LEADER_LOST.get(settlement.id());
+      if (fell == null) {
+         LEADER_LOST.put(settlement.id(), level.getGameTime() - LEADER_RESPAWN_TICKS);
+         return;
+      } else if (level.getGameTime() - fell < LEADER_RESPAWN_TICKS) {
+         return;
+      }
+
+      BlockPos center = settlement.center();
+      RandomSource random = level.getRandom();
+
+      for (int attempt = 0; attempt < 8; attempt++) {
+         int x = center.getX() + random.nextInt(2 * LEADER_SPREAD + 1) - LEADER_SPREAD;
+         int z = center.getZ() + random.nextInt(2 * LEADER_SPREAD + 1) - LEADER_SPREAD;
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         BlockPos pos = new BlockPos(x, y, z);
+         if (!level.getBlockState(pos.below()).getFluidState().isEmpty()
+            || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
+            || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()) {
+            continue;
+         }
+
+         FactionNpcEntity leader = AWCoreEntityTypes.FACTION_LEADER_NPC.get().create(level);
+         if (leader == null) {
+            return;
+         }
+
+         leader.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
+         leader.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+         leader.setFactionName(settlement.faction());
+         leader.setPersistenceRequired();
+         leader.restrictTo(center, LEADER_SPREAD * 2);
+         level.addFreshEntity(leader);
+         LEADER_LOST.remove(settlement.id());
+         AncientWarfareCore.LOG.info("Leader of {} stands in capital #{} at {}, {}, {}", settlement.faction(), settlement.id(), x, y, z);
+         return;
       }
    }
 

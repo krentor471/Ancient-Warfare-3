@@ -176,5 +176,6 @@
   "gui.ancientwarfare.world_map.kind.capital": "Столица",
   "gui.ancientwarfare.world_map.kind.capital_area": "Место столицы (пока не построена)",
   "gui.ancientwarfare.world_map.kind.player_village": "Деревня игрока",
-  "gui.ancientwarfare.world_map.kind.outlaw": "Лагерь разбойников"
+  "gui.ancientwarfare.world_map.kind.outlaw": "Лагерь разбойников",
+  "news.ancientwarfare.capital_built": "Новая столица: фракция %s отстроила столицу у %s, %s"
 }

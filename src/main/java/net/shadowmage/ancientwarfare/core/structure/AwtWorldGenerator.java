@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
+import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
@@ -29,6 +30,8 @@ public final class AwtWorldGenerator {
    private static final int CLEAR_COLUMNS_PER_TICK = 96;
    private static final int ROAD_BLOCKS_PER_TICK = 192;
    private static final int MAX_SURFACE_RANGE = 18;
+   private static final int FACTION_SITE_RANGE = 15;
+   private static final int FACTION_TOWN_SURVEY_RANGE = 28;
    private static final int SITE_ATTEMPTS = 12;
    private static final int SITE_SEARCH_RADIUS = 192;
    private static final int QUICK_SURVEY_GRID = 5;
@@ -112,6 +115,64 @@ public final class AwtWorldGenerator {
             }
          }
       }
+   }
+
+   /**
+    * Whether a faction town of this many chunks fits here: dry, and flat enough for the town planner.
+    * The land is loaded (generated if need be) first, as heights of unloaded land read as the void.
+    */
+   public static boolean siteAcceptable(ServerLevel level, int x, int z, int chunks) {
+      return NaturalGenerationContext.run(() -> {
+         int halfSize = Math.max(16, chunks * 8);
+         List<Integer> samples = new ArrayList<>(25);
+
+         for (int gx = 0; gx < 5; gx++) {
+            for (int gz = 0; gz < 5; gz++) {
+               int sx = x - halfSize + halfSize * 2 * gx / 4;
+               int sz = z - halfSize + halfSize * 2 * gz / 4;
+               NaturalGenerationContext.markChunk(new ChunkPos(sx >> 4, sz >> 4));
+               int y = level.getChunk(sx >> 4, sz >> 4).getHeight(Types.MOTION_BLOCKING_NO_LEAVES, sx & 15, sz & 15);
+               if (!level.getFluidState(new BlockPos(sx, y, sz)).isEmpty()) {
+                  AncientWarfareCore.LOG.debug("Faction town site {}, {}: water at {}, {}", x, z, sx, sz);
+                  return false;
+               }
+
+               samples.add(y);
+            }
+         }
+
+         // Stricter than the town survey's own check, which samples more finely and might still refuse.
+         samples.sort(Integer::compareTo);
+         AncientWarfareCore.LOG.debug("Faction town site {}, {}: heights {}", x, z, samples);
+         return percentile(samples, 0.1) + FACTION_SITE_RANGE >= percentile(samples, 0.9);
+      });
+   }
+
+   /** Size in chunks of a faction town template; 0 when it cannot be read. */
+   public static int townChunks(String path) {
+      try {
+         return AwtTownPlacer.plan(BlockPos.ZERO, path, Direction.NORTH).totalSize() / 16;
+      } catch (RuntimeException exception) {
+         return 0;
+      }
+   }
+
+   /** Whether a town is being built right now; only one is built at a time. */
+   public static boolean busy(ServerLevel level) {
+      return AwtWorldGenerationData.get(level).active() != null;
+   }
+
+   /** Queues a faction's generated town (see FactionTowns) at a site already checked; false while another town is being built. */
+   public static boolean queueFactionTown(ServerLevel level, String path, int x, int z) {
+      AwtWorldGenerationData data = AwtWorldGenerationData.get(level);
+      if (data.active() != null || LargeIslandWorldGenerator.active(level)) {
+         return false;
+      }
+
+      int y = NaturalGenerationContext.run(() -> level.getChunk(x >> 4, z >> 4).getHeight(Types.MOTION_BLOCKING_NO_LEAVES, x & 15, z & 15) + 1);
+      data.add(new AwtWorldGenerationData.TownTask(path, path, x, y, z));
+      AncientWarfareCore.LOG.info("Queued faction town {} at {}, {}, {}", new Object[]{path, x, y, z});
+      return true;
    }
 
    private static AwtWorldGenerator.TownSite findTownSite(ServerLevel level, AwtWorldGenerationData data, ChunkPos chunk, boolean forced, String filter) {
@@ -287,12 +348,14 @@ public final class AwtWorldGenerator {
          int median = percentile(task.surfaceSamples, 0.5);
          int high = percentile(task.surfaceSamples, 0.9);
          int representativeRange = high - low;
-         if (representativeRange > 18) {
+         // A faction must build its capital and villages somewhere in its own hilly land; their sites were checked already.
+         int maxRange = FactionTowns.isGenerated(task.path) ? FACTION_TOWN_SURVEY_RANGE : MAX_SURFACE_RANGE;
+         if (representativeRange > maxRange) {
             task.phase = AwtWorldGenerationData.Phase.FAILED;
             AncientWarfareCore.LOG
                .info(
                   "Rejected queued AWT town {} at {}, {} during survey: representative surface range {} exceeds {} (raw {}..{})",
-                  new Object[]{task.name, task.x, task.z, representativeRange, 18, task.minSurface, task.maxSurface}
+                  new Object[]{task.name, task.x, task.z, representativeRange, maxRange, task.minSurface, task.maxSurface}
                );
          } else {
             task.y = median + 1;
@@ -516,7 +579,8 @@ public final class AwtWorldGenerator {
    }
 
    private static void registerSettlement(ServerLevel level, AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
-      String faction = TemplateFactions.ofTown(task.name);
+      boolean generated = FactionTowns.isGenerated(task.path);
+      String faction = generated ? FactionTowns.factionOf(task.path) : TemplateFactions.ofTown(task.name);
       if (!faction.isEmpty()) {
          int soldiers = 0;
          int civilians = 0;
@@ -532,10 +596,11 @@ public final class AwtWorldGenerator {
          }
 
          BlockPos min = plan.min();
+         String kind = !generated ? "town" : FactionTowns.isCapital(task.path) ? FactionTowns.CAPITAL : FactionTowns.VILLAGE;
          FactionWorldData.get(level)
             .addSettlement(
                faction,
-               "town",
+               kind,
                task.path,
                min,
                min.offset(plan.totalSize() - 1, 0, plan.totalSize() - 1),
@@ -544,6 +609,10 @@ public final class AwtWorldGenerator {
                soldiers,
                FactionSimulation.startingPopulation(soldiers, civilians)
             );
+         if (generated) {
+            FactionTowns.plantFields(level, plan, task.y - 1, faction, FactionTowns.CAPITAL.equals(kind));
+            FactionExpansion.townBuilt(level, faction, kind, task.x, task.z);
+         }
       }
    }
 

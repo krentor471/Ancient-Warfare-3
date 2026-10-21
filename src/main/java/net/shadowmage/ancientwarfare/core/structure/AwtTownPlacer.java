@@ -120,7 +120,11 @@ public final class AwtTownPlacer {
       return name.toLowerCase(Locale.ROOT).replace(" ", "").replace("_", "").replace("-", "");
    }
 
-   private static List<String> readLines(String templatePath) {
+   static List<String> readLines(String templatePath) {
+      if (FactionTowns.isGenerated(templatePath)) {
+         return FactionTowns.lines(templatePath);
+      }
+
       String resource = "/assets/ancientwarfare/template/" + templatePath;
 
       try {

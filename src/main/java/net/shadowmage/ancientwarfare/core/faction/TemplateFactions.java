@@ -51,6 +51,28 @@ public final class TemplateFactions {
       return FactionRegistry.isKnown(info.faction()) ? info : NEUTRAL;
    }
 
+   /** Whether the template's name marks it as a military building: a tower, fort, camp and the like. */
+   public static boolean hasMilitaryName(String path) {
+      String name = name(path);
+      return !name.contains("wizard") && MILITARY_WORDS.stream().anyMatch(name::contains);
+   }
+
+   /** Every template path of a faction, in no particular order. */
+   public static synchronized List<String> templatesOf(String faction) {
+      if (templates == null) {
+         templates = load();
+      }
+
+      List<String> paths = new ArrayList<>();
+      templates.forEach((path, info) -> {
+         if (info.faction().equals(faction)) {
+            paths.add(path);
+         }
+      });
+      paths.sort(null);
+      return paths;
+   }
+
    /** Whether the template suits a border fort: a tower, castle, camp and the like of its faction. */
    public static synchronized boolean isMilitary(String path) {
       if (military == null) {

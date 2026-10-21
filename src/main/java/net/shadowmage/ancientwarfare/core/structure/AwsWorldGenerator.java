@@ -53,6 +53,8 @@ public final class AwsWorldGenerator {
    /** What a faction is building: the kind decides which of its templates fit and how the settlement is registered. */
    public enum Site {
       SETTLEMENT("structure"),
+      /** A village a faction founded that could not be laid out as a town: one dry-land, non-military building. */
+      VILLAGE("structure"),
       FORT("fort"),
       TRADE_POST("tradepost"),
       GUARD_POST("guardpost");
@@ -70,6 +72,7 @@ public final class AwsWorldGenerator {
       boolean accepts(String path) {
          return switch (this) {
             case SETTLEMENT -> true;
+            case VILLAGE -> !TemplateFactions.hasMilitaryName(path) && !TemplateFactions.isMilitary(path);
             case FORT -> TemplateFactions.isMilitary(path);
             case TRADE_POST -> TemplateFactions.isTradePost(path);
             case GUARD_POST -> TemplateFactions.isGuardPost(path);
@@ -79,7 +82,7 @@ public final class AwsWorldGenerator {
       /** Garrison a new site starts with, from its template's soldiers. */
       int garrison(int soldiers) {
          return switch (this) {
-            case SETTLEMENT -> soldiers;
+            case SETTLEMENT, VILLAGE -> soldiers;
             case FORT -> Math.min(soldiers, FactionExpansion.FORT_GARRISON);
             case TRADE_POST -> Math.min(soldiers, 2);
             case GUARD_POST -> Math.min(soldiers, 6);
@@ -262,7 +265,7 @@ public final class AwsWorldGenerator {
                      FactionRegions.provinceAt(level, origin.getX(), origin.getZ()).key(),
                      level.getGameTime(),
                      site.garrison(info.soldiers()),
-                     site == Site.SETTLEMENT ? FactionSimulation.startingPopulation(info.soldiers(), info.civilians()) : FactionSimulation.startingPopulation(0, 0)
+                     site == Site.SETTLEMENT || site == Site.VILLAGE ? FactionSimulation.startingPopulation(info.soldiers(), info.civilians()) : FactionSimulation.startingPopulation(0, 0)
                   );
             }
 

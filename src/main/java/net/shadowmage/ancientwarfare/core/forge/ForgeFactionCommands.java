@@ -33,6 +33,8 @@ import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
 import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
+import net.shadowmage.ancientwarfare.core.structure.AwtWorldGenerator;
+import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
 import net.shadowmage.ancientwarfare.core.faction.FactionRoads;
 import net.shadowmage.ancientwarfare.core.faction.FactionTrade;
@@ -112,6 +114,15 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("map").executes(context -> showMap(context.getSource())))
                .then(Commands.literal("settlements").executes(context -> showSettlements(context.getSource())))
                .then(Commands.literal("factions").executes(context -> showFactions(context.getSource())))
+               .then(
+                  Commands.literal("town")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(Commands.literal("capital").executes(context -> buildTown(context.getSource(), faction(context, "faction"), true)))
+                           .then(Commands.literal("village").executes(context -> buildTown(context.getSource(), faction(context, "faction"), false)))
+                     )
+               )
                .then(
                   Commands.literal("found")
                      .requires(source -> source.hasPermission(2))
@@ -389,6 +400,28 @@ public final class ForgeFactionCommands {
       FactionWorldData.get(source.getLevel()).setProvinceOwner(settlement.province(), faction);
       tell(source, Component.literal("Founded settlement #" + settlement.id() + " of " + faction + " with garrison " + garrison));
       return settlement.id();
+   }
+
+   /** Lays out a faction's capital or village town here, on whatever land is here, for testing. */
+   private static int buildTown(CommandSourceStack source, String faction, boolean capital) {
+      if (!FactionTowns.canBuild(faction, capital)) {
+         source.sendFailure(Component.literal(faction + " has no buildings for a " + (capital ? "capital" : "village")));
+         return 0;
+      }
+
+      BlockPos center = BlockPos.containing(source.getPosition());
+      String path = FactionTowns.path(faction, capital);
+      int[] site = FactionExpansion.findTownSite(source.getLevel(), center.getX(), center.getZ(), AwtWorldGenerator.townChunks(path));
+      if (site == null) {
+         source.sendFailure(Component.literal("No dry, flat land for it nearby"));
+         return 0;
+      } else if (!AwtWorldGenerator.queueFactionTown(source.getLevel(), path, site[0], site[1])) {
+         source.sendFailure(Component.literal("Another town is being built; try again once it is done"));
+         return 0;
+      }
+
+      tell(source, Component.literal("Building a " + faction + " " + (capital ? "capital" : "village") + " at " + site[0] + ", " + site[1] + "; it appears over the next minutes"));
+      return 1;
    }
 
    /** Sends a raid against the player village nearest to the command's position, setting out almost at once. */

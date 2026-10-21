@@ -30,6 +30,10 @@ public final class FactionNews {
       tell(level, Component.translatable("news.ancientwarfare.founded", factionName(faction), x, z));
    }
 
+   public static void capitalBuilt(ServerLevel level, String faction, int x, int z) {
+      tell(level, Component.translatable("news.ancientwarfare.capital_built", factionName(faction), x, z));
+   }
+
    public static void fortified(ServerLevel level, String faction, int x, int z) {
       tell(level, Component.translatable("news.ancientwarfare.fortified", factionName(faction), x, z));
    }

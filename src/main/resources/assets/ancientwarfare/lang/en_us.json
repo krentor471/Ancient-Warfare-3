@@ -1298,5 +1298,6 @@
   "gui.ancientwarfare.world_map.kind.capital": "Capital",
   "gui.ancientwarfare.world_map.kind.capital_area": "Capital area (nothing built yet)",
   "gui.ancientwarfare.world_map.kind.player_village": "Player village",
-  "gui.ancientwarfare.world_map.kind.outlaw": "Outlaw camp"
+  "gui.ancientwarfare.world_map.kind.outlaw": "Outlaw camp",
+  "news.ancientwarfare.capital_built": "New capital: %s built its capital city near %s, %s"
 }
