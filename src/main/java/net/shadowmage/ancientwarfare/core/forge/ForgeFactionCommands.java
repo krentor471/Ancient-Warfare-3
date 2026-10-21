@@ -358,8 +358,8 @@ public final class ForgeFactionCommands {
          BlockPos center = settlement.center();
          String template = settlement.template().substring(settlement.template().lastIndexOf('/') + 1);
          tell(source, 
-            Component.literal(
-               "#" + settlement.id() + " " + settlement.faction() + " " + settlement.kind() + " " + template + " tier " + settlement.tier() + ", people "
+            Component.literal("#" + settlement.id() + " ").append(settlement.nameComponent()).append(
+               " " + settlement.faction() + " " + settlement.kind() + " " + template + " tier " + settlement.tier() + ", people "
                   + settlement.population() + ", garrison " + settlement.garrison() + " at " + center.getX() + " " + center.getY() + " " + center.getZ() + " ("
                   + (int)Math.sqrt(settlement.horizontalDistanceSquared(source.getPosition().x, source.getPosition().z)) + " blocks)"
             )

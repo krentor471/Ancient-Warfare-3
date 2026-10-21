@@ -47,6 +47,9 @@ public final class FactionWorldData extends SavedData {
    /** Settlements of new worlds stand this much further apart than at first. */
    public static final int NEW_REGION_SCALE = 130;
    private boolean historyDone;
+   /** The world's news, oldest first, as text components in JSON; see FactionNews. */
+   private final List<ChronicleEntry> chronicle = new ArrayList<>();
+   public static final int CHRONICLE_SIZE = 400;
    /** How far apart provinces, realms and natural structures are, in percent; worlds from before this was kept use 100. */
    private int regionScale = NEW_REGION_SCALE;
    /** Half the width of the area an unbuilt settlement is taken to cover until it is built. */
@@ -123,6 +126,23 @@ public final class FactionWorldData extends SavedData {
       this.setDirty();
    }
 
+   private String newName(String faction, int id) {
+      return FactionNames.pick(faction, id, this.settlements.stream().map(Settlement::name).toList());
+   }
+
+   public List<ChronicleEntry> chronicle() {
+      return Collections.unmodifiableList(this.chronicle);
+   }
+
+   public void addChronicle(long day, String json) {
+      this.chronicle.add(new ChronicleEntry(day, json));
+      if (this.chronicle.size() > CHRONICLE_SIZE) {
+         this.chronicle.remove(0);
+      }
+
+      this.setDirty();
+   }
+
    public List<Settlement> settlements() {
       return Collections.unmodifiableList(this.settlements);
    }
@@ -131,6 +151,7 @@ public final class FactionWorldData extends SavedData {
       String faction, String kind, String template, BlockPos min, BlockPos max, long province, long gameTime, int garrison, int population
    ) {
       Settlement settlement = new Settlement(this.nextSettlementId++, faction, kind, template, min, max, province, gameTime);
+      settlement.name = this.newName(faction, settlement.id());
       settlement.garrison = garrison;
       settlement.population = population;
       this.settlements.add(settlement);
@@ -380,6 +401,7 @@ public final class FactionWorldData extends SavedData {
          entry.putBoolean("Manned", settlement.manned);
          entry.putString("CapturedFrom", settlement.capturedFrom);
          entry.putBoolean("Built", settlement.built);
+         entry.putString("Name", settlement.name);
          list.add(entry);
       }
 
@@ -391,6 +413,16 @@ public final class FactionWorldData extends SavedData {
       tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
       tag.putLong("DayOffset", this.dayOffset);
       tag.putBoolean("HistoryDone", this.historyDone);
+      ListTag chronicleList = new ListTag();
+
+      for (ChronicleEntry entry : this.chronicle) {
+         CompoundTag line = new CompoundTag();
+         line.putLong("Day", entry.day());
+         line.putString("Text", entry.json());
+         chronicleList.add(line);
+      }
+
+      tag.put("Chronicle", chronicleList);
       tag.putInt("RegionScale", this.regionScale);
       ListTag plans = new ListTag();
 
@@ -526,7 +558,15 @@ public final class FactionWorldData extends SavedData {
          settlement.manned = entry.getBoolean("Manned");
          settlement.capturedFrom = entry.getString("CapturedFrom");
          settlement.built = !entry.contains("Built") || entry.getBoolean("Built");
+         settlement.name = entry.getString("Name");
          data.settlements.add(settlement);
+      }
+
+      for (Settlement settlement : data.settlements) {
+         // Worlds from before names: every settlement gets one in the style of its founders.
+         if (settlement.name.isEmpty()) {
+            settlement.name = data.newName(settlement.capturedFrom.isEmpty() ? settlement.faction() : settlement.capturedFrom, settlement.id());
+         }
       }
 
       data.nextSettlementId = Math.max(tag.getInt("NextSettlementId"), data.settlements.size() + 1);
@@ -535,6 +575,12 @@ public final class FactionWorldData extends SavedData {
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
       data.dayOffset = tag.getLong("DayOffset");
       data.historyDone = tag.getBoolean("HistoryDone");
+
+      for (Tag element : tag.getList("Chronicle", Tag.TAG_COMPOUND)) {
+         CompoundTag line = (CompoundTag)element;
+         data.chronicle.add(new ChronicleEntry(line.getLong("Day"), line.getString("Text")));
+      }
+
       data.regionScale = tag.contains("RegionScale") ? tag.getInt("RegionScale") : 100;
 
       for (Tag element : tag.getList("PlannedSettlements", Tag.TAG_COMPOUND)) {
@@ -917,8 +963,13 @@ public final class FactionWorldData extends SavedData {
     * A faction's settlement. Its people and garrison are abstract numbers the daily simulation grows;
     * the NPCs standing there are spawned to match the garrison while a player is near.
     */
+   public static record ChronicleEntry(long day, String json) {
+   }
+
    public static final class Settlement {
       private final int id;
+      /** See FactionNames; empty for player villages. */
+      String name = "";
       private String faction;
       private final String kind;
       private String template;
@@ -963,6 +1014,15 @@ public final class FactionWorldData extends SavedData {
 
       public String kind() {
          return this.kind;
+      }
+
+      public String name() {
+         return this.name;
+      }
+
+      /** The settlement's name, or its number when it has none. */
+      public net.minecraft.network.chat.MutableComponent nameComponent() {
+         return this.name.isEmpty() ? net.minecraft.network.chat.Component.literal("#" + this.id) : FactionNames.component(this.name);
       }
 
       public String template() {

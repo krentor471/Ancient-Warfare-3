@@ -216,7 +216,12 @@ public final class FactionArmies {
       Component message = army.isRaid()
          ? Component.translatable("news.ancientwarfare.raid_arrived", FactionNews.factionName(army.faction()), target.getX(), target.getZ())
          : Component.translatable(
-            "news.ancientwarfare.assault", FactionNews.factionName(army.faction()), FactionNews.factionName(army.defender()), target.getX(), target.getZ()
+            "news.ancientwarfare.assault",
+            FactionNews.factionName(army.faction()),
+            FactionNews.factionName(army.defender()),
+            target.getX(),
+            target.getZ(),
+            FactionNews.named(settlementById(data, army.targetSettlement()))
          );
       if (army.isRaid()) {
          FactionNews.tellPlayer(level, army.villageOwner(), message);
@@ -578,7 +583,9 @@ public final class FactionArmies {
          tellNear(
             level,
             army.target(),
-            Component.translatable("news.ancientwarfare.siege_camp", FactionNews.factionName(army.faction()), FactionNews.factionName(army.defender()), placed)
+            Component.translatable(
+               "news.ancientwarfare.siege_camp", FactionNews.factionName(army.faction()), FactionNews.factionName(army.defender()), placed, FactionNews.named(target)
+            )
          );
       }
    }

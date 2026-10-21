@@ -22,8 +22,10 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.NetworkEvent.Context;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.shadowmage.ancientwarfare.core.client.DiplomacyScreen;
+import net.shadowmage.ancientwarfare.core.client.ChronicleScreen;
 import net.shadowmage.ancientwarfare.core.client.WorldMapScreen;
 import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 import net.shadowmage.ancientwarfare.core.faction.WorldMap;
 import net.shadowmage.ancientwarfare.core.faction.RelationState;
 import net.shadowmage.ancientwarfare.core.client.MailboxTargetScreen;
@@ -71,7 +73,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 public final class AWCoreNetwork {
    private static final String PROTOCOL_VERSION = "5";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-      new ResourceLocation("ancientwarfare", "main"), () -> "5", "5"::equals, "5"::equals
+      new ResourceLocation("ancientwarfare", "main"), () -> "6", "6"::equals, "6"::equals
    );
 
    private AWCoreNetwork() {
@@ -223,6 +225,16 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.WorldMapTeleportPacket::decode)
          .consumerMainThread(AWCoreNetwork.WorldMapTeleportPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.ChronicleOpenPacket.class, 36, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.ChronicleOpenPacket::encode)
+         .decoder(AWCoreNetwork.ChronicleOpenPacket::decode)
+         .consumerMainThread(AWCoreNetwork.ChronicleOpenPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.ChronicleDataPacket.class, 37, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.ChronicleDataPacket::encode)
+         .decoder(AWCoreNetwork.ChronicleDataPacket::decode)
+         .consumerMainThread(AWCoreNetwork.ChronicleDataPacket::handle)
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.CommandViewSelectPacket.class, 27, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.CommandViewSelectPacket::encode)
          .decoder(AWCoreNetwork.CommandViewSelectPacket::decode)
@@ -371,6 +383,14 @@ public final class AWCoreNetwork {
 
    public static void sendWorldMapOpen() {
       CHANNEL.sendToServer(new AWCoreNetwork.WorldMapOpenPacket());
+   }
+
+   public static void sendChronicleOpen() {
+      CHANNEL.sendToServer(new AWCoreNetwork.ChronicleOpenPacket());
+   }
+
+   public static void sendChronicle(ServerPlayer player, List<FactionWorldData.ChronicleEntry> entries) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.ChronicleDataPacket(entries));
    }
 
    public static void sendWorldMapTeleport(int x, int z) {
@@ -720,6 +740,70 @@ public final class AWCoreNetwork {
       }
    }
 
+   public static record ChronicleOpenPacket() {
+      private static void encode(AWCoreNetwork.ChronicleOpenPacket packet, FriendlyByteBuf buffer) {
+      }
+
+      private static AWCoreNetwork.ChronicleOpenPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.ChronicleOpenPacket();
+      }
+
+      private static void handle(AWCoreNetwork.ChronicleOpenPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               sendChronicle(player, FactionWorldData.get(player.serverLevel()).chronicle());
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record ChronicleDataPacket(List<FactionWorldData.ChronicleEntry> entries) {
+      private static final int MAX_TEXT = 8192;
+
+      private static void encode(AWCoreNetwork.ChronicleDataPacket packet, FriendlyByteBuf buffer) {
+         List<FactionWorldData.ChronicleEntry> entries = packet.entries.stream().filter(entry -> entry.json().length() <= MAX_TEXT).toList();
+         buffer.writeVarInt(entries.size());
+
+         for (FactionWorldData.ChronicleEntry entry : entries) {
+            buffer.writeVarLong(entry.day());
+            buffer.writeUtf(entry.json(), MAX_TEXT);
+         }
+      }
+
+      private static AWCoreNetwork.ChronicleDataPacket decode(FriendlyByteBuf buffer) {
+         int count = Math.min(FactionWorldData.CHRONICLE_SIZE, buffer.readVarInt());
+         List<FactionWorldData.ChronicleEntry> entries = new ArrayList<>();
+
+         for (int i = 0; i < count; i++) {
+            entries.add(new FactionWorldData.ChronicleEntry(buffer.readVarLong(), buffer.readUtf(MAX_TEXT)));
+         }
+
+         return new AWCoreNetwork.ChronicleDataPacket(entries);
+      }
+
+      private static void handle(AWCoreNetwork.ChronicleDataPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               List<ChronicleScreen.Entry> entries = new ArrayList<>();
+
+               for (FactionWorldData.ChronicleEntry entry : packet.entries) {
+                  Component text = Component.Serializer.fromJson(entry.json());
+                  if (text != null) {
+                     entries.add(new ChronicleScreen.Entry(entry.day(), text));
+                  }
+               }
+
+               ChronicleScreen.open(entries);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
    public static record WorldMapTeleportPacket(int x, int z) {
       private static void encode(AWCoreNetwork.WorldMapTeleportPacket packet, FriendlyByteBuf buffer) {
          buffer.writeVarInt(packet.x);
@@ -762,6 +846,7 @@ public final class AWCoreNetwork {
             buffer.writeEnum(marker.kind());
             buffer.writeVarInt(marker.faction());
             buffer.writeUtf(marker.label(), 128);
+            buffer.writeUtf(marker.name(), 64);
          }
 
          List<int[]> roads = data.roads().subList(0, Math.min(MAX_ITEMS, data.roads().size()));
@@ -789,7 +874,7 @@ public final class AWCoreNetwork {
          List<WorldMap.Marker> markers = new ArrayList<>();
 
          for (int i = 0; i < markerCount; i++) {
-            markers.add(new WorldMap.Marker(buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128)));
+            markers.add(new WorldMap.Marker(buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64)));
          }
 
          int roadCount = Math.min(MAX_ITEMS, buffer.readVarInt());

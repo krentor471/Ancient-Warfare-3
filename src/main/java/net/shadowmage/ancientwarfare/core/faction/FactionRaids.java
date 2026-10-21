@@ -127,7 +127,8 @@ public final class FactionRaids {
             target.center().getX(),
             target.center().getZ(),
             loot,
-            captives
+            captives,
+            FactionNews.named(target)
          )
       );
    }

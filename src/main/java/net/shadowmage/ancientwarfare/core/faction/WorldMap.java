@@ -110,7 +110,8 @@ public final class WorldMap {
       OUTLAW
    }
 
-   public static record Marker(int x, int z, Kind kind, int faction, String label) {
+   /** name is a FactionNames code, or empty. */
+   public static record Marker(int x, int z, Kind kind, int faction, String label, String name) {
    }
 
    /**
@@ -160,7 +161,8 @@ public final class WorldMap {
                   kind(settlement),
                   index(settlement.faction(), factions, indices),
                   "#" + settlement.id() + " " + (settlement.built() ? templateName(settlement.template()) : settlement.kind() + " (not built yet)") + ", people " + settlement.population() + ", garrison " + settlement.garrison()
-                     + (FactionDiplomacy.isOutlaw(settlement.faction()) ? ", lair level " + FactionBandits.level(settlement) : "")
+                     + (FactionDiplomacy.isOutlaw(settlement.faction()) ? ", lair level " + FactionBandits.level(settlement) : ""),
+                  settlement.name()
                )
             );
          }
@@ -169,7 +171,7 @@ public final class WorldMap {
       data.villages().forEach((pos, owner) -> {
          if (pos.getX() >= originX && pos.getX() < maxX && pos.getZ() >= originZ && pos.getZ() < maxZ) {
             ServerPlayer villageOwner = level.getServer().getPlayerList().getPlayer(owner);
-            markers.add(new Marker(pos.getX(), pos.getZ(), Kind.PLAYER_VILLAGE, 0, villageOwner == null ? "player village" : villageOwner.getScoreboardName()));
+            markers.add(new Marker(pos.getX(), pos.getZ(), Kind.PLAYER_VILLAGE, 0, villageOwner == null ? "player village" : villageOwner.getScoreboardName(), ""));
          }
       });
       List<int[]> roads = new ArrayList<>();
@@ -201,7 +203,7 @@ public final class WorldMap {
          int x = (int)Math.floor(campaign.x());
          int z = (int)Math.floor(campaign.z());
          markers.add(
-            new Marker(x, z, Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + (campaign.raid() ? " raiders" : " soldiers") + ", against settlement #" + campaign.targetSettlement())
+            new Marker(x, z, Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + (campaign.raid() ? " raiders" : " soldiers") + ", against settlement #" + campaign.targetSettlement(), "")
          );
 
          for (FactionWorldData.Settlement settlement : data.settlements()) {

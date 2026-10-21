@@ -134,7 +134,9 @@ public final class FactionCampaigns {
          level,
          home.center().getX(),
          home.center().getZ(),
-         Component.translatable("news.ancientwarfare.army_set_out", FactionNews.factionName(attacker), taken, FactionNews.factionName(target.faction()))
+         Component.translatable(
+            "news.ancientwarfare.army_set_out", FactionNews.factionName(attacker), taken, FactionNews.factionName(target.faction()), FactionNews.named(target)
+         )
       );
       return campaign;
    }

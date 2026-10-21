@@ -163,7 +163,8 @@ public final class FactionBandits {
             FactionNews.factionName(hunter),
             lair.center().getX(),
             lair.center().getZ(),
-            bounty
+            bounty,
+            FactionNews.named(lair)
          )
       );
    }
@@ -235,7 +236,8 @@ public final class FactionBandits {
             FactionNews.factionName(owner),
             target.center().getX(),
             target.center().getZ(),
-            loot
+            loot,
+            FactionNews.named(target)
          )
       );
    }

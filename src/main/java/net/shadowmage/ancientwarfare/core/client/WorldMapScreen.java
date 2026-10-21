@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.shadowmage.ancientwarfare.core.faction.FactionNames;
 import net.shadowmage.ancientwarfare.core.faction.WorldMap;
 import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
 
@@ -24,6 +25,7 @@ import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
 public class WorldMapScreen extends Screen {
    private static final ResourceLocation TEXTURE = new ResourceLocation("ancientwarfare", "dynamic/world_map");
    private static final int MARGIN = 24;
+   private static final int BUTTONS_END = MARGIN + 164;
    private static final int LEGEND_HEIGHT = 36;
    private static final int WILD_COLOR = 0xFF3A3A32;
    private static final int ROAD_COLOR = 0xFF7A5A32;
@@ -47,6 +49,11 @@ public class WorldMapScreen extends Screen {
    private static final double MIN_SCALE = 0.02;
    private static final double MAX_SCALE = 2.0;
    private static final double HOVER_RANGE = 6.0;
+   /** Map scales (pixels per block) from which settlement names show, and their text size. */
+   private static final double CAPITAL_NAMES_SCALE = 0.03;
+   private static final double TOWN_NAMES_SCALE = 0.12;
+   private static final double ALL_NAMES_SCALE = 0.3;
+   private static final float NAME_SIZE = 0.75F;
    /** The last view, so reopening the map shows the same place; NaN until first opened. */
    private static double savedX = Double.NaN;
    private static double savedZ;
@@ -94,6 +101,11 @@ public class WorldMapScreen extends Screen {
 
       this.addRenderableWidget(
          Button.builder(Component.translatable("gui.ancientwarfare.world_map.center_player"), button -> this.centerOnPlayer()).bounds(MARGIN, 2, 90, 18).build()
+      );
+      this.addRenderableWidget(
+         Button.builder(Component.translatable("gui.ancientwarfare.chronicle.button"), button -> AWCoreNetwork.sendChronicleOpen())
+            .bounds(MARGIN + 94, 2, 70, 18)
+            .build()
       );
    }
 
@@ -234,6 +246,8 @@ public class WorldMapScreen extends Screen {
          this.drawMarker(graphics, marker, marker == hovered);
       }
 
+      this.renderSettlementNames(graphics);
+
       Minecraft minecraft = Minecraft.getInstance();
       if (minecraft.player != null) {
          int px = (int)Math.round(this.screenX(minecraft.player.getX()));
@@ -247,7 +261,14 @@ public class WorldMapScreen extends Screen {
 
       this.renderScaleBar(graphics, right - SCALE_BAR_WIDTH - 8, bottom - 14);
       graphics.disableScissor();
-      graphics.drawCenteredString(this.font, this.title, this.width / 2, 8, -1);
+      // The title follows the buttons; the hint takes the rest of the line when it fits.
+      int titleX = Math.max(this.width / 2 - this.font.width(this.title) / 2, BUTTONS_END + 8);
+      graphics.drawString(this.font, this.title, titleX, 8, -1);
+      Component hint = Component.translatable("gui.ancientwarfare.world_map.hint");
+      int hintX = this.width - MARGIN - this.font.width(hint);
+      if (hintX > titleX + this.font.width(this.title) + 12) {
+         graphics.drawString(this.font, hint, hintX, 8, 0xFFA0A0A0);
+      }
       this.renderLegend(graphics, left, bottom + 4);
       if (mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom) {
          this.renderTooltip(graphics, mouseX, mouseY, hovered);
@@ -261,6 +282,10 @@ public class WorldMapScreen extends Screen {
       int z = (int)Math.floor(this.worldZ(mouseY));
       List<Component> lines = new ArrayList<>();
       if (hovered != null) {
+         if (!hovered.name().isEmpty()) {
+            lines.add(FactionNames.component(hovered.name()).withStyle(net.minecraft.ChatFormatting.GOLD));
+         }
+
          lines.add(Component.translatable("gui.ancientwarfare.world_map.kind." + hovered.kind().name().toLowerCase(java.util.Locale.ROOT)));
          String faction = this.data.factions().get(hovered.faction());
          if (!faction.isEmpty()) {
@@ -310,7 +335,7 @@ public class WorldMapScreen extends Screen {
 
       for (WorldMap.Kind kind : LEGEND_KINDS) {
          Component name = Component.translatable("gui.ancientwarfare.world_map.kind." + kind.name().toLowerCase(java.util.Locale.ROOT));
-         int width = 12 + this.font.width(name) + 8;
+         int width = 11 + this.font.width(name) + 5;
          if (cursor + width > this.width - MARGIN) {
             break;
          }
@@ -320,8 +345,6 @@ public class WorldMapScreen extends Screen {
          cursor += width;
       }
 
-      Component hint = Component.translatable("gui.ancientwarfare.world_map.hint");
-      graphics.drawString(this.font, hint, this.width - MARGIN - this.font.width(hint), 8, 0xFFA0A0A0);
    }
 
    private void drawMarker(GuiGraphics graphics, WorldMap.Marker marker, boolean hovered) {
@@ -410,6 +433,33 @@ public class WorldMapScreen extends Screen {
          int x = (int)Math.round(x0 + (x1 - x0) * t);
          int y = (int)Math.round(y0 + (y1 - y0) * t);
          graphics.fill(x, y, x + width, y + width, color);
+      }
+   }
+
+   /** Names under the signs: capitals from afar, forts and villages closer in, the rest only up close. */
+   private void renderSettlementNames(GuiGraphics graphics) {
+      for (WorldMap.Marker marker : this.data.markers()) {
+         if (marker.name().isEmpty()) {
+            continue;
+         }
+
+         double needed = switch (marker.kind()) {
+            case CAPITAL -> CAPITAL_NAMES_SCALE;
+            case FORT, VILLAGE -> TOWN_NAMES_SCALE;
+            default -> ALL_NAMES_SCALE;
+         };
+         if (this.scale < needed) {
+            continue;
+         }
+
+         Component name = FactionNames.component(marker.name());
+         int x = (int)Math.round(this.screenX(marker.x()));
+         int y = (int)Math.round(this.screenY(marker.z()));
+         graphics.pose().pushPose();
+         graphics.pose().translate(x, y + 7, 0);
+         graphics.pose().scale(NAME_SIZE, NAME_SIZE, 1.0F);
+         graphics.drawCenteredString(this.font, name, 0, 0, marker.kind() == WorldMap.Kind.CAPITAL ? 0xFFFFE080 : 0xFFF0F0F0);
+         graphics.pose().popPose();
       }
    }
 
