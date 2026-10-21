@@ -1323,5 +1323,7 @@
   "news.ancientwarfare.army_set_out": "An army of %1$s (%2$s soldiers) sets out against %3$s",
   "news.ancientwarfare.army_destroyed": "The army of %1$s on the march has been destroyed",
   "news.ancientwarfare.field_battle": "Battle in the field: %1$s beat the army of %2$s near %3$s, %4$s",
-  "news.ancientwarfare.plundered": "Bandits: %1$s plundered a settlement of %2$s near %3$s, %4$s and carried off %5$s gold"
+  "news.ancientwarfare.plundered": "Bandits: %1$s plundered a settlement of %2$s near %3$s, %4$s and carried off %5$s gold",
+  "news.ancientwarfare.lair_scattered": "Bandit hunt: %1$s scattered a bandit lair near %2$s, %3$s and took %4$s gold",
+  "news.ancientwarfare.lair_destroyed": "Bandit hunt: %1$s wiped out a bandit lair near %2$s, %3$s and took %4$s gold"
 }

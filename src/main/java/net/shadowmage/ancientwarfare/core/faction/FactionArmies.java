@@ -270,6 +270,11 @@ public final class FactionArmies {
          members.forEach(FactionNpcEntity::discard);
          goHome(data, army, members.size());
          FactionBandits.plunder(level, data, army.faction(), settlement, 3);
+      } else if (inside > 0 && FactionDiplomacy.isOutlaw(settlement.faction())) {
+         // A bandit lair is scattered, not kept.
+         members.forEach(FactionNpcEntity::discard);
+         goHome(data, army, members.size());
+         FactionBandits.scatter(level, data, army.faction(), settlement);
       } else if (inside > 0) {
          disband(members, army);
          data.removeArmy(army);

@@ -346,10 +346,13 @@ public final class FactionCampaigns {
       walkers.forEach(FactionNpcEntity::discard);
       campaign.walking = 0;
       boolean bandits = FactionDiplomacy.isOutlaw(campaign.faction());
-      // Bandits do not hold what they raid: they plunder it and go.
-      int survivors = FactionAI.siege(level, data, level.getRandom(), campaign.faction(), target, campaign.size, !bandits);
+      boolean hunt = FactionDiplomacy.isOutlaw(target.faction());
+      // Bandits do not hold what they raid: they plunder it and go. Nor does anyone keep a bandit lair: it is scattered.
+      int survivors = FactionAI.siege(level, data, level.getRandom(), campaign.faction(), target, campaign.size, !bandits && !hunt);
       if (bandits && target.garrison <= 0 && survivors > 0) {
          FactionBandits.plunder(level, data, campaign.faction(), target, FactionBandits.raidLevel(campaign.id(), data));
+      } else if (hunt && target.garrison <= 0 && survivors > 0) {
+         FactionBandits.scatter(level, data, campaign.faction(), target);
       }
 
       end(level, data, campaign, List.of(), survivors);

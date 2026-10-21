@@ -14,6 +14,11 @@ import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
  * gathered enough men (its garrison) sends raiders against trading posts and taverns, then guard
  * posts too, and at the top villages. Raiders do not take what they attack: they kill the
  * defenders, carry off gold and drive off some of the people, then go home.
+ *
+ * Countries hunt them in turn: a lair on a country's land, or close to its settlements, draws a
+ * punitive march. If the hunters beat the bandits the lair is scattered: its men are dead, half
+ * its people flee, it falls back a tier and the hunters take a share of the bandits' gold. A lair
+ * with nothing left to fall back from is gone for good.
  */
 public final class FactionBandits {
    public static final int MAX_LEVEL = 4;
@@ -24,6 +29,17 @@ public final class FactionBandits {
    private static final double RAID_SHARE = 0.6;
    private static final int MIN_RAIDERS = 5;
    private static final int LOOT_PER_LEVEL = 40;
+   /** A daily chance of a hunt against a lair, plus this much for each of its levels. */
+   private static final double HUNT_CHANCE = 0.1;
+   private static final double HUNT_CHANCE_PER_LEVEL = 0.05;
+   /** A lair off any country's land is hunted by the country with a settlement this near. */
+   private static final int HUNT_RANGE = 500;
+   private static final int MIN_HUNTERS = 10;
+   private static final int MAX_HUNTERS = 50;
+   /** A country only sends hunters while it keeps at least as many soldiers at home. */
+   private static final int HUNT_RESERVE_FACTOR = 2;
+   private static final int BOUNTY_PER_LEVEL = 60;
+   private static final int SCATTERED_POPULATION = 10;
    /** Lairs and the march their raiders are on; not saved, a restart only lets a lair send another. */
    private static final Map<Integer, Integer> RAIDING = new HashMap<>();
    /** Campaign id to the level its lair had when the raid set out. */
@@ -60,6 +76,96 @@ public final class FactionBandits {
             AncientWarfareCore.LOG.info("Bandit lair #{} (level {}) raids {} {} #{}", lair.id(), lairLevel, target.faction(), target.kind(), target.id());
          }
       }
+
+      hunt(level, data, random);
+   }
+
+   /** Countries send hunters against the lairs on or near their land, one hunt per country at a time. */
+   private static void hunt(ServerLevel level, FactionWorldData data, RandomSource random) {
+      for (FactionWorldData.Settlement lair : new java.util.ArrayList<>(data.settlements())) {
+         if (!FactionDiplomacy.isOutlaw(lair.faction()) || underAttack(data, lair) || random.nextDouble() >= HUNT_CHANCE + HUNT_CHANCE_PER_LEVEL * level(lair)) {
+            continue;
+         }
+
+         String hunter = hunter(data, lair);
+         if (hunter == null || FactionCampaigns.marchingAgainst(data, hunter, lair.faction())) {
+            continue;
+         }
+
+         int force = Math.max(MIN_HUNTERS, Math.min(MAX_HUNTERS, lair.garrison() * 2 + 6));
+         int soldiers = 0;
+         for (FactionWorldData.Settlement settlement : data.settlements()) {
+            if (settlement.faction().equals(hunter)) {
+               soldiers += settlement.garrison();
+            }
+         }
+
+         if (soldiers < force * HUNT_RESERVE_FACTOR) {
+            continue;
+         }
+
+         if (FactionCampaigns.launch(level, data, hunter, lair, force)) {
+            AncientWarfareCore.LOG.info("Faction {} hunts bandit lair #{} (level {}) with {} soldiers", hunter, lair.id(), level(lair), force);
+         }
+      }
+   }
+
+   /** The country whose land the lair sits on, or failing that the one with the nearest settlement in reach. */
+   private static String hunter(FactionWorldData data, FactionWorldData.Settlement lair) {
+      String owner = data.provinceOwner(lair.province());
+      if (owner != null && !owner.isEmpty() && !FactionDiplomacy.isOutlaw(owner) && hasSettlement(data, owner)) {
+         return owner;
+      }
+
+      String nearest = null;
+      double bestDistance = (double)HUNT_RANGE * HUNT_RANGE;
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         double distance = settlement.horizontalDistanceSquared(lair.center().getX(), lair.center().getZ());
+         if (distance < bestDistance && !FactionDiplomacy.isOutlaw(settlement.faction())) {
+            nearest = settlement.faction();
+            bestDistance = distance;
+         }
+      }
+
+      return nearest;
+   }
+
+   private static boolean hasSettlement(FactionWorldData data, String faction) {
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.faction().equals(faction)) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   /** Hunters who beat a lair's bandits scatter it; a lair with nothing left to lose is gone. */
+   static void scatter(ServerLevel level, FactionWorldData data, String hunter, FactionWorldData.Settlement lair) {
+      String outlaw = lair.faction();
+      int bounty = Math.min(data.treasury(outlaw), BOUNTY_PER_LEVEL * level(lair) + lair.population / 2);
+      data.setTreasury(outlaw, data.treasury(outlaw) - bounty);
+      data.setTreasury(hunter, data.treasury(hunter) + bounty);
+      boolean gone = lair.tier <= 0 && lair.population <= SCATTERED_POPULATION * 2;
+      lair.garrison = 0;
+      lair.population /= 2;
+      lair.tier = Math.max(0, lair.tier - 1);
+      if (gone) {
+         data.removeSettlement(lair);
+      }
+
+      data.setDirty();
+      AncientWarfareCore.LOG.info("Faction {} scattered bandit lair #{}{}", hunter, lair.id(), gone ? " for good" : "");
+      FactionNews.tell(
+         level,
+         Component.translatable(
+            gone ? "news.ancientwarfare.lair_destroyed" : "news.ancientwarfare.lair_scattered",
+            FactionNews.factionName(hunter),
+            lair.center().getX(),
+            lair.center().getZ(),
+            bounty
+         )
+      );
    }
 
    private static boolean raiding(FactionWorldData data, FactionWorldData.Settlement lair) {

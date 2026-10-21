@@ -201,5 +201,7 @@
   "news.ancientwarfare.army_set_out": "Армия: %1$s выступает против %3$s (%2$s солдат)",
   "news.ancientwarfare.army_destroyed": "Армия на марше (%1$s) разбита",
   "news.ancientwarfare.field_battle": "Битва в поле: %1$s разбивает армию %2$s возле %3$s, %4$s",
-  "news.ancientwarfare.plundered": "Разбойники: %1$s разграбили поселение (%2$s) возле %3$s, %4$s и унесли %5$s золота"
+  "news.ancientwarfare.plundered": "Разбойники: %1$s разграбили поселение (%2$s) возле %3$s, %4$s и унесли %5$s золота",
+  "news.ancientwarfare.lair_scattered": "Охота на разбойников: %1$s разогнали логово возле %2$s, %3$s и забрали %4$s золота",
+  "news.ancientwarfare.lair_destroyed": "Охота на разбойников: %1$s уничтожили логово возле %2$s, %3$s и забрали %4$s золота"
 }
