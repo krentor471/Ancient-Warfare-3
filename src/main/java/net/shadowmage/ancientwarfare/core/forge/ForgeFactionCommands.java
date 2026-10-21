@@ -30,6 +30,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.faction.FactionArmies;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.FactionCampaigns;
 import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
 import net.shadowmage.ancientwarfare.core.faction.FactionExpansion;
 import net.shadowmage.ancientwarfare.core.faction.FactionRegions;
@@ -142,6 +143,27 @@ public final class ForgeFactionCommands {
                            .then(
                               Commands.argument("size", IntegerArgumentType.integer(1, 12))
                                  .executes(context -> raid(context.getSource(), faction(context, "faction"), IntegerArgumentType.getInteger(context, "size")))
+                           )
+                     )
+               )
+               .then(
+                  Commands.literal("march")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(
+                              Commands.argument("settlement", IntegerArgumentType.integer(1))
+                                 .then(
+                                    Commands.argument("size", IntegerArgumentType.integer(1, 60))
+                                       .executes(
+                                          context -> march(
+                                             context.getSource(),
+                                             faction(context, "faction"),
+                                             IntegerArgumentType.getInteger(context, "settlement"),
+                                             IntegerArgumentType.getInteger(context, "size")
+                                          )
+                                       )
+                                 )
                            )
                      )
                )
@@ -453,6 +475,32 @@ public final class ForgeFactionCommands {
       return army.id();
    }
 
+   /** Declares war on the settlement's owner if need be and sends an army marching on it from the faction's nearest settlement. */
+   private static int march(CommandSourceStack source, String faction, int settlementId, int size) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.id() == settlementId) {
+            if (settlement.faction().equals(faction)) {
+               source.sendFailure(Component.literal("Settlement #" + settlementId + " already belongs to " + faction));
+               return 0;
+            }
+
+            FactionDiplomacy.setState(source.getLevel(), faction, settlement.faction(), RelationState.WAR);
+            if (!FactionCampaigns.launch(source.getLevel(), data, faction, settlement, size)) {
+               source.sendFailure(Component.literal(faction + " has no soldiers to send"));
+               return 0;
+            }
+
+            tell(source, Component.literal(faction + " marches on " + settlement.faction() + " settlement #" + settlementId + "; see /awfaction armies"));
+            return 1;
+         }
+      }
+
+      source.sendFailure(Component.literal("No settlement #" + settlementId));
+      return 0;
+   }
+
    private static int assault(CommandSourceStack source, String faction, int settlementId, int size) {
       FactionWorldData data = FactionWorldData.get(source.getLevel());
 
@@ -548,7 +596,17 @@ public final class ForgeFactionCommands {
          );
       }
 
-      return data.armies().size();
+      for (FactionWorldData.Campaign campaign : data.campaigns()) {
+         tell(
+            source,
+            Component.literal(
+               "  march #" + campaign.id() + " " + campaign.faction() + " -> " + campaign.defender() + " #" + campaign.targetSettlement() + ", " + campaign.size()
+                  + " soldiers at " + (int)campaign.x() + ", " + (int)campaign.z()
+            )
+         );
+      }
+
+      return data.armies().size() + data.campaigns().size();
    }
 
    private static int simulate(CommandSourceStack source, int days) {

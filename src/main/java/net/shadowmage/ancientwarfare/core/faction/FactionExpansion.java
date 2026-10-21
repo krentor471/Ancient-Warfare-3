@@ -366,6 +366,13 @@ public final class FactionExpansion {
 
       double middleX = sumX / provinces.size();
       double middleZ = sumZ / provinces.size();
+      // Not on top of a village already standing there, unless every province has one.
+      Set<Long> settled = new HashSet<>();
+      data.settlements().forEach(settlement -> settled.add(settlement.province()));
+      if (provinces.stream().anyMatch(province -> !settled.contains(province.key()))) {
+         provinces.removeIf(province -> settled.contains(province.key()));
+      }
+
       return provinces.stream()
          .min(Comparator.comparingDouble(province -> Math.pow(province.seedX() - middleX, 2) + Math.pow(province.seedZ() - middleZ, 2)))
          .orElse(null);

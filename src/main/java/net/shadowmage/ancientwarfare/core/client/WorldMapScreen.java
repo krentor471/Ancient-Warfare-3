@@ -25,6 +25,7 @@ public class WorldMapScreen extends Screen {
    private static final int LEGEND_HEIGHT = 24;
    private static final int WILD_COLOR = 0xFF3A3A32;
    private static final int ROAD_COLOR = 0xFFD8C08A;
+   private static final int MARCH_COLOR = 0xFFE03030;
    private static final double MIN_SCALE = 0.02;
    private static final double MAX_SCALE = 2.0;
    private static final double HOVER_RANGE = 6.0;
@@ -115,6 +116,10 @@ public class WorldMapScreen extends Screen {
          for (int i = 0; i + 3 < road.length; i += 2) {
             this.line(graphics, this.screenX(road[i]), this.screenY(road[i + 1]), this.screenX(road[i + 2]), this.screenY(road[i + 3]), ROAD_COLOR);
          }
+      }
+
+      for (int[] march : this.data.marches()) {
+         this.line(graphics, this.screenX(march[0]), this.screenY(march[1]), this.screenX(march[2]), this.screenY(march[3]), MARCH_COLOR);
       }
 
       WorldMap.Marker hovered = this.markerAt(mouseX, mouseY);
@@ -222,6 +227,12 @@ public class WorldMapScreen extends Screen {
          case GUARD_POST -> {
             graphics.fill(x - 2, y - 2, x + 3, y + 3, outline);
             graphics.fill(x - 1, y - 1, x + 2, y + 2, 0xFFB0B0B0);
+         }
+         case ARMY -> {
+            // A banner: a pole and a flag in the faction's colour, outlined in red.
+            graphics.fill(x - 4, y - 6, x + 5, y + 3, 0xFFE03030);
+            graphics.fill(x - 3, y - 5, x + 4, y + 2, color);
+            graphics.fill(x - 4, y + 3, x - 2, y + 7, 0xFF000000);
          }
          case TAVERN -> {
             graphics.fill(x - 2, y - 2, x + 3, y + 3, outline);

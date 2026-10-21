@@ -766,6 +766,9 @@ public final class AWCoreNetwork {
          List<int[]> roads = data.roads().subList(0, Math.min(MAX_ITEMS, data.roads().size()));
          buffer.writeVarInt(roads.size());
          roads.forEach(buffer::writeVarIntArray);
+         List<int[]> marches = data.marches().subList(0, Math.min(MAX_ITEMS, data.marches().size()));
+         buffer.writeVarInt(marches.size());
+         marches.forEach(buffer::writeVarIntArray);
          buffer.writeBoolean(data.canTeleport());
       }
 
@@ -794,7 +797,14 @@ public final class AWCoreNetwork {
             roads.add(buffer.readVarIntArray(8192));
          }
 
-         return new AWCoreNetwork.WorldMapDataPacket(new WorldMap.Data(originX, originZ, owners, factions, markers, roads, buffer.readBoolean()));
+         int marchCount = Math.min(MAX_ITEMS, buffer.readVarInt());
+         List<int[]> marches = new ArrayList<>();
+
+         for (int i = 0; i < marchCount; i++) {
+            marches.add(buffer.readVarIntArray(4));
+         }
+
+         return new AWCoreNetwork.WorldMapDataPacket(new WorldMap.Data(originX, originZ, owners, factions, markers, roads, marches, buffer.readBoolean()));
       }
 
       private static void handle(AWCoreNetwork.WorldMapDataPacket packet, Supplier<Context> supplier) {

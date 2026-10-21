@@ -83,6 +83,7 @@ public final class FactionSimulation {
 
       FactionExpansion.tick(level, data);
       FactionArmies.tick(level, data);
+      FactionCampaigns.tick(level, data);
       FactionRoads.tick(level, data);
       FactionCaravans.tick(level, data);
 
@@ -143,6 +144,11 @@ public final class FactionSimulation {
 
    /** A faction NPC died: soldiers come off their settlement's garrison, civilians off its people. */
    public static void onNpcDeath(ServerLevel level, FactionNpcEntity npc) {
+      if (FactionCampaigns.campaignId(npc) != 0) {
+         FactionCampaigns.onNpcDeath(FactionWorldData.get(level), npc);
+         return;
+      }
+
       if (FactionArmies.armyId(npc) != 0 || FactionCaravans.caravanId(npc) != 0) {
          return;
       }
@@ -169,6 +175,12 @@ public final class FactionSimulation {
       FactionWorldData data = FactionWorldData.get(level);
       if (FactionCaravans.isStale(npc)) {
          return false;
+      }
+
+      int campaign = FactionCampaigns.campaignId(npc);
+      if (campaign != 0) {
+         // A marching column is spawned afresh from its numbers; old soldiers of it go.
+         return FactionCampaigns.stillMarching(npc);
       }
 
       int army = FactionArmies.armyId(npc);

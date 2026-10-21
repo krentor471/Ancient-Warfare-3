@@ -1318,5 +1318,9 @@
   "gui.ancientwarfare.world_map.kind.temple": "Temple",
   "gui.ancientwarfare.world_map.kind.homestead": "Homestead",
   "gui.ancientwarfare.world_map.center_player": "Center on me",
-  "news.ancientwarfare.ceded": "Peace terms: %1$s hands %3$s settlement(s) deep in their land over to %2$s"
+  "news.ancientwarfare.ceded": "Peace terms: %1$s hands %3$s settlement(s) deep in their land over to %2$s",
+  "gui.ancientwarfare.world_map.kind.army": "Army on the march",
+  "news.ancientwarfare.army_set_out": "An army of %1$s (%2$s soldiers) sets out against %3$s",
+  "news.ancientwarfare.army_destroyed": "The army of %1$s on the march has been destroyed",
+  "news.ancientwarfare.field_battle": "Battle in the field: %1$s beat the army of %2$s near %3$s, %4$s"
 }

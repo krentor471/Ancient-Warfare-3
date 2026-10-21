@@ -27,6 +27,7 @@ public final class FactionWorldData extends SavedData {
    private final List<PlannedSettlement> plannedSettlements = new ArrayList<>();
    private final Map<String, Long> lastFounding = new HashMap<>();
    private final List<Army> armies = new ArrayList<>();
+   private final List<Campaign> campaigns = new ArrayList<>();
    /** Player villages by town hall position, with their owner. */
    private final Map<BlockPos, UUID> villages = new HashMap<>();
    private final Map<BlockPos, Long> lastRaid = new HashMap<>();
@@ -203,6 +204,22 @@ public final class FactionWorldData extends SavedData {
 
    public void removeArmy(Army army) {
       this.armies.remove(army);
+      this.setDirty();
+   }
+
+   public List<Campaign> campaigns() {
+      return Collections.unmodifiableList(this.campaigns);
+   }
+
+   public Campaign addCampaign(String faction, String defender, int targetSettlement, double x, double z, int size, long since) {
+      Campaign campaign = new Campaign(this.nextArmyId++, faction, defender, targetSettlement, x, z, size, since);
+      this.campaigns.add(campaign);
+      this.setDirty();
+      return campaign;
+   }
+
+   public void removeCampaign(Campaign campaign) {
+      this.campaigns.remove(campaign);
       this.setDirty();
    }
 
@@ -414,6 +431,22 @@ public final class FactionWorldData extends SavedData {
       }
 
       tag.put("Armies", armyList);
+      ListTag campaignList = new ListTag();
+
+      for (Campaign campaign : this.campaigns) {
+         CompoundTag entry = new CompoundTag();
+         entry.putInt("Id", campaign.id);
+         entry.putString("Faction", campaign.faction);
+         entry.putString("Defender", campaign.defender);
+         entry.putInt("TargetSettlement", campaign.targetSettlement);
+         entry.putDouble("X", campaign.x);
+         entry.putDouble("Z", campaign.z);
+         entry.putInt("Size", campaign.size);
+         entry.putLong("Since", campaign.since);
+         campaignList.add(entry);
+      }
+
+      tag.put("Campaigns", campaignList);
       tag.putInt("NextArmyId", this.nextArmyId);
       ListTag villageList = new ListTag();
       this.villages.forEach((pos, owner) -> {
@@ -524,6 +557,22 @@ public final class FactionWorldData extends SavedData {
          army.alive = entry.getInt("Alive");
          data.armies.add(army);
          data.nextArmyId = Math.max(data.nextArmyId, army.id + 1);
+      }
+
+      for (Tag element : tag.getList("Campaigns", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         Campaign campaign = new Campaign(
+            entry.getInt("Id"),
+            entry.getString("Faction"),
+            entry.getString("Defender"),
+            entry.getInt("TargetSettlement"),
+            entry.getDouble("X"),
+            entry.getDouble("Z"),
+            entry.getInt("Size"),
+            entry.getLong("Since")
+         );
+         data.campaigns.add(campaign);
+         data.nextArmyId = Math.max(data.nextArmyId, campaign.id + 1);
       }
 
       data.nextArmyId = Math.max(data.nextArmyId, tag.getInt("NextArmyId"));
@@ -758,6 +807,70 @@ public final class FactionWorldData extends SavedData {
 
       public String tag() {
          return FactionArmies.TAG_PREFIX + this.id;
+      }
+   }
+
+   /**
+    * An army on the march toward an enemy settlement, a point moving across the map. Its soldiers
+    * are a number; while a player is near, they walk as real NPCs tagged with its id.
+    */
+   public static final class Campaign {
+      private final int id;
+      private final String faction;
+      private final String defender;
+      private final int targetSettlement;
+      double x;
+      double z;
+      int size;
+      private final long since;
+      /** Real soldiers out walking now; not saved, they are discarded with the world. */
+      int walking;
+
+      Campaign(int id, String faction, String defender, int targetSettlement, double x, double z, int size, long since) {
+         this.id = id;
+         this.faction = faction;
+         this.defender = defender;
+         this.targetSettlement = targetSettlement;
+         this.x = x;
+         this.z = z;
+         this.size = size;
+         this.since = since;
+      }
+
+      public int id() {
+         return this.id;
+      }
+
+      public String faction() {
+         return this.faction;
+      }
+
+      public String defender() {
+         return this.defender;
+      }
+
+      public int targetSettlement() {
+         return this.targetSettlement;
+      }
+
+      public double x() {
+         return this.x;
+      }
+
+      public double z() {
+         return this.z;
+      }
+
+      public int size() {
+         return this.size;
+      }
+
+      public long since() {
+         return this.since;
+      }
+
+      public String tag() {
+         return FactionCampaigns.TAG_PREFIX + this.id;
       }
    }
 

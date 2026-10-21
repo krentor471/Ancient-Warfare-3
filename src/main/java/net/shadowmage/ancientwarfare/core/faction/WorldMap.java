@@ -40,6 +40,7 @@ public final class WorldMap {
       MINE,
       TEMPLE,
       HOMESTEAD,
+      ARMY,
       CAPITAL,
       CAPITAL_AREA,
       PLAYER_VILLAGE,
@@ -49,8 +50,13 @@ public final class WorldMap {
    public static record Marker(int x, int z, Kind kind, int faction, String label) {
    }
 
-   /** owners holds an index into factions per cell, row by row from the north-west corner; 0 is wild land. */
-   public static record Data(int originX, int originZ, byte[] owners, List<String> factions, List<Marker> markers, List<int[]> roads, boolean canTeleport) {
+   /**
+    * owners holds an index into factions per cell, row by row from the north-west corner; 0 is wild
+    * land. marches hold x, z of each marching army and x, z of its target.
+    */
+   public static record Data(
+      int originX, int originZ, byte[] owners, List<String> factions, List<Marker> markers, List<int[]> roads, List<int[]> marches, boolean canTeleport
+   ) {
    }
 
    public static void open(ServerPlayer player) {
@@ -134,7 +140,23 @@ public final class WorldMap {
          roads.add(java.util.Arrays.copyOf(line, n));
       }
 
-      return new Data(originX, originZ, owners, factions, markers, roads, canTeleport(player));
+      List<int[]> marches = new ArrayList<>();
+
+      for (FactionWorldData.Campaign campaign : data.campaigns()) {
+         int x = (int)Math.floor(campaign.x());
+         int z = (int)Math.floor(campaign.z());
+         markers.add(
+            new Marker(x, z, Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + " soldiers, against settlement #" + campaign.targetSettlement())
+         );
+
+         for (FactionWorldData.Settlement settlement : data.settlements()) {
+            if (settlement.id() == campaign.targetSettlement()) {
+               marches.add(new int[]{x, z, settlement.center().getX(), settlement.center().getZ()});
+            }
+         }
+      }
+
+      return new Data(originX, originZ, owners, factions, markers, roads, marches, canTeleport(player));
    }
 
    private static String templateName(String template) {

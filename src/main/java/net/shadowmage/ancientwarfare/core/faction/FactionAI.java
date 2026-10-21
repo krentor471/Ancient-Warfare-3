@@ -16,8 +16,8 @@ import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
  * The daily decisions of AI factions toward each other. Neighbours (factions whose provinces touch)
  * grate on each other, common enemies bring factions together, and treaties warm relations. A
  * faction that dislikes a weaker neighbour may declare war; long wars wear factions down into
- * peace. Wars between neighbours are fought out of sight as daily battles over border settlements,
- * which can change hands.
+ * peace. Factions at war send armies to march on each other's border settlements (see
+ * FactionCampaigns), which can change hands; the world's past is reckoned as instant battles.
  */
 public final class FactionAI {
    /** No wars before this day, so the player has time to settle in. */
@@ -32,7 +32,6 @@ public final class FactionAI {
    private static final int ALLIANCE_OPINION = 70;
    private static final double TREATY_CHANCE = 0.2;
    private static final double ATTACK_SHARE = 0.4;
-   private static final double CAPTURE_PLAYER_RANGE = 192.0;
    /** Walls make a fort's garrison count for more in a battle fought out of sight. */
    private static final double FORT_DEFENCE = 1.5;
    private static final double CAPITAL_DEFENCE = 2.0;
@@ -211,28 +210,44 @@ public final class FactionAI {
 
       // However large the country, one campaign can only feed and march so many soldiers.
       int force = Math.min(MAX_ARMY, (int)Math.ceil(strength.getOrDefault(attacker, 0) * ATTACK_SHARE));
-      if (target.built() && level.hasNearbyAlivePlayer(target.center().getX(), target.center().getY(), target.center().getZ(), CAPTURE_PLAYER_RANGE)) {
-         // A player is watching: the battle is fought by real soldiers instead.
-         FactionArmies.assault(level, data, attacker, target, force);
+      if (!FactionHistory.running()) {
+         // An army sets out and must march there; one at a time against each enemy.
+         if (!FactionCampaigns.marchingAgainst(data, attacker, defender) && FactionCampaigns.launch(level, data, attacker, target, force)) {
+            strength.merge(attacker, -force, Integer::sum);
+         }
+
          return;
       }
 
+      // The world's past is reckoned at once.
+      int taken = takeLosses(data, attacker, force);
+      int survivors = siege(level, data, random, attacker, target, taken);
+      returnSoldiers(data, attacker, survivors);
+      strength.merge(attacker, -(taken - survivors), Integer::sum);
+   }
+
+   /**
+    * An army of force soldiers, already away from home, besieges the target out of sight. Both
+    * sides lose men; if the garrison falls, half the survivors hold the settlement. Returns how many
+    * of the army go home.
+    */
+   static int siege(ServerLevel level, FactionWorldData data, RandomSource random, String attacker, FactionWorldData.Settlement target, int force) {
+      String defender = target.faction();
       double walls = isFort(target) ? FORT_DEFENCE : FactionTowns.CAPITAL.equals(target.kind()) ? CAPITAL_DEFENCE : 1.0;
       int defence = (int)Math.round(target.garrison * walls);
       int attackerLosses = Math.min(force, (int)Math.round(defence * (0.3 + random.nextDouble() * 0.4)));
-      int defenderLosses = Math.min(defence, (int)Math.round(force * (0.3 + random.nextDouble() * 0.4)));
-      takeLosses(data, attacker, attackerLosses);
+      int defenderLosses = Math.min(target.garrison, (int)Math.round(force * (0.3 + random.nextDouble() * 0.4)));
       target.garrison -= defenderLosses;
-      strength.merge(attacker, -attackerLosses, Integer::sum);
-      strength.merge(defender, -defenderLosses, Integer::sum);
       FactionDiplomacy.adjustOpinion(level, attacker, defender, -2);
-      if (target.garrison <= 0 && force - attackerLosses > 0) {
-         int garrison = Math.max(1, (force - attackerLosses) / 2);
-         takeLosses(data, attacker, garrison);
+      int survivors = force - attackerLosses;
+      data.setDirty();
+      if (target.garrison <= 0 && survivors > 0) {
+         int garrison = Math.max(1, survivors / 2);
          capture(level, data, target, attacker, garrison);
+         return survivors - garrison;
       }
 
-      data.setDirty();
+      return survivors;
    }
 
    /** The settlement passes to the attacker, with the given garrison, together with its province. */
