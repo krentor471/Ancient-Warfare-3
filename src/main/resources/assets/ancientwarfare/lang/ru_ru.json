@@ -162,5 +162,19 @@
   "gui.ancientwarfare.diplomacy.trade_none": "Договора о торговле нет",
   "diplomacy.ancientwarfare.trade": "%s согласились торговать. Их караваны пойдут к твоим деревням, а часть дохода придёт в ратуши.",
   "diplomacy.ancientwarfare.trade_ended": "Договор о торговле с %s разорван.",
-  "diplomacy.ancientwarfare.trade_at_war": "%s не торгуют, пока вы воюете."
+  "diplomacy.ancientwarfare.trade_at_war": "%s не торгуют, пока вы воюете.",
+  "key.ancientwarfare.world_map": "Карта мира (фракции)",
+  "gui.ancientwarfare.world_map.title": "Карта мира",
+  "gui.ancientwarfare.world_map.wild": "Ничейная земля",
+  "gui.ancientwarfare.world_map.click_to_teleport": "Клик: телепорт сюда",
+  "gui.ancientwarfare.world_map.hint": "Тяни, чтобы двигать, колесо меняет масштаб",
+  "gui.ancientwarfare.world_map.teleported": "Телепорт в %s %s %s",
+  "gui.ancientwarfare.world_map.kind.village": "Деревня",
+  "gui.ancientwarfare.world_map.kind.fort": "Форт",
+  "gui.ancientwarfare.world_map.kind.trade_post": "Торговый пост",
+  "gui.ancientwarfare.world_map.kind.guard_post": "Сторожевой пост",
+  "gui.ancientwarfare.world_map.kind.capital": "Столица",
+  "gui.ancientwarfare.world_map.kind.capital_area": "Место столицы (пока не построена)",
+  "gui.ancientwarfare.world_map.kind.player_village": "Деревня игрока",
+  "gui.ancientwarfare.world_map.kind.outlaw": "Лагерь разбойников"
 }

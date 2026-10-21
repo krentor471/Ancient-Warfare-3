@@ -22,7 +22,9 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.NetworkEvent.Context;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.shadowmage.ancientwarfare.core.client.DiplomacyScreen;
+import net.shadowmage.ancientwarfare.core.client.WorldMapScreen;
 import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.WorldMap;
 import net.shadowmage.ancientwarfare.core.faction.RelationState;
 import net.shadowmage.ancientwarfare.core.client.MailboxTargetScreen;
 import net.shadowmage.ancientwarfare.core.common.npc.BardTrack;
@@ -206,6 +208,21 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.DiplomacyDataPacket::decode)
          .consumerMainThread(AWCoreNetwork.DiplomacyDataPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.WorldMapOpenPacket.class, 33, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.WorldMapOpenPacket::encode)
+         .decoder(AWCoreNetwork.WorldMapOpenPacket::decode)
+         .consumerMainThread(AWCoreNetwork.WorldMapOpenPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.WorldMapDataPacket.class, 34, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.WorldMapDataPacket::encode)
+         .decoder(AWCoreNetwork.WorldMapDataPacket::decode)
+         .consumerMainThread(AWCoreNetwork.WorldMapDataPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.WorldMapTeleportPacket.class, 35, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.WorldMapTeleportPacket::encode)
+         .decoder(AWCoreNetwork.WorldMapTeleportPacket::decode)
+         .consumerMainThread(AWCoreNetwork.WorldMapTeleportPacket::handle)
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.CommandViewSelectPacket.class, 27, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.CommandViewSelectPacket::encode)
          .decoder(AWCoreNetwork.CommandViewSelectPacket::decode)
@@ -350,6 +367,18 @@ public final class AWCoreNetwork {
 
    public static void sendDiplomacyAction(String faction, PlayerDiplomacy.Action action) {
       CHANNEL.sendToServer(new AWCoreNetwork.DiplomacyActionPacket(faction, action.ordinal()));
+   }
+
+   public static void sendWorldMapOpen() {
+      CHANNEL.sendToServer(new AWCoreNetwork.WorldMapOpenPacket());
+   }
+
+   public static void sendWorldMapTeleport(int x, int z) {
+      CHANNEL.sendToServer(new AWCoreNetwork.WorldMapTeleportPacket(x, z));
+   }
+
+   public static void sendWorldMap(ServerPlayer player, WorldMap.Data data) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.WorldMapDataPacket(data));
    }
 
    public static void sendDiplomacyData(ServerPlayer player, String focus, boolean open, List<PlayerDiplomacy.Entry> entries) {
@@ -665,6 +694,114 @@ public final class AWCoreNetwork {
             ServerPlayer player = context.getSender();
             if (player != null) {
                PlayerDiplomacy.act(player, packet.faction, PlayerDiplomacy.Action.byId(packet.action));
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record WorldMapOpenPacket() {
+      private static void encode(AWCoreNetwork.WorldMapOpenPacket packet, FriendlyByteBuf buffer) {
+      }
+
+      private static AWCoreNetwork.WorldMapOpenPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.WorldMapOpenPacket();
+      }
+
+      private static void handle(AWCoreNetwork.WorldMapOpenPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               WorldMap.open(player);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record WorldMapTeleportPacket(int x, int z) {
+      private static void encode(AWCoreNetwork.WorldMapTeleportPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarInt(packet.x);
+         buffer.writeVarInt(packet.z);
+      }
+
+      private static AWCoreNetwork.WorldMapTeleportPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.WorldMapTeleportPacket(buffer.readVarInt(), buffer.readVarInt());
+      }
+
+      private static void handle(AWCoreNetwork.WorldMapTeleportPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               WorldMap.teleport(player, packet.x, packet.z);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record WorldMapDataPacket(WorldMap.Data data) {
+      private static final int MAX_ITEMS = 4096;
+
+      private static void encode(AWCoreNetwork.WorldMapDataPacket packet, FriendlyByteBuf buffer) {
+         WorldMap.Data data = packet.data;
+         buffer.writeInt(data.originX());
+         buffer.writeInt(data.originZ());
+         buffer.writeByteArray(data.owners());
+         buffer.writeVarInt(data.factions().size());
+         data.factions().forEach(faction -> buffer.writeUtf(faction, 64));
+         List<WorldMap.Marker> markers = data.markers().subList(0, Math.min(MAX_ITEMS, data.markers().size()));
+         buffer.writeVarInt(markers.size());
+
+         for (WorldMap.Marker marker : markers) {
+            buffer.writeInt(marker.x());
+            buffer.writeInt(marker.z());
+            buffer.writeEnum(marker.kind());
+            buffer.writeVarInt(marker.faction());
+            buffer.writeUtf(marker.label(), 128);
+         }
+
+         List<int[]> roads = data.roads().subList(0, Math.min(MAX_ITEMS, data.roads().size()));
+         buffer.writeVarInt(roads.size());
+         roads.forEach(buffer::writeVarIntArray);
+         buffer.writeBoolean(data.canTeleport());
+      }
+
+      private static AWCoreNetwork.WorldMapDataPacket decode(FriendlyByteBuf buffer) {
+         int originX = buffer.readInt();
+         int originZ = buffer.readInt();
+         byte[] owners = buffer.readByteArray(WorldMap.SIZE * WorldMap.SIZE);
+         int factionCount = Math.min(256, buffer.readVarInt());
+         List<String> factions = new ArrayList<>();
+
+         for (int i = 0; i < factionCount; i++) {
+            factions.add(buffer.readUtf(64));
+         }
+
+         int markerCount = Math.min(MAX_ITEMS, buffer.readVarInt());
+         List<WorldMap.Marker> markers = new ArrayList<>();
+
+         for (int i = 0; i < markerCount; i++) {
+            markers.add(new WorldMap.Marker(buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128)));
+         }
+
+         int roadCount = Math.min(MAX_ITEMS, buffer.readVarInt());
+         List<int[]> roads = new ArrayList<>();
+
+         for (int i = 0; i < roadCount; i++) {
+            roads.add(buffer.readVarIntArray(8192));
+         }
+
+         return new AWCoreNetwork.WorldMapDataPacket(new WorldMap.Data(originX, originZ, owners, factions, markers, roads, buffer.readBoolean()));
+      }
+
+      private static void handle(AWCoreNetwork.WorldMapDataPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               WorldMapScreen.open(packet.data);
             }
          });
          context.setPacketHandled(true);

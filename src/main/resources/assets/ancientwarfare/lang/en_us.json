@@ -1284,5 +1284,19 @@
   "gui.ancientwarfare.diplomacy.trade_none": "No trade agreement",
   "diplomacy.ancientwarfare.trade": "%s agreed to trade. Their caravans will come to your villages, and part of the profit goes to your town halls.",
   "diplomacy.ancientwarfare.trade_ended": "You ended the trade agreement with %s.",
-  "diplomacy.ancientwarfare.trade_at_war": "%s will not trade while you are at war."
+  "diplomacy.ancientwarfare.trade_at_war": "%s will not trade while you are at war.",
+  "key.ancientwarfare.world_map": "World map (factions)",
+  "gui.ancientwarfare.world_map.title": "World map",
+  "gui.ancientwarfare.world_map.wild": "Wild land",
+  "gui.ancientwarfare.world_map.click_to_teleport": "Click to teleport here",
+  "gui.ancientwarfare.world_map.hint": "Drag to move, wheel to zoom",
+  "gui.ancientwarfare.world_map.teleported": "Teleported to %s %s %s",
+  "gui.ancientwarfare.world_map.kind.village": "Village",
+  "gui.ancientwarfare.world_map.kind.fort": "Fort",
+  "gui.ancientwarfare.world_map.kind.trade_post": "Trade post",
+  "gui.ancientwarfare.world_map.kind.guard_post": "Guard post",
+  "gui.ancientwarfare.world_map.kind.capital": "Capital",
+  "gui.ancientwarfare.world_map.kind.capital_area": "Capital area (nothing built yet)",
+  "gui.ancientwarfare.world_map.kind.player_village": "Player village",
+  "gui.ancientwarfare.world_map.kind.outlaw": "Outlaw camp"
 }
