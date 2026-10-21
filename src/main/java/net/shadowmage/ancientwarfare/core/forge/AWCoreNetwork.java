@@ -750,6 +750,7 @@ public final class AWCoreNetwork {
          buffer.writeInt(data.originX());
          buffer.writeInt(data.originZ());
          buffer.writeByteArray(data.owners());
+         buffer.writeByteArray(data.terrain());
          buffer.writeVarInt(data.factions().size());
          data.factions().forEach(faction -> buffer.writeUtf(faction, 64));
          List<WorldMap.Marker> markers = data.markers().subList(0, Math.min(MAX_ITEMS, data.markers().size()));
@@ -776,6 +777,7 @@ public final class AWCoreNetwork {
          int originX = buffer.readInt();
          int originZ = buffer.readInt();
          byte[] owners = buffer.readByteArray(WorldMap.SIZE * WorldMap.SIZE);
+         byte[] terrain = buffer.readByteArray(WorldMap.SIZE * WorldMap.SIZE);
          int factionCount = Math.min(256, buffer.readVarInt());
          List<String> factions = new ArrayList<>();
 
@@ -804,7 +806,7 @@ public final class AWCoreNetwork {
             marches.add(buffer.readVarIntArray(4));
          }
 
-         return new AWCoreNetwork.WorldMapDataPacket(new WorldMap.Data(originX, originZ, owners, factions, markers, roads, marches, buffer.readBoolean()));
+         return new AWCoreNetwork.WorldMapDataPacket(new WorldMap.Data(originX, originZ, owners, terrain, factions, markers, roads, marches, buffer.readBoolean()));
       }
 
       private static void handle(AWCoreNetwork.WorldMapDataPacket packet, Supplier<Context> supplier) {

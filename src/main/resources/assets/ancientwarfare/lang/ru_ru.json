@@ -206,5 +206,6 @@
   "news.ancientwarfare.lair_destroyed": "Охота на разбойников: %1$s уничтожили логово возле %2$s, %3$s и забрали %4$s золота",
   "news.ancientwarfare.raided": "Набег: %1$s разграбили поселение (%2$s) возле %3$s, %4$s, унесли %5$s золота и увели %6$s пленных",
   "news.ancientwarfare.siege_camp": "Осада: %1$s разбили лагерь у поселения (%2$s) и подвезли осадных машин: %3$s",
-  "news.ancientwarfare.siege_wave": "Осада: из лагеря (%1$s) подходят ещё %2$s солдат, в запасе осталось %3$s"
+  "news.ancientwarfare.siege_wave": "Осада: из лагеря (%1$s) подходят ещё %2$s солдат, в запасе осталось %3$s",
+  "gui.ancientwarfare.world_map.scale": "%s блоков"
 }

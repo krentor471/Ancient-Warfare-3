@@ -24,10 +24,11 @@ import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
 public final class FactionTrade {
    public static final String TRADE_POST = "tradepost";
    public static final String GUARD_POST = "guardpost";
-   private static final int ROUTE_RANGE = 1200;
+   /** How far a settlement looks for trading partners, at the old region scale; it grows with the scale. */
+   private static final int BASE_ROUTE_RANGE = 1200;
    /** Settlements this close are parts of one town and do not trade over a road. */
    private static final int MIN_ROUTE = 96;
-   private static final int LINKS = 2;
+   private static final int LINKS = 3;
    private static final int INCOME_DIVISOR = 20;
    private static final int ROBBERY_RANGE = 320;
    private static final double ROBBERY_CHANCE = 0.3;
@@ -93,7 +94,7 @@ public final class FactionTrade {
             double distance = settlement.horizontalDistanceSquared(other.center().getX(), other.center().getZ());
             if (other != settlement
                && distance >= (double)MIN_ROUTE * MIN_ROUTE
-               && distance <= (double)ROUTE_RANGE * ROUTE_RANGE
+               && distance <= (double)routeRange() * routeRange()
                && canTrade(level, settlement.faction(), other.faction())) {
                partners.add(other);
             }
@@ -128,7 +129,7 @@ public final class FactionTrade {
             double distance = settlement.horizontalDistanceSquared(pos.getX(), pos.getZ());
             if (partners.contains(settlement.faction())
                && distance >= (double)MIN_ROUTE * MIN_ROUTE
-               && distance <= (double)ROUTE_RANGE * ROUTE_RANGE) {
+               && distance <= (double)routeRange() * routeRange()) {
                candidates.add(settlement);
             }
          }
@@ -194,6 +195,10 @@ public final class FactionTrade {
       }
 
       return false;
+   }
+
+   private static int routeRange() {
+      return BASE_ROUTE_RANGE * FactionRegions.scale() / 100;
    }
 
    public static boolean canTrade(ServerLevel level, String faction, String other) {

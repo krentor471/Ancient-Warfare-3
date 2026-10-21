@@ -16,15 +16,33 @@ import net.shadowmage.ancientwarfare.core.faction.WorldMap;
 import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
 
 /**
- * The faction world around its centre: land by owner, settlements, capitals and roads. Drag to move,
+ * The faction world around its centre: sea and land by terrain, countries in their colours with
+ * their names, settlements, capitals, roads and armies on the march, a scale bar and a legend of the
+ * signs. Drag to move,
  * scroll to zoom, click to teleport. The view is kept between openings.
  */
 public class WorldMapScreen extends Screen {
    private static final ResourceLocation TEXTURE = new ResourceLocation("ancientwarfare", "dynamic/world_map");
    private static final int MARGIN = 24;
-   private static final int LEGEND_HEIGHT = 24;
+   private static final int LEGEND_HEIGHT = 36;
    private static final int WILD_COLOR = 0xFF3A3A32;
-   private static final int ROAD_COLOR = 0xFFD8C08A;
+   private static final int ROAD_COLOR = 0xFF7A5A32;
+   private static final int SEA_COLOR = 0xFF34597E;
+   /** Wild land by terrain, indexed by WorldMap.TERRAIN_*: plain, water, deep water, forest, mountain, desert, snow. */
+   private static final int[] TERRAIN_COLORS = {0xFFB8B07A, 0xFF4F7FA8, 0xFF34597E, 0xFF7E9A5A, 0xFF9C9488, 0xFFD9C78E, 0xFFE6ECEE};
+   /** How much of a faction's colour shows over its land; the rest is the terrain beneath. */
+   private static final double FACTION_TINT = 0.75;
+   /** Wild land is greyed toward this, so the countries stand out from it. */
+   private static final int WILD_GREY = 0xFF8C8A7C;
+   private static final double WILD_GREYING = 0.45;
+   /** Map kinds shown in the legend of signs, in order. */
+   private static final WorldMap.Kind[] LEGEND_KINDS = {
+      WorldMap.Kind.CAPITAL, WorldMap.Kind.VILLAGE, WorldMap.Kind.FORT, WorldMap.Kind.FARM, WorldMap.Kind.MINE, WorldMap.Kind.TEMPLE,
+      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY
+   };
+   /** Lengths the scale bar may show, in blocks. */
+   private static final int[] SCALE_STEPS = {50, 100, 250, 500, 1000, 2000, 5000};
+   private static final int SCALE_BAR_WIDTH = 90;
    private static final int MARCH_COLOR = 0xFFE03030;
    private static final double MIN_SCALE = 0.02;
    private static final double MAX_SCALE = 2.0;
@@ -35,6 +53,10 @@ public class WorldMapScreen extends Screen {
    private static double savedScale;
    private final WorldMap.Data data;
    private DynamicTexture texture;
+   /** Middle of each faction's land in world blocks, and how many cells it holds, by faction index. */
+   private double[] labelX;
+   private double[] labelZ;
+   private int[] landCells;
    /** World point at the middle of the map view, and screen pixels per block. */
    private double viewX;
    private double viewZ;
@@ -64,6 +86,7 @@ public class WorldMapScreen extends Screen {
             }
          }
 
+         this.findCountryMiddles();
          this.texture = new DynamicTexture(image);
          this.minecraft.getTextureManager().register(TEXTURE, this.texture);
          this.scale = Double.isNaN(savedX) ? Math.min(this.mapWidth(), this.mapHeight()) / (double)(WorldMap.SIZE * WorldMap.STEP) : savedScale;
@@ -90,12 +113,89 @@ public class WorldMapScreen extends Screen {
       this.texture = null;
    }
 
-   /** Owner colour, darker along province borders so neighbouring land of one owner still reads as one country. */
+   /**
+    * The terrain beneath, tinted with the owner's colour; water stays water. Land along a border
+    * with another owner is darker, and so is the coast, so countries and shores read at a glance.
+    */
    private int landColor(int owner, int row, int column) {
-      int color = owner == 0 ? WILD_COLOR : factionColor(this.data.factions().get(owner));
-      boolean border = column + 1 < WorldMap.SIZE && (this.data.owners()[row * WorldMap.SIZE + column + 1] & 0xFF) != owner
-         || row + 1 < WorldMap.SIZE && (this.data.owners()[(row + 1) * WorldMap.SIZE + column] & 0xFF) != owner;
-      return border ? shade(color, 0.6) : color;
+      if (this.data.terrain().length == 0) {
+         // The terrain is still being surveyed: owners only, as before.
+         int color = owner == 0 ? WILD_COLOR : factionColor(this.data.factions().get(owner));
+         return this.ownerChanges(owner, row, column) ? shade(color, 0.6) : color;
+      }
+
+      int terrain = this.terrain(row, column);
+      if (isWater(terrain)) {
+         return TERRAIN_COLORS[terrain];
+      }
+
+      int color = owner == 0
+         ? mix(WILD_GREY, TERRAIN_COLORS[terrain], WILD_GREYING)
+         : mix(shade(factionColor(this.data.factions().get(owner)), 1.15), TERRAIN_COLORS[terrain], FACTION_TINT);
+      if (owner != 0 && this.ownerChanges(owner, row, column)) {
+         return shade(color, 0.45);
+      }
+
+      return this.nearWater(row, column) ? shade(color, 0.8) : color;
+   }
+
+   private boolean ownerChanges(int owner, int row, int column) {
+      for (int[] offset : new int[][]{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}) {
+         int r = row + offset[0];
+         int c = column + offset[1];
+         if (r >= 0 && c >= 0 && r < WorldMap.SIZE && c < WorldMap.SIZE && (this.data.owners()[r * WorldMap.SIZE + c] & 0xFF) != owner
+            && !isWater(this.terrain(r, c))) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   private boolean nearWater(int row, int column) {
+      for (int[] offset : new int[][]{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}) {
+         int r = row + offset[0];
+         int c = column + offset[1];
+         if (r >= 0 && c >= 0 && r < WorldMap.SIZE && c < WorldMap.SIZE && isWater(this.terrain(r, c))) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   private int terrain(int row, int column) {
+      return this.data.terrain().length == 0 ? WorldMap.TERRAIN_LAND : this.data.terrain()[row * WorldMap.SIZE + column];
+   }
+
+   private static boolean isWater(int terrain) {
+      return terrain == WorldMap.TERRAIN_WATER || terrain == WorldMap.TERRAIN_DEEP_WATER;
+   }
+
+   /** Where to write each country's name: the middle of its dry land. */
+   private void findCountryMiddles() {
+      int count = this.data.factions().size();
+      this.labelX = new double[count];
+      this.labelZ = new double[count];
+      this.landCells = new int[count];
+
+      for (int row = 0; row < WorldMap.SIZE; row++) {
+         for (int column = 0; column < WorldMap.SIZE; column++) {
+            int owner = this.data.owners()[row * WorldMap.SIZE + column] & 0xFF;
+            if (owner != 0 && owner < count && !isWater(this.terrain(row, column))) {
+               this.labelX[owner] += column;
+               this.labelZ[owner] += row;
+               this.landCells[owner]++;
+            }
+         }
+      }
+
+      for (int i = 1; i < count; i++) {
+         if (this.landCells[i] > 0) {
+            this.labelX[i] = this.data.originX() + (this.labelX[i] / this.landCells[i] + 0.5) * WorldMap.STEP;
+            this.labelZ[i] = this.data.originZ() + (this.labelZ[i] / this.landCells[i] + 0.5) * WorldMap.STEP;
+         }
+      }
    }
 
    @Override
@@ -105,21 +205,27 @@ public class WorldMapScreen extends Screen {
       int top = MARGIN;
       int right = left + this.mapWidth();
       int bottom = top + this.mapHeight();
-      graphics.fill(left - 1, top - 1, right + 1, bottom + 1, 0xFF000000);
+      graphics.fill(left - 2, top - 2, right + 2, bottom + 2, 0xFF2A2018);
+      graphics.fill(left - 1, top - 1, right + 1, bottom + 1, 0xFF8A7650);
       graphics.enableScissor(left, top, right, bottom);
+      graphics.fill(left, top, right, bottom, this.data.terrain().length == 0 ? 0xFF000000 : SEA_COLOR);
       double size = WorldMap.SIZE * WorldMap.STEP * this.scale;
       int mapX = (int)Math.round(this.screenX(this.data.originX()));
       int mapZ = (int)Math.round(this.screenY(this.data.originZ()));
       graphics.blit(TEXTURE, mapX, mapZ, (int)Math.round(size), (int)Math.round(size), 0.0F, 0.0F, WorldMap.SIZE, WorldMap.SIZE, WorldMap.SIZE, WorldMap.SIZE);
 
+      // Roads thicken as the map zooms in.
+      int roadWidth = this.scale >= 0.25 ? 2 : 1;
       for (int[] road : this.data.roads()) {
          for (int i = 0; i + 3 < road.length; i += 2) {
-            this.line(graphics, this.screenX(road[i]), this.screenY(road[i + 1]), this.screenX(road[i + 2]), this.screenY(road[i + 3]), ROAD_COLOR);
+            this.line(graphics, this.screenX(road[i]), this.screenY(road[i + 1]), this.screenX(road[i + 2]), this.screenY(road[i + 3]), ROAD_COLOR, roadWidth);
          }
       }
 
+      this.renderCountryNames(graphics);
+
       for (int[] march : this.data.marches()) {
-         this.line(graphics, this.screenX(march[0]), this.screenY(march[1]), this.screenX(march[2]), this.screenY(march[3]), MARCH_COLOR);
+         this.line(graphics, this.screenX(march[0]), this.screenY(march[1]), this.screenX(march[2]), this.screenY(march[3]), MARCH_COLOR, 1);
       }
 
       WorldMap.Marker hovered = this.markerAt(mouseX, mouseY);
@@ -132,10 +238,14 @@ public class WorldMapScreen extends Screen {
       if (minecraft.player != null) {
          int px = (int)Math.round(this.screenX(minecraft.player.getX()));
          int pz = (int)Math.round(this.screenY(minecraft.player.getZ()));
+         // A dot with a short line the way the player faces.
+         double yaw = Math.toRadians(minecraft.player.getYRot());
+         this.line(graphics, px, pz, px - Math.sin(yaw) * 9, pz + Math.cos(yaw) * 9, 0xFF000000, 2);
          graphics.fill(px - 3, pz - 3, px + 4, pz + 4, 0xFF000000);
          graphics.fill(px - 2, pz - 2, px + 3, pz + 3, 0xFFFFFFFF);
       }
 
+      this.renderScaleBar(graphics, right - SCALE_BAR_WIDTH - 8, bottom - 14);
       graphics.disableScissor();
       graphics.drawCenteredString(this.font, this.title, this.width / 2, 8, -1);
       this.renderLegend(graphics, left, bottom + 4);
@@ -194,6 +304,22 @@ public class WorldMapScreen extends Screen {
          cursor += width;
       }
 
+      // The signs, on their own line below the countries.
+      cursor = x;
+      y += 12;
+
+      for (WorldMap.Kind kind : LEGEND_KINDS) {
+         Component name = Component.translatable("gui.ancientwarfare.world_map.kind." + kind.name().toLowerCase(java.util.Locale.ROOT));
+         int width = 12 + this.font.width(name) + 8;
+         if (cursor + width > this.width - MARGIN) {
+            break;
+         }
+
+         this.drawIcon(graphics, kind, cursor + 4, y + 5, 0xFFB0B0B0, 0xFF000000);
+         graphics.drawString(this.font, name, cursor + 11, y + 1, 0xFFD0D0D0);
+         cursor += width;
+      }
+
       Component hint = Component.translatable("gui.ancientwarfare.world_map.hint");
       graphics.drawString(this.font, hint, this.width - MARGIN - this.font.width(hint), 8, 0xFFA0A0A0);
    }
@@ -203,17 +329,20 @@ public class WorldMapScreen extends Screen {
       int y = (int)Math.round(this.screenY(marker.z()));
       String faction = this.data.factions().get(marker.faction());
       int color = faction.isEmpty() ? 0xFFFFFFFF : shade(factionColor(faction), 1.35);
-      int outline = hovered ? 0xFFFFFFFF : 0xFF000000;
-      switch (marker.kind()) {
-         case CAPITAL_AREA -> {
-            graphics.fill(x - 5, y - 5, x + 6, y + 6, outline);
-            graphics.fill(x - 4, y - 4, x + 5, y + 5, 0xFFFFE070);
-            graphics.fill(x - 2, y - 2, x + 3, y + 3, color);
-         }
+      this.drawIcon(graphics, marker.kind(), x, y, color, hovered ? 0xFFFFFFFF : 0xFF000000);
+   }
+
+   /** One map sign, centred on x, y, in the owner's colour where the sign has one. */
+   private void drawIcon(GuiGraphics graphics, WorldMap.Kind kind, int x, int y, int color, int outline) {
+      switch (kind) {
          case CAPITAL -> {
-            graphics.fill(x - 5, y - 5, x + 6, y + 6, outline);
-            graphics.fill(x - 4, y - 4, x + 5, y + 5, color);
-            graphics.fill(x - 1, y - 1, x + 2, y + 2, 0xFFFFE070);
+            // A gold-rimmed square with a gold crown of three points on top.
+            graphics.fill(x - 5, y - 4, x + 6, y + 6, outline);
+            graphics.fill(x - 4, y - 3, x + 5, y + 5, 0xFFFFD040);
+            graphics.fill(x - 2, y - 1, x + 3, y + 3, color);
+            graphics.fill(x - 5, y - 7, x - 3, y - 4, 0xFFFFD040);
+            graphics.fill(x - 1, y - 8, x + 2, y - 4, 0xFFFFD040);
+            graphics.fill(x + 4, y - 7, x + 6, y - 4, 0xFFFFD040);
          }
          case FORT -> {
             graphics.fill(x - 4, y - 4, x + 5, y + 5, outline);
@@ -272,16 +401,48 @@ public class WorldMapScreen extends Screen {
       }
    }
 
-   /** A one-pixel line drawn as small squares; roads are short segments, so this stays cheap. */
-   private void line(GuiGraphics graphics, double x0, double y0, double x1, double y1, int color) {
+   /** A line drawn as small squares of the given width; roads are short segments, so this stays cheap. */
+   private void line(GuiGraphics graphics, double x0, double y0, double x1, double y1, int color, int width) {
       int steps = (int)Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
 
       for (int i = 0; i <= steps; i++) {
          double t = steps == 0 ? 0.0 : (double)i / steps;
          int x = (int)Math.round(x0 + (x1 - x0) * t);
          int y = (int)Math.round(y0 + (y1 - y0) * t);
-         graphics.fill(x, y, x + 1, y + 1, color);
+         graphics.fill(x, y, x + width, y + width, color);
       }
+   }
+
+   /** Each country's name over the middle of its land, once the country is big enough on screen to hold it. */
+   private void renderCountryNames(GuiGraphics graphics) {
+      for (int i = 1; i < this.data.factions().size(); i++) {
+         if (this.landCells[i] == 0) {
+            continue;
+         }
+
+         Component name = Component.translatable("faction.ancientwarfare." + this.data.factions().get(i));
+         double across = Math.sqrt(this.landCells[i]) * WorldMap.STEP * this.scale;
+         if (across >= this.font.width(name) * 0.8) {
+            graphics.drawCenteredString(this.font, name, (int)Math.round(this.screenX(this.labelX[i])), (int)Math.round(this.screenY(this.labelZ[i])) - 18, 0xFFFFF4D0);
+         }
+      }
+   }
+
+   /** A bar of a round number of blocks, about SCALE_BAR_WIDTH pixels long. */
+   private void renderScaleBar(GuiGraphics graphics, int x, int y) {
+      int blocks = SCALE_STEPS[0];
+      for (int step : SCALE_STEPS) {
+         if (step * this.scale <= SCALE_BAR_WIDTH) {
+            blocks = step;
+         }
+      }
+
+      int length = Math.max(1, (int)Math.round(blocks * this.scale));
+      graphics.fill(x - 3, y - 11, x + length + 3, y + 6, 0x90000000);
+      graphics.fill(x, y, x + length, y + 3, 0xFFFFFFFF);
+      graphics.fill(x, y - 2, x + 1, y + 3, 0xFFFFFFFF);
+      graphics.fill(x + length - 1, y - 2, x + length, y + 3, 0xFFFFFFFF);
+      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.world_map.scale", blocks), x, y - 10, 0xFFFFFFFF);
    }
 
    private WorldMap.Marker markerAt(double mouseX, double mouseY) {
@@ -420,6 +581,14 @@ public class WorldMapScreen extends Screen {
       int mixed = faction.hashCode() * 0x9E3779B9;
       float hue = ((mixed >>> 8) & 0xFFFF) / 65536.0F;
       return 0xFF000000 | Mth.hsvToRgb(hue, 0.6F, 0.8F);
+   }
+
+   /** a over b, by share of a. */
+   private static int mix(int a, int b, double share) {
+      int r = (int)(((a >> 16) & 0xFF) * share + ((b >> 16) & 0xFF) * (1.0 - share));
+      int g = (int)(((a >> 8) & 0xFF) * share + ((b >> 8) & 0xFF) * (1.0 - share));
+      int bl = (int)((a & 0xFF) * share + (b & 0xFF) * (1.0 - share));
+      return 0xFF000000 | r << 16 | g << 8 | bl;
    }
 
    private static int shade(int argb, double factor) {

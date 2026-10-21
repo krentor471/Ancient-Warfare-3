@@ -5,7 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,7 +35,62 @@ public final class WorldMap {
    private static final List<String> TEMPLE_WORDS = List.of("temple", "shrine", "church", "chapel", "cathed", "monast", "altar", "reliqu", "abbey", "totem");
    private static final List<String> VILLAGE_WORDS = List.of("village", "settlement", "town", "hamlet");
 
+   /** What the land of a map cell is, from the biome at its middle. */
+   public static final byte TERRAIN_LAND = 0;
+   public static final byte TERRAIN_WATER = 1;
+   public static final byte TERRAIN_DEEP_WATER = 2;
+   public static final byte TERRAIN_FOREST = 3;
+   public static final byte TERRAIN_MOUNTAIN = 4;
+   public static final byte TERRAIN_DESERT = 5;
+   public static final byte TERRAIN_SNOW = 6;
+   /** The surveyed terrain of each level's map; it never changes, so it is surveyed once, off the server thread. */
+   private static final Map<String, CompletableFuture<byte[]>> TERRAIN = new ConcurrentHashMap<>();
+
    private WorldMap() {
+   }
+
+   /** The level's map terrain, or an empty array while the survey is still running. */
+   private static byte[] terrain(ServerLevel level, int originX, int originZ) {
+      CompletableFuture<byte[]> survey = TERRAIN.computeIfAbsent(level.dimension().location() + "@" + level.getSeed(), key -> CompletableFuture.supplyAsync(() -> survey(level, originX, originZ)));
+      return survey.getNow(new byte[0]);
+   }
+
+   private static byte[] survey(ServerLevel level, int originX, int originZ) {
+      byte[] terrain = new byte[SIZE * SIZE];
+      BiomeSource source = level.getChunkSource().getGenerator().getBiomeSource();
+      Climate.Sampler sampler = level.getChunkSource().randomState().sampler();
+      int quartY = QuartPos.fromBlock(level.getSeaLevel());
+
+      for (int row = 0; row < SIZE; row++) {
+         for (int column = 0; column < SIZE; column++) {
+            int x = originX + column * STEP + STEP / 2;
+            int z = originZ + row * STEP + STEP / 2;
+            terrain[row * SIZE + column] = terrainOf(source.getNoiseBiome(QuartPos.fromBlock(x), quartY, QuartPos.fromBlock(z), sampler));
+         }
+      }
+
+      return terrain;
+   }
+
+   private static byte terrainOf(Holder<Biome> biome) {
+      if (biome.is(BiomeTags.IS_DEEP_OCEAN)) {
+         return TERRAIN_DEEP_WATER;
+      } else if (biome.is(BiomeTags.IS_OCEAN) || biome.is(BiomeTags.IS_RIVER)) {
+         return TERRAIN_WATER;
+      } else if (biome.is(BiomeTags.IS_MOUNTAIN)) {
+         return TERRAIN_MOUNTAIN;
+      }
+
+      float temperature = biome.value().getBaseTemperature();
+      if (temperature < 0.15F) {
+         return TERRAIN_SNOW;
+      } else if (temperature >= 1.9F || biome.is(BiomeTags.IS_BADLANDS)) {
+         return TERRAIN_DESERT;
+      } else if (biome.is(BiomeTags.IS_FOREST) || biome.is(BiomeTags.IS_JUNGLE) || biome.is(BiomeTags.IS_TAIGA)) {
+         return TERRAIN_FOREST;
+      }
+
+      return TERRAIN_LAND;
    }
 
    public enum Kind {
@@ -52,10 +115,11 @@ public final class WorldMap {
 
    /**
     * owners holds an index into factions per cell, row by row from the north-west corner; 0 is wild
-    * land. marches hold x, z of each marching army and x, z of its target.
+    * land. terrain holds one of the TERRAIN_ values per cell the same way, or is empty while it is
+    * still being surveyed. marches hold x, z of each marching army and x, z of its target.
     */
    public static record Data(
-      int originX, int originZ, byte[] owners, List<String> factions, List<Marker> markers, List<int[]> roads, List<int[]> marches, boolean canTeleport
+      int originX, int originZ, byte[] owners, byte[] terrain, List<String> factions, List<Marker> markers, List<int[]> roads, List<int[]> marches, boolean canTeleport
    ) {
    }
 
@@ -99,16 +163,6 @@ public final class WorldMap {
                      + (FactionDiplomacy.isOutlaw(settlement.faction()) ? ", lair level " + FactionBandits.level(settlement) : "")
                )
             );
-         }
-      }
-
-      for (int x = originX; x < maxX; x += FactionRegions.realmSize() / 2) {
-         for (int z = originZ; z < maxZ; z += FactionRegions.realmSize() / 2) {
-            FactionRegions.Realm realm = FactionRegions.realmAt(level, x, z);
-            boolean inside = realm.seedX() >= originX && realm.seedX() < maxX && realm.seedZ() >= originZ && realm.seedZ() < maxZ;
-            if (inside && !realm.faction().isEmpty() && markers.stream().noneMatch(m -> m.kind() == Kind.CAPITAL_AREA && m.x() == realm.seedX() && m.z() == realm.seedZ())) {
-               markers.add(new Marker(realm.seedX(), realm.seedZ(), Kind.CAPITAL_AREA, index(realm.faction(), factions, indices), "capital area"));
-            }
          }
       }
 
@@ -157,7 +211,7 @@ public final class WorldMap {
          }
       }
 
-      return new Data(originX, originZ, owners, factions, markers, roads, marches, canTeleport(player));
+      return new Data(originX, originZ, owners, terrain(level, originX, originZ), factions, markers, roads, marches, canTeleport(player));
    }
 
    private static String templateName(String template) {

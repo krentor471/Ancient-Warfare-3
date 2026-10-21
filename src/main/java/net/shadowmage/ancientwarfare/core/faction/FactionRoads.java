@@ -1,7 +1,9 @@
 package net.shadowmage.ancientwarfare.core.faction;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -19,8 +21,9 @@ import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator;
  * Lays the road of each trade route: a three-wide track of path and gravel following the land,
  * with plank bridges over short water. It is laid a short stretch at a time from one end, wherever
  * no player is near enough to see it appear, steering around steep ground, settlements and other
- * buildings toward the far end. A finished road gets roadside posts every two hundred blocks or so, trade
- * posts and guard posts in turn, built by the faction of the nearer end.
+ * buildings toward the far end. A finished road gets roadside posts every hundred and eighty blocks
+ * or so, taverns, guard posts and trade posts in turn, built by the faction of the nearer end. A
+ * failed road is tried again now and then.
  */
 public final class FactionRoads {
    private static final int STEP = 4;
@@ -29,7 +32,12 @@ public final class FactionRoads {
    private static final double PLAYER_RANGE = 192.0;
    /** Highest fill or cut that evens out one road cell. */
    private static final int MAX_RAMP = 6;
-   private static final int MAX_WATER_RUN = 24;
+   /** Longest bridge, in blocks of water crossed. */
+   private static final int MAX_WATER_RUN = 48;
+   /** Failed roads are tried again once a session, and then every this many days. */
+   private static final long RETRY_DAYS = 10L;
+   /** Day each failed road was last tried; not saved, so a restart tries them all once more. */
+   private static final Map<Integer, Long> FAILED_ON = new HashMap<>();
    private static final int ARRIVE_MARGIN = 6;
    private static final int OBSTACLE_MARGIN = 3;
    private static final int VILLAGE_RADIUS = 32;
@@ -38,7 +46,7 @@ public final class FactionRoads {
    private static final double TURN_ANGLE = Math.PI / 8.0;
    /** Road points are recorded every two steps. */
    private static final int POINT_SPACING = STEP * 2;
-   private static final int POST_SPACING = 200;
+   private static final int POST_SPACING = 180;
    /** Posts keep this far from either end of the road. */
    private static final int POST_END_GAP = 80;
    private static final int POST_OFFSET = 22;
@@ -76,7 +84,18 @@ public final class FactionRoads {
       }
 
       for (FactionWorldData.Route route : data.routes()) {
-         if (route.blocked() || route.road() == FactionWorldData.RoadState.DONE || route.road() == FactionWorldData.RoadState.FAILED) {
+         if (route.road() == FactionWorldData.RoadState.FAILED) {
+            // The land is the same, but bridges may have grown longer or a settlement moved since.
+            Long failed = FAILED_ON.get(route.id());
+            if (failed != null && data.lastSimulatedDay() - failed < RETRY_DAYS) {
+               continue;
+            }
+
+            FAILED_ON.put(route.id(), data.lastSimulatedDay());
+            route.resetRoad();
+         }
+
+         if (route.blocked() || route.road() == FactionWorldData.RoadState.DONE) {
             continue;
          }
 
@@ -184,11 +203,11 @@ public final class FactionRoads {
       }
 
       String faction = a.horizontalDistanceSquared(x, z) <= b.horizontalDistanceSquared(x, z) ? a.faction() : b.faction();
-      // Guard posts every other spot; between them a tavern, then a trading post, in turn.
+      // In turn: a tavern, a guard post, a tavern, a trading post.
       AwsWorldGenerator.Site wanted = switch (route.postsBuilt % 4) {
-         case 1 -> AwsWorldGenerator.Site.TAVERN;
-         case 3 -> AwsWorldGenerator.Site.TRADE_POST;
-         default -> AwsWorldGenerator.Site.GUARD_POST;
+         case 1, 3 -> AwsWorldGenerator.Site.TAVERN;
+         case 2 -> AwsWorldGenerator.Site.GUARD_POST;
+         default -> AwsWorldGenerator.Site.TRADE_POST;
       };
       AwsWorldGenerator.Site site = wanted;
       boolean built = false;
