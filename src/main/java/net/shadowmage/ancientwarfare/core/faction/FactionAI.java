@@ -221,7 +221,7 @@ public final class FactionAI {
 
       // The world's past is reckoned at once.
       int taken = takeLosses(data, attacker, force);
-      int survivors = siege(level, data, random, attacker, target, taken);
+      int survivors = siege(level, data, random, attacker, target, taken, true);
       returnSoldiers(data, attacker, survivors);
       strength.merge(attacker, -(taken - survivors), Integer::sum);
    }
@@ -231,7 +231,7 @@ public final class FactionAI {
     * sides lose men; if the garrison falls, half the survivors hold the settlement. Returns how many
     * of the army go home.
     */
-   static int siege(ServerLevel level, FactionWorldData data, RandomSource random, String attacker, FactionWorldData.Settlement target, int force) {
+   static int siege(ServerLevel level, FactionWorldData data, RandomSource random, String attacker, FactionWorldData.Settlement target, int force, boolean takes) {
       String defender = target.faction();
       double walls = isFort(target) ? FORT_DEFENCE : FactionTowns.CAPITAL.equals(target.kind()) ? CAPITAL_DEFENCE : 1.0;
       int defence = (int)Math.round(target.garrison * walls);
@@ -241,7 +241,7 @@ public final class FactionAI {
       FactionDiplomacy.adjustOpinion(level, attacker, defender, -2);
       int survivors = force - attackerLosses;
       data.setDirty();
-      if (target.garrison <= 0 && survivors > 0) {
+      if (takes && target.garrison <= 0 && survivors > 0) {
          int garrison = Math.max(1, survivors / 2);
          capture(level, data, target, attacker, garrison);
          return survivors - garrison;

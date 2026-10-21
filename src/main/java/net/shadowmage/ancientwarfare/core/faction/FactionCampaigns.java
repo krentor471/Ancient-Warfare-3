@@ -104,6 +104,23 @@ public final class FactionCampaigns {
          return false;
       }
 
+      start(level, data, home, target, taken);
+      return true;
+   }
+
+   /** Sends force soldiers of one settlement's own garrison out against the target; null when it has too few. */
+   static FactionWorldData.Campaign launchFrom(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement home, FactionWorldData.Settlement target, int force) {
+      int taken = Math.min(force, home.garrison);
+      if (taken <= 0) {
+         return null;
+      }
+
+      home.garrison -= taken;
+      return start(level, data, home, target, taken);
+   }
+
+   private static FactionWorldData.Campaign start(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement home, FactionWorldData.Settlement target, int taken) {
+      String attacker = home.faction();
       FactionWorldData.Campaign campaign = data.addCampaign(
          attacker, target.faction(), target.id(), home.center().getX() + 0.5, home.center().getZ() + 0.5, taken, level.getGameTime()
       );
@@ -115,7 +132,7 @@ public final class FactionCampaigns {
          home.center().getZ(),
          Component.translatable("news.ancientwarfare.army_set_out", FactionNews.factionName(attacker), taken, FactionNews.factionName(target.faction()))
       );
-      return true;
+      return campaign;
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {
@@ -328,7 +345,13 @@ public final class FactionCampaigns {
 
       walkers.forEach(FactionNpcEntity::discard);
       campaign.walking = 0;
-      int survivors = FactionAI.siege(level, data, level.getRandom(), campaign.faction(), target, campaign.size);
+      boolean bandits = FactionDiplomacy.isOutlaw(campaign.faction());
+      // Bandits do not hold what they raid: they plunder it and go.
+      int survivors = FactionAI.siege(level, data, level.getRandom(), campaign.faction(), target, campaign.size, !bandits);
+      if (bandits && target.garrison <= 0 && survivors > 0) {
+         FactionBandits.plunder(level, data, campaign.faction(), target, FactionBandits.raidLevel(campaign.id(), data));
+      }
+
       end(level, data, campaign, List.of(), survivors);
    }
 

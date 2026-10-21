@@ -449,7 +449,8 @@ public final class FactionCaravans {
                return null;
             }
 
-            if (FactionDiplomacy.isOutlaw(settlement.faction())) {
+            if (FactionDiplomacy.isOutlaw(settlement.faction()) && FactionBandits.level(settlement) == 1) {
+               // Only small lairs prey on caravans; bigger ones raid posts and villages.
                outlaw = settlement.faction();
             }
          }

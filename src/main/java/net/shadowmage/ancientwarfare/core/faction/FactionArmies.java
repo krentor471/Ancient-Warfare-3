@@ -265,7 +265,12 @@ public final class FactionArmies {
       }
 
       long inside = members.stream().filter(npc -> settlement.contains(npc.getX(), npc.getZ(), 4)).count();
-      if (inside > 0) {
+      if (inside > 0 && FactionDiplomacy.isOutlaw(army.faction())) {
+         // Bandits plunder and make off with the loot.
+         members.forEach(FactionNpcEntity::discard);
+         goHome(data, army, members.size());
+         FactionBandits.plunder(level, data, army.faction(), settlement, 3);
+      } else if (inside > 0) {
          disband(members, army);
          data.removeArmy(army);
          FactionAI.capture(level, data, settlement, army.faction(), members.size());

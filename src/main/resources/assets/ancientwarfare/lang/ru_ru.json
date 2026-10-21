@@ -200,5 +200,6 @@
   "gui.ancientwarfare.world_map.kind.army": "Армия на марше",
   "news.ancientwarfare.army_set_out": "Армия: %1$s выступает против %3$s (%2$s солдат)",
   "news.ancientwarfare.army_destroyed": "Армия на марше (%1$s) разбита",
-  "news.ancientwarfare.field_battle": "Битва в поле: %1$s разбивает армию %2$s возле %3$s, %4$s"
+  "news.ancientwarfare.field_battle": "Битва в поле: %1$s разбивает армию %2$s возле %3$s, %4$s",
+  "news.ancientwarfare.plundered": "Разбойники: %1$s разграбили поселение (%2$s) возле %3$s, %4$s и унесли %5$s золота"
 }

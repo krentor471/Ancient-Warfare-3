@@ -29,6 +29,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.faction.FactionArmies;
+import net.shadowmage.ancientwarfare.core.faction.FactionBandits;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionCampaigns;
 import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
@@ -189,6 +190,7 @@ public final class ForgeFactionCommands {
                      )
                )
                .then(Commands.literal("armies").executes(context -> showArmies(context.getSource())))
+               .then(Commands.literal("bandits").executes(context -> showBandits(context.getSource())))
                .then(
                   Commands.literal("routes")
                      .executes(context -> showRoutes(context.getSource()))
@@ -580,6 +582,28 @@ public final class ForgeFactionCommands {
       }
 
       return routes.size();
+   }
+
+   /** Bandit lairs with their level: 1 waylays caravans, 2 raids trading posts, 3 guard posts too, 4 villages too. */
+   private static int showBandits(CommandSourceStack source) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      int count = 0;
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (FactionDiplomacy.isOutlaw(settlement.faction())) {
+            count++;
+            tell(
+               source,
+               Component.literal(
+                  "  #" + settlement.id() + " " + settlement.faction() + " level " + FactionBandits.level(settlement) + ", tier " + settlement.tier() + ", bandits "
+                     + settlement.garrison() + ", people " + settlement.population() + " at " + settlement.center().toShortString()
+               )
+            );
+         }
+      }
+
+      tell(source, Component.literal(count + " bandit lair(s); level 1 waylays caravans, 2 raids trading posts, 3 guard posts too, 4 villages too"));
+      return count;
    }
 
    private static int showArmies(CommandSourceStack source) {

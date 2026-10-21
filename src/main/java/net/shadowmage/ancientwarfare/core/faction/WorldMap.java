@@ -96,6 +96,7 @@ public final class WorldMap {
                   kind(settlement),
                   index(settlement.faction(), factions, indices),
                   "#" + settlement.id() + " " + (settlement.built() ? templateName(settlement.template()) : settlement.kind() + " (not built yet)") + ", people " + settlement.population() + ", garrison " + settlement.garrison()
+                     + (FactionDiplomacy.isOutlaw(settlement.faction()) ? ", lair level " + FactionBandits.level(settlement) : "")
                )
             );
          }
