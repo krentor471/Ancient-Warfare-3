@@ -269,6 +269,9 @@ public final class FactionEnvoys {
          envoy.setCustomNameVisible(true);
          envoy.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.PAPER));
          envoy.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.LEATHER_BOOTS));
+         // He comes in his country's colours.
+         envoy.setItemSlot(EquipmentSlot.HEAD, FactionHeraldry.banner(faction));
+         envoy.setDropChance(EquipmentSlot.HEAD, 0.0F);
          envoy.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
          envoy.setDropChance(EquipmentSlot.FEET, 0.0F);
          envoy.setPersistenceRequired();

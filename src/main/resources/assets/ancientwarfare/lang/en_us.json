@@ -1531,5 +1531,6 @@
   "envoy.ancientwarfare.accepted.tribute": "You paid tribute to %s.",
   "envoy.ancientwarfare.progress": "Task: %s of %s",
   "envoy.ancientwarfare.done": "Task done: %s pays %s emeralds and thanks you.",
-  "envoy.ancientwarfare.failed": "Time is up: the task of %s is failed."
+  "envoy.ancientwarfare.failed": "Time is up: the task of %s is failed.",
+  "item.ancientwarfare.faction_banner": "Banner of %s"
 }

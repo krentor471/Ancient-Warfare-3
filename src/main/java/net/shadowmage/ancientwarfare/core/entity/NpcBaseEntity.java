@@ -464,11 +464,16 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       if (!this.level().isClientSide && this.usesMorale()) {
          // Seeing a comrade fall shakes everyone close by.
          for (NpcBaseEntity ally : this.level().getEntitiesOfClass(NpcBaseEntity.class, this.getBoundingBox().inflate(MORALE_RADIUS), other -> other != this && other.isAlive() && isMoraleAlly(this, other))) {
-            ally.loseMorale(ALLY_DEATH_MORALE, damageSource.getEntity());
+            ally.loseMorale(this.deathMoraleBlow(), damageSource.getEntity());
          }
       }
 
       super.die(damageSource);
+   }
+
+   /** How hard this NPC's death shakes the comrades around it. */
+   protected float deathMoraleBlow() {
+      return ALLY_DEATH_MORALE;
    }
 
    /** Soldiers keep morale; it drops with wounds, flank hits and fallen comrades, and at the bottom they rout. */

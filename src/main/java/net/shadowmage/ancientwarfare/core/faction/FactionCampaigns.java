@@ -245,6 +245,7 @@ public final class FactionCampaigns {
             }
          }
 
+         FactionHeraldry.ensureBearer(walkers);
          return;
       }
 

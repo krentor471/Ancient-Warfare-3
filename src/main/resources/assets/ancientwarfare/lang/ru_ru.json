@@ -409,5 +409,6 @@
   "envoy.ancientwarfare.accepted.tribute": "Ты заплатил дань фракции %s.",
   "envoy.ancientwarfare.progress": "Поручение: %s из %s",
   "envoy.ancientwarfare.done": "Поручение выполнено: %s платит %s изумрудов и благодарит тебя.",
-  "envoy.ancientwarfare.failed": "Время вышло: поручение фракции %s провалено."
+  "envoy.ancientwarfare.failed": "Время вышло: поручение фракции %s провалено.",
+  "item.ancientwarfare.faction_banner": "Знамя: %s"
 }

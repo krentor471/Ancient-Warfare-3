@@ -57,7 +57,9 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
 
    @Override
    protected boolean isMoraleLeader() {
-      return this instanceof FactionLeaderNpcEntity || this instanceof FactionLeaderEliteNpcEntity;
+      return this instanceof FactionLeaderNpcEntity
+         || this instanceof FactionLeaderEliteNpcEntity
+         || net.shadowmage.ancientwarfare.core.faction.FactionHeraldry.isBearer(this);
    }
 
    protected void registerGoals() {

@@ -162,6 +162,11 @@ public final class ForgeFactionCommands {
                      )
                )
                .then(
+                  Commands.literal("banner")
+                     .requires(source -> source.hasPermission(2))
+                     .then(factionArgument("faction").executes(context -> banner(context.getSource(), faction(context, "faction"))))
+               )
+               .then(
                   Commands.literal("envoy")
                      .requires(source -> source.hasPermission(2))
                      .executes(context -> envoy(context.getSource(), ""))
@@ -413,6 +418,16 @@ public final class ForgeFactionCommands {
       );
       tell(source, Component.literal(built ? "Built a tavern of " + faction : "Could not build a tavern here"));
       return built ? 1 : 0;
+   }
+
+   /** Gives the player the faction's banner, to see its arms. */
+   private static int banner(CommandSourceStack source, String faction) {
+      if (source.getEntity() instanceof ServerPlayer player) {
+         player.getInventory().add(net.shadowmage.ancientwarfare.core.faction.FactionHeraldry.banner(faction));
+         return 1;
+      }
+
+      return 0;
    }
 
    private static int answerEnvoy(CommandContext<CommandSourceStack> context, boolean accepted) {

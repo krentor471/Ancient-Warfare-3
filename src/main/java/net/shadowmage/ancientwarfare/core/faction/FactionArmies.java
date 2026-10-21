@@ -207,6 +207,7 @@ public final class FactionArmies {
          return;
       }
 
+      FactionHeraldry.ensureBearer(spawned);
       army.spawned = true;
       army.started = now;
       army.alive = spawned.size();
@@ -256,6 +257,7 @@ public final class FactionArmies {
          members.addAll(fresh);
          soldiers = new ArrayList<>(soldiers);
          soldiers.addAll(fresh);
+         FactionHeraldry.ensureBearer(soldiers);
          if (!fresh.isEmpty()) {
             tellNear(level, target, Component.translatable("news.ancientwarfare.siege_wave", FactionNews.factionName(army.faction()), fresh.size(), army.reserve));
          }

@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.shadowmage.ancientwarfare.core.faction.FactionColors;
 import net.shadowmage.ancientwarfare.core.faction.FactionNames;
 import net.shadowmage.ancientwarfare.core.faction.WorldMap;
 import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
@@ -599,38 +600,9 @@ public class WorldMapScreen extends Screen {
       return this.viewZ + (screenY - this.centerY()) / this.scale;
    }
 
-   /** Hand-picked colours, so neighbours never look alike; factions not listed get one from their name. */
-   private static final Map<String, Integer> COLORS = Map.ofEntries(
-      Map.entry("empire", 0xFFC03A3A),
-      Map.entry("nogg", 0xFF3A6FD0),
-      Map.entry("norska", 0xFF7FB8E8),
-      Map.entry("sarkonid", 0xFFE0A030),
-      Map.entry("zimba", 0xFF8A5A2A),
-      Map.entry("barbarian", 0xFF5FA03A),
-      Map.entry("buffloka", 0xFFD8D050),
-      Map.entry("witchbane", 0xFF9050C0),
-      Map.entry("vyncan", 0xFF2E8A6A),
-      Map.entry("kong", 0xFF4A4A9A),
-      Map.entry("sealsker", 0xFF50B0B0),
-      Map.entry("guild", 0xFFE070B0),
-      Map.entry("amazon", 0xFFA0D070),
-      Map.entry("reiksgard", 0xFFB07050),
-      Map.entry("shakayana", 0xFFF08040),
-      Map.entry("smingol", 0xFF708090),
-      Map.entry("xoltec", 0xFFD04080),
-      Map.entry("zamurai", 0xFFF0F0F0)
-   );
-
    /** A steady colour per faction, the same in every world. */
    public static int factionColor(String faction) {
-      Integer fixed = COLORS.get(faction);
-      if (fixed != null) {
-         return fixed;
-      }
-
-      int mixed = faction.hashCode() * 0x9E3779B9;
-      float hue = ((mixed >>> 8) & 0xFFFF) / 65536.0F;
-      return 0xFF000000 | Mth.hsvToRgb(hue, 0.6F, 0.8F);
+      return FactionColors.color(faction);
    }
 
    /** a over b, by share of a. */

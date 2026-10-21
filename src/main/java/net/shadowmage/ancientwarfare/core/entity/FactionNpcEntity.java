@@ -115,6 +115,14 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       );
    }
 
+   /** A fallen standard-bearer breaks the spirit of the men around him. */
+   @Override
+   protected float deathMoraleBlow() {
+      return net.shadowmage.ancientwarfare.core.faction.FactionHeraldry.isBearer(this)
+         ? net.shadowmage.ancientwarfare.core.faction.FactionHeraldry.BEARER_DEATH_MORALE
+         : super.deathMoraleBlow();
+   }
+
    /** Talking to a faction's leader opens diplomacy with that faction. */
    @Override
    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
