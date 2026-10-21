@@ -74,7 +74,7 @@ public final class FactionCampaigns {
 
    static boolean marchingAgainst(FactionWorldData data, String attacker, String defender) {
       for (FactionWorldData.Campaign campaign : data.campaigns()) {
-         if (campaign.faction().equals(attacker) && campaign.defender().equals(defender)) {
+         if (campaign.faction().equals(attacker) && campaign.defender().equals(defender) && !campaign.raid) {
             return true;
          }
       }
@@ -84,6 +84,11 @@ public final class FactionCampaigns {
 
    /** Gathers force soldiers at the attacker's settlement nearest the target and sets out. Returns false when nobody could go. */
    public static boolean launch(ServerLevel level, FactionWorldData data, String attacker, FactionWorldData.Settlement target, int force) {
+      return send(level, data, attacker, target, force) != null;
+   }
+
+   /** As launch, returning the campaign that set out, or null. */
+   static FactionWorldData.Campaign send(ServerLevel level, FactionWorldData data, String attacker, FactionWorldData.Settlement target, int force) {
       FactionWorldData.Settlement home = null;
       double best = Double.MAX_VALUE;
 
@@ -96,16 +101,15 @@ public final class FactionCampaigns {
       }
 
       if (home == null) {
-         return false;
+         return null;
       }
 
       int taken = FactionAI.takeLosses(data, attacker, force);
       if (taken <= 0) {
-         return false;
+         return null;
       }
 
-      start(level, data, home, target, taken);
-      return true;
+      return start(level, data, home, target, taken);
    }
 
    /** Sends force soldiers of one settlement's own garrison out against the target; null when it has too few. */
@@ -338,6 +342,8 @@ public final class FactionCampaigns {
             army.alive = walkers.size();
          }
 
+         army.raid = campaign.raid;
+
          campaign.walking = 0;
          end(level, data, campaign, List.of(), campaign.size - storming);
          return;
@@ -348,8 +354,10 @@ public final class FactionCampaigns {
       boolean bandits = FactionDiplomacy.isOutlaw(campaign.faction());
       boolean hunt = FactionDiplomacy.isOutlaw(target.faction());
       // Bandits do not hold what they raid: they plunder it and go. Nor does anyone keep a bandit lair: it is scattered.
-      int survivors = FactionAI.siege(level, data, level.getRandom(), campaign.faction(), target, campaign.size, !bandits && !hunt);
-      if (bandits && target.garrison <= 0 && survivors > 0) {
+      int survivors = FactionAI.siege(level, data, level.getRandom(), campaign.faction(), target, campaign.size, !bandits && !hunt && !campaign.raid);
+      if (campaign.raid && target.garrison <= 0 && survivors > 0) {
+         FactionRaids.plunder(level, data, campaign.faction(), target);
+      } else if (bandits && target.garrison <= 0 && survivors > 0) {
          FactionBandits.plunder(level, data, campaign.faction(), target, FactionBandits.raidLevel(campaign.id(), data));
       } else if (hunt && target.garrison <= 0 && survivors > 0) {
          FactionBandits.scatter(level, data, campaign.faction(), target);

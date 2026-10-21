@@ -216,6 +216,10 @@ public final class FactionAI {
             strength.merge(attacker, -force, Integer::sum);
          }
 
+         // Beside the main army, small bands go looting behind the enemy's border.
+         int raiders = FactionRaids.raid(level, data, random, attacker, defender, strength.getOrDefault(attacker, 0));
+         strength.merge(attacker, -raiders, Integer::sum);
+
          return;
       }
 

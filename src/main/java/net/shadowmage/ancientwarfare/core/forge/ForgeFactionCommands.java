@@ -624,7 +624,7 @@ public final class ForgeFactionCommands {
          tell(
             source,
             Component.literal(
-               "  march #" + campaign.id() + " " + campaign.faction() + " -> " + campaign.defender() + " #" + campaign.targetSettlement() + ", " + campaign.size()
+               (campaign.raid() ? "  raid #" : "  march #") + campaign.id() + " " + campaign.faction() + " -> " + campaign.defender() + " #" + campaign.targetSettlement() + ", " + campaign.size()
                   + " soldiers at " + (int)campaign.x() + ", " + (int)campaign.z()
             )
          );

@@ -147,7 +147,7 @@ public final class WorldMap {
          int x = (int)Math.floor(campaign.x());
          int z = (int)Math.floor(campaign.z());
          markers.add(
-            new Marker(x, z, Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + " soldiers, against settlement #" + campaign.targetSettlement())
+            new Marker(x, z, Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + (campaign.raid() ? " raiders" : " soldiers") + ", against settlement #" + campaign.targetSettlement())
          );
 
          for (FactionWorldData.Settlement settlement : data.settlements()) {

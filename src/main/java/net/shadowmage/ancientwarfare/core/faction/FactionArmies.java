@@ -265,7 +265,12 @@ public final class FactionArmies {
       }
 
       long inside = members.stream().filter(npc -> settlement.contains(npc.getX(), npc.getZ(), 4)).count();
-      if (inside > 0 && FactionDiplomacy.isOutlaw(army.faction())) {
+      if (inside > 0 && army.raid) {
+         // Raiders loot the place and make for home.
+         members.forEach(FactionNpcEntity::discard);
+         goHome(data, army, members.size());
+         FactionRaids.plunder(level, data, army.faction(), settlement);
+      } else if (inside > 0 && FactionDiplomacy.isOutlaw(army.faction())) {
          // Bandits plunder and make off with the loot.
          members.forEach(FactionNpcEntity::discard);
          goHome(data, army, members.size());

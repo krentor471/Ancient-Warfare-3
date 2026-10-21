@@ -427,6 +427,7 @@ public final class FactionWorldData extends SavedData {
          entry.putBoolean("Spawned", army.spawned);
          entry.putLong("Started", army.started);
          entry.putInt("Alive", army.alive);
+         entry.putBoolean("Raid", army.raid);
          armyList.add(entry);
       }
 
@@ -443,6 +444,7 @@ public final class FactionWorldData extends SavedData {
          entry.putDouble("Z", campaign.z);
          entry.putInt("Size", campaign.size);
          entry.putLong("Since", campaign.since);
+         entry.putBoolean("Raid", campaign.raid);
          campaignList.add(entry);
       }
 
@@ -555,6 +557,7 @@ public final class FactionWorldData extends SavedData {
          army.spawned = entry.getBoolean("Spawned");
          army.started = entry.getLong("Started");
          army.alive = entry.getInt("Alive");
+         army.raid = entry.getBoolean("Raid");
          data.armies.add(army);
          data.nextArmyId = Math.max(data.nextArmyId, army.id + 1);
       }
@@ -571,6 +574,7 @@ public final class FactionWorldData extends SavedData {
             entry.getInt("Size"),
             entry.getLong("Since")
          );
+         campaign.raid = entry.getBoolean("Raid");
          data.campaigns.add(campaign);
          data.nextArmyId = Math.max(data.nextArmyId, campaign.id + 1);
       }
@@ -748,6 +752,8 @@ public final class FactionWorldData extends SavedData {
       boolean spawned;
       long started;
       int alive;
+      /** A raid plunders the target and goes home instead of taking it. */
+      boolean raid;
 
       Army(int id, String faction, String defender, int targetSettlement, UUID villageOwner, BlockPos target, int size, long ready) {
          this.id = id;
@@ -793,6 +799,10 @@ public final class FactionWorldData extends SavedData {
          return this.size;
       }
 
+      public boolean raid() {
+         return this.raid;
+      }
+
       public long ready() {
          return this.ready;
       }
@@ -825,6 +835,8 @@ public final class FactionWorldData extends SavedData {
       private final long since;
       /** Real soldiers out walking now; not saved, they are discarded with the world. */
       int walking;
+      /** A raid plunders the target and goes home instead of taking it. */
+      boolean raid;
 
       Campaign(int id, String faction, String defender, int targetSettlement, double x, double z, int size, long since) {
          this.id = id;
@@ -863,6 +875,10 @@ public final class FactionWorldData extends SavedData {
 
       public int size() {
          return this.size;
+      }
+
+      public boolean raid() {
+         return this.raid;
       }
 
       public long since() {
