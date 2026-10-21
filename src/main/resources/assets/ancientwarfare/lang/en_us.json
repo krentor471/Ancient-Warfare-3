@@ -1299,5 +1299,16 @@
   "gui.ancientwarfare.world_map.kind.capital_area": "Capital area (nothing built yet)",
   "gui.ancientwarfare.world_map.kind.player_village": "Player village",
   "gui.ancientwarfare.world_map.kind.outlaw": "Outlaw camp",
-  "news.ancientwarfare.capital_built": "New capital: %s built its capital city near %s, %s"
+  "news.ancientwarfare.capital_built": "New capital: %s built its capital city near %s, %s",
+  "news.ancientwarfare.war.border": "War: %s declared war on %s over the lands along their border",
+  "news.ancientwarfare.war.revenge": "War: %s declared war on %s to win back the settlements it lost",
+  "news.ancientwarfare.war.ally": "War: %s declared war on %s to stand by its ally, %s",
+  "news.ancientwarfare.neutral.beaten": "Peace: %s and %s ended their war; %s has no soldiers left to fight",
+  "news.ancientwarfare.neutral.tired": "Peace: %s and %s ended their war, worn out after %s days of fighting",
+  "news.ancientwarfare.pact.enemy": "Pact: %s and %s signed a pact against their common enemy, %s",
+  "news.ancientwarfare.pact.friends": "Pact: %s and %s signed a pact after long good relations",
+  "news.ancientwarfare.alliance.enemy": "Alliance: %s and %s became allies against their common enemy, %s",
+  "news.ancientwarfare.alliance.friends": "Alliance: %s and %s became allies",
+  "news.ancientwarfare.tension": "Tension: quarrels along the border sour relations between %s and %s",
+  "news.ancientwarfare.capital_captured": "Capital fallen: %s took the capital of %s near %s, %s"
 }

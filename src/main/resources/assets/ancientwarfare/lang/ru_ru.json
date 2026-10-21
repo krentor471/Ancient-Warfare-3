@@ -177,5 +177,16 @@
   "gui.ancientwarfare.world_map.kind.capital_area": "Место столицы (пока не построена)",
   "gui.ancientwarfare.world_map.kind.player_village": "Деревня игрока",
   "gui.ancientwarfare.world_map.kind.outlaw": "Лагерь разбойников",
-  "news.ancientwarfare.capital_built": "Новая столица: фракция %s отстроила столицу у %s, %s"
+  "news.ancientwarfare.capital_built": "Новая столица: фракция %s отстроила столицу у %s, %s",
+  "news.ancientwarfare.war.border": "Война: фракция %s объявила войну фракции %s из-за спорных земель на границе",
+  "news.ancientwarfare.war.revenge": "Война: фракция %s объявила войну фракции %s, чтобы вернуть потерянные поселения",
+  "news.ancientwarfare.war.ally": "Война: фракция %s объявила войну фракции %s, вступившись за союзника (%s)",
+  "news.ancientwarfare.neutral.beaten": "Мир: %s и %s прекратили войну: у фракции %s не осталось солдат",
+  "news.ancientwarfare.neutral.tired": "Мир: %s и %s прекратили войну, устав от боёв (дней войны: %s)",
+  "news.ancientwarfare.pact.enemy": "Договор: %s и %s заключили договор против общего врага (%s)",
+  "news.ancientwarfare.pact.friends": "Договор: %s и %s заключили договор после долгих добрых отношений",
+  "news.ancientwarfare.alliance.enemy": "Союз: %s и %s стали союзниками против общего врага (%s)",
+  "news.ancientwarfare.alliance.friends": "Союз: %s и %s стали союзниками",
+  "news.ancientwarfare.tension": "Напряжение: ссоры на границе портят отношения между %s и %s",
+  "news.ancientwarfare.capital_captured": "Пала столица: фракция %s захватила столицу фракции %s у %s, %s"
 }

@@ -90,7 +90,11 @@ public final class FactionAI {
          }
       }
 
-      FactionDiplomacy.adjustOpinion(level, faction, other, delta);
+      int before = FactionDiplomacy.relation(level, faction, other).opinion();
+      int after = FactionDiplomacy.adjustOpinion(level, faction, other, delta).opinion();
+      if (state == RelationState.NEUTRAL && bordering && before > WAR_OPINION && after <= WAR_OPINION) {
+         FactionNews.tension(level, faction, other);
+      }
    }
 
    private static void decide(
@@ -103,24 +107,31 @@ public final class FactionAI {
          case NEUTRAL -> {
             if (bordering && day >= FIRST_WAR_DAY && relation.opinion() <= WAR_OPINION && random.nextDouble() < WAR_CHANCE) {
                if (mine >= theirs * STRENGTH_ADVANTAGE) {
-                  declare(level, faction, other, RelationState.WAR);
+                  declareWar(level, data, faction, other);
                } else if (theirs >= mine * STRENGTH_ADVANTAGE) {
-                  declare(level, other, faction, RelationState.WAR);
+                  declareWar(level, data, other, faction);
                }
             } else if (relation.opinion() >= PACT_OPINION && random.nextDouble() < TREATY_CHANCE) {
-               declare(level, faction, other, RelationState.PACT);
+               declareFriendship(level, faction, other, RelationState.PACT);
             }
          }
          case PACT -> {
             if (relation.opinion() >= ALLIANCE_OPINION && random.nextDouble() < TREATY_CHANCE) {
-               declare(level, faction, other, RelationState.ALLIANCE);
+               declareFriendship(level, faction, other, RelationState.ALLIANCE);
             }
          }
          case WAR -> {
             long days = day - relation.since();
             boolean beaten = mine == 0 || theirs == 0;
             if (beaten || days >= MIN_WAR_DAYS && random.nextDouble() < PEACE_CHANCE_PER_DAY * (days - MIN_WAR_DAYS + 1)) {
-               declare(level, faction, other, RelationState.NEUTRAL);
+               if (FactionDiplomacy.setState(level, faction, other, RelationState.NEUTRAL)) {
+                  if (beaten) {
+                     FactionNews.relationChanged(level, faction, other, RelationState.NEUTRAL, "beaten", FactionNews.factionName(mine == 0 ? faction : other));
+                  } else {
+                     FactionNews.relationChanged(level, faction, other, RelationState.NEUTRAL, "tired", days);
+                  }
+               }
+
                FactionDiplomacy.adjustOpinion(level, faction, other, Math.max(0, PEACE_OPINION - relation.opinion()));
             }
          }
@@ -129,13 +140,55 @@ public final class FactionAI {
       }
    }
 
-   private static void declare(ServerLevel level, String faction, String other, RelationState state) {
-      if (FactionDiplomacy.setState(level, faction, other, state)) {
-         FactionNews.relationChanged(level, faction, other, state);
+   /**
+    * War, with the cause the news gives: to win back settlements the enemy took from it, to stand
+    * by an ally the enemy is fighting, or else over the land along their border, where friction
+    * soured them.
+    */
+   private static void declareWar(ServerLevel level, FactionWorldData data, String faction, String other) {
+      if (!FactionDiplomacy.setState(level, faction, other, RelationState.WAR)) {
+         return;
       }
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.faction().equals(other) && settlement.capturedFrom.equals(faction)) {
+            FactionNews.relationChanged(level, faction, other, RelationState.WAR, "revenge");
+            return;
+         }
+      }
+
+      for (String ally : FactionRegistry.factionNames()) {
+         RelationState withAlly = ally.equals(faction) || ally.equals(other) ? null : FactionDiplomacy.relation(level, faction, ally).state();
+         if ((withAlly == RelationState.ALLIANCE || withAlly == RelationState.PACT)
+            && FactionDiplomacy.relation(level, ally, other).state() == RelationState.WAR) {
+            FactionNews.relationChanged(level, faction, other, RelationState.WAR, "ally", FactionNews.factionName(ally));
+            return;
+         }
+      }
+
+      FactionNews.relationChanged(level, faction, other, RelationState.WAR, "border");
    }
 
-   /** One day of fighting: the stronger side presses a border settlement of the weaker. */
+   /** A pact or alliance, against an enemy both are fighting, or out of long good relations. */
+   private static void declareFriendship(ServerLevel level, String faction, String other, RelationState state) {
+      if (!FactionDiplomacy.setState(level, faction, other, state)) {
+         return;
+      }
+
+      for (String enemy : FactionRegistry.factionNames()) {
+         if (!enemy.equals(faction)
+            && !enemy.equals(other)
+            && !FactionDiplomacy.isOutlaw(enemy)
+            && FactionDiplomacy.relation(level, faction, enemy).state() == RelationState.WAR
+            && FactionDiplomacy.relation(level, other, enemy).state() == RelationState.WAR) {
+            FactionNews.relationChanged(level, faction, other, state, "enemy", FactionNews.factionName(enemy));
+            return;
+         }
+      }
+
+      FactionNews.relationChanged(level, faction, other, state, "friends");
+   }
+
    private static void battle(ServerLevel level, FactionWorldData data, RandomSource random, Map<String, Integer> strength, String faction, String other) {
       int mine = strength.getOrDefault(faction, 0);
       int theirs = strength.getOrDefault(other, 0);

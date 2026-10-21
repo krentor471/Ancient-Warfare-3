@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
+import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
 
 /** World news: wars, treaties, conquests and new villages, told to every player in chat. */
 public final class FactionNews {
@@ -19,7 +20,30 @@ public final class FactionNews {
       tell(level, Component.translatable("news.ancientwarfare." + state.serializedName(), factionName(faction), factionName(other)));
    }
 
+   /** A change of relation with its cause: the reason key's message takes both factions, then the extra arguments. */
+   public static void relationChanged(ServerLevel level, String faction, String other, RelationState state, String reason, Object... extra) {
+      Object[] args = new Object[2 + extra.length];
+      args[0] = factionName(faction);
+      args[1] = factionName(other);
+      System.arraycopy(extra, 0, args, 2, extra.length);
+      tell(level, Component.translatable("news.ancientwarfare." + state.serializedName() + "." + reason, args));
+   }
+
+   public static void tension(ServerLevel level, String faction, String other) {
+      tell(level, Component.translatable("news.ancientwarfare.tension", factionName(faction), factionName(other)));
+   }
+
    public static void captured(ServerLevel level, String winner, String loser, FactionWorldData.Settlement settlement) {
+      if (FactionTowns.CAPITAL.equals(settlement.kind())) {
+         tell(
+            level,
+            Component.translatable(
+               "news.ancientwarfare.capital_captured", factionName(winner), factionName(loser), settlement.center().getX(), settlement.center().getZ()
+            )
+         );
+         return;
+      }
+
       tell(
          level,
          Component.translatable("news.ancientwarfare.captured", factionName(winner), factionName(loser), settlement.center().getX(), settlement.center().getZ())
