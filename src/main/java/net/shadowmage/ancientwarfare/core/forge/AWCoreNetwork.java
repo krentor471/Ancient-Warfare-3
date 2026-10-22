@@ -75,7 +75,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "12";
+   private static final String PROTOCOL_VERSION = "13";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
@@ -458,18 +458,18 @@ public final class AWCoreNetwork {
       CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.QuestBoardPacket(board, title, note, offers, active));
    }
 
-   public static void sendConstructionCreate(BlockPos min, BlockPos max, int kind) {
-      CHANNEL.sendToServer(new AWCoreNetwork.ConstructionActionPacket(ConstructionActionPacket.CREATE, min, max, kind));
+   public static void sendConstructionCreate(BlockPos min, BlockPos max, int kind, String template, int facing) {
+      CHANNEL.sendToServer(new AWCoreNetwork.ConstructionActionPacket(ConstructionActionPacket.CREATE, min, max, kind, template == null ? "" : template, facing));
    }
 
    public static void sendConstructionCancel(int id) {
-      CHANNEL.sendToServer(new AWCoreNetwork.ConstructionActionPacket(ConstructionActionPacket.CANCEL, BlockPos.ZERO, BlockPos.ZERO, id));
+      CHANNEL.sendToServer(new AWCoreNetwork.ConstructionActionPacket(ConstructionActionPacket.CANCEL, BlockPos.ZERO, BlockPos.ZERO, id, "", 0));
    }
 
    public static void sendConstructionJobs(ServerPlayer player, List<net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Job> jobs) {
       List<ConstructionJobsPacket.Entry> entries = new ArrayList<>();
       for (var job : jobs) {
-         entries.add(new ConstructionJobsPacket.Entry(job.id(), job.kind().ordinal(), job.min(), job.max(), job.done(), job.total(), job.state().getBlock().getName()));
+         entries.add(new ConstructionJobsPacket.Entry(job.id(), job.kind().ordinal(), job.min(), job.max(), job.done(), job.total(), job.kind() == net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Kind.TEMPLATE ? job.title() : job.state().getBlock().getName()));
       }
 
       CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.ConstructionJobsPacket(entries));
@@ -1278,8 +1278,8 @@ public final class AWCoreNetwork {
       }
    }
 
-   /** create: the box and the kind of work; cancel: the job's id in argument. */
-   public static record ConstructionActionPacket(int action, BlockPos min, BlockPos max, int argument) {
+   /** create: the box, the kind of work and for a building its template and facing; cancel: the job's id in argument. */
+   public static record ConstructionActionPacket(int action, BlockPos min, BlockPos max, int argument, String template, int facing) {
       public static final int CREATE = 0;
       public static final int CANCEL = 1;
 
@@ -1288,10 +1288,12 @@ public final class AWCoreNetwork {
          buffer.writeBlockPos(packet.min);
          buffer.writeBlockPos(packet.max);
          buffer.writeVarInt(packet.argument);
+         buffer.writeUtf(packet.template, 256);
+         buffer.writeVarInt(packet.facing);
       }
 
       private static AWCoreNetwork.ConstructionActionPacket decode(FriendlyByteBuf buffer) {
-         return new AWCoreNetwork.ConstructionActionPacket(buffer.readVarInt(), buffer.readBlockPos(), buffer.readBlockPos(), buffer.readVarInt());
+         return new AWCoreNetwork.ConstructionActionPacket(buffer.readVarInt(), buffer.readBlockPos(), buffer.readBlockPos(), buffer.readVarInt(), buffer.readUtf(256), buffer.readVarInt());
       }
 
       private static void handle(AWCoreNetwork.ConstructionActionPacket packet, Supplier<Context> supplier) {
@@ -1301,7 +1303,14 @@ public final class AWCoreNetwork {
             if (player != null) {
                if (packet.action == CREATE) {
                   net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.create(
-                     player, packet.min, packet.max, net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Kind.values()[Math.floorMod(packet.argument, 4)]
+                     player,
+                     packet.min,
+                     packet.max,
+                     net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Kind.values()[
+                        Math.floorMod(packet.argument, net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Kind.values().length)
+                     ],
+                     packet.template.isEmpty() ? null : packet.template,
+                     net.minecraft.core.Direction.from2DDataValue(packet.facing)
                   );
                } else if (packet.action == CANCEL) {
                   net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.cancel(player, packet.argument);

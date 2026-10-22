@@ -19,6 +19,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.Block;
@@ -46,12 +47,20 @@ final class BuilderGoal extends Goal {
    private static final double REACH_SQ = 4.5 * 4.5;
    private static final double WORK_REACH_SQ = 5.2 * 5.2;
    private static final int FILL_REACH_DOWN = 8;
+   /** A building's upper courses are set from the ground or floor below, off ladders and scaffolding: blocks are handed up this far. */
+   private static final int TEMPLATE_REACH_UP = 16;
+   /** For a building the worker carries several kinds of block at once, this many in all. */
+   private static final int TEMPLATE_CARRY = 192;
+   private static final int TEMPLATE_KINDS = 6;
+   private static final int TEMPLATE_SCAN = 1024;
    /** Within this many blocks paths to single spots are found; further off the worker first walks closer. */
    private static final double NEAR = 12.0;
    private final WorkerNpcEntity worker;
    private final Map<Long, Integer> rejectedUntil = new HashMap<>();
    /** Blocks taken from the chest to set. */
-   private ItemStack materials = ItemStack.EMPTY;
+   private final List<ItemStack> materials = new ArrayList<>();
+   /** The block a building's next spot needs that the worker went to the chest for. */
+   private Item fetchingFor;
    /** What the worker dug and carries to the chest. */
    private final List<ItemStack> carried = new ArrayList<>();
    private int jobId;
@@ -113,6 +122,7 @@ final class BuilderGoal extends Goal {
    public void start() {
       this.target = null;
       this.walkingTo = null;
+      this.fetchingFor = null;
    }
 
    @Override
@@ -132,7 +142,7 @@ final class BuilderGoal extends Goal {
       }
 
       for (ConstructionJobs.Job job : near) {
-         if (job.kind().places() && !this.hasMaterials(job) && !this.chestHas(job)) {
+         if (job.kind().singleBlock() && !this.hasMaterials(job) && !this.chestHas(job)) {
             continue;
          }
 
@@ -157,13 +167,17 @@ final class BuilderGoal extends Goal {
 
       if (!job.kind().places() && !this.materials.isEmpty()) {
          // Blocks left over from building work go back to the chest with what is dug.
-         this.carry(this.materials);
-         this.materials = ItemStack.EMPTY;
+         this.returnMaterials();
       }
 
-      if (job.kind().places() && !this.hasMaterials(job)) {
+      if (job.kind().singleBlock() && !this.hasMaterials(job)) {
          this.releaseTarget();
-         this.fetch(job);
+         this.fetch(job, job.state().getBlock().asItem());
+         return;
+      }
+
+      if (this.fetchingFor != null) {
+         this.fetch(job, this.fetchingFor);
          return;
       }
 
@@ -194,6 +208,10 @@ final class BuilderGoal extends Goal {
 
             return;
          }
+
+         if (job.kind() == ConstructionJobs.Kind.TEMPLATE && !this.readyFor(job)) {
+            return;
+         }
       }
 
       this.worker.getLookControl().setLookAt(this.target.getX() + 0.5, this.target.getY() + 0.5, this.target.getZ() + 0.5);
@@ -213,11 +231,30 @@ final class BuilderGoal extends Goal {
          this.worker.swing(InteractionHand.MAIN_HAND);
       }
 
-      if (job.kind() == ConstructionJobs.Kind.DIG) {
+      if (job.kind() == ConstructionJobs.Kind.DIG || job.stateAt(this.target) == null) {
          this.dig(job);
       } else {
          this.place(job);
       }
+   }
+
+   /** Whether the worker holds the block the building wants at its spot; if not, it goes for it or leaves the spot. */
+   private boolean readyFor(ConstructionJobs.Job job) {
+      BlockState wanted = job.stateAt(this.target);
+      Item item = wanted == null ? Items.AIR : ConstructionJobs.Job.itemFor(wanted);
+      if (item == Items.AIR || this.held(item) > 0) {
+         return true;
+      }
+
+      if (this.chestHas(job, item)) {
+         this.releaseTarget();
+         this.fetchingFor = item;
+      } else {
+         this.jobs().missingItem(this.worker.level(), job, item);
+         this.rejectTarget();
+      }
+
+      return false;
    }
 
    private boolean chooseTarget(ConstructionJobs.Job job) {
@@ -258,7 +295,8 @@ final class BuilderGoal extends Goal {
 
       List<BlockPos> spots = new ArrayList<>();
       int above = job.kind() == ConstructionJobs.Kind.FILL ? FILL_REACH_DOWN : 4;
-      for (int dy = -4; dy <= above; dy++) {
+      int below = job.kind() == ConstructionJobs.Kind.TEMPLATE ? TEMPLATE_REACH_UP + 2 : 4;
+      for (int dy = -below; dy <= above; dy++) {
          for (int dx = -3; dx <= 3; dx++) {
             for (int dz = -3; dz <= 3; dz++) {
                BlockPos spot = pos.offset(dx, dy, dz);
@@ -269,10 +307,10 @@ final class BuilderGoal extends Goal {
          }
       }
 
-      spots.sort((a, b) -> Double.compare(this.score(a, pos), this.score(b, pos)));
+      spots.sort((a, b) -> Double.compare(this.score(job, a, pos), this.score(job, b, pos)));
       int checks = 0;
       for (BlockPos spot : spots) {
-         if (checks++ >= 5) {
+         if (checks++ >= (job.kind() == ConstructionJobs.Kind.TEMPLATE ? 10 : 5)) {
             break;
          }
 
@@ -285,18 +323,30 @@ final class BuilderGoal extends Goal {
       return null;
    }
 
-   private double score(BlockPos spot, BlockPos pos) {
-      return Math.sqrt(this.worker.distanceToSqr(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5)) + 1.5 * spot.distSqr(pos);
+   private double score(ConstructionJobs.Job job, BlockPos spot, BlockPos pos) {
+      double walk = Math.sqrt(this.worker.distanceToSqr(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5));
+      if (job.kind() == ConstructionJobs.Kind.TEMPLATE) {
+         // Blocks are handed up, so the ground below does as well as a ledge beside that may be out of reach.
+         double dx = spot.getX() - pos.getX();
+         double dz = spot.getZ() - pos.getZ();
+         return walk + 1.5 * (dx * dx + dz * dz);
+      }
+
+      return walk + 1.5 * spot.distSqr(pos);
    }
 
    /** Standing where the job still has to set a block, or right on top of a block still to dig, gets in the way. */
    private boolean blocksWork(ConstructionJobs.Job job, BlockPos spot) {
-      // Filling a hole means standing in it and rising with the fill; a wall's line is kept clear.
-      if (job.kind() != ConstructionJobs.Kind.WALL) {
+      // Filling a hole means standing in it and rising with the fill; a wall's line and a building's own blocks are kept clear.
+      if (job.kind() != ConstructionJobs.Kind.WALL && job.kind() != ConstructionJobs.Kind.TEMPLATE) {
          return false;
       }
 
       for (BlockPos body : new BlockPos[]{spot, spot.above()}) {
+         if (job.kind() == ConstructionJobs.Kind.TEMPLATE && job.stateAt(body) == null) {
+            continue;
+         }
+
          if (body.getX() >= job.min().getX() && body.getX() <= job.max().getX()
             && body.getZ() >= job.min().getZ() && body.getZ() <= job.max().getZ()
             && body.getY() >= job.min().getY() && body.getY() <= job.max().getY()
@@ -326,6 +376,10 @@ final class BuilderGoal extends Goal {
       double dz = z - (pos.getZ() + 0.5);
       if (job.kind() == ConstructionJobs.Kind.FILL && dy > 0.0 && dy <= FILL_REACH_DOWN + 2) {
          dy = Math.min(dy, 1.5);
+      }
+
+      if (job.kind() == ConstructionJobs.Kind.TEMPLATE && dy < 0.0 && dy >= -TEMPLATE_REACH_UP - 1) {
+         dy = Math.max(dy, -2.0);
       }
 
       return dx * dx + dy * dy + dz * dz <= reachSq;
@@ -394,6 +448,14 @@ final class BuilderGoal extends Goal {
 
    private void place(ConstructionJobs.Job job) {
       ServerLevel level = (ServerLevel)this.worker.level();
+      BlockState wanted = job.stateAt(this.target);
+      boolean building = job.kind() == ConstructionJobs.Kind.TEMPLATE;
+      Item item = building ? ConstructionJobs.Job.itemFor(wanted) : wanted.getBlock().asItem();
+      if (item != Items.AIR && this.held(item) == 0) {
+         this.releaseTarget();
+         return;
+      }
+
       BlockState current = level.getBlockState(this.target);
       int needed = current.canBeReplaced() ? 8 : 10 + (int)(current.getDestroySpeed(level, this.target) * 10.0F);
       if (++this.progress < needed) {
@@ -412,16 +474,49 @@ final class BuilderGoal extends Goal {
          level.levelEvent(2001, this.target, Block.getId(current));
       }
 
-      level.setBlock(this.target, job.state(), Block.UPDATE_ALL);
-      SoundType sound = job.state().getSoundType(level, this.target, this.worker);
+      // A building's blocks go in as the template has them, the way the structure builder sets them: torches
+      // and doors stay put though their wall is not up yet, and everything is joined up when the job is done.
+      level.setBlock(this.target, wanted, building ? 18 : Block.UPDATE_ALL);
+      SoundType sound = wanted.getSoundType(level, this.target, this.worker);
       level.playSound(null, this.target, sound.getPlaceSound(), SoundSource.NEUTRAL, (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
-      this.materials.shrink(1);
+      this.use(item);
       this.jobs().worked(job);
       this.releaseTarget();
    }
 
    private boolean hasMaterials(ConstructionJobs.Job job) {
-      return !this.materials.isEmpty() && this.materials.is(job.state().getBlock().asItem());
+      return this.held(job.state().getBlock().asItem()) > 0;
+   }
+
+   private int held(Item item) {
+      int count = 0;
+      for (ItemStack stack : this.materials) {
+         if (stack.is(item)) {
+            count += stack.getCount();
+         }
+      }
+
+      return count;
+   }
+
+   private int heldTotal() {
+      return this.materials.stream().mapToInt(ItemStack::getCount).sum();
+   }
+
+   private void use(Item item) {
+      for (ItemStack stack : this.materials) {
+         if (stack.is(item)) {
+            stack.shrink(1);
+            break;
+         }
+      }
+
+      this.materials.removeIf(ItemStack::isEmpty);
+   }
+
+   private void returnMaterials() {
+      this.materials.forEach(this::carry);
+      this.materials.clear();
    }
 
    private Container chest(ConstructionJobs.Job job) {
@@ -433,27 +528,38 @@ final class BuilderGoal extends Goal {
    }
 
    private boolean chestHas(ConstructionJobs.Job job) {
-      Container chest = this.chest(job);
-      if (chest == null) {
-         return false;
-      }
-
-      Item item = job.state().getBlock().asItem();
-      for (int slot = 0; slot < chest.getContainerSize(); slot++) {
-         if (chest.getItem(slot).is(item)) {
-            return true;
-         }
+      if (this.chestHas(job, job.state().getBlock().asItem())) {
+         return true;
       }
 
       this.jobs().outOfBlocks(this.worker.level(), job, true);
       return false;
    }
 
-   /** To the chest for the job's blocks; blocks of another job go back first. */
-   private void fetch(ConstructionJobs.Job job) {
+   private boolean chestHas(ConstructionJobs.Job job, Item item) {
+      Container chest = this.chest(job);
+      if (chest == null) {
+         return false;
+      }
+
+      for (int slot = 0; slot < chest.getContainerSize(); slot++) {
+         if (chest.getItem(slot).is(item)) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   /**
+    * To the chest for the job's blocks; what the worker holds goes back first. For a building it takes
+    * the wanted block and then what the next stretch of the building needs, a few kinds at a time.
+    */
+   private void fetch(ConstructionJobs.Job job, Item wanted) {
       Container chest = this.chest(job);
       if (chest == null) {
          this.jobId = 0;
+         this.fetchingFor = null;
          return;
       }
 
@@ -462,6 +568,7 @@ final class BuilderGoal extends Goal {
          if (!this.walkToChest(job.supply())) {
             this.jobId = 0;
             this.nextSearch = this.worker.tickCount + REJECT_TICKS;
+            this.fetchingFor = null;
          }
 
          return;
@@ -469,35 +576,55 @@ final class BuilderGoal extends Goal {
 
       this.worker.getNavigation().stop();
       this.worker.swing(InteractionHand.MAIN_HAND);
-      if (!this.materials.isEmpty()) {
-         this.carry(this.materials);
-         this.materials = ItemStack.EMPTY;
+      this.returnMaterials();
+      this.unload(chest);
+      this.fetchingFor = null;
+      if (job.kind().singleBlock()) {
+         this.take(chest, wanted, CARRY);
+         if (this.materials.isEmpty()) {
+            this.jobs().outOfBlocks(this.worker.level(), job, true);
+            this.jobId = 0;
+            this.nextSearch = this.worker.tickCount + REJECT_TICKS;
+         } else {
+            this.jobs().outOfBlocks(this.worker.level(), job, false);
+         }
+
+         return;
       }
 
-      this.unload(chest);
-      Item item = job.state().getBlock().asItem();
-      for (int slot = 0; slot < chest.getContainerSize() && this.materials.getCount() < CARRY; slot++) {
+      Map<Item, Integer> needs = ConstructionJobs.upcomingItems(this.worker.level(), job, TEMPLATE_SCAN);
+      this.take(chest, wanted, Math.max(1, Math.min(CARRY, needs.getOrDefault(wanted, 1))));
+      int kinds = this.materials.isEmpty() ? 0 : 1;
+      for (Map.Entry<Item, Integer> need : needs.entrySet()) {
+         if (kinds >= TEMPLATE_KINDS || this.heldTotal() >= TEMPLATE_CARRY) {
+            break;
+         }
+
+         if (need.getKey() != wanted && this.take(chest, need.getKey(), Math.min(CARRY, Math.min(need.getValue(), TEMPLATE_CARRY - this.heldTotal()))) > 0) {
+            kinds++;
+         }
+      }
+
+      if (this.held(wanted) == 0) {
+         this.jobs().missingItem(this.worker.level(), job, wanted);
+      }
+   }
+
+   /** Takes up to so many of an item out of the chest; how many it got. */
+   private int take(Container chest, Item item, int count) {
+      int got = 0;
+      for (int slot = 0; slot < chest.getContainerSize() && got < count; slot++) {
          ItemStack stack = chest.getItem(slot);
          if (stack.is(item)) {
-            int take = Math.min(stack.getCount(), CARRY - this.materials.getCount());
-            if (this.materials.isEmpty()) {
-               this.materials = stack.copyWithCount(take);
-            } else {
-               this.materials.grow(take);
-            }
-
+            int take = Math.min(stack.getCount(), count - got);
+            this.materials.add(stack.copyWithCount(take));
             stack.shrink(take);
+            got += take;
             chest.setChanged();
          }
       }
 
-      if (this.materials.isEmpty()) {
-         this.jobs().outOfBlocks(this.worker.level(), job, true);
-         this.jobId = 0;
-         this.nextSearch = this.worker.tickCount + REJECT_TICKS;
-      } else {
-         this.jobs().outOfBlocks(this.worker.level(), job, false);
-      }
+      return got;
    }
 
    /** Carries what was dug to the job's chest; with no job left, to the nearest chest the worker can find. */
@@ -517,9 +644,9 @@ final class BuilderGoal extends Goal {
          // Nowhere to take it: leave it on the ground rather than lose it.
          this.carried.forEach(stack -> Block.popResource(this.worker.level(), this.worker.blockPosition(), stack));
          this.carried.clear();
-         if (job == null && !this.materials.isEmpty()) {
-            Block.popResource(this.worker.level(), this.worker.blockPosition(), this.materials);
-            this.materials = ItemStack.EMPTY;
+         if (job == null) {
+            this.materials.forEach(stack -> Block.popResource(this.worker.level(), this.worker.blockPosition(), stack));
+            this.materials.clear();
          }
 
          return;
@@ -536,9 +663,8 @@ final class BuilderGoal extends Goal {
 
       this.worker.getNavigation().stop();
       this.worker.swing(InteractionHand.MAIN_HAND);
-      if (job == null && !this.materials.isEmpty()) {
-         this.carry(this.materials);
-         this.materials = ItemStack.EMPTY;
+      if (job == null) {
+         this.returnMaterials();
       }
 
       this.unload(chest);

@@ -2019,5 +2019,16 @@
   "gui.ancientwarfare.construction.view": "Вид стройки",
   "gui.ancientwarfare.construction.view.status": "Жезл строителя | заданий: %s",
   "gui.ancientwarfare.construction.view.help1": "Протяни ЛКМ по земле — отметить участок | ПКМ — список заданий",
-  "gui.ancientwarfare.construction.view.help2": "WASD или края экрана — сдвиг, Q/E — поворот, колесо — зум"
+  "gui.ancientwarfare.construction.view.help2": "WASD или края экрана — сдвиг, Q/E — поворот, колесо — зум",
+  "construction.ancientwarfare.kind.template": "Здание",
+  "gui.ancientwarfare.construction.supply_building": "Блоки берут из ближайшего сундука или ратуши.",
+  "gui.ancientwarfare.construction.search": "Поиск здания",
+  "gui.ancientwarfare.construction.facing": "Фасад: %s",
+  "gui.ancientwarfare.construction.facing.south": "юг",
+  "gui.ancientwarfare.construction.facing.west": "запад",
+  "gui.ancientwarfare.construction.facing.north": "север",
+  "gui.ancientwarfare.construction.facing.east": "восток",
+  "gui.ancientwarfare.construction.size": "Размер %s×%s×%s",
+  "gui.ancientwarfare.construction.needs": "Нужно:",
+  "gui.ancientwarfare.construction.needs_more": " и ещё %s видов"
 }

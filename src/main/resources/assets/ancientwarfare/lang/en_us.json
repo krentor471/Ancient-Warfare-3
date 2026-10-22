@@ -2019,5 +2019,16 @@
   "gui.ancientwarfare.construction.view": "Building view",
   "gui.ancientwarfare.construction.view.status": "Builder's wand | jobs: %s",
   "gui.ancientwarfare.construction.view.help1": "Drag the left button over the ground to mark an area | Right button: job list",
-  "gui.ancientwarfare.construction.view.help2": "WASD or screen edges: move, Q/E: turn, wheel: zoom"
+  "gui.ancientwarfare.construction.view.help2": "WASD or screen edges: move, Q/E: turn, wheel: zoom",
+  "construction.ancientwarfare.kind.template": "Building",
+  "gui.ancientwarfare.construction.supply_building": "Blocks come from the nearest chest or town hall.",
+  "gui.ancientwarfare.construction.search": "Search buildings",
+  "gui.ancientwarfare.construction.facing": "Facing: %s",
+  "gui.ancientwarfare.construction.facing.south": "south",
+  "gui.ancientwarfare.construction.facing.west": "west",
+  "gui.ancientwarfare.construction.facing.north": "north",
+  "gui.ancientwarfare.construction.facing.east": "east",
+  "gui.ancientwarfare.construction.size": "Size %s×%s×%s",
+  "gui.ancientwarfare.construction.needs": "Needs:",
+  "gui.ancientwarfare.construction.needs_more": ", and %s more kinds"
 }
