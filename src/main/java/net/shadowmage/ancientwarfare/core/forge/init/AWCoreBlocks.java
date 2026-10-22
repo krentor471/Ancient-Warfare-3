@@ -166,6 +166,12 @@ public final class AWCoreBlocks {
    );
    public static final RegistryObject<Block> CHUNK_LOADER_SIMPLE = REGISTER.register("chunk_loader_simple", () -> new ChunkLoaderBlock(worksiteProperties()));
    public static final RegistryObject<Block> TOWN_HALL = REGISTER.register("town_hall", () -> new TownHallBlock(stationProperties()));
+   public static final RegistryObject<Block> QUEST_BOARD = REGISTER.register(
+      "quest_board",
+      () -> new net.shadowmage.ancientwarfare.core.block.QuestBoardBlock(
+         Properties.of().mapColor(MapColor.WOOD).strength(2.0F).sound(SoundType.WOOD).noOcclusion().ignitedByLava()
+      )
+   );
    /** A field tent: soldiers resting by it at a camp fire heal. */
    public static final RegistryObject<Block> FIELD_TENT = REGISTER.register(
       "field_tent",
@@ -590,6 +596,7 @@ public final class AWCoreBlocks {
       blockItem("windmill_blade", WINDMILL_BLADE);
       blockItem("chunk_loader_simple", CHUNK_LOADER_SIMPLE);
       blockItem("town_hall", TOWN_HALL);
+      blockItem("quest_board", QUEST_BOARD);
       blockItem("field_tent", FIELD_TENT);
       restoredAutomationBlockItem("flywheel_controller_light", FLYWHEEL_CONTROLLER_LIGHT);
       restoredAutomationBlockItem("flywheel_controller_medium", FLYWHEEL_CONTROLLER_MEDIUM);

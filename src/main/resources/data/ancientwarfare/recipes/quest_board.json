@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["WWW", "WPW", "S S"],
+  "key": {
+    "W": { "tag": "minecraft:planks" },
+    "P": { "item": "minecraft:paper" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": { "item": "ancientwarfare:quest_board" }
+}

@@ -60,6 +60,7 @@ import net.shadowmage.ancientwarfare.core.menu.TradeOrderMenu;
 import net.shadowmage.ancientwarfare.core.client.ConquestScreen;
 import net.shadowmage.ancientwarfare.core.faction.FactionConquest;
 import net.shadowmage.ancientwarfare.core.faction.PlayerCountry;
+import net.shadowmage.ancientwarfare.core.faction.FactionQuests;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseControlMenu;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseCraftingStationMenu;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseInterfaceMenu;
@@ -74,7 +75,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "10";
+   private static final String PROTOCOL_VERSION = "11";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
@@ -217,6 +218,16 @@ public final class AWCoreNetwork {
          .encoder(AWCoreNetwork.ConquestChoicePacket::encode)
          .decoder(AWCoreNetwork.ConquestChoicePacket::decode)
          .consumerMainThread(AWCoreNetwork.ConquestChoicePacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.QuestBoardPacket.class, 44, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.QuestBoardPacket::encode)
+         .decoder(AWCoreNetwork.QuestBoardPacket::decode)
+         .consumerMainThread(AWCoreNetwork.QuestBoardPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.QuestActionPacket.class, 45, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.QuestActionPacket::encode)
+         .decoder(AWCoreNetwork.QuestActionPacket::decode)
+         .consumerMainThread(AWCoreNetwork.QuestActionPacket::handle)
          .add();
       CHANNEL.messageBuilder(AWCoreNetwork.FoundCountryPacket.class, 43, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.FoundCountryPacket::encode)
@@ -429,6 +440,16 @@ public final class AWCoreNetwork {
 
    public static void sendConquestOffer(ServerPlayer player, FactionConquest.Offer offer) {
       CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.ConquestOfferPacket(offer));
+   }
+
+   public static void sendQuestBoard(
+      ServerPlayer player, BlockPos board, Component title, Component note, List<FactionQuests.Line> offers, List<FactionQuests.Line> active
+   ) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.QuestBoardPacket(board, title, note, offers, active));
+   }
+
+   public static void sendQuestAction(BlockPos board, int action, long argument) {
+      CHANNEL.sendToServer(new AWCoreNetwork.QuestActionPacket(board, action, argument));
    }
 
    public static void sendFoundCountry(BlockPos hall, String name) {
@@ -1144,6 +1165,86 @@ public final class AWCoreNetwork {
             ServerPlayer player = context.getSender();
             if (player != null) {
                FactionConquest.choose(player, packet.settlement, packet.choice);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record QuestBoardPacket(BlockPos board, Component title, Component note, List<FactionQuests.Line> offers, List<FactionQuests.Line> active) {
+      private static final int MAX_LINES = 16;
+
+      private static void writeLines(FriendlyByteBuf buffer, List<FactionQuests.Line> lines) {
+         buffer.writeVarInt(Math.min(MAX_LINES, lines.size()));
+         for (FactionQuests.Line line : lines.subList(0, Math.min(MAX_LINES, lines.size()))) {
+            buffer.writeLong(line.id());
+            buffer.writeComponent(line.text());
+            buffer.writeComponent(line.detail());
+            buffer.writeVarInt(line.state());
+         }
+      }
+
+      private static List<FactionQuests.Line> readLines(FriendlyByteBuf buffer) {
+         int count = Math.min(MAX_LINES, buffer.readVarInt());
+         List<FactionQuests.Line> lines = new ArrayList<>();
+         for (int i = 0; i < count; i++) {
+            lines.add(new FactionQuests.Line(buffer.readLong(), buffer.readComponent(), buffer.readComponent(), buffer.readVarInt()));
+         }
+
+         return lines;
+      }
+
+      private static void encode(AWCoreNetwork.QuestBoardPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeBlockPos(packet.board);
+         buffer.writeComponent(packet.title);
+         buffer.writeComponent(packet.note);
+         writeLines(buffer, packet.offers);
+         writeLines(buffer, packet.active);
+      }
+
+      private static AWCoreNetwork.QuestBoardPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.QuestBoardPacket(buffer.readBlockPos(), buffer.readComponent(), buffer.readComponent(), readLines(buffer), readLines(buffer));
+      }
+
+      private static void handle(AWCoreNetwork.QuestBoardPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               net.shadowmage.ancientwarfare.core.client.QuestBoardScreen.open(packet.board, packet.title, packet.note, packet.offers, packet.active);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   /** take: the offer's index; turn in and give up: the quest's id. */
+   public static record QuestActionPacket(BlockPos board, int action, long argument) {
+      public static final int TAKE = 0;
+      public static final int TURN_IN = 1;
+      public static final int ABANDON = 2;
+
+      private static void encode(AWCoreNetwork.QuestActionPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeBlockPos(packet.board);
+         buffer.writeVarInt(packet.action);
+         buffer.writeLong(packet.argument);
+      }
+
+      private static AWCoreNetwork.QuestActionPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.QuestActionPacket(buffer.readBlockPos(), buffer.readVarInt(), buffer.readLong());
+      }
+
+      private static void handle(AWCoreNetwork.QuestActionPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               switch (packet.action) {
+                  case TAKE -> FactionQuests.take(player, packet.board, (int)packet.argument);
+                  case TURN_IN -> FactionQuests.turnIn(player, packet.board, packet.argument);
+                  case ABANDON -> FactionQuests.abandon(player, packet.board, packet.argument);
+                  default -> {
+                  }
+               }
             }
          });
          context.setPacketHandled(true);

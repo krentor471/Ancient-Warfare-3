@@ -30,6 +30,8 @@ public final class FactionWorldData extends SavedData {
    private final List<Long> treasures = new ArrayList<>();
    /** Countries players founded, by founder; see PlayerCountry. */
    private final Map<UUID, Country> countries = new HashMap<>();
+   /** Quests players took from town boards, by player; see FactionQuests. */
+   private final Map<UUID, List<FactionQuests.Quest>> quests = new HashMap<>();
    /** Until when each player knows the movements of each faction's armies, from a spy's report. */
    private final Map<UUID, Map<String, Long>> intel = new HashMap<>();
    /** Spies on their way; see FactionSpies. */
@@ -442,6 +444,15 @@ public final class FactionWorldData extends SavedData {
       return Collections.unmodifiableMap(this.countries);
    }
 
+   /** The player's quests, taken and finished today; changes go through the list itself. */
+   public List<FactionQuests.Quest> quests(UUID player) {
+      return this.quests.computeIfAbsent(player, id -> new ArrayList<>());
+   }
+
+   public Map<UUID, List<FactionQuests.Quest>> allQuests() {
+      return this.quests;
+   }
+
    public Country addCountry(UUID owner, String name, BlockPos capital, long founded) {
       Country country = new Country(name, capital.immutable(), founded);
       this.countries.put(owner, country);
@@ -508,6 +519,9 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Growth", settlement.growth);
          entry.putInt("Grown", settlement.grown);
          entry.putInt("Plague", settlement.plague);
+         if (settlement.board != null) {
+            entry.putLong("Board", settlement.board.asLong());
+         }
          list.add(entry);
       }
 
@@ -527,6 +541,13 @@ public final class FactionWorldData extends SavedData {
       });
       tag.put("Countries", countryList);
       tag.put("Treasures", new LongArrayTag(this.treasures));
+      ListTag questList = new ListTag();
+      this.quests.forEach((owner, taken) -> taken.forEach(quest -> {
+         CompoundTag entry = quest.save();
+         entry.putUUID("Owner", owner);
+         questList.add(entry);
+      }));
+      tag.put("Quests", questList);
       CompoundTag rulerTag = new CompoundTag();
       this.rulers.forEach((faction, ruler) -> {
          CompoundTag entry = new CompoundTag();
@@ -727,6 +748,7 @@ public final class FactionWorldData extends SavedData {
             settlement.plague = entry.getInt("Plague");
             settlement.growth = entry.getInt("Growth");
             settlement.grown = entry.getInt("Grown");
+            settlement.board = entry.contains("Board") ? BlockPos.of(entry.getLong("Board")) : null;
          } else if (!settlement.capturedFrom.isEmpty()) {
             settlement.loyalty = 50;
          }
@@ -753,6 +775,12 @@ public final class FactionWorldData extends SavedData {
       }
       for (long treasure : tag.getLongArray("Treasures")) {
          data.treasures.add(treasure);
+      }
+      for (Tag element : tag.getList("Quests", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         if (entry.hasUUID("Owner")) {
+            data.quests(entry.getUUID("Owner")).add(FactionQuests.Quest.load(entry));
+         }
       }
       for (Tag element : tag.getList("Countries", Tag.TAG_COMPOUND)) {
          CompoundTag entry = (CompoundTag)element;
@@ -1354,6 +1382,8 @@ public final class FactionWorldData extends SavedData {
       int growth;
       /** Buildings the town has put up by itself. */
       int grown;
+      /** Where the town's quest board stands, once one was put up; see FactionQuests. */
+      BlockPos board;
 
       Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
          this.id = id;
