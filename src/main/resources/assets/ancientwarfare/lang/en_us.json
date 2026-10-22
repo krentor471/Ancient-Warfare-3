@@ -1711,5 +1711,14 @@
   "gui.ancientwarfare.world_map.unrest": "Unrest",
   "gui.ancientwarfare.world_map.kind.fleet": "Fleet at sea",
   "news.ancientwarfare.fleet_set_out": "A fleet of %1$s puts to sea with %2$s soldiers, bound for%4$s of %3$s",
-  "news.ancientwarfare.fleet_landed": "Boats of %1$s run ashore: %2$s soldiers land on the beach"
+  "news.ancientwarfare.fleet_landed": "Boats of %1$s run ashore: %2$s soldiers land on the beach",
+  "gui.ancientwarfare.world_map.key": "Key",
+  "gui.ancientwarfare.world_map.north": "N",
+  "gui.ancientwarfare.world_map.terrain.plain": "Plains",
+  "gui.ancientwarfare.world_map.terrain.water": "Sea, river",
+  "gui.ancientwarfare.world_map.terrain.deep_water": "Deep sea",
+  "gui.ancientwarfare.world_map.terrain.forest": "Forest",
+  "gui.ancientwarfare.world_map.terrain.mountain": "Mountains",
+  "gui.ancientwarfare.world_map.terrain.desert": "Desert",
+  "gui.ancientwarfare.world_map.terrain.snow": "Snow"
 }

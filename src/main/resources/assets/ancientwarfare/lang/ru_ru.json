@@ -1711,5 +1711,14 @@
   "gui.ancientwarfare.world_map.unrest": "Волнения",
   "gui.ancientwarfare.world_map.kind.fleet": "Флот в море",
   "news.ancientwarfare.fleet_set_out": "Флот: %1$s выходит в море, %2$s солдат на борту, цель: поселение%4$s (%3$s)",
-  "news.ancientwarfare.fleet_landed": "Флот: %1$s высаживает на берег %2$s солдат"
+  "news.ancientwarfare.fleet_landed": "Флот: %1$s высаживает на берег %2$s солдат",
+  "gui.ancientwarfare.world_map.key": "Обозначения",
+  "gui.ancientwarfare.world_map.north": "С",
+  "gui.ancientwarfare.world_map.terrain.plain": "Равнина",
+  "gui.ancientwarfare.world_map.terrain.water": "Море, река",
+  "gui.ancientwarfare.world_map.terrain.deep_water": "Глубокое море",
+  "gui.ancientwarfare.world_map.terrain.forest": "Лес",
+  "gui.ancientwarfare.world_map.terrain.mountain": "Горы",
+  "gui.ancientwarfare.world_map.terrain.desert": "Пустыня",
+  "gui.ancientwarfare.world_map.terrain.snow": "Снега"
 }
