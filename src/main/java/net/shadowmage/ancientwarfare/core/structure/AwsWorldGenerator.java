@@ -31,6 +31,8 @@ public final class AwsWorldGenerator {
    private static final int MAX_TEMPLATE_ATTEMPTS = 16;
    private static final int ROADSIDE_MINIMUM_DISTANCE = 48;
    private static final int ROADSIDE_DUPLICATE_DISTANCE = 150;
+   /** How far around a levelled site the land is sloped toward its floor. */
+   private static final int BLEND_RADIUS = 8;
    private static boolean generating;
 
    private AwsWorldGenerator() {
@@ -219,6 +221,14 @@ public final class AwsWorldGenerator {
                         min = template.minFor(origin, facing);
                         maxX = min.getX() + template.rotatedSizeX(facing) - 1;
                         maxZ = min.getZ() + template.rotatedSizeZ(facing) - 1;
+                        int groundY = surfaceY;
+                        if (template.ground() && !template.aquatic() && !waterSite) {
+                           // The floor at the footprint's middle height, not wherever the random spot was: a hilltop spot raised whole plateaus.
+                           groundY = medianSurface(level, min, maxX, maxZ, surfaceY);
+                           origin = new BlockPos(x, groundY + 1, z);
+                           min = template.minFor(origin, facing);
+                        }
+
                         String rejection = !template.fitsBuildHeight(min, level.getMinBuildHeight(), level.getMaxBuildHeight())
                            ? "build_height"
                            : placementRejection(level, data, template, min, maxX, maxZ, x, z, site == Site.TRADE_POST || site == Site.TAVERN || site == Site.GUARD_POST);
@@ -228,7 +238,7 @@ public final class AwsWorldGenerator {
 
                         if (rejection == null
                            && (
-                              !terrainAcceptable(level, template, min, maxX, maxZ, surfaceY)
+                              !terrainAcceptable(level, template, min, maxX, maxZ, groundY)
                                  || template.aquatic() && !aquaticCellsSafe(level, template, min, facing)
                            )) {
                            rejection = template.aquatic() ? "water_coverage_depth_or_obstacle" : "terrain";
@@ -244,7 +254,7 @@ public final class AwsWorldGenerator {
                               level.getChunk(min);
                               level.getChunk(new BlockPos(maxX, min.getY(), maxZ));
                               if (template.ground()) {
-                                 levelTerrain(level, template, min, maxX, maxZ, surfaceY);
+                                 levelTerrain(level, template, min, maxX, maxZ, groundY);
                               }
 
                               boolean clearAir = template.ground() && !template.preserveBlocks();
@@ -481,6 +491,85 @@ public final class AwsWorldGenerator {
             level.setBlock(new BlockPos(x, targetY, z), top, 2);
          }
       }
+
+      blendEdges(level, min, maxX, maxZ, targetY, top, fill, Math.min(BLEND_RADIUS, Math.max(2, Math.max(template.leveling(), template.fill()))));
+   }
+
+   /** Middle surface height under a footprint, from a grid of samples; fallback when nothing could be read. */
+   private static int medianSurface(ServerLevel level, BlockPos min, int maxX, int maxZ, int fallback) {
+      List<Integer> heights = new ArrayList<>();
+      int step = Math.max(1, Math.min(maxX - min.getX() + 1, maxZ - min.getZ() + 1) / 6);
+
+      for (int x = min.getX(); x <= maxX; x += step) {
+         for (int z = min.getZ(); z <= maxZ; z += step) {
+            heights.add(surfaceY(level, x, z));
+         }
+      }
+
+      if (heights.isEmpty()) {
+         return fallback;
+      }
+
+      heights.sort(Integer::compareTo);
+      return heights.get(heights.size() / 2);
+   }
+
+   /**
+    * Around a levelled footprint, the land is brought toward the floor one block per block of
+    * distance, so a raised or sunken site meets the land around it in a slope instead of a wall.
+    * Only plain ground is cut; trees and buildings beside the site are left alone.
+    */
+   private static void blendEdges(ServerLevel level, BlockPos min, int maxX, int maxZ, int targetY, BlockState top, BlockState fill, int radius) {
+      for (int x = min.getX() - radius; x <= maxX + radius; x++) {
+         for (int z = min.getZ() - radius; z <= maxZ + radius; z++) {
+            int dx = x < min.getX() ? min.getX() - x : Math.max(0, x - maxX);
+            int dz = z < min.getZ() ? min.getZ() - z : Math.max(0, z - maxZ);
+            int distance = Math.max(dx, dz);
+            if (distance == 0) {
+               continue;
+            }
+
+            int surface = surfaceY(level, x, z);
+            BlockPos surfacePos = new BlockPos(x, surface, z);
+            if (!level.getFluidState(surfacePos).isEmpty() || level.getBlockEntity(surfacePos) != null) {
+               continue;
+            }
+
+            int lowest = targetY - distance;
+            int highest = targetY + distance;
+            if (surface < lowest) {
+               for (int y = surface + 1; y < lowest; y++) {
+                  level.setBlock(new BlockPos(x, y, z), fill, 2);
+               }
+
+               level.setBlock(new BlockPos(x, lowest, z), top, 2);
+            } else if (surface > highest && plainGround(level.getBlockState(surfacePos))) {
+               for (int y = surface; y > highest; y--) {
+                  BlockPos pos = new BlockPos(x, y, z);
+                  if (!plainGround(level.getBlockState(pos))) {
+                     break;
+                  }
+
+                  level.setBlock(pos, Blocks.AIR.defaultBlockState(), 18);
+               }
+
+               if (plainGround(level.getBlockState(new BlockPos(x, highest, z)))) {
+                  level.setBlock(new BlockPos(x, highest, z), top, 2);
+               }
+            }
+         }
+      }
+   }
+
+   private static boolean plainGround(BlockState state) {
+      return state.is(net.minecraft.tags.BlockTags.DIRT)
+         || state.is(net.minecraft.tags.BlockTags.BASE_STONE_OVERWORLD)
+         || state.is(net.minecraft.tags.BlockTags.SAND)
+         || state.is(net.minecraft.tags.BlockTags.TERRACOTTA)
+         || state.is(Blocks.GRAVEL)
+         || state.is(Blocks.SNOW_BLOCK)
+         || state.is(Blocks.SANDSTONE)
+         || state.is(Blocks.RED_SANDSTONE);
    }
 
    private static boolean aquaticCellsSafe(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, Direction facing) {
