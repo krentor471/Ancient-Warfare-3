@@ -1833,5 +1833,11 @@
   "quest.ancientwarfare.done": "Task done: %s You are paid %s silver.",
   "quest.ancientwarfare.failed": "Task failed, time ran out: %s",
   "quest.ancientwarfare.bounty.progress": "Bounty: %s of %s",
-  "quest.ancientwarfare.bounty.met": "Bounty met: go back to the board in %s for your reward."
+  "quest.ancientwarfare.bounty.met": "Bounty met: go back to the board in %s for your reward.",
+  "gui.ancientwarfare.country.recruit": "Militiaman, %s s.",
+  "gui.ancientwarfare.country.militia": "Militia: %s of %s",
+  "country.ancientwarfare.militiaman": "Militiaman",
+  "country.ancientwarfare.militia_full": "The village cannot spare more people: %s of %s already under arms.",
+  "country.ancientwarfare.recruited": "A villager takes up arms: %s of %s under arms.",
+  "country.ancientwarfare.call_to_arms": "Raiders at your village by %s, %s! %s villagers take up arms, %s militiamen come from neighbouring villages."
 }

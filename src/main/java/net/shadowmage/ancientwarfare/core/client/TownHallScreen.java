@@ -27,9 +27,10 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
    private static final String[] TAX_KEYS = {"low", "usual", "high"};
    private final net.minecraft.client.gui.components.Button[] taxButtons = new net.minecraft.client.gui.components.Button[3];
    private net.minecraft.client.gui.components.Button foundButton;
+   private net.minecraft.client.gui.components.Button recruitButton;
    private static final int VILLAGE_PANEL_HEIGHT = 104;
    private static final int FOUND_PANEL_HEIGHT = 74;
-   private static final int COUNTRY_PANEL_HEIGHT = 40;
+   private static final int COUNTRY_PANEL_HEIGHT = 78;
 
    protected void init() {
       super.init();
@@ -54,6 +55,14 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
             .bounds(panelX + 4, this.topPos + 52, PANEL_WIDTH - 8, 16)
             .build()
       );
+      this.recruitButton = this.addRenderableWidget(
+         net.minecraft.client.gui.components.Button.builder(
+               Component.translatable("gui.ancientwarfare.country.recruit", PlayerCountry.RECRUIT_COST),
+               button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 3)
+            )
+            .bounds(panelX + 4, this.topPos + 58, PANEL_WIDTH - 8, 16)
+            .build()
+      );
       this.addRenderableWidget(
          new LegacyTexturedButton(
             this.leftPos + 176, this.topPos + 22, 46, 24, Component.translatable("gui.ancientwarfare.town_hall.open_records"), button -> {
@@ -76,6 +85,9 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
       this.foundButton.visible = country == 1;
       this.foundButton.active = this.menu.village().get(7) >= PlayerCountry.FOUND_RESIDENTS;
       this.foundButton.setY(this.topPos + countryY + 52);
+      this.recruitButton.visible = country > 1 && taken;
+      this.recruitButton.active = this.menu.village().get(4) < this.menu.village().get(10);
+      this.recruitButton.setY(this.topPos + countryY + 58);
       if (taken) {
          this.renderVillagePanel(graphics);
       }
@@ -174,6 +186,10 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
       if (this.menu.village().get(6) == 3) {
          graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.country.to_capital"), x + 6, y + 30, 0xFFBFBFBF, false);
       }
+
+      graphics.drawString(
+         this.font, Component.translatable("gui.ancientwarfare.country.militia", this.menu.village().get(4), this.menu.village().get(10)), x + 6, y + 44, TEXT_COLOR, false
+      );
    }
 
    /** Left of the hall's window, where item lists such as JEI's leave room. */

@@ -60,8 +60,16 @@ public class TownHallMenu extends AbstractContainerMenu {
    /** Buttons 0 to 2 set the tax of a taken village, for its owner only. */
    @Override
    public boolean clickMenuButton(Player player, int id) {
-      if (id < 0 || id > 2 || !(player.level() instanceof ServerLevel level)) {
+      if (id < 0 || id > 3 || !(player.level() instanceof ServerLevel level)) {
          return false;
+      }
+
+      if (id == 3) {
+         if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            PlayerCountry.recruit(serverPlayer, this.pos);
+         }
+
+         return true;
       }
 
       FactionWorldData data = FactionWorldData.get(level);
@@ -80,7 +88,7 @@ public class TownHallMenu extends AbstractContainerMenu {
    }
 
    private static final class VillageData implements ContainerData {
-      static final int COUNT = 10;
+      static final int COUNT = 11;
       /** Index 6: the hall's owner has no country and may found one here. */
       static final int MAY_FOUND = 1;
       static final int CAPITAL = 2;
@@ -138,6 +146,10 @@ public class TownHallMenu extends AbstractContainerMenu {
             }
             case 8 -> country == null ? 0 : data.provincesOf(PlayerCountry.land(owner)).size();
             case 9 -> country == null ? 0 : country.income;
+            case 10 -> {
+               FactionWorldData.VillageState state = data.villageState(this.pos);
+               yield state == null ? 0 : PlayerCountry.militiaCap(state.people);
+            }
             default -> 0;
          };
       }

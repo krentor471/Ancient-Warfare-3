@@ -1833,5 +1833,11 @@
   "quest.ancientwarfare.done": "Задание выполнено: %s Вам заплатили %s серебра.",
   "quest.ancientwarfare.failed": "Задание провалено, время вышло: %s",
   "quest.ancientwarfare.bounty.progress": "Награда за головы: %s из %s",
-  "quest.ancientwarfare.bounty.met": "Награда за головы заработана: вернитесь к доске заданий (%s)."
+  "quest.ancientwarfare.bounty.met": "Награда за головы заработана: вернитесь к доске заданий (%s).",
+  "gui.ancientwarfare.country.recruit": "Ополченец, %s с.",
+  "gui.ancientwarfare.country.militia": "Ополчение: %s из %s",
+  "country.ancientwarfare.militiaman": "Ополченец",
+  "country.ancientwarfare.militia_full": "Деревня больше не может дать людей: под оружием уже %s из %s.",
+  "country.ancientwarfare.recruited": "Житель взялся за оружие: под оружием %s из %s.",
+  "country.ancientwarfare.call_to_arms": "Налётчики у вашей деревни у %s, %s! За оружие взялись жители: %s, из соседних деревень на помощь идут ополченцы: %s."
 }
