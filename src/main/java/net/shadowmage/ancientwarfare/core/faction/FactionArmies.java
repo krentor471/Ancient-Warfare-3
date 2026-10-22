@@ -3,8 +3,10 @@ package net.shadowmage.ancientwarfare.core.faction;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
@@ -53,6 +55,12 @@ public final class FactionArmies {
    private static final int MAX_ON_FIELD = 50;
    /** When this few are left standing, the next wave comes on. */
    private static final int WAVE_AT = 30;
+   /** Defenders on the field at once during a siege, and how many come out of the barracks per muster. */
+   private static final int MAX_DEFENDERS = 30;
+   private static final int MUSTER_PER_CALL = 4;
+   private static final long MUSTER_TICKS = 40L;
+   /** Sieges whose garrison has been told to turn out. */
+   private static final Set<Integer> MUSTERED = new HashSet<>();
    /** How long the army stands in ranks before the storm, while its engines shoot. */
    private static final long FORM_TICKS = 600L;
    private static final int RANK_WIDTH = 8;
@@ -425,6 +433,7 @@ public final class FactionArmies {
             escalade(level, data, army, soldiers);
          }
 
+         musterDefenders(level, data, army);
          checkSettlementTaken(level, data, army, soldiers);
       }
    }
@@ -554,9 +563,46 @@ public final class FactionArmies {
       }
    }
 
+   /**
+    * The whole garrison turns out against a siege, not only the few soldiers walking about: those
+    * still in their barracks come out a few at a time, inside the town, until all have fought.
+    */
+   private static void musterDefenders(ServerLevel level, FactionWorldData data, FactionWorldData.Army army) {
+      FactionWorldData.Settlement settlement = settlementById(data, army.targetSettlement());
+      if (settlement == null || level.getGameTime() % MUSTER_TICKS != 0L) {
+         return;
+      }
+
+      int live = FactionSimulation.liveSoldiers(level, settlement);
+      int missing = Math.min(settlement.garrison, MAX_DEFENDERS) - live;
+      RandomSource random = level.getRandom();
+      BlockPos center = settlement.center();
+      int spread = Math.max(4, Math.min(settlement.max().getX() - settlement.min().getX(), settlement.max().getZ() - settlement.min().getZ()) / 4);
+      int mustered = 0;
+
+      for (int attempt = 0; attempt < MUSTER_PER_CALL * 3 && mustered < Math.min(missing, MUSTER_PER_CALL); attempt++) {
+         int x = center.getX() + random.nextInt(2 * spread + 1) - spread;
+         int z = center.getZ() + random.nextInt(2 * spread + 1) - spread;
+         if (FactionSimulation.spawnSoldier(level, settlement.faction(), x, z) != null) {
+            mustered++;
+         }
+      }
+
+      if (missing > 0 && mustered == 0 && live == 0) {
+         // Nowhere left to come out: what is left of the garrison yields.
+         settlement.garrison = 0;
+         data.setDirty();
+      }
+
+      if (mustered > 0 && MUSTERED.add(army.id())) {
+         tellNear(level, army.target(), Component.translatable("news.ancientwarfare.siege_garrison", FactionNews.named(settlement), settlement.garrison));
+      }
+   }
+
    private static void checkSettlementTaken(ServerLevel level, FactionWorldData data, FactionWorldData.Army army, List<FactionNpcEntity> members) {
       FactionWorldData.Settlement settlement = settlementById(data, army.targetSettlement());
-      if (settlement == null || FactionSimulation.liveSoldiers(level, settlement) > 0) {
+      // Taken only once the whole garrison has fallen, not just those who happened to be out.
+      if (settlement == null || settlement.garrison > 0 || FactionSimulation.liveSoldiers(level, settlement) > 0) {
          return;
       }
 
@@ -689,7 +735,7 @@ public final class FactionArmies {
             continue;
          }
 
-         FactionNpcEntity npc = FactionSimulation.spawnSoldier(level, army.faction(), x, z);
+         FactionNpcEntity npc = FactionSimulation.spawnSoldier(level, army.faction(), x, z, army.tag());
          if (npc != null) {
             npc.addTag(army.tag());
             npc.setPersistenceRequired();

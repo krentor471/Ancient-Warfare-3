@@ -1327,7 +1327,7 @@
   "news.ancientwarfare.lair_scattered": "Bandit hunt: %1$s scattered the bandit lair%5$s near %2$s, %3$s and took %4$s gold",
   "news.ancientwarfare.lair_destroyed": "Bandit hunt: %1$s wiped out the bandit lair%5$s near %2$s, %3$s and took %4$s gold",
   "news.ancientwarfare.raided": "Raid: %1$s plundered the settlement%7$s of %2$s near %3$s, %4$s, carried off %5$s gold and led away %6$s captives",
-  "news.ancientwarfare.siege_camp": "Siege: %1$s set up camp before the settlement%5$s of %2$s and brought up %3$s siege engines",
+  "news.ancientwarfare.siege_camp": "Siege: %1$s set up camp before the settlement%4$s of %2$s and brought up %3$s siege engines",
   "news.ancientwarfare.siege_wave": "Siege: %2$s more soldiers of %1$s come up from the camp, %3$s still in reserve",
   "gui.ancientwarfare.world_map.scale": "%s blocks",
   "name.ancientwarfare.latin.p0": "Aur",
@@ -1721,5 +1721,6 @@
   "gui.ancientwarfare.world_map.terrain.mountain": "Mountains",
   "gui.ancientwarfare.world_map.terrain.desert": "Desert",
   "gui.ancientwarfare.world_map.terrain.snow": "Snow",
-  "gui.ancientwarfare.world_map.terrain.river": "River"
+  "gui.ancientwarfare.world_map.terrain.river": "River",
+  "news.ancientwarfare.siege_garrison": "The garrison of %s (%s soldiers) turns out to man the walls"
 }

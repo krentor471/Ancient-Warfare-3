@@ -4,17 +4,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.FarmBlock;
+import net.minecraft.world.level.block.LadderBlock;
+import net.minecraft.world.level.block.WallTorchBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.faction.TemplateFactions;
@@ -43,6 +47,11 @@ public final class FactionTowns {
    private static final int FIELD_SPACING = 12;
    private static final int CAPITAL_FIELDS = 12;
    private static final int VILLAGE_FIELDS = 6;
+   private static final int MINE_SIZE = 7;
+   private static final int MINE_DEPTH = 14;
+   private static final int GALLERY_RADIUS = 4;
+   private static final int CAPITAL_MINES = 2;
+   private static final int VILLAGE_MINES = 1;
    private static final List<Block> CROPS = List.of(Blocks.WHEAT, Blocks.CARROTS, Blocks.POTATOES, Blocks.BEETROOTS);
    private static final int VILLAGE_MAIN = 3;
    private static final int CAPITAL_GUARDS = 2;
@@ -244,35 +253,32 @@ public final class FactionTowns {
    }
 
    /**
-    * Fields of crops on the town's levelled ground outside its streets, for factions without farm
-    * buildings: rows of farmland around a water block, wherever buildings and roads left room.
+    * The town's working grounds on its levelled ground outside the streets: mine shafts (unless a mine
+    * building already stands) and fields of crops, each a ring of farmland around a water block,
+    * wherever buildings and roads left room. Factions with farm buildings get half the fields.
     */
    static void plantFields(ServerLevel level, AwtTownPlacer.TownPlan plan, int floorY, String faction, boolean capital) {
-      if (hasFarms(faction)) {
-         return;
-      }
-
       RandomSource random = RandomSource.create(plan.min().asLong());
-      int inner = 7 + 16;
-      int innerMinX = plan.min().getX() + inner;
-      int innerMinZ = plan.min().getZ() + inner;
-      int innerMaxX = plan.min().getX() + plan.totalSize() - 1 - inner;
-      int innerMaxZ = plan.min().getZ() + plan.totalSize() - 1 - inner;
-      int limit = capital ? CAPITAL_FIELDS : VILLAGE_FIELDS;
-      List<BlockPos> spots = new ArrayList<>();
+      List<BlockPos> spots = outerSpots(plan, floorY, random);
+      boolean hasMine = plan.buildings().stream().anyMatch(placement -> placement.templatePath().toLowerCase(Locale.ROOT).contains("mine"));
+      int shafts = hasMine ? 0 : capital ? CAPITAL_MINES : VILLAGE_MINES;
+      int dug = 0;
+      Iterator<BlockPos> iterator = spots.iterator();
 
-      for (int dx = 2; dx + FIELD_SIZE < plan.totalSize() - 2; dx += FIELD_SPACING) {
-         for (int dz = 2; dz + FIELD_SIZE < plan.totalSize() - 2; dz += FIELD_SPACING) {
-            int x = plan.min().getX() + dx;
-            int z = plan.min().getZ() + dz;
-            boolean inside = x + FIELD_SIZE > innerMinX && x < innerMaxX && z + FIELD_SIZE > innerMinZ && z < innerMaxZ;
-            if (!inside) {
-               spots.add(new BlockPos(x, floorY, z));
-            }
+      while (iterator.hasNext() && dug < shafts) {
+         BlockPos corner = iterator.next();
+         if (fits(level, plan, corner, MINE_SIZE, false)) {
+            digMine(level, corner, random);
+            iterator.remove();
+            dug++;
          }
       }
 
-      Collections.shuffle(spots, new Random(random.nextLong()));
+      int limit = capital ? CAPITAL_FIELDS : VILLAGE_FIELDS;
+      if (hasFarms(faction)) {
+         limit /= 2;
+      }
+
       int planted = 0;
 
       for (BlockPos corner : spots) {
@@ -280,7 +286,7 @@ public final class FactionTowns {
             break;
          }
 
-         if (fieldFits(level, plan, corner)) {
+         if (fits(level, plan, corner, FIELD_SIZE, true)) {
             Block crop = CROPS.get(random.nextInt(CROPS.size()));
             int middle = FIELD_SIZE / 2;
 
@@ -305,19 +311,142 @@ public final class FactionTowns {
          }
       }
 
-      AncientWarfareCore.LOG.info("Planted {} field(s) around the {} town of {}", planted, capital ? "capital" : "village", faction);
+      AncientWarfareCore.LOG.info("Dug {} mine(s) and planted {} field(s) around the {} town of {}", dug, planted, capital ? "capital" : "village", faction);
    }
 
-   private static boolean fieldFits(ServerLevel level, AwtTownPlacer.TownPlan plan, BlockPos corner) {
-      for (int x = -1; x <= FIELD_SIZE; x++) {
-         for (int z = -1; z <= FIELD_SIZE; z++) {
+   /** Corners on a grid over the town's outer ring, shuffled. */
+   private static List<BlockPos> outerSpots(AwtTownPlacer.TownPlan plan, int floorY, RandomSource random) {
+      int inner = 7 + 16;
+      int innerMinX = plan.min().getX() + inner;
+      int innerMinZ = plan.min().getZ() + inner;
+      int innerMaxX = plan.min().getX() + plan.totalSize() - 1 - inner;
+      int innerMaxZ = plan.min().getZ() + plan.totalSize() - 1 - inner;
+      List<BlockPos> spots = new ArrayList<>();
+
+      for (int dx = 2; dx + FIELD_SIZE < plan.totalSize() - 2; dx += FIELD_SPACING) {
+         for (int dz = 2; dz + FIELD_SIZE < plan.totalSize() - 2; dz += FIELD_SPACING) {
+            int x = plan.min().getX() + dx;
+            int z = plan.min().getZ() + dz;
+            boolean inside = x + FIELD_SIZE > innerMinX && x < innerMaxX && z + FIELD_SIZE > innerMinZ && z < innerMaxZ;
+            if (!inside) {
+               spots.add(new BlockPos(x, floorY, z));
+            }
+         }
+      }
+
+      Collections.shuffle(spots, new Random(random.nextLong()));
+      return spots;
+   }
+
+   /**
+    * A mine head: a timber-framed shed over a ladder shaft down to a gallery whose walls show coal,
+    * iron, copper and now and then gold.
+    */
+   private static void digMine(ServerLevel level, BlockPos corner, RandomSource random) {
+      int size = MINE_SIZE;
+      int middle = size / 2;
+      BlockState wall = Blocks.COBBLESTONE.defaultBlockState();
+      BlockState post = Blocks.SPRUCE_LOG.defaultBlockState();
+      BlockState roof = Blocks.SPRUCE_SLAB.defaultBlockState();
+      BlockState air = Blocks.AIR.defaultBlockState();
+      int bottom = corner.getY() - MINE_DEPTH;
+
+      BlockState ladder = Blocks.LADDER.defaultBlockState().setValue(LadderBlock.FACING, Direction.SOUTH);
+      int reach = GALLERY_RADIUS;
+
+      // The gallery at the foot of the shaft, three blocks high.
+      for (int x = middle - reach - 1; x <= middle + reach + 1; x++) {
+         for (int z = middle - reach - 1; z <= middle + reach + 1; z++) {
+            for (int y = bottom - 1; y <= bottom + 3; y++) {
+               BlockPos pos = new BlockPos(corner.getX() + x, y, corner.getZ() + z);
+               boolean edge = Math.abs(x - middle) > reach || Math.abs(z - middle) > reach || y == bottom - 1 || y == bottom + 3;
+               if (!edge) {
+                  level.setBlock(pos, air, 2);
+               } else if (y == bottom - 1 || y == bottom + 3 || random.nextInt(3) != 0) {
+                  level.setBlock(pos, Blocks.STONE.defaultBlockState(), 2);
+               } else {
+                  level.setBlock(pos, ore(random), 2);
+               }
+            }
+         }
+      }
+
+      // The shaft: 3x3 open, lined with stone so caves and water stay out.
+      for (int y = bottom + 3; y <= corner.getY(); y++) {
+         for (int x = middle - 2; x <= middle + 2; x++) {
+            for (int z = middle - 2; z <= middle + 2; z++) {
+               boolean open = Math.abs(x - middle) <= 1 && Math.abs(z - middle) <= 1;
+               level.setBlock(new BlockPos(corner.getX() + x, y, corner.getZ() + z), open ? air : wall, 2);
+            }
+         }
+      }
+
+      // A ladder down the north face, on a timber prop through the gallery.
+      for (int y = bottom; y <= corner.getY(); y++) {
+         if (y < bottom + 3) {
+            level.setBlock(new BlockPos(corner.getX() + middle, y, corner.getZ() + middle - 2), post, 2);
+         }
+
+         level.setBlock(new BlockPos(corner.getX() + middle, y, corner.getZ() + middle - 1), ladder, 2);
+      }
+
+      for (int i = 0; i < 4; i++) {
+         int dx = i < 2 ? -reach : reach;
+         int dz = i % 2 == 0 ? -reach : reach;
+         level.setBlock(new BlockPos(corner.getX() + middle + dx, bottom, corner.getZ() + middle + dz), Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+         level.setBlock(new BlockPos(corner.getX() + middle + dx, bottom + 1, corner.getZ() + middle + dz), Blocks.TORCH.defaultBlockState(), 2);
+      }
+
+      for (int x = middle - reach; x <= middle + reach; x++) {
+         level.setBlock(new BlockPos(corner.getX() + x, bottom, corner.getZ() + middle + 2), Blocks.RAIL.defaultBlockState(), 2);
+      }
+
+      // The shed: cobble floor, log posts at the corners, a slab roof.
+      for (int x = 0; x < size; x++) {
+         for (int z = 0; z < size; z++) {
+            boolean shaft = Math.abs(x - middle) <= 1 && Math.abs(z - middle) <= 1;
+            if (!shaft && (Math.abs(x - middle) > 2 || Math.abs(z - middle) > 2)) {
+               level.setBlock(corner.offset(x, 0, z), wall, 2);
+            }
+
+            for (int y = 1; y <= 3; y++) {
+               level.setBlock(corner.offset(x, y, z), air, 2);
+            }
+
+            boolean cornerPost = (x == 0 || x == size - 1) && (z == 0 || z == size - 1);
+            if (cornerPost) {
+               for (int y = 1; y <= 3; y++) {
+                  level.setBlock(corner.offset(x, y, z), post, 2);
+               }
+            }
+
+            level.setBlock(corner.offset(x, 4, z), roof, 2);
+         }
+      }
+
+      level.setBlock(corner.offset(1, 1, 1), Blocks.CHEST.defaultBlockState(), 2);
+      level.setBlock(corner.offset(size - 2, 1, 1), Blocks.BARREL.defaultBlockState(), 2);
+      level.setBlock(corner.offset(1, 3, middle), Blocks.WALL_TORCH.defaultBlockState().setValue(WallTorchBlock.FACING, Direction.EAST), 2);
+   }
+
+   private static BlockState ore(RandomSource random) {
+      int roll = random.nextInt(20);
+      Block block = roll < 9 ? Blocks.COAL_ORE : roll < 15 ? Blocks.IRON_ORE : roll < 19 ? Blocks.COPPER_ORE : Blocks.GOLD_ORE;
+      return block.defaultBlockState();
+   }
+
+   /** Room for a square of this size: nothing planned on it, plain ground (grass or dirt for fields), open sky above. */
+   private static boolean fits(ServerLevel level, AwtTownPlacer.TownPlan plan, BlockPos corner, int size, boolean soil) {
+      for (int x = -1; x <= size; x++) {
+         for (int z = -1; z <= size; z++) {
             BlockPos ground = corner.offset(x, 0, z);
             if (plan.occupiedBlocks().contains(ground.asLong()) || plan.occupiedBlocks().contains(ground.above().asLong())) {
                return false;
             }
 
             BlockState state = level.getBlockState(ground);
-            if (!state.is(Blocks.GRASS_BLOCK) && !state.is(Blocks.DIRT) || !level.getBlockState(ground.above()).isAir()) {
+            boolean plain = state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || !soil && (state.is(Blocks.STONE) || state.is(Blocks.SAND) || state.is(Blocks.COARSE_DIRT));
+            if (!plain || !level.getBlockState(ground.above()).isAir() && !level.getBlockState(ground.above()).canBeReplaced()) {
                return false;
             }
          }

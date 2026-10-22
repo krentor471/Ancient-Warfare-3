@@ -155,6 +155,17 @@ public final class FactionSimulation {
 
    /** A faction NPC died: soldiers come off their settlement's garrison, civilians off its people. */
    public static void onNpcDeath(ServerLevel level, FactionNpcEntity npc) {
+      if (PlayerDiplomacy.isLeader(npc)) {
+         // The successor comes a day later, not the moment the throne stands empty.
+         for (FactionWorldData.Settlement settlement : FactionWorldData.get(level).settlements()) {
+            if (settlement.faction().equals(npc.getFactionName()) && FactionTowns.CAPITAL.equals(settlement.kind())) {
+               LEADER_LOST.put(settlement.id(), level.getGameTime());
+            }
+         }
+
+         return;
+      }
+
       if (FactionCampaigns.campaignId(npc) != 0) {
          FactionCampaigns.onNpcDeath(FactionWorldData.get(level), npc);
          return;
@@ -362,6 +373,11 @@ public final class FactionSimulation {
 
    /** Spawns one of the faction's soldiers (a third of them archers) standing on the ground at x, z; null when there is no room. */
    static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z) {
+      return spawnSoldier(level, faction, x, z, null);
+   }
+
+   /** As spawnSoldier, tagged before it joins the world (so an army's soldier is known as one when it does). */
+   static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z, String tag) {
       RandomSource random = level.getRandom();
       int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
       BlockPos pos = new BlockPos(x, y, z);
@@ -380,8 +396,11 @@ public final class FactionSimulation {
       npc.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
       npc.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
       npc.setFactionName(faction);
-      level.addFreshEntity(npc);
-      return npc;
+      if (tag != null) {
+         npc.addTag(tag);
+      }
+
+      return level.addFreshEntity(npc) ? npc : null;
    }
 
    static boolean isCivilian(FactionNpcEntity npc) {
