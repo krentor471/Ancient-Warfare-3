@@ -64,6 +64,25 @@ public final class ForgeFactionEvents {
          && net.shadowmage.ancientwarfare.core.faction.FactionLife.onFeed(player, npc, event.getItemStack())) {
          event.setCanceled(true);
          event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
+         net.shadowmage.ancientwarfare.core.faction.FactionChatter.thank(player.serverLevel(), player);
+      }
+   }
+
+   /** Townsfolk cry out when a player breaks their things. */
+   @SubscribeEvent
+   public static void onBreakInTown(net.minecraftforge.event.level.BlockEvent.BreakEvent event) {
+      if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level && !event.getPlayer().isCreative()) {
+         net.shadowmage.ancientwarfare.core.faction.FactionChatter.onBreak(level, event.getPlayer(), event.getPos());
+      }
+   }
+
+   /** ...and when a player strikes one of them. */
+   @SubscribeEvent
+   public static void onFactionNpcStruck(net.minecraftforge.event.entity.living.LivingHurtEvent event) {
+      if (event.getEntity() instanceof FactionNpcEntity npc
+         && npc.level() instanceof net.minecraft.server.level.ServerLevel level
+         && event.getSource().getEntity() instanceof net.minecraft.world.entity.player.Player player) {
+         net.shadowmage.ancientwarfare.core.faction.FactionChatter.onAttacked(level, player, npc);
       }
    }
 

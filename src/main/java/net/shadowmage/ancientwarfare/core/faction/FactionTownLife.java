@@ -177,6 +177,12 @@ public final class FactionTownLife {
       return data.armies().stream().anyMatch(army -> army.targetSettlement() == settlement.id());
    }
 
+   /** "festival", "market" or null: what the town has on now, for what its people talk about. */
+   static String eventName(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement) {
+      Event event = eventAt(level, data, settlement);
+      return event == Event.FESTIVAL ? "festival" : event == Event.MARKET ? "market" : null;
+   }
+
    /** Prices of a trader standing in a town on its market day or festival. */
    public static double priceFactor(ServerLevel level, String faction, double x, double z) {
       FactionWorldData data = FactionWorldData.get(level);

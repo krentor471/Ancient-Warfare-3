@@ -95,6 +95,7 @@ public final class FactionSimulation {
       FactionTownLife.tick(level, data);
       FactionGrowth.tick(level, data);
       FactionQuests.tick(level, data);
+      FactionChatter.tick(level, data);
       FactionMercenaries.tick(level, data);
       FactionEnvoys.tick(level);
 

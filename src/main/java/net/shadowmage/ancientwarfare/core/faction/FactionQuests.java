@@ -535,6 +535,7 @@ public final class FactionQuests {
       }
 
       Coins.give(player, quest.reward);
+      FactionChatter.thank(level, player);
       data.setDirty();
       player.sendSystemMessage(Component.translatable("quest.ancientwarfare.done", describe(level, data, quest), quest.reward).withStyle(ChatFormatting.GREEN));
       AncientWarfareCore.LOG.info("{} finished a {} quest for settlement #{}", player.getScoreboardName(), quest.type, quest.town);
