@@ -2037,5 +2037,18 @@
   "diplomacy.ancientwarfare.ally_already": "Ваш союзник %s уже воюет с ними.",
   "diplomacy.ancientwarfare.ally_declined": "Союзник %s не вступит в эту войну (отношение %s, нужно %s).",
   "diplomacy.ancientwarfare.ally_torn": "Ваш союзник %s в союзе и с %s и в войну не вмешивается.",
-  "country.ancientwarfare.someone": "чужеземец"
+  "country.ancientwarfare.someone": "чужеземец",
+  "gui.ancientwarfare.country.open_button": "Окно страны",
+  "gui.ancientwarfare.country.refresh": "Обновить",
+  "gui.ancientwarfare.country.summary": "День %s · столица %s, %s · провинций: %s",
+  "gui.ancientwarfare.country.treasury": "%s сер.",
+  "gui.ancientwarfare.country.treasury_far": "? (столица далеко)",
+  "gui.ancientwarfare.country.money": "Казна: %s · налоги: %s/день · ставка: %s",
+  "gui.ancientwarfare.country.villages": "Деревни (%s): жители · верн./пор.",
+  "gui.ancientwarfare.country.neighbours": "Соседи (%s)",
+  "gui.ancientwarfare.country.village_stats": "%s · %s/%s",
+  "gui.ancientwarfare.country.no_villages": "Деревень нет.",
+  "gui.ancientwarfare.country.no_neighbours": "Ни одна фракция не граничит с вашими землями.",
+  "gui.ancientwarfare.country.border_hint": "Без договора соседи злятся.",
+  "country.ancientwarfare.none": "У вас нет своей страны."
 }

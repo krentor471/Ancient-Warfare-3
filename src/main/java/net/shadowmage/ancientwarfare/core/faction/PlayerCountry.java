@@ -233,6 +233,80 @@ public final class PlayerCountry {
       return data.settlements().stream().anyMatch(settlement -> settlement.province() == province && settlement.faction().equals(faction));
    }
 
+   /** The country's overview for its window: treasury, villages, land and the factions along its borders. */
+   public static void open(ServerPlayer player) {
+      ServerLevel level = player.serverLevel();
+      FactionWorldData data = FactionWorldData.get(level);
+      UUID owner = player.getUUID();
+      FactionWorldData.Country country = data.country(owner);
+      if (country == null) {
+         refuse(player, "country.ancientwarfare.none");
+         return;
+      }
+
+      int treasury = level.isLoaded(country.capital) && level.getBlockEntity(country.capital) instanceof TownHallBlockEntity hall ? Coins.held(hall) : -1;
+      FactionWorldData.VillageState capitalState = data.villageState(country.capital);
+      java.util.List<CountryView.Village> villages = new java.util.ArrayList<>();
+      for (Map.Entry<BlockPos, UUID> village : data.villages().entrySet()) {
+         if (owner.equals(village.getValue())) {
+            FactionWorldData.VillageState state = data.villageState(village.getKey());
+            villages.add(
+               new CountryView.Village(
+                  village.getKey(),
+                  village.getKey().equals(country.capital),
+                  state == null ? 0 : state.people,
+                  state == null ? 0 : state.loyalty,
+                  state == null ? 0 : state.order
+               )
+            );
+         }
+      }
+
+      villages.sort(java.util.Comparator.comparing((CountryView.Village village) -> !village.capital()).thenComparing(village -> -village.people()));
+      net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData standings = net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level);
+      java.util.List<CountryView.Neighbour> neighbours = new java.util.ArrayList<>();
+      CountryDiplomacy.neighbours(data, owner).forEach(
+         (faction, borders) -> neighbours.add(
+            new CountryView.Neighbour(
+               faction, borders, standings.getTreaty(owner, faction).ordinal(), standings.getStanding(owner, faction), standings.hasTrade(owner, faction)
+            )
+         )
+      );
+      neighbours.sort(java.util.Comparator.comparingInt(neighbour -> -neighbour.borders()));
+      CountryView view = new CountryView(
+         country.name,
+         Math.max(0L, (level.getGameTime() - country.founded) / 24000L),
+         country.capital,
+         treasury,
+         country.income,
+         capitalState == null ? 1 : capitalState.taxLevel,
+         data.provincesOf(land(owner)).size(),
+         villages,
+         neighbours
+      );
+      net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.sendCountryData(player, view);
+   }
+
+   /** What the country window shows; treasury is -1 while the capital is out of reach. */
+   public static record CountryView(
+      String name,
+      long days,
+      BlockPos capital,
+      int treasury,
+      int income,
+      int taxLevel,
+      int provinces,
+      java.util.List<CountryView.Village> villages,
+      java.util.List<CountryView.Neighbour> neighbours
+   ) {
+      public static record Village(BlockPos pos, boolean capital, int people, int loyalty, int order) {
+      }
+
+      /** treaty: a RelationState ordinal. */
+      public static record Neighbour(String faction, int borders, int treaty, int standing, boolean trade) {
+      }
+   }
+
    /** Tax day: every village of a country pays into its treasury instead of its own hall. Returns false for villages outside a country. */
    public static boolean collect(FactionWorldData data, BlockPos hall, UUID owner, int tax) {
       FactionWorldData.Country country = data.country(owner);

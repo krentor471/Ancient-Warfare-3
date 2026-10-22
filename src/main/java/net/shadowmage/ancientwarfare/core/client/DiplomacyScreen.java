@@ -209,7 +209,7 @@ public class DiplomacyScreen extends Screen {
       return Component.translatable("faction.ancientwarfare." + faction);
    }
 
-   private static Component stateName(RelationState state) {
+   static Component stateName(RelationState state) {
       ChatFormatting color = switch (state) {
          case WAR -> ChatFormatting.RED;
          case PACT -> ChatFormatting.AQUA;

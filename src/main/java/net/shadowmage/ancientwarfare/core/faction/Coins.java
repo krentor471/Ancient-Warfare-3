@@ -91,6 +91,19 @@ public final class Coins {
       }
    }
 
+   /** What a container (a town hall's treasury) holds in coins, in silver. */
+   public static int held(Container container) {
+      int total = 0;
+      for (int slot = 0; slot < container.getContainerSize(); slot++) {
+         ItemStack stack = container.getItem(slot);
+         if (isCoin(stack)) {
+            total += value(CoinItem.getMetal(stack)) * stack.getCount();
+         }
+      }
+
+      return total / SILVER;
+   }
+
    /** Puts so many silver coins' worth into a container (a town hall); what does not fit is lost. */
    public static void store(Container container, int silver) {
       for (ItemStack stack : stacks(silver * SILVER)) {

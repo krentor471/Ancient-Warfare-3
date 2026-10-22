@@ -29,7 +29,8 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
    private net.minecraft.client.gui.components.Button foundButton;
    private static final int VILLAGE_PANEL_HEIGHT = 104;
    private static final int FOUND_PANEL_HEIGHT = 74;
-   private static final int COUNTRY_PANEL_HEIGHT = 40;
+   private static final int COUNTRY_PANEL_HEIGHT = 62;
+   private net.minecraft.client.gui.components.Button countryButton;
 
    protected void init() {
       super.init();
@@ -46,6 +47,13 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
          );
       }
 
+      this.countryButton = this.addRenderableWidget(
+         net.minecraft.client.gui.components.Button.builder(
+               Component.translatable("gui.ancientwarfare.country.open_button"), button -> net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.sendCountryOpen()
+            )
+            .bounds(panelX + 4, this.topPos + 42, PANEL_WIDTH - 8, 16)
+            .build()
+      );
       this.foundButton = this.addRenderableWidget(
          net.minecraft.client.gui.components.Button.builder(Component.translatable("gui.ancientwarfare.country.found_button"), button -> {
                this.openingDeathRecords = true;
@@ -76,6 +84,8 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
       this.foundButton.visible = country == 1;
       this.foundButton.active = this.menu.village().get(7) >= PlayerCountry.FOUND_RESIDENTS;
       this.foundButton.setY(this.topPos + countryY + 52);
+      this.countryButton.visible = country > 1;
+      this.countryButton.setY(this.topPos + countryY + 42);
       if (taken) {
          this.renderVillagePanel(graphics);
       }

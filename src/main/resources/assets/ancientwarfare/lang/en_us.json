@@ -2037,5 +2037,18 @@
   "diplomacy.ancientwarfare.ally_already": "Your ally %s is already at war with them.",
   "diplomacy.ancientwarfare.ally_declined": "Your ally %s will not join this war (standing %s, needs %s).",
   "diplomacy.ancientwarfare.ally_torn": "Your ally %s is also allied to %s and stays out of the war.",
-  "country.ancientwarfare.someone": "a stranger"
+  "country.ancientwarfare.someone": "a stranger",
+  "gui.ancientwarfare.country.open_button": "Country window",
+  "gui.ancientwarfare.country.refresh": "Refresh",
+  "gui.ancientwarfare.country.summary": "Day %s of the country · capital %s, %s · provinces: %s",
+  "gui.ancientwarfare.country.treasury": "%s silver",
+  "gui.ancientwarfare.country.treasury_far": "? (capital far away)",
+  "gui.ancientwarfare.country.money": "Treasury: %s · taxes: %s/day · rate: %s",
+  "gui.ancientwarfare.country.villages": "Villages (%s): people · loyalty/order",
+  "gui.ancientwarfare.country.neighbours": "Neighbours (%s)",
+  "gui.ancientwarfare.country.village_stats": "%s · %s/%s",
+  "gui.ancientwarfare.country.no_villages": "No villages.",
+  "gui.ancientwarfare.country.no_neighbours": "No faction borders your land.",
+  "gui.ancientwarfare.country.border_hint": "Without a treaty, borders sour.",
+  "country.ancientwarfare.none": "You have no country."
 }

@@ -75,7 +75,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "13";
+   private static final String PROTOCOL_VERSION = "14";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
@@ -233,6 +233,16 @@ public final class AWCoreNetwork {
          .encoder(AWCoreNetwork.ConstructionActionPacket::encode)
          .decoder(AWCoreNetwork.ConstructionActionPacket::decode)
          .consumerMainThread(AWCoreNetwork.ConstructionActionPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.CountryOpenPacket.class, 48, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.CountryOpenPacket::encode)
+         .decoder(AWCoreNetwork.CountryOpenPacket::decode)
+         .consumerMainThread(AWCoreNetwork.CountryOpenPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.CountryDataPacket.class, 49, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.CountryDataPacket::encode)
+         .decoder(AWCoreNetwork.CountryDataPacket::decode)
+         .consumerMainThread(AWCoreNetwork.CountryDataPacket::handle)
          .add();
       CHANNEL.messageBuilder(AWCoreNetwork.ConstructionJobsPacket.class, 47, NetworkDirection.PLAY_TO_CLIENT)
          .encoder(AWCoreNetwork.ConstructionJobsPacket::encode)
@@ -460,6 +470,14 @@ public final class AWCoreNetwork {
 
    public static void sendConstructionCreate(BlockPos min, BlockPos max, int kind, String template, int facing) {
       CHANNEL.sendToServer(new AWCoreNetwork.ConstructionActionPacket(ConstructionActionPacket.CREATE, min, max, kind, template == null ? "" : template, facing));
+   }
+
+   public static void sendCountryOpen() {
+      CHANNEL.sendToServer(new AWCoreNetwork.CountryOpenPacket());
+   }
+
+   public static void sendCountryData(ServerPlayer player, net.shadowmage.ancientwarfare.core.faction.PlayerCountry.CountryView view) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.CountryDataPacket(view));
    }
 
    public static void sendConstructionCancel(int id) {
@@ -1315,6 +1333,103 @@ public final class AWCoreNetwork {
                } else if (packet.action == CANCEL) {
                   net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.cancel(player, packet.argument);
                }
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record CountryOpenPacket() {
+      private static void encode(AWCoreNetwork.CountryOpenPacket packet, FriendlyByteBuf buffer) {
+      }
+
+      private static AWCoreNetwork.CountryOpenPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.CountryOpenPacket();
+      }
+
+      private static void handle(AWCoreNetwork.CountryOpenPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               net.shadowmage.ancientwarfare.core.faction.PlayerCountry.open(player);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record CountryDataPacket(net.shadowmage.ancientwarfare.core.faction.PlayerCountry.CountryView view) {
+      private static final int MAX_ROWS = 64;
+
+      private static void encode(AWCoreNetwork.CountryDataPacket packet, FriendlyByteBuf buffer) {
+         var view = packet.view;
+         buffer.writeUtf(view.name(), 64);
+         buffer.writeVarLong(view.days());
+         buffer.writeBlockPos(view.capital());
+         buffer.writeInt(view.treasury());
+         buffer.writeVarInt(view.income());
+         buffer.writeVarInt(view.taxLevel());
+         buffer.writeVarInt(view.provinces());
+         var villages = view.villages().subList(0, Math.min(MAX_ROWS, view.villages().size()));
+         buffer.writeVarInt(villages.size());
+         for (var village : villages) {
+            buffer.writeBlockPos(village.pos());
+            buffer.writeBoolean(village.capital());
+            buffer.writeVarInt(village.people());
+            buffer.writeVarInt(village.loyalty());
+            buffer.writeVarInt(village.order());
+         }
+
+         var neighbours = view.neighbours().subList(0, Math.min(MAX_ROWS, view.neighbours().size()));
+         buffer.writeVarInt(neighbours.size());
+         for (var neighbour : neighbours) {
+            buffer.writeUtf(neighbour.faction(), 64);
+            buffer.writeVarInt(neighbour.borders());
+            buffer.writeVarInt(neighbour.treaty());
+            buffer.writeInt(neighbour.standing());
+            buffer.writeBoolean(neighbour.trade());
+         }
+      }
+
+      private static AWCoreNetwork.CountryDataPacket decode(FriendlyByteBuf buffer) {
+         String name = buffer.readUtf(64);
+         long days = buffer.readVarLong();
+         BlockPos capital = buffer.readBlockPos();
+         int treasury = buffer.readInt();
+         int income = buffer.readVarInt();
+         int tax = buffer.readVarInt();
+         int provinces = buffer.readVarInt();
+         List<net.shadowmage.ancientwarfare.core.faction.PlayerCountry.CountryView.Village> villages = new ArrayList<>();
+         int count = Math.min(MAX_ROWS, buffer.readVarInt());
+         for (int index = 0; index < count; index++) {
+            villages.add(
+               new net.shadowmage.ancientwarfare.core.faction.PlayerCountry.CountryView.Village(
+                  buffer.readBlockPos(), buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt()
+               )
+            );
+         }
+
+         List<net.shadowmage.ancientwarfare.core.faction.PlayerCountry.CountryView.Neighbour> neighbours = new ArrayList<>();
+         count = Math.min(MAX_ROWS, buffer.readVarInt());
+         for (int index = 0; index < count; index++) {
+            neighbours.add(
+               new net.shadowmage.ancientwarfare.core.faction.PlayerCountry.CountryView.Neighbour(
+                  buffer.readUtf(64), buffer.readVarInt(), buffer.readVarInt(), buffer.readInt(), buffer.readBoolean()
+               )
+            );
+         }
+
+         return new AWCoreNetwork.CountryDataPacket(
+            new net.shadowmage.ancientwarfare.core.faction.PlayerCountry.CountryView(name, days, capital, treasury, income, tax, provinces, villages, neighbours)
+         );
+      }
+
+      private static void handle(AWCoreNetwork.CountryDataPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               net.shadowmage.ancientwarfare.core.client.CountryScreen.show(packet.view);
             }
          });
          context.setPacketHandled(true);
