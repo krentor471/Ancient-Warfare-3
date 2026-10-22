@@ -10,6 +10,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.shadowmage.ancientwarfare.core.faction.FactionRulers;
+import net.shadowmage.ancientwarfare.core.faction.FactionSpies;
 import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.RelationState;
 import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
@@ -17,7 +18,7 @@ import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
 /** The player's relations with the factions they have met, and the offers they can make. */
 public class DiplomacyScreen extends Screen {
    private static final int PANEL_WIDTH = 340;
-   private static final int PANEL_HEIGHT = 210;
+   private static final int PANEL_HEIGHT = 232;
    private static final int LIST_WIDTH = 110;
    private static final int ROW_HEIGHT = 20;
    private static final int VISIBLE_ROWS = 9;
@@ -71,7 +72,7 @@ public class DiplomacyScreen extends Screen {
       PlayerDiplomacy.Entry entry = this.selectedEntry();
       if (entry != null) {
          int x = left + LIST_WIDTH + 10;
-         int y = top + PANEL_HEIGHT - 56;
+         int y = top + PANEL_HEIGHT - 78;
          int width = (PANEL_WIDTH - LIST_WIDTH - 24) / 3;
          this.addAction(entry, PlayerDiplomacy.Action.PEACE, x, y, width, entry.treaty() == RelationState.WAR);
          this.addAction(entry, PlayerDiplomacy.Action.PACT, x + width + 2, y, width, entry.treaty() == RelationState.NEUTRAL);
@@ -79,6 +80,7 @@ public class DiplomacyScreen extends Screen {
          this.addAction(entry, PlayerDiplomacy.Action.GIFT, x, y + 22, width, true);
          this.addAction(entry, PlayerDiplomacy.Action.TRADE, x + width + 2, y + 22, width, entry.trade() || entry.treaty() != RelationState.WAR);
          this.addAction(entry, PlayerDiplomacy.Action.WAR, x + (width + 2) * 2, y + 22, width, entry.treaty() != RelationState.WAR);
+         this.addAction(entry, PlayerDiplomacy.Action.SPY, x, y + 44, width * 3 + 4, true);
       }
    }
 
@@ -88,9 +90,11 @@ public class DiplomacyScreen extends Screen {
          key += "_end";
       }
 
-      Component label = action == PlayerDiplomacy.Action.GIFT ? Component.translatable(key, PlayerDiplomacy.GIFT_EMERALDS) : Component.translatable(key);
+      Component label = action == PlayerDiplomacy.Action.GIFT
+         ? Component.translatable(key, PlayerDiplomacy.GIFT_EMERALDS)
+         : action == PlayerDiplomacy.Action.SPY ? Component.translatable(key, FactionSpies.SPY_EMERALDS) : Component.translatable(key);
       Button button = Button.builder(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 20).build();
-      boolean anywhere = action == PlayerDiplomacy.Action.WAR || action == PlayerDiplomacy.Action.TRADE && entry.trade();
+      boolean anywhere = action == PlayerDiplomacy.Action.WAR || action == PlayerDiplomacy.Action.SPY || action == PlayerDiplomacy.Action.TRADE && entry.trade();
       button.active = applicable && (anywhere || entry.leaderNear());
       this.addRenderableWidget(button);
    }
@@ -150,7 +154,7 @@ public class DiplomacyScreen extends Screen {
       }
 
       graphics.drawWordWrap(this.font, wars, x, y, width, MUTED_COLOR);
-      y = this.top() + PANEL_HEIGHT - 70;
+      y = this.top() + PANEL_HEIGHT - 92;
       Component leader = Component.translatable(entry.leaderNear() ? "gui.ancientwarfare.diplomacy.leader_here" : "gui.ancientwarfare.diplomacy.leader_away");
       graphics.drawString(this.font, leader, x, y, entry.leaderNear() ? 0xFF80FF80 : MUTED_COLOR);
    }

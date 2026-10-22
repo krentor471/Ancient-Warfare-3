@@ -29,6 +29,8 @@ public final class WorldMap {
    public static final int STEP = 64;
    public static final int SIZE = 200;
    public static final int TELEPORT_Y = 90;
+   /** How far off a marching army can be seen without spies. */
+   private static final double SIGHT_RANGE = 160.0;
    private static final int ROAD_POINT_STRIDE = 4;
    private static final List<String> MINE_WORDS = List.of("mine", "quarry", "smelt", "forge", "dig");
    private static final List<String> FARM_WORDS = List.of("farm", "field", "barn", "pig", "granary", "mill", "orchard", "coop", "coup", "ranch", "pasture", "stable");
@@ -199,9 +201,15 @@ public final class WorldMap {
 
       List<int[]> marches = new ArrayList<>();
 
+      boolean all = canTeleport(player);
       for (FactionWorldData.Campaign campaign : data.campaigns()) {
          int x = (int)Math.floor(campaign.x());
          int z = (int)Math.floor(campaign.z());
+         // Only armies the player can see from where he stands, or that his spies report.
+         if (!all && !FactionSpies.knows(level, data, player, campaign.faction()) && player.distanceToSqr(x, player.getY(), z) > SIGHT_RANGE * SIGHT_RANGE) {
+            continue;
+         }
+
          markers.add(
             new Marker(x, z, Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + (campaign.raid() ? " raiders" : " soldiers") + ", against settlement #" + campaign.targetSettlement(), "")
          );
@@ -211,6 +219,37 @@ public final class WorldMap {
                marches.add(new int[]{x, z, settlement.center().getX(), settlement.center().getZ()});
             }
          }
+      }
+
+      // Assaults, raids and sieges being made ready, as the spies report them.
+      for (FactionWorldData.Army army : data.armies()) {
+         if (!all && !FactionSpies.knows(level, data, player, army.faction())) {
+            continue;
+         }
+
+         BlockPos target = army.target();
+         FactionWorldData.Settlement home = null;
+         for (FactionWorldData.Settlement settlement : data.settlements()) {
+            if (settlement.faction().equals(army.faction())
+               && settlement.id() != army.targetSettlement()
+               && (home == null || settlement.horizontalDistanceSquared(target.getX(), target.getZ()) < home.horizontalDistanceSquared(target.getX(), target.getZ()))) {
+               home = settlement;
+            }
+         }
+
+         int x = home == null ? target.getX() : home.center().getX();
+         int z = home == null ? target.getZ() : home.center().getZ();
+         markers.add(
+            new Marker(
+               x,
+               z,
+               Kind.ARMY,
+               index(army.faction(), factions, indices),
+               army.size() + (army.siege() ? " soldiers, siege of " : army.isRaid() ? " raiders, raid on " : " soldiers, assault on ") + target.getX() + ", " + target.getZ(),
+               ""
+            )
+         );
+         marches.add(new int[]{x, z, target.getX(), target.getZ()});
       }
 
       return new Data(originX, originZ, owners, terrain(level, originX, originZ), factions, markers, roads, marches, canTeleport(player));

@@ -44,7 +44,9 @@ public final class PlayerDiplomacy {
       GIFT,
       WAR,
       /** Signs a trade agreement, or ends the one in force. */
-      TRADE;
+      TRADE,
+      /** Sends a spy to learn where the faction's armies are bound. */
+      SPY;
 
       public static Action byId(int id) {
          return id >= 0 && id < values().length ? values()[id] : null;
@@ -68,7 +70,7 @@ public final class PlayerDiplomacy {
          return;
       }
 
-      boolean ending = action == Action.WAR || action == Action.TRADE && standings.hasTrade(player.getUUID(), faction);
+      boolean ending = action == Action.WAR || action == Action.SPY || action == Action.TRADE && standings.hasTrade(player.getUUID(), faction);
       if (!ending && !leaderNear(player, faction)) {
          player.sendSystemMessage(Component.translatable("diplomacy.ancientwarfare.need_leader", FactionNews.factionName(faction)));
       } else {
@@ -128,12 +130,17 @@ public final class PlayerDiplomacy {
             standings.setTrade(player.getUUID(), faction, true);
             return Component.translatable("diplomacy.ancientwarfare.trade", name);
          }
+         case SPY -> {
+            return FactionSpies.send(player, faction);
+         }
          case GIFT -> {
             if (!takeEmeralds(player, GIFT_EMERALDS)) {
                return Component.translatable("diplomacy.ancientwarfare.gift_missing", GIFT_EMERALDS);
             }
 
-            int raised = Math.max(standing, Math.min(MAX_GIFT_STANDING, standing + GIFT_STANDING));
+            // A greedy ruler is swayed more by a gift.
+            int gift = FactionRulers.trait(player.serverLevel(), faction) == FactionRulers.Trait.GREEDY ? GIFT_STANDING * 3 / 2 : GIFT_STANDING;
+            int raised = Math.max(standing, Math.min(MAX_GIFT_STANDING, standing + gift));
             standings.setStanding(player.getUUID(), faction, raised);
             return Component.translatable("diplomacy.ancientwarfare.gift", name, raised);
          }

@@ -24,6 +24,10 @@ public final class FactionWorldData extends SavedData {
    private final Map<String, Map<String, FactionDiplomacy.Relation>> relations = new HashMap<>();
    private final List<Settlement> settlements = new ArrayList<>();
    private final Map<String, Integer> treasuries = new HashMap<>();
+   /** Until when each player knows the movements of each faction's armies, from a spy's report. */
+   private final Map<UUID, Map<String, Long>> intel = new HashMap<>();
+   /** Spies on their way; see FactionSpies. */
+   private final List<Spy> spies = new ArrayList<>();
    /** Each faction's ruler: see FactionRulers. */
    private final Map<String, Ruler> rulers = new HashMap<>();
    private final List<PlannedSettlement> plannedSettlements = new ArrayList<>();
@@ -370,6 +374,19 @@ public final class FactionWorldData extends SavedData {
       this.setDirty();
    }
 
+   public long intelUntil(UUID player, String faction) {
+      return this.intel.getOrDefault(player, Map.of()).getOrDefault(faction, Long.MIN_VALUE);
+   }
+
+   public void setIntel(UUID player, String faction, long until) {
+      this.intel.computeIfAbsent(player, ignored -> new HashMap<>()).put(faction, until);
+      this.setDirty();
+   }
+
+   public List<Spy> spies() {
+      return this.spies;
+   }
+
    public Ruler ruler(String faction) {
       return this.rulers.get(faction);
    }
@@ -450,6 +467,23 @@ public final class FactionWorldData extends SavedData {
          rulerTag.put(faction, entry);
       });
       tag.put("Rulers", rulerTag);
+      CompoundTag intelTag = new CompoundTag();
+      this.intel.forEach((player, known) -> {
+         CompoundTag entry = new CompoundTag();
+         known.forEach(entry::putLong);
+         intelTag.put(player.toString(), entry);
+      });
+      tag.put("Intel", intelTag);
+      ListTag spyList = new ListTag();
+      for (Spy spy : this.spies) {
+         CompoundTag entry = new CompoundTag();
+         entry.putUUID("Player", spy.player());
+         entry.putString("Faction", spy.faction());
+         entry.putLong("Ready", spy.ready());
+         spyList.add(entry);
+      }
+
+      tag.put("Spies", spyList);
       tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
       tag.putLong("DayOffset", this.dayOffset);
       tag.putBoolean("HistoryDone", this.historyDone);
@@ -615,6 +649,24 @@ public final class FactionWorldData extends SavedData {
       data.nextSettlementId = Math.max(tag.getInt("NextSettlementId"), data.settlements.size() + 1);
       CompoundTag gold = tag.getCompound("Treasuries");
       gold.getAllKeys().forEach(faction -> data.treasuries.put(faction, gold.getInt(faction)));
+      CompoundTag intelTag = tag.getCompound("Intel");
+      for (String key : intelTag.getAllKeys()) {
+         try {
+            CompoundTag entry = intelTag.getCompound(key);
+            Map<String, Long> known = new HashMap<>();
+            entry.getAllKeys().forEach(faction -> known.put(faction, entry.getLong(faction)));
+            data.intel.put(UUID.fromString(key), known);
+         } catch (IllegalArgumentException ignored) {
+         }
+      }
+
+      for (Tag element : tag.getList("Spies", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         if (entry.hasUUID("Player")) {
+            data.spies.add(new Spy(entry.getUUID("Player"), entry.getString("Faction"), entry.getLong("Ready")));
+         }
+      }
+
       CompoundTag rulerTag = tag.getCompound("Rulers");
       for (String faction : rulerTag.getAllKeys()) {
          CompoundTag entry = rulerTag.getCompound(faction);
@@ -1029,6 +1081,10 @@ public final class FactionWorldData extends SavedData {
     * the NPCs standing there are spawned to match the garrison while a player is near.
     */
    public static record ChronicleEntry(long day, String json) {
+   }
+
+   /** A spy a player sent into a faction's lands; he reports back at ready. */
+   public static record Spy(UUID player, String faction, long ready) {
    }
 
    /** A faction's ruler: a name (an index into the lang names) and a trait (a FactionRulers.Trait ordinal). */

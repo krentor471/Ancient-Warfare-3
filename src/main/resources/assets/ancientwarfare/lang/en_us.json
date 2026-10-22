@@ -1655,5 +1655,19 @@
   "veteran.ancientwarfare.promoted.1": "Your %s is now a veteran: stronger and tougher (kills: %s).",
   "veteran.ancientwarfare.promoted.2": "%s is now a hero of your army: much stronger (kills: %s).",
   "veteran.ancientwarfare.fell": "Your veteran %s has fallen (kills: %s). His comrades are shaken.",
-  "block.ancientwarfare.field_tent": "Field Tent"
+  "block.ancientwarfare.field_tent": "Field Tent",
+  "gui.ancientwarfare.diplomacy.action.spy": "Send a spy (%s emeralds)",
+  "spy.ancientwarfare.already": "A spy of yours is already in the lands of %s.",
+  "spy.ancientwarfare.missing": "A spy costs %s emeralds.",
+  "spy.ancientwarfare.sent": "Your spy sets off into the lands of %s. Expect his report soon.",
+  "spy.ancientwarfare.caught": "Your spy was caught by %s. They will not forget it.",
+  "spy.ancientwarfare.report": "Spy's report on %s: ruler %s, %s; soldiers %s, treasury %s.",
+  "spy.ancientwarfare.march": "  An army of %s marches on %s at %s, %s (settlement%5$s).",
+  "spy.ancientwarfare.march_lost": "  An army of %s is on the march.",
+  "spy.ancientwarfare.siege_you": "  A siege of YOUR village at %2$s, %3$s is being made ready: %1$s soldiers.",
+  "spy.ancientwarfare.raid_you": "  A raid on YOUR village at %2$s, %3$s is being made ready: %1$s raiders.",
+  "spy.ancientwarfare.raid_other": "  A raid on a player's village at %2$s, %3$s: %1$s raiders.",
+  "spy.ancientwarfare.assault": "  An assault of %s soldiers on %s at %s, %s (settlement%5$s).",
+  "spy.ancientwarfare.quiet": "  Their armies stay at home.",
+  "spy.ancientwarfare.map": "For three days their armies show on your world map (M)."
 }

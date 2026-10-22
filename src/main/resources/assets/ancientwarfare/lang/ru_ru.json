@@ -535,5 +535,19 @@
   "veteran.ancientwarfare.promoted.1": "Твой боец %s стал ветераном: сильнее и крепче (убил врагов: %s).",
   "veteran.ancientwarfare.promoted.2": "%s стал героем твоего войска: намного сильнее (убил врагов: %s).",
   "veteran.ancientwarfare.fell": "Пал твой ветеран %s (убил врагов: %s). Товарищи потрясены.",
-  "block.ancientwarfare.field_tent": "Походный шатёр"
+  "block.ancientwarfare.field_tent": "Походный шатёр",
+  "gui.ancientwarfare.diplomacy.action.spy": "Послать лазутчика (%s изумр.)",
+  "spy.ancientwarfare.already": "Твой лазутчик уже в землях фракции %s.",
+  "spy.ancientwarfare.missing": "Лазутчик стоит %s изумрудов.",
+  "spy.ancientwarfare.sent": "Лазутчик отправился в земли фракции %s. Жди донесения.",
+  "spy.ancientwarfare.caught": "Твоего лазутчика поймала фракция %s. Они этого не забудут.",
+  "spy.ancientwarfare.report": "Донесение лазутчика о фракции %s: правитель %s, %s; солдат %s, казна %s.",
+  "spy.ancientwarfare.march": "  Войско из %s солдат идёт на фракцию %s у %s, %s (поселение%5$s).",
+  "spy.ancientwarfare.march_lost": "  Войско из %s солдат в походе.",
+  "spy.ancientwarfare.siege_you": "  Готовится осада ТВОЕГО поселения у %2$s, %3$s: солдат %1$s.",
+  "spy.ancientwarfare.raid_you": "  Готовится набег на ТВОЁ поселение у %2$s, %3$s: налётчиков %1$s.",
+  "spy.ancientwarfare.raid_other": "  Набег на поселение игрока у %2$s, %3$s: налётчиков %1$s.",
+  "spy.ancientwarfare.assault": "  Штурм: %s солдат против фракции %s у %s, %s (поселение%5$s).",
+  "spy.ancientwarfare.quiet": "  Их войска стоят дома.",
+  "spy.ancientwarfare.map": "Три дня их войска видны на твоей карте мира (M)."
 }
