@@ -1,5 +1,9 @@
 package net.shadowmage.ancientwarfare.core.entity;
 
+import net.minecraft.server.level.ServerLevel;
+import java.util.UUID;
+import net.shadowmage.ancientwarfare.core.faction.FactionHeraldry;
+import net.shadowmage.ancientwarfare.core.faction.PlayerHeraldry;
 import java.util.EnumSet;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -196,6 +200,12 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
       if (this.tryAcceptFood(player, hand)) {
          return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (PlayerHeraldry.isBanner(player.getItemInHand(hand)) && this.hasCommandPermission(player)) {
+         if (!this.level().isClientSide) {
+            this.takeBanner(player, hand);
+         }
+
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
          if (!this.level().isClientSide && this.hasCommandPermission(player)) {
             CommandBatonItem.clickNpc(player.getItemInHand(hand), player, this);
@@ -206,6 +216,48 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          this.openNpcInventory(player);
          return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
+   }
+
+   /**
+    * Handed a banner, the soldier becomes the standard-bearer and wears it; its design becomes the
+    * owner's arms, painted on their soldiers' shields.
+    */
+   private void takeBanner(Player player, InteractionHand hand) {
+      ItemStack held = player.getItemInHand(hand);
+      ItemStack banner = held.copyWithCount(1);
+      ItemStack old = this.getItemBySlot(EquipmentSlot.HEAD);
+      if (!player.getAbilities().instabuild) {
+         held.shrink(1);
+      }
+
+      if (!old.isEmpty()) {
+         player.getInventory().placeItemBackInInventory(old);
+      }
+
+      this.setItemSlot(EquipmentSlot.HEAD, banner);
+      this.setDropChance(EquipmentSlot.HEAD, 2.0F);
+      UUID owner = this.getOwner().orElse(player.getUUID());
+      PlayerHeraldry.get((ServerLevel)this.level()).setArms(owner, banner);
+      this.paintShields();
+      player.sendSystemMessage(Component.translatable("heraldry.ancientwarfare.bearer", this.getDisplayName()));
+   }
+
+   public boolean isStandardBearer() {
+      return PlayerHeraldry.isBanner(this.getItemBySlot(EquipmentSlot.HEAD));
+   }
+
+   private void paintShields() {
+      if (this.level() instanceof ServerLevel serverLevel && this.getOwner().isPresent()) {
+         PlayerHeraldry heraldry = PlayerHeraldry.get(serverLevel);
+         heraldry.paint(this.getOwner().get(), this.getOffhandItem());
+         heraldry.paint(this.getOwner().get(), this.getMainHandItem());
+      }
+   }
+
+   /** A fallen standard-bearer shakes his comrades far more than another man. */
+   @Override
+   protected float deathMoraleBlow() {
+      return this.isStandardBearer() ? FactionHeraldry.BEARER_DEATH_MORALE : super.deathMoraleBlow();
    }
 
    public void openNpcInventory(Player player) {
@@ -413,7 +465,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
    @Override
    protected boolean isMoraleLeader() {
-      return this.isCommander();
+      return this.isCommander() || this.isStandardBearer();
    }
 
    @Override
@@ -551,6 +603,10 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       if (this.isCommander()) {
          CombatGroupController.tick(this);
+      }
+
+      if (!this.level().isClientSide && this.tickCount % 100 == 37) {
+         this.paintShields();
       }
 
       this.tickOwnedCavalryCharge();

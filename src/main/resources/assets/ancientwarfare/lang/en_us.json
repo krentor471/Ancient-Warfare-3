@@ -1609,5 +1609,6 @@
   "ruler.ancientwarfare.epithet.generous": "the Generous",
   "ruler.ancientwarfare.title": "%s %s",
   "gui.ancientwarfare.diplomacy.ruler": "Ruler: %s, %s",
-  "news.ancientwarfare.ruler_fell": "The ruler of %s, %s, has fallen. %s, %s, takes the throne"
+  "news.ancientwarfare.ruler_fell": "The ruler of %s, %s, has fallen. %s, %s, takes the throne",
+  "heraldry.ancientwarfare.bearer": "%s is now your standard-bearer. This banner is your coat of arms: your soldiers' shields bear it."
 }
