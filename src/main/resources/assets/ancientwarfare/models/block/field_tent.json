@@ -1,0 +1,74 @@
+{
+  "textures": {
+    "canvas": "minecraft:block/white_wool",
+    "pole": "minecraft:block/oak_log",
+    "bedroll": "minecraft:block/red_wool",
+    "particle": "minecraft:block/white_wool"
+  },
+  "elements": [
+    {
+      "name": "left roof",
+      "from": [-6.5, 5.75, 0],
+      "to": [10.5, 6.25, 16],
+      "rotation": {"angle": 45, "axis": "z", "origin": [2, 6, 8]},
+      "faces": {
+        "north": {"uv": [0, 0, 16, 1], "texture": "#canvas"},
+        "south": {"uv": [0, 0, 16, 1], "texture": "#canvas"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#canvas"},
+        "down": {"uv": [0, 0, 16, 16], "texture": "#canvas"},
+        "east": {"uv": [0, 0, 16, 1], "texture": "#canvas"},
+        "west": {"uv": [0, 0, 16, 1], "texture": "#canvas"}
+      }
+    },
+    {
+      "name": "right roof",
+      "from": [5.5, 5.75, 0],
+      "to": [22.5, 6.25, 16],
+      "rotation": {"angle": -45, "axis": "z", "origin": [14, 6, 8]},
+      "faces": {
+        "north": {"uv": [0, 0, 16, 1], "texture": "#canvas"},
+        "south": {"uv": [0, 0, 16, 1], "texture": "#canvas"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#canvas"},
+        "down": {"uv": [0, 0, 16, 16], "texture": "#canvas"},
+        "east": {"uv": [0, 0, 16, 1], "texture": "#canvas"},
+        "west": {"uv": [0, 0, 16, 1], "texture": "#canvas"}
+      }
+    },
+    {
+      "name": "front pole",
+      "from": [7.25, 0, 0.25],
+      "to": [8.75, 12.5, 1.75],
+      "faces": {
+        "north": {"uv": [0, 0, 2, 12], "texture": "#pole"},
+        "south": {"uv": [0, 0, 2, 12], "texture": "#pole"},
+        "east": {"uv": [0, 0, 2, 12], "texture": "#pole"},
+        "west": {"uv": [0, 0, 2, 12], "texture": "#pole"},
+        "up": {"uv": [0, 0, 2, 2], "texture": "#pole"}
+      }
+    },
+    {
+      "name": "back pole",
+      "from": [7.25, 0, 14.25],
+      "to": [8.75, 12.5, 15.75],
+      "faces": {
+        "north": {"uv": [0, 0, 2, 12], "texture": "#pole"},
+        "south": {"uv": [0, 0, 2, 12], "texture": "#pole"},
+        "east": {"uv": [0, 0, 2, 12], "texture": "#pole"},
+        "west": {"uv": [0, 0, 2, 12], "texture": "#pole"},
+        "up": {"uv": [0, 0, 2, 2], "texture": "#pole"}
+      }
+    },
+    {
+      "name": "bedroll",
+      "from": [3, 0, 2],
+      "to": [13, 1, 14],
+      "faces": {
+        "up": {"uv": [0, 0, 10, 12], "texture": "#bedroll"},
+        "north": {"uv": [0, 0, 10, 1], "texture": "#bedroll"},
+        "south": {"uv": [0, 0, 10, 1], "texture": "#bedroll"},
+        "east": {"uv": [0, 0, 12, 1], "texture": "#bedroll"},
+        "west": {"uv": [0, 0, 12, 1], "texture": "#bedroll"}
+      }
+    }
+  ]
+}

@@ -534,5 +534,6 @@
   "entity.ancientwarfare.combat.rank.ace": "%s (герой)",
   "veteran.ancientwarfare.promoted.1": "Твой боец %s стал ветераном: сильнее и крепче (убил врагов: %s).",
   "veteran.ancientwarfare.promoted.2": "%s стал героем твоего войска: намного сильнее (убил врагов: %s).",
-  "veteran.ancientwarfare.fell": "Пал твой ветеран %s (убил врагов: %s). Товарищи потрясены."
+  "veteran.ancientwarfare.fell": "Пал твой ветеран %s (убил врагов: %s). Товарищи потрясены.",
+  "block.ancientwarfare.field_tent": "Походный шатёр"
 }

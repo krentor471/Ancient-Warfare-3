@@ -1654,5 +1654,6 @@
   "entity.ancientwarfare.combat.veteran": "%s, %s",
   "veteran.ancientwarfare.promoted.1": "Your %s is now a veteran: stronger and tougher (kills: %s).",
   "veteran.ancientwarfare.promoted.2": "%s is now a hero of your army: much stronger (kills: %s).",
-  "veteran.ancientwarfare.fell": "Your veteran %s has fallen (kills: %s). His comrades are shaken."
+  "veteran.ancientwarfare.fell": "Your veteran %s has fallen (kills: %s). His comrades are shaken.",
+  "block.ancientwarfare.field_tent": "Field Tent"
 }

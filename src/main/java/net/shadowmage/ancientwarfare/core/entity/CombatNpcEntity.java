@@ -1,5 +1,11 @@
 package net.shadowmage.ancientwarfare.core.entity;
 
+import net.shadowmage.ancientwarfare.core.forge.init.AWCoreBlocks;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.CampfireBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -134,6 +140,13 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    /** How hard a veteran's fall shakes his comrades, per rank. */
    private static final float VETERAN_DEATH_MORALE = 20.0F;
    private int kills;
+   private static final int CAMP_CHECK_TICKS = 40;
+   private static final int CAMP_RADIUS = 8;
+   private static final float CAMP_MORALE_FACTOR = 3.0F;
+   /** Health a resting soldier gets back at each check. */
+   private static final float CAMP_HEAL = 1.0F;
+   /** Whether a camp fire is near; not saved. */
+   private boolean atCamp;
 
    public CombatNpcEntity(EntityType<? extends CombatNpcEntity> entityType, Level level) {
       super(entityType, level);
@@ -307,6 +320,59 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       PlayerHeraldry.get((ServerLevel)this.level()).setArms(owner, banner);
       this.paintShields();
       player.sendSystemMessage(Component.translatable("heraldry.ancientwarfare.bearer", this.getDisplayName()));
+   }
+
+   /**
+    * A camp is a lit fire near the soldier: there his spirit comes back three times as fast. With a
+    * field tent by it as well he rests and his wounds heal, as long as no enemy is in sight.
+    */
+   private void tickCamp() {
+      this.atCamp = false;
+      if (this.getOwner().isEmpty()) {
+         return;
+      }
+
+      boolean fire = false;
+      boolean tent = false;
+      BlockPos origin = this.blockPosition();
+      for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-CAMP_RADIUS, -2, -CAMP_RADIUS), origin.offset(CAMP_RADIUS, 3, CAMP_RADIUS))) {
+         BlockState state = this.level().getBlockState(pos);
+         if (!fire && isCampFire(state)) {
+            fire = true;
+         } else if (!tent && state.is(AWCoreBlocks.FIELD_TENT.get())) {
+            tent = true;
+         }
+
+         if (fire && tent) {
+            break;
+         }
+      }
+
+      this.atCamp = fire;
+      if (fire && tent && this.getTarget() == null && this.getHealth() < this.getMaxHealth()) {
+         this.heal(CAMP_HEAL);
+         if (this.level() instanceof ServerLevel serverLevel && this.random.nextInt(3) == 0) {
+            serverLevel.sendParticles(ParticleTypes.HEART, this.getX(), this.getEyeY() + 0.4, this.getZ(), 1, 0.2, 0.1, 0.2, 0.0);
+         }
+      }
+   }
+
+   private static boolean isCampFire(BlockState state) {
+      if (CampfireBlock.isLitCampfire(state)) {
+         return true;
+      }
+
+      ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+      return "ancientwarfare".equals(id.getNamespace()) && (id.getPath().startsWith("fire_pit") || id.getPath().equals("brazier_flame"));
+   }
+
+   public boolean isAtCamp() {
+      return this.atCamp;
+   }
+
+   @Override
+   protected float moraleRegenFactor() {
+      return this.atCamp ? CAMP_MORALE_FACTOR : 1.0F;
    }
 
    public boolean isStandardBearer() {
@@ -685,6 +751,10 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       if (!this.level().isClientSide && this.tickCount % 100 == 37) {
          this.paintShields();
+      }
+
+      if (!this.level().isClientSide && this.tickCount % CAMP_CHECK_TICKS == 11) {
+         this.tickCamp();
       }
 
       this.tickOwnedCavalryCharge();

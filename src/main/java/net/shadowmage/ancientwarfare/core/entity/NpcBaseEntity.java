@@ -550,6 +550,11 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       return false;
    }
 
+   /** How much faster than usual morale comes back, as at a camp fire. */
+   protected float moraleRegenFactor() {
+      return 1.0F;
+   }
+
    /** Leaders steady the men around them and break less easily themselves. */
    protected boolean isMoraleLeader() {
       return false;
@@ -598,7 +603,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
             }
 
             float regen = this.getTarget() == null ? IDLE_MORALE_REGEN : COMBAT_MORALE_REGEN;
-            this.morale = Math.min(MAX_MORALE, this.morale + regen * (this.leaderNearby ? LEADER_REGEN_FACTOR : 1.0F));
+            this.morale = Math.min(MAX_MORALE, this.morale + regen * (this.leaderNearby ? LEADER_REGEN_FACTOR : 1.0F) * this.moraleRegenFactor());
          }
       }
    }

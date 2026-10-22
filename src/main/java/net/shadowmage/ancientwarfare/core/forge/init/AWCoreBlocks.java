@@ -166,6 +166,26 @@ public final class AWCoreBlocks {
    );
    public static final RegistryObject<Block> CHUNK_LOADER_SIMPLE = REGISTER.register("chunk_loader_simple", () -> new ChunkLoaderBlock(worksiteProperties()));
    public static final RegistryObject<Block> TOWN_HALL = REGISTER.register("town_hall", () -> new TownHallBlock(stationProperties()));
+   /** A field tent: soldiers resting by it at a camp fire heal. */
+   public static final RegistryObject<Block> FIELD_TENT = REGISTER.register(
+      "field_tent",
+      () -> {
+         net.minecraft.world.phys.shapes.VoxelShape shape = Block.box(0.0, 0.0, 0.0, 16.0, 12.0, 16.0);
+         return new StructureDecorBlock(
+            net.minecraft.world.level.block.state.BlockBehaviour.Properties.of()
+               .mapColor(net.minecraft.world.level.material.MapColor.WOOL)
+               .strength(0.8F)
+               .sound(net.minecraft.world.level.block.SoundType.WOOL)
+               .noOcclusion(),
+            java.util.Map.of(
+               net.minecraft.core.Direction.NORTH, shape,
+               net.minecraft.core.Direction.SOUTH, shape,
+               net.minecraft.core.Direction.EAST, shape,
+               net.minecraft.core.Direction.WEST, shape
+            )
+         );
+      }
+   );
    public static final RegistryObject<Block> FLYWHEEL_CONTROLLER_LIGHT = REGISTER.register(
       "flywheel_controller_light", () -> new FlywheelControllerBlock(torqueProperties(), TorqueTier.LIGHT)
    );
@@ -570,6 +590,7 @@ public final class AWCoreBlocks {
       blockItem("windmill_blade", WINDMILL_BLADE);
       blockItem("chunk_loader_simple", CHUNK_LOADER_SIMPLE);
       blockItem("town_hall", TOWN_HALL);
+      blockItem("field_tent", FIELD_TENT);
       restoredAutomationBlockItem("flywheel_controller_light", FLYWHEEL_CONTROLLER_LIGHT);
       restoredAutomationBlockItem("flywheel_controller_medium", FLYWHEEL_CONTROLLER_MEDIUM);
       restoredAutomationBlockItem("flywheel_controller_heavy", FLYWHEEL_CONTROLLER_HEAVY);

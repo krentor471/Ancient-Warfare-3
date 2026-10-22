@@ -281,6 +281,7 @@ public final class AWCoreCreativeTabs {
                output.accept((ItemLike)AWCoreItems.GOLD_COMMAND_BATON.get());
                output.accept((ItemLike)AWCoreItems.DIAMOND_COMMAND_BATON.get());
                output.accept((ItemLike)AWCoreBlocks.TOWN_HALL.get());
+               output.accept((ItemLike)AWCoreBlocks.FIELD_TENT.get());
                output.accept((ItemLike)AWCoreItems.WORK_ORDER.get());
                output.accept((ItemLike)AWCoreItems.ROUTING_ORDER.get());
                output.accept((ItemLike)AWCoreItems.TRADE_ORDER.get());
