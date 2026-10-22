@@ -58,6 +58,7 @@ public final class FactionNews {
    }
 
    public static void captured(ServerLevel level, String winner, String loser, FactionWorldData.Settlement settlement) {
+      FactionTownLife.celebrateVictory(level, FactionWorldData.get(level), winner, loser);
       if (FactionTowns.CAPITAL.equals(settlement.kind())) {
          tell(
             level,

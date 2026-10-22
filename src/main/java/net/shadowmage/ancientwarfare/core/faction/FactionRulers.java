@@ -185,7 +185,14 @@ public final class FactionRulers {
 
    /** A trader of a greedy ruler asks more, of a generous one less. */
    public static List<FactionTradeListRegistry.FactionTradeEntry> price(ServerLevel level, String faction, List<FactionTradeListRegistry.FactionTradeEntry> trades) {
-      double factor = trait(level, faction).prices;
+      return price(level, faction, trades, 1.0);
+   }
+
+   /** As above, times a factor of the moment, such as a market day. */
+   public static List<FactionTradeListRegistry.FactionTradeEntry> price(
+      ServerLevel level, String faction, List<FactionTradeListRegistry.FactionTradeEntry> trades, double extra
+   ) {
+      double factor = trait(level, faction).prices * extra;
       if (factor == 1.0) {
          return trades;
       }

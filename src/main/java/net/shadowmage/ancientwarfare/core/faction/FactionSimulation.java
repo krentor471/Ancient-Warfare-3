@@ -92,6 +92,7 @@ public final class FactionSimulation {
       FactionCaravans.tick(level, data);
       FactionTravellers.tick(level, data);
       FactionRumours.tick(level, data);
+      FactionTownLife.tick(level, data);
       FactionMercenaries.tick(level, data);
       FactionEnvoys.tick(level);
 
@@ -150,6 +151,7 @@ public final class FactionSimulation {
       FactionFleets.simulateDay(level, data);
       FactionArmies.simulateDay(level, data, data.lastSimulatedDay());
       PlayerCountry.startTaxDay(data);
+      FactionTownLife.simulateDay(level, data);
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);
       data.setDirty();
@@ -182,7 +184,7 @@ public final class FactionSimulation {
          return;
       }
 
-      if (FactionArmies.armyId(npc) != 0 || FactionCaravans.caravanId(npc) != 0) {
+      if (FactionArmies.armyId(npc) != 0 || FactionCaravans.caravanId(npc) != 0 || FactionTravellers.isTraveller(npc) || FactionTownLife.isFairgoer(npc)) {
          return;
       }
 
@@ -212,6 +214,10 @@ public final class FactionSimulation {
 
       if (FactionTravellers.isTraveller(npc)) {
          return FactionTravellers.stillTravelling(npc);
+      }
+
+      if (FactionTownLife.isFairgoer(npc)) {
+         return !FactionTownLife.isStale(npc);
       }
 
       int campaign = FactionCampaigns.campaignId(npc);

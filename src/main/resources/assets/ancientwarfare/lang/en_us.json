@@ -1782,5 +1782,9 @@
   "traveller.ancientwarfare.peddler": "A peddler of %2$s, on my way to%1$s. Care to look at my wares?",
   "traveller.ancientwarfare.messenger": "Messenger of %2$s, riding for%1$s. I can't stop long.",
   "traveller.ancientwarfare.refugees": "We fled our home. We're going to%1$s, maybe they'll take us in.",
-  "traveller.ancientwarfare.next_town": " the next town"
+  "traveller.ancientwarfare.next_town": " the next town",
+  "town.ancientwarfare.market": "Market day in %s! Traders crowd the square, prices are %s%% lower until evening.",
+  "town.ancientwarfare.festival": "A festival in %s: %s Music in the square, fireworks after dark, prices %s%% lower.",
+  "town.ancientwarfare.festival.victory": "they celebrate the victory over %s.",
+  "town.ancientwarfare.festival.harvest": "they celebrate a rich harvest."
 }

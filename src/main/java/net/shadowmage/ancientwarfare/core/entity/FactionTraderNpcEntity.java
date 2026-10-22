@@ -63,7 +63,12 @@ public class FactionTraderNpcEntity extends FactionNpcEntity {
       }
 
       if (!this.level().isClientSide) {
-         List<FactionTradeListRegistry.FactionTradeEntry> trades = FactionRulers.price((ServerLevel)this.level(), this.getFactionName(), this.getAvailableTrades());
+         List<FactionTradeListRegistry.FactionTradeEntry> trades = FactionRulers.price(
+            (ServerLevel)this.level(),
+            this.getFactionName(),
+            this.getAvailableTrades(),
+            net.shadowmage.ancientwarfare.core.faction.FactionTownLife.priceFactor((ServerLevel)this.level(), this.getFactionName(), this.getX(), this.getZ())
+         );
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(

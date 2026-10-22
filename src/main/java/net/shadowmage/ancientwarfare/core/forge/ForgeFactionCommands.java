@@ -255,6 +255,7 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("armies").executes(context -> showArmies(context.getSource())))
                .then(Commands.literal("bandits").executes(context -> showBandits(context.getSource())))
                .then(Commands.literal("rumours").executes(context -> showRumours(context.getSource())))
+               .then(Commands.literal("festival").requires(source -> source.hasPermission(2)).executes(context -> startFestival(context.getSource())))
                .then(
                   Commands.literal("routes")
                      .executes(context -> showRoutes(context.getSource()))
@@ -800,6 +801,28 @@ public final class ForgeFactionCommands {
    }
 
    /** Bandit lairs with their level: 1 waylays caravans, 2 raids trading posts, 3 guard posts too, 4 villages too. */
+   /** The nearest settlement holds a festival from now. */
+   private static int startFestival(CommandSourceStack source) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      FactionWorldData.Settlement nearest = null;
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (nearest == null
+            || settlement.horizontalDistanceSquared(source.getPosition().x, source.getPosition().z)
+               < nearest.horizontalDistanceSquared(source.getPosition().x, source.getPosition().z)) {
+            nearest = settlement;
+         }
+      }
+
+      if (nearest == null) {
+         source.sendFailure(Component.literal("No settlements"));
+         return 0;
+      }
+
+      net.shadowmage.ancientwarfare.core.faction.FactionTownLife.startFestival(source.getLevel(), nearest);
+      tell(source, Component.literal("Settlement #" + nearest.id() + " holds a festival"));
+      return 1;
+   }
+
    /** A handful of what people around here would say, for checking the rumours. */
    private static int showRumours(CommandSourceStack source) {
       for (int i = 0; i < 6; i++) {

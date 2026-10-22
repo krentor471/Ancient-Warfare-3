@@ -1782,5 +1782,9 @@
   "traveller.ancientwarfare.peddler": "Я коробейник (%2$s), иду в%1$s. Глянешь товар?",
   "traveller.ancientwarfare.messenger": "Я гонец (%2$s), спешу в%1$s. Долго стоять не могу.",
   "traveller.ancientwarfare.refugees": "Мы бежали из дома. Идём в%1$s, может, там примут.",
-  "traveller.ancientwarfare.next_town": " соседний город"
+  "traveller.ancientwarfare.next_town": " соседний город",
+  "town.ancientwarfare.market": "Базарный день в %s! На площади торговцы, до вечера цены ниже на %s%%.",
+  "town.ancientwarfare.festival": "Праздник в %s: %s На площади музыка, ночью фейерверки, цены ниже на %s%%.",
+  "town.ancientwarfare.festival.victory": "празднуют победу над врагом (%s).",
+  "town.ancientwarfare.festival.harvest": "празднуют богатый урожай."
 }
