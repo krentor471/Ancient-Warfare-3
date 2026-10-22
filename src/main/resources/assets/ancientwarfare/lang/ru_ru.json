@@ -1790,5 +1790,15 @@
   "town.ancientwarfare.thief": "Держи вора! Воришка обокрал торговца в %s и бежит, %s. Стража за ним.",
   "town.ancientwarfare.thief_escaped": "Вор скрылся.",
   "town.ancientwarfare.thief_caught": "Ты поймал вора. Тебя благодарят (%s): награда %s сер.",
-  "town.ancientwarfare.grew": "Поселение растёт (%s): на окраине жители построили новый дом."
+  "town.ancientwarfare.grew": "Поселение растёт (%s): на окраине жители построили новый дом.",
+  "season.ancientwarfare.spring": "весна",
+  "season.ancientwarfare.summer": "лето",
+  "season.ancientwarfare.autumn": "осень",
+  "season.ancientwarfare.winter": "зима",
+  "season.ancientwarfare.spring.effect": "Поля засеяны, урожаи пока скромные.",
+  "season.ancientwarfare.summer.effect": "Хлеб зреет; засуха или дожди могут принести неурожай.",
+  "season.ancientwarfare.autumn.effect": "Время урожая: амбары полнятся, цены немного падают, в городах праздники урожая.",
+  "season.ancientwarfare.winter.effect": "Почти ничего не растёт: еды меньше, цены выше, часто метели и дожди, армии идут медленнее, путников на дорогах меньше.",
+  "season.ancientwarfare.begins": "Новое время года: %s. %s",
+  "season.ancientwarfare.now": "Сейчас %s, осталось дней: %s. %s"
 }

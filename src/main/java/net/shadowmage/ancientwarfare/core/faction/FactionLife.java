@@ -64,13 +64,13 @@ public final class FactionLife {
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       RandomSource random = level.getRandom();
       List<FactionWorldData.Settlement> settlements = new ArrayList<>(data.settlements());
-      if (random.nextDouble() < FAMINE_CHANCE && !settlements.isEmpty()) {
+      if (random.nextDouble() < FAMINE_CHANCE * FactionSeasons.badHarvests(level) && !settlements.isEmpty()) {
          badHarvest(level, settlements, settlements.get(random.nextInt(settlements.size())), random);
       }
 
       Map<String, List<FactionWorldData.Settlement>> byFaction = new HashMap<>();
       for (FactionWorldData.Settlement settlement : settlements) {
-         harvest(settlement);
+         harvest(settlement, FactionSeasons.yield(level));
          byFaction.computeIfAbsent(settlement.faction(), faction -> new ArrayList<>()).add(settlement);
       }
 
@@ -99,13 +99,13 @@ public final class FactionLife {
    }
 
    /** Rations the settlement's own people bring in, less what everyone there eats. */
-   private static void harvest(FactionWorldData.Settlement settlement) {
+   private static void harvest(FactionWorldData.Settlement settlement, double season) {
       int mouths = settlement.population + settlement.garrison;
       if (settlement.food < 0) {
          settlement.food = mouths * STORE_DAYS / 2;
       }
 
-      double yield = YIELD * kindYield(settlement);
+      double yield = YIELD * kindYield(settlement) * season;
       if (settlement.famine > 0) {
          yield *= FAMINE_YIELD;
       }

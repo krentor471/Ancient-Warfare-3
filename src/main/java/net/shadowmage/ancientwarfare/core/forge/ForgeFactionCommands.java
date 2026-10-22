@@ -259,6 +259,21 @@ public final class ForgeFactionCommands {
                   net.shadowmage.ancientwarfare.core.faction.FactionTownLife.forceTheft(context.getSource().getLevel(), context.getSource().getPlayerOrException());
                   return 1;
                }))
+               .then(Commands.literal("season").executes(context -> {
+                  net.minecraft.server.level.ServerLevel level = context.getSource().getLevel();
+                  net.shadowmage.ancientwarfare.core.faction.FactionSeasons.Season season = net.shadowmage.ancientwarfare.core.faction.FactionSeasons.season(level);
+                  context.getSource()
+                     .sendSuccess(
+                        () -> Component.translatable(
+                           "season.ancientwarfare.now",
+                           Component.translatable(season.key()),
+                           net.shadowmage.ancientwarfare.core.faction.FactionSeasons.daysLeft(level),
+                           Component.translatable(season.key() + ".effect")
+                        ),
+                        false
+                     );
+                  return 1;
+               }))
                .then(Commands.literal("grow").requires(source -> source.hasPermission(2)).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(context.getSource().getLevel(), context.getSource().getPlayerOrException());
                   return 1;

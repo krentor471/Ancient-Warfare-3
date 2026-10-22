@@ -312,7 +312,7 @@ public final class FactionCampaigns {
       boolean waiting = !walkers.isEmpty()
          && walkers.stream().allMatch(npc -> npc.distanceToSqr(campaign.x, npc.getY(), campaign.z) > WAIT_DISTANCE * WAIT_DISTANCE);
       if (!waiting) {
-         double step = Math.min(distance, SPEED * TICK_INTERVAL / 20.0);
+         double step = Math.min(distance, SPEED * FactionSeasons.march(level) * TICK_INTERVAL / 20.0);
          campaign.x += dx / distance * step;
          campaign.z += dz / distance * step;
       }
@@ -356,7 +356,7 @@ public final class FactionCampaigns {
       }
 
       if (distance > 0.0) {
-         double step = Math.min(distance, SPEED * TICK_INTERVAL / 20.0);
+         double step = Math.min(distance, SPEED * FactionSeasons.march(level) * TICK_INTERVAL / 20.0);
          campaign.x += dx / distance * step;
          campaign.z += dz / distance * step;
          data.setDirty();

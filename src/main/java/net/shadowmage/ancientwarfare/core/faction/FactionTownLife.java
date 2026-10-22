@@ -139,7 +139,7 @@ public final class FactionTownLife {
       RandomSource random = level.getRandom();
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          int mouths = settlement.population() + settlement.garrison();
-         if (isTown(settlement) && settlement.order() >= 60 && settlement.food() > mouths * 6 && random.nextDouble() < HARVEST_FESTIVAL_CHANCE) {
+         if (isTown(settlement) && settlement.order() >= 60 && settlement.food() > mouths * 6 && random.nextDouble() < HARVEST_FESTIVAL_CHANCE * FactionSeasons.festivals(level)) {
             FESTIVALS.putIfAbsent(settlement.id(), new Festival(now + FESTIVAL_TICKS, "harvest", ""));
          }
       }
@@ -182,7 +182,7 @@ public final class FactionTownLife {
       FactionWorldData data = FactionWorldData.get(level);
       FactionWorldData.Settlement settlement = FactionSimulation.settlementAt(data, faction, x, z, 24);
       Event event = settlement == null ? null : eventAt(level, data, settlement);
-      return event == Event.FESTIVAL ? FESTIVAL_PRICES : event == Event.MARKET ? MARKET_PRICES : 1.0;
+      return (event == Event.FESTIVAL ? FESTIVAL_PRICES : event == Event.MARKET ? MARKET_PRICES : 1.0) * FactionSeasons.prices(level, settlement);
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {

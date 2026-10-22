@@ -1790,5 +1790,15 @@
   "town.ancientwarfare.thief": "Stop, thief! A pickpocket robbed a trader in %s and runs %s. The guards are after him.",
   "town.ancientwarfare.thief_escaped": "The thief got away.",
   "town.ancientwarfare.thief_caught": "You caught the thief. %s thank you: %s silver as a reward.",
-  "town.ancientwarfare.grew": "%s is growing: the townsfolk have built a new house at the edge of town."
+  "town.ancientwarfare.grew": "%s is growing: the townsfolk have built a new house at the edge of town.",
+  "season.ancientwarfare.spring": "spring",
+  "season.ancientwarfare.summer": "summer",
+  "season.ancientwarfare.autumn": "autumn",
+  "season.ancientwarfare.winter": "winter",
+  "season.ancientwarfare.spring.effect": "The fields are sown; harvests are still modest.",
+  "season.ancientwarfare.summer.effect": "Crops ripen; a dry or wet summer can bring a bad harvest.",
+  "season.ancientwarfare.autumn.effect": "Harvest time: stores fill up, prices drop a little and towns hold harvest festivals.",
+  "season.ancientwarfare.winter.effect": "Little grows: food runs short, prices rise, storms are frequent, armies march slower and fewer travellers are on the roads.",
+  "season.ancientwarfare.begins": "A new season begins: %s. %s",
+  "season.ancientwarfare.now": "It is %s, days left: %s. %s"
 }

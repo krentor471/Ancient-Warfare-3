@@ -121,7 +121,7 @@ public final class FactionTravellers {
 
       if (now % SPAWN_CHECK_TICKS == 0L) {
          for (ServerPlayer player : level.players()) {
-            if (ACTIVE.size() < MAX_GROUPS && level.getRandom().nextDouble() < SPAWN_CHANCE) {
+            if (ACTIVE.size() < MAX_GROUPS && level.getRandom().nextDouble() < SPAWN_CHANCE * FactionSeasons.travel(level)) {
                trySpawn(level, data, player, now);
             }
          }

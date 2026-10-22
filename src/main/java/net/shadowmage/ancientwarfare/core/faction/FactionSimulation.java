@@ -103,6 +103,7 @@ public final class FactionSimulation {
    }
 
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
+      FactionSeasons.simulateDay(level);
       FactionLife.simulateDay(level, data);
       FactionResources.simulateDay(data);
       Map<String, Integer> recruited = new HashMap<>();
