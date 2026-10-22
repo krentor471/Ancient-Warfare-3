@@ -99,6 +99,7 @@ public final class FactionSimulation {
 
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       FactionLife.simulateDay(level, data);
+      FactionResources.simulateDay(data);
       Map<String, Integer> recruited = new HashMap<>();
       Map<String, Integer> settlements = new HashMap<>();
       data.settlements().forEach(settlement -> settlements.merge(settlement.faction(), 1, Integer::sum));
@@ -117,7 +118,11 @@ public final class FactionSimulation {
          // A fort is a garrison with a few hands to keep it; anywhere else a third of the people may serve.
          int maxGarrison = FactionAI.isFort(settlement) ? FactionExpansion.FORT_GARRISON + settlement.tier * 4 : settlement.population / 3;
 
-         for (int i = 0; i < MAX_RECRUITS_PER_DAY && settlement.garrison < maxGarrison && settlement.population > 1 && gold >= RECRUIT_COST; i++) {
+         for (int i = 0;
+            i < MAX_RECRUITS_PER_DAY && settlement.garrison < maxGarrison && settlement.population > 1 && gold >= RECRUIT_COST && FactionResources.hasIron(data, faction);
+            i++
+         ) {
+            FactionResources.spendIron(data, faction);
             settlement.garrison++;
             settlement.population--;
             gold -= RECRUIT_COST;
@@ -125,7 +130,9 @@ public final class FactionSimulation {
          }
 
          int tierCost = TIER_COST * (settlement.tier + 1);
-         if (settlement.population >= capacity && settlement.tier < MAX_TIER && gold >= tierCost) {
+         if (settlement.population >= capacity && settlement.tier < MAX_TIER && gold >= tierCost
+            && FactionResources.has(data, faction, FactionResources.tierCost(settlement.tier))) {
+            FactionResources.spend(data, faction, FactionResources.tierCost(settlement.tier));
             settlement.tier++;
             gold -= tierCost;
          }

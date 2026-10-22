@@ -24,6 +24,8 @@ public final class FactionWorldData extends SavedData {
    private final Map<String, Map<String, FactionDiplomacy.Relation>> relations = new HashMap<>();
    private final List<Settlement> settlements = new ArrayList<>();
    private final Map<String, Integer> treasuries = new HashMap<>();
+   /** Each faction's stores of wood, stone and iron; see FactionResources. */
+   private final Map<String, int[]> stores = new HashMap<>();
    /** Until when each player knows the movements of each faction's armies, from a spy's report. */
    private final Map<UUID, Map<String, Long>> intel = new HashMap<>();
    /** Spies on their way; see FactionSpies. */
@@ -418,6 +420,11 @@ public final class FactionWorldData extends SavedData {
       this.setDirty();
    }
 
+   /** The faction's stores (wood, stone, iron), created with its starting stock; changes are written back in place. */
+   public int[] stores(String faction) {
+      return this.stores.computeIfAbsent(faction, ignored -> FactionResources.startingStores());
+   }
+
    public long lastSimulatedDay() {
       return this.lastSimulatedDay;
    }
@@ -477,6 +484,9 @@ public final class FactionWorldData extends SavedData {
       CompoundTag gold = new CompoundTag();
       this.treasuries.forEach(gold::putInt);
       tag.put("Treasuries", gold);
+      CompoundTag storeTag = new CompoundTag();
+      this.stores.forEach(storeTag::putIntArray);
+      tag.put("Stores", storeTag);
       CompoundTag rulerTag = new CompoundTag();
       this.rulers.forEach((faction, ruler) -> {
          CompoundTag entry = new CompoundTag();
@@ -692,6 +702,13 @@ public final class FactionWorldData extends SavedData {
       data.nextSettlementId = Math.max(tag.getInt("NextSettlementId"), data.settlements.size() + 1);
       CompoundTag gold = tag.getCompound("Treasuries");
       gold.getAllKeys().forEach(faction -> data.treasuries.put(faction, gold.getInt(faction)));
+      CompoundTag storeTag = tag.getCompound("Stores");
+      for (String faction : storeTag.getAllKeys()) {
+         int[] saved = storeTag.getIntArray(faction);
+         int[] stock = FactionResources.startingStores();
+         System.arraycopy(saved, 0, stock, 0, Math.min(saved.length, stock.length));
+         data.stores.put(faction, stock);
+      }
       CompoundTag intelTag = tag.getCompound("Intel");
       for (String key : intelTag.getAllKeys()) {
          try {

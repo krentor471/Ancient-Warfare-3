@@ -98,15 +98,18 @@ public final class FactionExpansion {
          // Securing the border comes before new villages.
          if (!FactionDiplomacy.isOutlaw(faction)
             && data.treasury(faction) >= FORT_COST
+            && FactionResources.has(data, faction, FactionResources.FORT_COST)
             && day - data.lastFounding(FORT_KEY + faction) >= FORT_INTERVAL_DAYS
             && planFort(level, data, faction, day, false) != null) {
             data.setTreasury(faction, data.treasury(faction) - FORT_COST);
+            FactionResources.spend(data, faction, FactionResources.FORT_COST);
          }
 
          int provinces = data.provincesOf(faction).size();
          int cost = foundingCost(faction, provinces);
          if (!FactionDiplomacy.isOutlaw(faction)
             && data.treasury(faction) >= cost
+            && FactionResources.has(data, faction, FactionResources.VILLAGE_COST)
             && day - data.lastFounding(faction) >= FOUND_INTERVAL_DAYS + provinces / PROVINCES_PER_EXTRA_DAY) {
             FactionWorldData.Settlement source = largestSettlement(data, faction);
             if (source != null && source.population >= MIN_SOURCE_POPULATION) {
@@ -117,6 +120,7 @@ public final class FactionExpansion {
                      faction, FactionTowns.VILLAGE, province.seedX(), level.getSeaLevel(), province.seedZ(), province.key(), level.getGameTime(), 0, SETTLERS
                   );
                   data.setTreasury(faction, data.treasury(faction) - cost);
+                  FactionResources.spend(data, faction, FactionResources.VILLAGE_COST);
                   source.population -= SETTLERS;
                   data.setLastFounding(faction, day);
                   FactionNews.founded(level, faction, province.seedX(), province.seedZ());

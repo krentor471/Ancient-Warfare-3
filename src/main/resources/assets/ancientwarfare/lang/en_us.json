@@ -1726,5 +1726,6 @@
   "news.ancientwarfare.relief_set_out": "Relief: %1$s send %2$s soldiers to hold%3$s",
   "news.ancientwarfare.intercept_set_out": "%1$s send %2$s soldiers to cut off the army of %3$s on the road",
   "news.ancientwarfare.relief_arrived": "Relief: %2$s soldiers of %1$s reach%3$s and join its garrison",
-  "tournament.ancientwarfare.prize": "%s of the %s tournament"
+  "tournament.ancientwarfare.prize": "%s of the %s tournament",
+  "gui.ancientwarfare.diplomacy.stores": "Treasury %s gold; wood %s, stone %s, iron %s"
 }

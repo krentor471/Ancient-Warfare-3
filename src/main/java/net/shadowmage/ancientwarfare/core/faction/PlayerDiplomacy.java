@@ -207,7 +207,8 @@ public final class PlayerDiplomacy {
                standings.hasTrade(player.getUUID(), faction),
                FactionTrade.playerRoutes(data, player.getUUID(), faction),
                FactionRulers.ruler(data, faction, player.getRandom()).name(),
-               FactionRulers.ruler(data, faction, player.getRandom()).trait()
+               FactionRulers.ruler(data, faction, player.getRandom()).trait(),
+               new int[]{data.treasury(faction), data.stores(faction)[FactionResources.WOOD], data.stores(faction)[FactionResources.STONE], data.stores(faction)[FactionResources.IRON]}
             )
          );
       }
@@ -216,7 +217,7 @@ public final class PlayerDiplomacy {
    }
 
    public static record Entry(
-      String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait
+      String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores
    ) {
    }
 }

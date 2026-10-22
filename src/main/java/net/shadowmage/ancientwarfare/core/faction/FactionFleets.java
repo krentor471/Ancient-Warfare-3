@@ -74,7 +74,7 @@ public final class FactionFleets {
       }
 
       for (String faction : factions) {
-         if (random.nextDouble() >= FLEET_CHANCE || data.treasury(faction) < SHIP_COST || sailing(data, faction)) {
+         if (random.nextDouble() >= FLEET_CHANCE || data.treasury(faction) < SHIP_COST || !FactionResources.has(data, faction, FactionResources.SHIP_COST) || sailing(data, faction)) {
             continue;
          }
 
@@ -111,6 +111,7 @@ public final class FactionFleets {
 
          int crew = Math.min(MAX_CREW, bestHome.garrison() / 2);
          data.setTreasury(faction, data.treasury(faction) - SHIP_COST);
+         FactionResources.spend(data, faction, FactionResources.SHIP_COST);
          FactionCampaigns.sail(level, data, bestHome, bestTarget, crew, coast(level, bestHome), coast(level, bestTarget), true);
       }
    }

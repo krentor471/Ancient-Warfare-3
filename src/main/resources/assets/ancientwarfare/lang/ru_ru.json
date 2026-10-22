@@ -1726,5 +1726,6 @@
   "news.ancientwarfare.relief_set_out": "Подмога: %1$s посылают %2$s бойцов на защиту поселения%3$s",
   "news.ancientwarfare.intercept_set_out": "%1$s выводят %2$s бойцов наперерез войску (%3$s)",
   "news.ancientwarfare.relief_arrived": "Подмога: %2$s бойцов (%1$s) дошли до поселения%3$s и встали в гарнизон",
-  "tournament.ancientwarfare.prize": "%s: приз турнира (%s)"
+  "tournament.ancientwarfare.prize": "%s: приз турнира (%s)",
+  "gui.ancientwarfare.diplomacy.stores": "Казна %s; лес %s, камень %s, железо %s"
 }

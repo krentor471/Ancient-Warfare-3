@@ -144,6 +144,12 @@ public class DiplomacyScreen extends Screen {
       y += 11;
       graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.settlements", entry.settlements()), x, y, TEXT_COLOR);
       y += 11;
+      int[] stores = entry.stores();
+      if (stores.length >= 4) {
+         graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.stores", stores[0], stores[1], stores[2], stores[3]), x, y, MUTED_COLOR);
+         y += 11;
+      }
+
       Component trade = entry.trade()
          ? Component.translatable("gui.ancientwarfare.diplomacy.trade", entry.routes())
          : Component.translatable("gui.ancientwarfare.diplomacy.trade_none");

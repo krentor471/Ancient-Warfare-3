@@ -596,14 +596,14 @@ public final class ForgeFactionCommands {
       tell(
          source,
          Component.literal(
-            "Day " + data.lastSimulatedDay() + ", " + data.plannedSettlements().size() + " village(s) planned. Faction: settlements, provinces, people, garrison, treasury"
+            "Day " + data.lastSimulatedDay() + ", " + data.plannedSettlements().size() + " village(s) planned. Faction: settlements, provinces, people, garrison, treasury, wood/stone/iron"
          )
       );
       totals.forEach(
          (faction, total) -> tell(
                source,
                Component.literal(
-                  "  " + faction + ": " + total[0] + ", " + data.provincesOf(faction).size() + ", " + total[1] + ", " + total[2] + ", " + data.treasury(faction) + " gold"
+                  "  " + faction + ": " + total[0] + ", " + data.provincesOf(faction).size() + ", " + total[1] + ", " + total[2] + ", " + data.treasury(faction) + " gold, " + data.stores(faction)[0] + "/" + data.stores(faction)[1] + "/" + data.stores(faction)[2]
                )
             )
       );
