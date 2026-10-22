@@ -124,10 +124,13 @@ public final class FactionChatter {
    /** People who may chat: not marching, trading on the road, fleeing with a purse or fighting. */
    private static boolean mayTalk(FactionNpcEntity npc, long now) {
       Long rest = SPEAKER_RESTS.get(npc.getUUID());
+      return npc.getTarget() == null && (rest == null || rest <= now) && mayShout(npc);
+   }
+
+   /** A cry needs no rest and comes even from someone already fighting. */
+   private static boolean mayShout(FactionNpcEntity npc) {
       return npc.isAlive()
          && !npc.isSleeping()
-         && npc.getTarget() == null
-         && (rest == null || rest <= now)
          && FactionArmies.armyId(npc) == 0
          && FactionCaravans.caravanId(npc) == 0
          && !FactionTownLife.isThief(npc)
@@ -372,7 +375,7 @@ public final class FactionChatter {
          return;
       }
 
-      for (FactionNpcEntity npc : near(level, near, HEAR_RANGE, now)) {
+      for (FactionNpcEntity npc : level.getEntitiesOfClass(FactionNpcEntity.class, near.getBoundingBox().inflate(HEAR_RANGE), FactionChatter::mayShout)) {
          if (npc != except && (category.equals("thanks") || !FactionStandingData.get(level).isHostile(player.getUUID(), npc.getFactionName()) || civilian(npc))) {
             SHOUTS.put(key, now + SHOUT_REST);
             say(level, npc, line(category, level.getRandom(), null), now);
