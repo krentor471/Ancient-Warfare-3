@@ -50,6 +50,9 @@ public final class FactionExpansion {
    /** How far from its own province's seed toward the rival's a fort stands. */
    private static final double FORT_BORDER_SHARE = 0.6;
    private static final String FORT_KEY = "fort:";
+   /** Spots where a fort could not be built since the server started, by chunk; no fort is planned within FAILED_FORT_RANGE of one. */
+   private static final Set<Long> FAILED_FORTS = new HashSet<>();
+   private static final int FAILED_FORT_RANGE = 64;
    private static final int CAPITAL_POPULATION = 60;
    private static final int CAPITAL_GARRISON = 15;
    private static final int CAPITAL_SEARCH_STEP = 64;
@@ -149,7 +152,10 @@ public final class FactionExpansion {
                      z = (home.seedZ() + across.seedZ()) / 2;
                   }
 
-                  if (anywhere || !level.hasNearbyAlivePlayer(x, level.getSeaLevel(), z, PLAN_PLAYER_RANGE)) {
+                  if ((anywhere || !level.hasNearbyAlivePlayer(x, level.getSeaLevel(), z, PLAN_PLAYER_RANGE))
+                     && !nearFailedFort(x, z)
+                     && !nearPlannedFort(data, x, z)
+                     && AwtWorldGenerator.roughSiteAcceptable(level, x, z, 1)) {
                      candidates.add(new FactionWorldData.PlannedSettlement(faction, x, z, owned, day, true));
                   }
                }
@@ -215,9 +221,19 @@ public final class FactionExpansion {
 
          iterator.remove();
          data.setDirty();
+         if (nearFailedFort(plan.x(), plan.z())) {
+            // Another faction's fort already failed on this spot; the land will not have changed.
+            AncientWarfareCore.LOG.info("Faction {} drops its planned fort at {}, {}: no room there", plan.faction(), plan.x(), plan.z());
+            continue;
+         }
+
          boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction(), AwsWorldGenerator.Site.FORT);
          if (built) {
             FactionNews.fortified(level, plan.faction(), plan.x(), plan.z());
+         }
+
+         if (!built) {
+            FAILED_FORTS.add(ChunkPos.asLong(plan.x() >> 4, plan.z() >> 4));
          }
 
          AncientWarfareCore.LOG.info("Faction {} {} its planned fort at {}, {}", plan.faction(), built ? "built" : "could not build", plan.x(), plan.z());
@@ -225,6 +241,30 @@ public final class FactionExpansion {
       }
 
       buildNearest(level, data);
+   }
+
+   /** True when any faction already plans a fort this close: two rivals meeting on a border pick the same midpoint. */
+   private static boolean nearPlannedFort(FactionWorldData data, int x, int z) {
+      for (FactionWorldData.PlannedSettlement plan : data.plannedSettlements()) {
+         if (plan.fort() && Math.abs(plan.x() - x) < FAILED_FORT_RANGE && Math.abs(plan.z() - z) < FAILED_FORT_RANGE) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   private static boolean nearFailedFort(int x, int z) {
+      int range = FAILED_FORT_RANGE >> 4;
+      for (int dx = -range; dx <= range; dx++) {
+         for (int dz = -range; dz <= range; dz++) {
+            if (FAILED_FORTS.contains(ChunkPos.asLong((x >> 4) + dx, (z >> 4) + dz))) {
+               return true;
+            }
+         }
+      }
+
+      return false;
    }
 
    private static boolean withinReach(ServerLevel level, double x, double z) {

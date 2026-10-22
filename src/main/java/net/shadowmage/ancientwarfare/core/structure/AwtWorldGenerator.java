@@ -157,7 +157,7 @@ public final class AwtWorldGenerator {
     * sea over the terrain or too steep a spread of heights rules it out at once. Lakes, rivers cut
     * by carvers and the like only show in the real check that follows, which loads the land.
     */
-   private static boolean roughSiteAcceptable(ServerLevel level, int x, int z, int chunks) {
+   public static boolean roughSiteAcceptable(ServerLevel level, int x, int z, int chunks) {
       net.minecraft.world.level.chunk.ChunkGenerator generator = level.getChunkSource().getGenerator();
       net.minecraft.world.level.levelgen.RandomState random = level.getChunkSource().randomState();
       int halfSize = Math.max(16, chunks * 8);
