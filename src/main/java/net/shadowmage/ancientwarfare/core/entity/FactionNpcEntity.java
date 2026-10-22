@@ -110,7 +110,7 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       return this.applyCombatRankName(
          Component.translatable(
             "entity.ancientwarfare.faction.named",
-            new Object[]{this.getFactionName(), Component.translatable("entity.ancientwarfare.faction." + this.getNpcSubtype())}
+            new Object[]{Component.translatableWithFallback("faction.ancientwarfare." + this.getFactionName(), this.getFactionName()), Component.translatable("entity.ancientwarfare.faction." + this.getNpcSubtype())}
          )
       );
    }
