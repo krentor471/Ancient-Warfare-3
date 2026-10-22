@@ -85,15 +85,16 @@ public final class FactionMercenaries {
          }
       }
 
+      FactionTaverns.tick(level, data);
       endContracts(level);
    }
 
-   private static boolean playerNear(ServerLevel level, FactionWorldData.Settlement settlement) {
+   static boolean playerNear(ServerLevel level, FactionWorldData.Settlement settlement) {
       BlockPos center = settlement.center();
       return level.players().stream().anyMatch(player -> player.distanceToSqr(center.getX(), player.getY(), center.getZ()) < CAPTAIN_RANGE * CAPTAIN_RANGE);
    }
 
-   private static AABB area(FactionWorldData.Settlement settlement) {
+   static AABB area(FactionWorldData.Settlement settlement) {
       return new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(24.0, 32.0, 24.0);
    }
 
@@ -136,7 +137,7 @@ public final class FactionMercenaries {
    }
 
    /** A floor inside the tavern with room to stand, or the ground beside it when none is found. */
-   private static BlockPos standingSpot(ServerLevel level, FactionWorldData.Settlement settlement) {
+   static BlockPos standingSpot(ServerLevel level, FactionWorldData.Settlement settlement) {
       RandomSource random = level.getRandom();
       BlockPos min = settlement.min();
       BlockPos max = settlement.max();

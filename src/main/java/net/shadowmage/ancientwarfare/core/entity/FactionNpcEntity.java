@@ -134,6 +134,14 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
          return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
 
+      if (hand == InteractionHand.MAIN_HAND && net.shadowmage.ancientwarfare.core.faction.FactionTaverns.isBarman(this)) {
+         if (player instanceof ServerPlayer serverPlayer) {
+            net.shadowmage.ancientwarfare.core.faction.FactionTaverns.talk(serverPlayer, this);
+         }
+
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      }
+
       if (hand == InteractionHand.MAIN_HAND && net.shadowmage.ancientwarfare.core.faction.FactionMercenaries.isCaptain(this)) {
          if (player instanceof ServerPlayer serverPlayer) {
             net.shadowmage.ancientwarfare.core.faction.FactionMercenaries.talk(serverPlayer, this);

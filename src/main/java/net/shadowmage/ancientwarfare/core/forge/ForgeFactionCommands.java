@@ -125,6 +125,20 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("pay").then(Commands.argument("army", IntegerArgumentType.integer()).executes(context -> answerUltimatum(context, true))))
                .then(Commands.literal("refuse").then(Commands.argument("army", IntegerArgumentType.integer()).executes(context -> answerUltimatum(context, false))))
          );
+      // Run by clicking a barman's offer in chat.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awtavern")
+               .then(
+                  Commands.argument("barman", IntegerArgumentType.integer())
+                     .then(
+                        Commands.argument("offer", StringArgumentType.word())
+                           .executes(
+                              context -> serve(context.getSource(), IntegerArgumentType.getInteger(context, "barman"), StringArgumentType.getString(context, "offer"))
+                           )
+                     )
+               )
+         );
       // Run by clicking a mercenary captain's offer in chat.
       event.getDispatcher()
          .register(
@@ -633,6 +647,21 @@ public final class ForgeFactionCommands {
       for (FactionMercenaries.Offer candidate : FactionMercenaries.Offer.values()) {
          if (candidate.name().equalsIgnoreCase(offer)) {
             FactionMercenaries.hire(player, captain, candidate);
+            return 1;
+         }
+      }
+
+      return 0;
+   }
+
+   private static int serve(CommandSourceStack source, int barman, String offer) {
+      if (!(source.getEntity() instanceof ServerPlayer player)) {
+         return 0;
+      }
+
+      for (net.shadowmage.ancientwarfare.core.faction.FactionTaverns.Offer candidate : net.shadowmage.ancientwarfare.core.faction.FactionTaverns.Offer.values()) {
+         if (candidate.name().equalsIgnoreCase(offer)) {
+            net.shadowmage.ancientwarfare.core.faction.FactionTaverns.serve(player, barman, candidate);
             return 1;
          }
       }

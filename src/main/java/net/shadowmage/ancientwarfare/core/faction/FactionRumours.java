@@ -83,6 +83,11 @@ public final class FactionRumours {
 
    /** One piece of news about the land around x, z, or small talk when there is none. */
    public static Component rumour(ServerLevel level, ServerPlayer player, double x, double z, RandomSource random) {
+      return rumour(level, player, x, z, random, TREASURE_CHANCE);
+   }
+
+   /** As above, with the chance of a hint at buried treasure given: a barman hears more than most. */
+   public static Component rumour(ServerLevel level, ServerPlayer player, double x, double z, RandomSource random, double treasureChance) {
       FactionWorldData data = FactionWorldData.get(level);
       List<Supplier<Component>> kinds = new ArrayList<>(List.of(
          () -> march(data, x, z, random),
@@ -92,7 +97,7 @@ public final class FactionRumours {
          () -> captured(data, x, z, random),
          () -> place(data, x, z, random)
       ));
-      if (random.nextDouble() < TREASURE_CHANCE) {
+      if (random.nextDouble() < treasureChance) {
          Component treasure = treasure(level, data, player, x, z, random);
          if (treasure != null) {
             return treasure;
