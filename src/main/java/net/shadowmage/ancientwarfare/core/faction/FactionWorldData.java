@@ -505,6 +505,8 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Order", settlement.order);
          entry.putInt("Loyalty", settlement.loyalty);
          entry.putInt("Famine", settlement.famine);
+         entry.putInt("Growth", settlement.growth);
+         entry.putInt("Grown", settlement.grown);
          entry.putInt("Plague", settlement.plague);
          list.add(entry);
       }
@@ -723,6 +725,8 @@ public final class FactionWorldData extends SavedData {
             settlement.loyalty = entry.getInt("Loyalty");
             settlement.famine = entry.getInt("Famine");
             settlement.plague = entry.getInt("Plague");
+            settlement.growth = entry.getInt("Growth");
+            settlement.grown = entry.getInt("Grown");
          } else if (!settlement.capturedFrom.isEmpty()) {
             settlement.loyalty = 50;
          }
@@ -1346,6 +1350,10 @@ public final class FactionWorldData extends SavedData {
       int famine;
       /** Days of disease left. */
       int plague;
+      /** Buildings the town has earned by growing and not yet put up; see FactionGrowth. */
+      int growth;
+      /** Buildings the town has put up by itself. */
+      int grown;
 
       Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
          this.id = id;
@@ -1407,6 +1415,16 @@ public final class FactionWorldData extends SavedData {
 
       public BlockPos max() {
          return this.max;
+      }
+
+      /** The settlement now also covers the box from a to b. */
+      public void extend(BlockPos a, BlockPos b) {
+         this.min = new BlockPos(Math.min(this.min.getX(), Math.min(a.getX(), b.getX())), Math.min(this.min.getY(), Math.min(a.getY(), b.getY())), Math.min(this.min.getZ(), Math.min(a.getZ(), b.getZ())));
+         this.max = new BlockPos(Math.max(this.max.getX(), Math.max(a.getX(), b.getX())), Math.max(this.max.getY(), Math.max(a.getY(), b.getY())), Math.max(this.max.getZ(), Math.max(a.getZ(), b.getZ())));
+      }
+
+      public int grown() {
+         return this.grown;
       }
 
       public long province() {

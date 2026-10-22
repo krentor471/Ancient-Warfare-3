@@ -1789,5 +1789,6 @@
   "town.ancientwarfare.festival.harvest": "they celebrate a rich harvest.",
   "town.ancientwarfare.thief": "Stop, thief! A pickpocket robbed a trader in %s and runs %s. The guards are after him.",
   "town.ancientwarfare.thief_escaped": "The thief got away.",
-  "town.ancientwarfare.thief_caught": "You caught the thief. %s thank you: %s silver as a reward."
+  "town.ancientwarfare.thief_caught": "You caught the thief. %s thank you: %s silver as a reward.",
+  "town.ancientwarfare.grew": "%s is growing: the townsfolk have built a new house at the edge of town."
 }

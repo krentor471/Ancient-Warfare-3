@@ -1789,5 +1789,6 @@
   "town.ancientwarfare.festival.harvest": "празднуют богатый урожай.",
   "town.ancientwarfare.thief": "Держи вора! Воришка обокрал торговца в %s и бежит, %s. Стража за ним.",
   "town.ancientwarfare.thief_escaped": "Вор скрылся.",
-  "town.ancientwarfare.thief_caught": "Ты поймал вора. Тебя благодарят (%s): награда %s сер."
+  "town.ancientwarfare.thief_caught": "Ты поймал вора. Тебя благодарят (%s): награда %s сер.",
+  "town.ancientwarfare.grew": "Поселение растёт (%s): на окраине жители построили новый дом."
 }

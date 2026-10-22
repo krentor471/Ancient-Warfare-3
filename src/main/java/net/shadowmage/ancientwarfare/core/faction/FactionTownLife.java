@@ -145,7 +145,7 @@ public final class FactionTownLife {
       }
    }
 
-   private static boolean isTown(FactionWorldData.Settlement settlement) {
+   static boolean isTown(FactionWorldData.Settlement settlement) {
       return settlement.built() && !FactionDiplomacy.isOutlaw(settlement.faction()) && !FactionAI.isFort(settlement) && settlement.population() >= 8;
    }
 
@@ -167,7 +167,7 @@ public final class FactionTownLife {
          : null;
    }
 
-   private static boolean underAttack(FactionWorldData data, FactionWorldData.Settlement settlement) {
+   static boolean underAttack(FactionWorldData data, FactionWorldData.Settlement settlement) {
       for (FactionWorldData.Campaign campaign : data.campaigns()) {
          if (campaign.targetSettlement() == settlement.id() && !campaign.relief() && campaign.hunt() == 0) {
             return true;

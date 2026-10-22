@@ -61,7 +61,7 @@ public final class FactionSimulation {
          case FactionTowns.VILLAGE -> 30;
          default -> 12;
       };
-      return base + settlement.tier() * base / 2 + settlement.garrison();
+      return base + settlement.tier() * base / 2 + settlement.grown() * FactionGrowth.ROOM_PER_PIECE + settlement.garrison();
    }
 
    public static void tick(ServerLevel level) {
@@ -93,6 +93,7 @@ public final class FactionSimulation {
       FactionTravellers.tick(level, data);
       FactionRumours.tick(level, data);
       FactionTownLife.tick(level, data);
+      FactionGrowth.tick(level, data);
       FactionMercenaries.tick(level, data);
       FactionEnvoys.tick(level);
 
@@ -152,6 +153,7 @@ public final class FactionSimulation {
       FactionArmies.simulateDay(level, data, data.lastSimulatedDay());
       PlayerCountry.startTaxDay(data);
       FactionTownLife.simulateDay(level, data);
+      FactionGrowth.simulateDay(level, data);
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);
       data.setDirty();
