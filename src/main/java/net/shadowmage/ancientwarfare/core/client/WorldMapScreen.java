@@ -278,6 +278,36 @@ public class WorldMapScreen extends Screen {
       super.render(graphics, mouseX, mouseY, partialTick);
    }
 
+   /** How the settlement lives: its people, stores, health, order and loyalty, and any trouble. */
+   private static void addLife(List<Component> lines, int[] life) {
+      if (life.length <= WorldMap.LIFE_FLAGS) {
+         return;
+      }
+
+      int flags = life[WorldMap.LIFE_FLAGS];
+      lines.add(Component.translatable("gui.ancientwarfare.world_map.people", life[WorldMap.LIFE_PEOPLE], life[WorldMap.LIFE_GARRISON]));
+      if (life[WorldMap.LIFE_FOOD_DAYS] >= 0) {
+         lines.add(Component.translatable("gui.ancientwarfare.world_map.stores", life[WorldMap.LIFE_FOOD_DAYS], life[WorldMap.LIFE_HEALTH]));
+      }
+
+      lines.add(Component.translatable("gui.ancientwarfare.world_map.mood", life[WorldMap.LIFE_ORDER], life[WorldMap.LIFE_LOYALTY]));
+      if ((flags & WorldMap.FLAG_HUNGRY) != 0) {
+         lines.add(Component.translatable("gui.ancientwarfare.world_map.hungry").withStyle(net.minecraft.ChatFormatting.RED));
+      }
+
+      if ((flags & WorldMap.FLAG_FAMINE) != 0) {
+         lines.add(Component.translatable("gui.ancientwarfare.world_map.famine").withStyle(net.minecraft.ChatFormatting.GOLD));
+      }
+
+      if ((flags & WorldMap.FLAG_PLAGUE) != 0) {
+         lines.add(Component.translatable("gui.ancientwarfare.world_map.plague").withStyle(net.minecraft.ChatFormatting.DARK_PURPLE));
+      }
+
+      if ((flags & WorldMap.FLAG_TAKEN) != 0 && life[WorldMap.LIFE_LOYALTY] < 40) {
+         lines.add(Component.translatable("gui.ancientwarfare.world_map.unrest").withStyle(net.minecraft.ChatFormatting.YELLOW));
+      }
+   }
+
    private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY, WorldMap.Marker hovered) {
       int x = (int)Math.floor(this.worldX(mouseX));
       int z = (int)Math.floor(this.worldZ(mouseY));
@@ -293,7 +323,14 @@ public class WorldMapScreen extends Screen {
             lines.add(Component.translatable("faction.ancientwarfare." + faction));
          }
 
-         lines.add(Component.literal(hovered.label()));
+         addLife(lines, hovered.life());
+         if (hovered.life().length == 0 || hovered.kind() == WorldMap.Kind.PLAYER_VILLAGE) {
+            lines.add(Component.literal(hovered.label()));
+         } else if (this.data.canTeleport()) {
+            // The settlement's number and template, for the operator.
+            lines.add(Component.literal(hovered.label()).withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+         }
+
          x = hovered.x();
          z = hovered.z();
       } else {

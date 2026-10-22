@@ -273,6 +273,8 @@ public final class FactionAI {
    static void capture(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement target, String attacker, int garrison) {
       String defender = target.faction();
       target.capturedFrom = defender;
+      target.loyalty = 30;
+      target.order = 40;
       TAKEN.put(target.id(), data.lastSimulatedDay());
       target.setFaction(attacker);
       target.garrison = garrison;

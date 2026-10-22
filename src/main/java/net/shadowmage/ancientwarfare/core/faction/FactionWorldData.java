@@ -39,6 +39,8 @@ public final class FactionWorldData extends SavedData {
    private final Map<BlockPos, Long> lastRaid = new HashMap<>();
    /** Emeralds a village taken from a faction pays its new owner each day. */
    private final Map<BlockPos, Integer> taxes = new HashMap<>();
+   /** Villages a player took from a faction: how the people there take their new lord. */
+   private final Map<BlockPos, VillageState> villageStates = new HashMap<>();
    private int nextSettlementId = 1;
    private int nextArmyId = 1;
    private final List<Route> routes = new ArrayList<>();
@@ -344,11 +346,22 @@ public final class FactionWorldData extends SavedData {
    public void setVillage(BlockPos pos, UUID owner) {
       if (owner == null) {
          this.taxes.remove(pos);
+         this.villageStates.remove(pos);
       }
 
       if (owner == null ? this.villages.remove(pos) != null : !owner.equals(this.villages.put(pos.immutable(), owner))) {
          this.setDirty();
       }
+   }
+
+   /** The state of a village taken from a faction, or null for any other village. */
+   public VillageState villageState(BlockPos village) {
+      return this.villageStates.get(village);
+   }
+
+   public void setVillageState(BlockPos village, VillageState state) {
+      this.villageStates.put(village.immutable(), state);
+      this.setDirty();
    }
 
    public int tax(BlockPos village) {
@@ -450,6 +463,12 @@ public final class FactionWorldData extends SavedData {
          entry.putString("CapturedFrom", settlement.capturedFrom);
          entry.putBoolean("Built", settlement.built);
          entry.putString("Name", settlement.name);
+         entry.putInt("Food", settlement.food);
+         entry.putInt("Health", settlement.health);
+         entry.putInt("Order", settlement.order);
+         entry.putInt("Loyalty", settlement.loyalty);
+         entry.putInt("Famine", settlement.famine);
+         entry.putInt("Plague", settlement.plague);
          list.add(entry);
       }
 
@@ -569,6 +588,11 @@ public final class FactionWorldData extends SavedData {
          entry.putUUID("Owner", owner);
          entry.putLong("LastRaid", this.lastRaid(pos));
          entry.putInt("Tax", this.tax(pos));
+         VillageState state = this.villageStates.get(pos);
+         if (state != null) {
+            entry.put("State", state.save());
+         }
+
          villageList.add(entry);
       });
       tag.put("Villages", villageList);
@@ -636,6 +660,17 @@ public final class FactionWorldData extends SavedData {
          settlement.capturedFrom = entry.getString("CapturedFrom");
          settlement.built = !entry.contains("Built") || entry.getBoolean("Built");
          settlement.name = entry.getString("Name");
+         if (entry.contains("Health")) {
+            settlement.food = entry.getInt("Food");
+            settlement.health = entry.getInt("Health");
+            settlement.order = entry.getInt("Order");
+            settlement.loyalty = entry.getInt("Loyalty");
+            settlement.famine = entry.getInt("Famine");
+            settlement.plague = entry.getInt("Plague");
+         } else if (!settlement.capturedFrom.isEmpty()) {
+            settlement.loyalty = 50;
+         }
+
          data.settlements.add(settlement);
       }
 
@@ -775,6 +810,10 @@ public final class FactionWorldData extends SavedData {
             data.lastRaid.put(pos, entry.getLong("LastRaid"));
             if (entry.getInt("Tax") > 0) {
                data.taxes.put(pos, entry.getInt("Tax"));
+            }
+
+            if (entry.contains("State")) {
+               data.villageStates.put(pos, VillageState.load(entry.getCompound("State")));
             }
          }
       }
@@ -1091,6 +1130,43 @@ public final class FactionWorldData extends SavedData {
    public static record Ruler(int name, int trait, long since) {
    }
 
+   /** A village a player took from a faction; see FactionUnrest. */
+   public static final class VillageState {
+      public final String from;
+      public final int people;
+      public int loyalty;
+      public int order;
+      /** 0 low, 1 usual, 2 high. */
+      public int taxLevel = 1;
+      /** The owner's soldiers last counted near the hall. */
+      public int guards;
+
+      public VillageState(String from, int people, int loyalty, int order) {
+         this.from = from;
+         this.people = people;
+         this.loyalty = loyalty;
+         this.order = order;
+      }
+
+      CompoundTag save() {
+         CompoundTag tag = new CompoundTag();
+         tag.putString("From", this.from);
+         tag.putInt("People", this.people);
+         tag.putInt("Loyalty", this.loyalty);
+         tag.putInt("Order", this.order);
+         tag.putInt("TaxLevel", this.taxLevel);
+         tag.putInt("Guards", this.guards);
+         return tag;
+      }
+
+      static VillageState load(CompoundTag tag) {
+         VillageState state = new VillageState(tag.getString("From"), tag.getInt("People"), tag.getInt("Loyalty"), tag.getInt("Order"));
+         state.taxLevel = tag.getInt("TaxLevel");
+         state.guards = tag.getInt("Guards");
+         return state;
+      }
+   }
+
    public static final class Settlement {
       private final int id;
       /** See FactionNames; empty for player villages. */
@@ -1113,6 +1189,18 @@ public final class FactionWorldData extends SavedData {
       boolean built = true;
       /** Game time of the last garrison respawn; not saved. */
       long lastRespawn;
+      /** Stored food in rations (one person eats one a day); below zero until first counted. */
+      int food = -1;
+      /** 0 to 100: falls with hunger and disease. */
+      int health = 100;
+      /** 0 to 100: kept up by the garrison and full stores, worn down by hunger, disease and unrest. */
+      int order = 70;
+      /** 0 to 100: how much the people hold to their faction; low in a settlement newly taken. */
+      int loyalty = 100;
+      /** Days of a bad harvest left. */
+      int famine;
+      /** Days of disease left. */
+      int plague;
 
       Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
          this.id = id;
@@ -1194,6 +1282,34 @@ public final class FactionWorldData extends SavedData {
 
       public int tier() {
          return this.tier;
+      }
+
+      public int food() {
+         return Math.max(0, this.food);
+      }
+
+      public int health() {
+         return this.health;
+      }
+
+      public int order() {
+         return this.order;
+      }
+
+      public int loyalty() {
+         return this.loyalty;
+      }
+
+      public int famine() {
+         return this.famine;
+      }
+
+      public int plague() {
+         return this.plague;
+      }
+
+      public String capturedFrom() {
+         return this.capturedFrom;
       }
 
       public boolean manned() {

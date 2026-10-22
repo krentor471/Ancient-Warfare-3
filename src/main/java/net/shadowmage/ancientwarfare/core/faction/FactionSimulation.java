@@ -98,13 +98,16 @@ public final class FactionSimulation {
    }
 
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
+      FactionLife.simulateDay(level, data);
       Map<String, Integer> recruited = new HashMap<>();
       Map<String, Integer> settlements = new HashMap<>();
       data.settlements().forEach(settlement -> settlements.merge(settlement.faction(), 1, Integer::sum));
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          int capacity = capacity(settlement);
-         if (settlement.population < capacity) {
+         // People multiply only with food in store, in health and in order.
+         boolean thriving = settlement.food() >= settlement.population && settlement.health() > 40 && settlement.order() >= 20;
+         if (thriving && settlement.population < capacity) {
             settlement.population = Math.min(capacity, settlement.population + Math.max(1, settlement.population / 20));
          }
 

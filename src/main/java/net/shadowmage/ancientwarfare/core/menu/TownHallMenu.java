@@ -7,7 +7,12 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.server.level.ServerLevel;
+import net.shadowmage.ancientwarfare.core.faction.FactionLife;
+import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -19,6 +24,8 @@ public class TownHallMenu extends AbstractContainerMenu {
    private static final int TOWN_HALL_SLOTS = 27;
    private final Container container;
    private final BlockPos pos;
+   /** For a village taken from a faction: whether it is one, loyalty, order, tax level, guards, emeralds a day. */
+   private final ContainerData village;
 
    public TownHallMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.TOWN_HALL_MENU), containerId);
@@ -30,9 +37,72 @@ public class TownHallMenu extends AbstractContainerMenu {
          this.container = new SimpleContainer(27);
       }
 
+      this.village = level instanceof ServerLevel serverLevel ? new VillageData(serverLevel, pos) : new SimpleContainerData(VillageData.COUNT);
+      this.addDataSlots(this.village);
       this.container.startOpen(playerInventory.player);
       this.addSlotGrid(this.container, 0, 8, 22, 9, 3);
       this.addPlayerInventory(playerInventory, 8, 92);
+   }
+
+   public ContainerData village() {
+      return this.village;
+   }
+
+   /** Buttons 0 to 2 set the tax of a taken village, for its owner only. */
+   @Override
+   public boolean clickMenuButton(Player player, int id) {
+      if (id < 0 || id > 2 || !(player.level() instanceof ServerLevel level)) {
+         return false;
+      }
+
+      FactionWorldData data = FactionWorldData.get(level);
+      FactionWorldData.VillageState state = data.villageState(this.pos);
+      if (state == null || !player.getUUID().equals(data.villages().get(this.pos))) {
+         return false;
+      }
+
+      state.taxLevel = id;
+      data.setDirty();
+      return true;
+   }
+
+   private static final class VillageData implements ContainerData {
+      static final int COUNT = 6;
+      private final ServerLevel level;
+      private final BlockPos pos;
+
+      VillageData(ServerLevel level, BlockPos pos) {
+         this.level = level;
+         this.pos = pos;
+      }
+
+      @Override
+      public int get(int index) {
+         FactionWorldData data = FactionWorldData.get(this.level);
+         FactionWorldData.VillageState state = data.villageState(this.pos);
+         if (state == null) {
+            return 0;
+         }
+
+         return switch (index) {
+            case 0 -> 1;
+            case 1 -> state.loyalty;
+            case 2 -> state.order;
+            case 3 -> state.taxLevel;
+            case 4 -> state.guards;
+            case 5 -> FactionLife.villageTax(data, this.pos);
+            default -> 0;
+         };
+      }
+
+      @Override
+      public void set(int index, int value) {
+      }
+
+      @Override
+      public int getCount() {
+         return COUNT;
+      }
    }
 
    public List<TownHallBlockEntity.NpcDeathEntry> getDeathNotices() {

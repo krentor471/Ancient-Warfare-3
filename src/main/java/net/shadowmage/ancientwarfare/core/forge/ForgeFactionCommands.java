@@ -146,7 +146,11 @@ public final class ForgeFactionCommands {
             Commands.literal("awfaction")
                .then(Commands.literal("region").executes(context -> showRegion(context.getSource())))
                .then(Commands.literal("map").executes(context -> showMap(context.getSource())))
-               .then(Commands.literal("settlements").executes(context -> showSettlements(context.getSource())))
+               .then(
+                  Commands.literal("settlements")
+                     .executes(context -> showSettlements(context.getSource(), 8))
+                     .then(Commands.literal("all").executes(context -> showSettlements(context.getSource(), Integer.MAX_VALUE)))
+               )
                .then(Commands.literal("factions").executes(context -> showFactions(context.getSource())))
                .then(
                   Commands.literal("town")
@@ -270,6 +274,16 @@ public final class ForgeFactionCommands {
                   Commands.literal("simulate")
                      .requires(source -> source.hasPermission(2))
                      .then(Commands.argument("days", IntegerArgumentType.integer(1, 365)).executes(context -> simulate(context.getSource(), IntegerArgumentType.getInteger(context, "days"))))
+               )
+               .then(
+                  Commands.literal("famine")
+                     .requires(source -> source.hasPermission(2))
+                     .executes(context -> lifeEvent(context.getSource(), false))
+               )
+               .then(
+                  Commands.literal("plague")
+                     .requires(source -> source.hasPermission(2))
+                     .executes(context -> lifeEvent(context.getSource(), true))
                )
                .then(Commands.literal("relations").then(factionArgument("faction").executes(context -> showRelations(context.getSource(), faction(context, "faction")))))
                .then(stateCommand("war", RelationState.WAR))
@@ -406,14 +420,36 @@ public final class ForgeFactionCommands {
       return '?';
    }
 
-   private static int showSettlements(CommandSourceStack source) {
+   /** Brings a bad harvest or plague on the settlement nearest the source, for testing. */
+   private static int lifeEvent(CommandSourceStack source, boolean plague) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      FactionWorldData.Settlement nearest = data.settlements()
+         .stream()
+         .min(Comparator.comparingDouble(settlement -> settlement.horizontalDistanceSquared(source.getPosition().x, source.getPosition().z)))
+         .orElse(null);
+      if (nearest == null) {
+         source.sendFailure(Component.literal("No settlements"));
+         return 0;
+      }
+
+      if (plague) {
+         net.shadowmage.ancientwarfare.core.faction.FactionLife.startPlague(source.getLevel(), nearest, source.getLevel().getRandom(), true);
+      } else {
+         net.shadowmage.ancientwarfare.core.faction.FactionLife.badHarvest(source.getLevel(), new ArrayList<>(data.settlements()), nearest, source.getLevel().getRandom());
+      }
+
+      data.setDirty();
+      return nearest.id();
+   }
+
+   private static int showSettlements(CommandSourceStack source, int limit) {
       List<FactionWorldData.Settlement> settlements = new ArrayList<>(FactionWorldData.get(source.getLevel()).settlements());
       Map<String, Integer> counts = new TreeMap<>();
       settlements.forEach(settlement -> counts.merge(settlement.faction(), 1, Integer::sum));
       tell(source, Component.literal("Settlements: " + settlements.size() + " " + counts));
       settlements.sort(Comparator.comparingDouble(settlement -> settlement.horizontalDistanceSquared(source.getPosition().x, source.getPosition().z)));
 
-      for (FactionWorldData.Settlement settlement : settlements.subList(0, Math.min(8, settlements.size()))) {
+      for (FactionWorldData.Settlement settlement : settlements.subList(0, Math.min(limit, settlements.size()))) {
          BlockPos center = settlement.center();
          String template = settlement.template().substring(settlement.template().lastIndexOf('/') + 1);
          tell(source, 
@@ -421,6 +457,8 @@ public final class ForgeFactionCommands {
                " " + settlement.faction() + " " + settlement.kind() + " " + template + " tier " + settlement.tier() + ", people "
                   + settlement.population() + ", garrison " + settlement.garrison() + " at " + center.getX() + " " + center.getY() + " " + center.getZ() + " ("
                   + (int)Math.sqrt(settlement.horizontalDistanceSquared(source.getPosition().x, source.getPosition().z)) + " blocks)"
+                  + " food " + settlement.food() + " health " + settlement.health() + " order " + settlement.order() + " loyalty " + settlement.loyalty()
+                  + (settlement.famine() > 0 ? " FAMINE" : "") + (settlement.plague() > 0 ? " PLAGUE" : "")
             )
          );
       }

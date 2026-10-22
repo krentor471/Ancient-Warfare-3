@@ -87,6 +87,7 @@ public final class FactionBorders {
 
       for (FactionWorldData.Settlement settlement : enclaves) {
          settlement.capturedFrom = "";
+         settlement.loyalty = 60;
          settlement.setFaction(to);
          data.setProvinceOwner(settlement.province(), to);
       }

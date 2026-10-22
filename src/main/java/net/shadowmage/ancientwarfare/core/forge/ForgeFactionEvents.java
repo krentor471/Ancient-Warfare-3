@@ -54,6 +54,18 @@ public final class ForgeFactionEvents {
       }
    }
 
+   /** Food given to a faction's people in a settlement going short. */
+   @SubscribeEvent
+   public static void onFeedFactionNpc(net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract event) {
+      if (event.getHand() == net.minecraft.world.InteractionHand.MAIN_HAND
+         && event.getTarget() instanceof FactionNpcEntity npc
+         && event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+         && net.shadowmage.ancientwarfare.core.faction.FactionLife.onFeed(player, npc, event.getItemStack())) {
+         event.setCanceled(true);
+         event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
+      }
+   }
+
    /** Blows in a tournament bout. */
    @SubscribeEvent
    public static void onTournamentDamage(net.minecraftforge.event.entity.living.LivingDamageEvent event) {

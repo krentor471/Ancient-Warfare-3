@@ -162,6 +162,7 @@ public final class FactionConquest {
          case PLUNDER -> {
             pay(player, data, faction, offer.loot());
             settlement.population -= settlement.population / 3;
+            settlement.food = 0;
             standings.adjustStanding(id, faction, PLUNDER_STANDING);
             player.sendSystemMessage(Component.translatable("conquest.ancientwarfare.plundered", factionName, offer.loot()).withStyle(ChatFormatting.GOLD));
             FactionNews.tell(
@@ -225,6 +226,7 @@ public final class FactionConquest {
 
       data.setVillage(hall, player.getUUID());
       data.setTax(hall, tax);
+      data.setVillageState(hall, new FactionWorldData.VillageState(settlement.faction(), settlement.population(), 40, 45));
       int workers = 0;
       for (FactionNpcEntity person : people) {
          WorkerNpcEntity worker = workers < MAX_WORKERS ? AWCoreEntityTypes.WORKER_NPC.get().create(level) : null;
@@ -253,7 +255,7 @@ public final class FactionConquest {
    /** Daily: villages taken from factions pay their tax into the town hall. */
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       for (Map.Entry<BlockPos, UUID> village : data.villages().entrySet()) {
-         int tax = data.tax(village.getKey());
+         int tax = FactionLife.villageTax(data, village.getKey());
          if (tax > 0 && level.getBlockEntity(village.getKey()) instanceof TownHallBlockEntity hall) {
             ItemStack rest = new ItemStack(Items.EMERALD, tax);
             for (int slot = 0; slot < hall.getContainerSize() && !rest.isEmpty(); slot++) {

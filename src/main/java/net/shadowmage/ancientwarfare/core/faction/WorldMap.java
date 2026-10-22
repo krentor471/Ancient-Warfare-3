@@ -113,7 +113,25 @@ public final class WorldMap {
    }
 
    /** name is a FactionNames code, or empty. */
-   public static record Marker(int x, int z, Kind kind, int faction, String label, String name) {
+   public static record Marker(int x, int z, Kind kind, int faction, String label, String name, int[] life) {
+      public Marker(int x, int z, Kind kind, int faction, String label, String name) {
+         this(x, z, kind, faction, label, name, new int[0]);
+      }
+   }
+
+   /** Indices into Marker.life, and the flags in its last entry; see life(). */
+   public static final int LIFE_PEOPLE = 0, LIFE_GARRISON = 1, LIFE_FOOD_DAYS = 2, LIFE_HEALTH = 3, LIFE_ORDER = 4, LIFE_LOYALTY = 5, LIFE_FLAGS = 6;
+   public static final int FLAG_FAMINE = 1, FLAG_PLAGUE = 2, FLAG_HUNGRY = 4, FLAG_TAKEN = 8;
+
+   private static int[] life(FactionWorldData.Settlement settlement) {
+      int mouths = Math.max(1, settlement.population() + settlement.garrison());
+      int flags = (settlement.famine() > 0 ? FLAG_FAMINE : 0)
+         | (settlement.plague() > 0 ? FLAG_PLAGUE : 0)
+         | (settlement.food() == 0 ? FLAG_HUNGRY : 0)
+         | (settlement.capturedFrom().isEmpty() ? 0 : FLAG_TAKEN);
+      return new int[]{
+         settlement.population(), settlement.garrison(), settlement.food() / mouths, settlement.health(), settlement.order(), settlement.loyalty(), flags
+      };
    }
 
    /**
@@ -164,7 +182,8 @@ public final class WorldMap {
                   index(settlement.faction(), factions, indices),
                   "#" + settlement.id() + " " + (settlement.built() ? templateName(settlement.template()) : settlement.kind() + " (not built yet)") + ", people " + settlement.population() + ", garrison " + settlement.garrison()
                      + (FactionDiplomacy.isOutlaw(settlement.faction()) ? ", lair level " + FactionBandits.level(settlement) : ""),
-                  settlement.name()
+                  settlement.name(),
+                  life(settlement)
                )
             );
          }
@@ -173,7 +192,11 @@ public final class WorldMap {
       data.villages().forEach((pos, owner) -> {
          if (pos.getX() >= originX && pos.getX() < maxX && pos.getZ() >= originZ && pos.getZ() < maxZ) {
             ServerPlayer villageOwner = level.getServer().getPlayerList().getPlayer(owner);
-            markers.add(new Marker(pos.getX(), pos.getZ(), Kind.PLAYER_VILLAGE, 0, villageOwner == null ? "player village" : villageOwner.getScoreboardName(), ""));
+            FactionWorldData.VillageState state = data.villageState(pos);
+            int[] life = state == null ? new int[0] : new int[]{state.people, state.guards, -1, -1, state.order, state.loyalty, FLAG_TAKEN};
+            markers.add(
+               new Marker(pos.getX(), pos.getZ(), Kind.PLAYER_VILLAGE, 0, villageOwner == null ? "player village" : villageOwner.getScoreboardName(), "", life)
+            );
          }
       });
       List<int[]> roads = new ArrayList<>();

@@ -73,7 +73,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "5";
+   private static final String PROTOCOL_VERSION = "6";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
@@ -900,6 +900,7 @@ public final class AWCoreNetwork {
             buffer.writeVarInt(marker.faction());
             buffer.writeUtf(marker.label(), 128);
             buffer.writeUtf(marker.name(), 64);
+            buffer.writeVarIntArray(marker.life());
          }
 
          List<int[]> roads = data.roads().subList(0, Math.min(MAX_ITEMS, data.roads().size()));
@@ -927,7 +928,11 @@ public final class AWCoreNetwork {
          List<WorldMap.Marker> markers = new ArrayList<>();
 
          for (int i = 0; i < markerCount; i++) {
-            markers.add(new WorldMap.Marker(buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64)));
+            markers.add(
+               new WorldMap.Marker(
+                  buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64), buffer.readVarIntArray(8)
+               )
+            );
          }
 
          int roadCount = Math.min(MAX_ITEMS, buffer.readVarInt());
