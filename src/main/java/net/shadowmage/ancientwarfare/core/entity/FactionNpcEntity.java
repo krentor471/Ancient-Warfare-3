@@ -142,6 +142,26 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
          return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
 
+      if (hand == InteractionHand.MAIN_HAND && net.shadowmage.ancientwarfare.core.faction.FactionTravellers.isTraveller(this)) {
+         if (player instanceof ServerPlayer serverPlayer) {
+            net.shadowmage.ancientwarfare.core.faction.FactionTravellers.talk(serverPlayer, this);
+         }
+
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      }
+
+      if (hand == InteractionHand.MAIN_HAND
+         && !PlayerDiplomacy.isLeader(this)
+         && FactionNpcRole.byId(this.getNpcSubtype()).map(FactionNpcRole::isCivilian).orElse(false)
+         && player.getItemInHand(hand).isEmpty()) {
+         // Townsfolk stop for a word and pass on the news.
+         if (player instanceof ServerPlayer serverPlayer) {
+            net.shadowmage.ancientwarfare.core.faction.FactionRumours.chat(serverPlayer, this);
+         }
+
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      }
+
       if (hand != InteractionHand.MAIN_HAND || !PlayerDiplomacy.isLeader(this)) {
          return super.mobInteract(player, hand);
       }

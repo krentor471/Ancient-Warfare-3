@@ -254,6 +254,7 @@ public final class ForgeFactionCommands {
                )
                .then(Commands.literal("armies").executes(context -> showArmies(context.getSource())))
                .then(Commands.literal("bandits").executes(context -> showBandits(context.getSource())))
+               .then(Commands.literal("rumours").executes(context -> showRumours(context.getSource())))
                .then(
                   Commands.literal("routes")
                      .executes(context -> showRoutes(context.getSource()))
@@ -799,6 +800,20 @@ public final class ForgeFactionCommands {
    }
 
    /** Bandit lairs with their level: 1 waylays caravans, 2 raids trading posts, 3 guard posts too, 4 villages too. */
+   /** A handful of what people around here would say, for checking the rumours. */
+   private static int showRumours(CommandSourceStack source) {
+      for (int i = 0; i < 6; i++) {
+         tell(
+            source,
+            net.shadowmage.ancientwarfare.core.faction.FactionRumours.rumour(
+               source.getLevel(), source.getPlayer(), source.getPosition().x, source.getPosition().z, source.getLevel().getRandom()
+            ).copy()
+         );
+      }
+
+      return 6;
+   }
+
    private static int showBandits(CommandSourceStack source) {
       FactionWorldData data = FactionWorldData.get(source.getLevel());
       int count = 0;

@@ -26,6 +26,8 @@ public final class FactionWorldData extends SavedData {
    private final Map<String, Integer> treasuries = new HashMap<>();
    /** Each faction's stores of wood, stone and iron; see FactionResources. */
    private final Map<String, int[]> stores = new HashMap<>();
+   /** Buried treasure a rumour told of and not yet put in the ground, by packed x, z; see FactionRumours. */
+   private final List<Long> treasures = new ArrayList<>();
    /** Countries players founded, by founder; see PlayerCountry. */
    private final Map<UUID, Country> countries = new HashMap<>();
    /** Until when each player knows the movements of each faction's armies, from a spy's report. */
@@ -427,6 +429,10 @@ public final class FactionWorldData extends SavedData {
       return this.stores.computeIfAbsent(faction, ignored -> FactionResources.startingStores());
    }
 
+   public List<Long> treasures() {
+      return this.treasures;
+   }
+
    /** The country the player founded, or null. */
    public Country country(UUID owner) {
       return this.countries.get(owner);
@@ -518,6 +524,7 @@ public final class FactionWorldData extends SavedData {
          countryList.add(entry);
       });
       tag.put("Countries", countryList);
+      tag.put("Treasures", new LongArrayTag(this.treasures));
       CompoundTag rulerTag = new CompoundTag();
       this.rulers.forEach((faction, ruler) -> {
          CompoundTag entry = new CompoundTag();
@@ -739,6 +746,9 @@ public final class FactionWorldData extends SavedData {
          int[] stock = FactionResources.startingStores();
          System.arraycopy(saved, 0, stock, 0, Math.min(saved.length, stock.length));
          data.stores.put(faction, stock);
+      }
+      for (long treasure : tag.getLongArray("Treasures")) {
+         data.treasures.add(treasure);
       }
       for (Tag element : tag.getList("Countries", Tag.TAG_COMPOUND)) {
          CompoundTag entry = (CompoundTag)element;

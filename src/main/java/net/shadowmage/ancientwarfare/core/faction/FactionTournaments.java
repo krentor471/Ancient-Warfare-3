@@ -176,7 +176,7 @@ public final class FactionTournaments {
     * The champion's prize: a fine weapon or piece of armour, worked with enchantments and named for
     * the faction's tournament, or a pouch of jewels.
     */
-   private static ItemStack prize(RandomSource random, String faction) {
+   static ItemStack prize(RandomSource random, String faction) {
       int roll = random.nextInt(10);
       if (roll >= 8) {
          return roll == 8 ? new ItemStack(Items.DIAMOND, 2 + random.nextInt(3)) : new ItemStack(Items.EMERALD, 4 + random.nextInt(5));

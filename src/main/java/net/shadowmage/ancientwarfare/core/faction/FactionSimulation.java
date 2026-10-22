@@ -90,6 +90,8 @@ public final class FactionSimulation {
       FactionCampaigns.tick(level, data);
       FactionRoads.tick(level, data);
       FactionCaravans.tick(level, data);
+      FactionTravellers.tick(level, data);
+      FactionRumours.tick(level, data);
       FactionMercenaries.tick(level, data);
       FactionEnvoys.tick(level);
 
@@ -206,6 +208,10 @@ public final class FactionSimulation {
       FactionWorldData data = FactionWorldData.get(level);
       if (FactionCaravans.isStale(npc)) {
          return false;
+      }
+
+      if (FactionTravellers.isTraveller(npc)) {
+         return FactionTravellers.stillTravelling(npc);
       }
 
       int campaign = FactionCampaigns.campaignId(npc);
