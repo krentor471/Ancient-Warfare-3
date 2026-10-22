@@ -43,6 +43,7 @@ public class WorldMapScreen extends Screen {
    private static final double COAST_ROUGHNESS = 0.35;
    private static final int SHALLOW_COLOR = 0xFF8CC4DE;
    private static final int COAST_COLOR = 0xFF3E3A2C;
+   private static final int RIVER_COLOR = 0xFF4A86BE;
    /** Map kinds shown in the legend of signs, in order. */
    private static final WorldMap.Kind[] LEGEND_KINDS = {
       WorldMap.Kind.CAPITAL, WorldMap.Kind.VILLAGE, WorldMap.Kind.FORT, WorldMap.Kind.FARM, WorldMap.Kind.MINE, WorldMap.Kind.TEMPLE,
@@ -66,12 +67,16 @@ public class WorldMapScreen extends Screen {
    private static double savedScale;
    /** Whether the key to the signs and the land is open; kept between openings. */
    private static boolean showKey = true;
+   /** Rivers in the key, which are not a kind of land of a cell. */
+   private static final byte KEY_RIVER = 7;
    /** The kinds of land in the key, in order. */
    private static final byte[] KEY_TERRAIN = {
-      WorldMap.TERRAIN_WATER, WorldMap.TERRAIN_DEEP_WATER, WorldMap.TERRAIN_LAND, WorldMap.TERRAIN_FOREST, WorldMap.TERRAIN_MOUNTAIN, WorldMap.TERRAIN_DESERT, WorldMap.TERRAIN_SNOW
+      WorldMap.TERRAIN_WATER, WorldMap.TERRAIN_DEEP_WATER, KEY_RIVER, WorldMap.TERRAIN_LAND, WorldMap.TERRAIN_FOREST, WorldMap.TERRAIN_MOUNTAIN, WorldMap.TERRAIN_DESERT, WorldMap.TERRAIN_SNOW
    };
    private static final String[] TERRAIN_NAMES = {"plain", "water", "deep_water", "forest", "mountain", "desert", "snow"};
    private final WorldMap.Data data;
+   /** The river mask, WorldMap.SIZE * WorldMap.RIVER_DETAIL across, or empty while surveying. */
+   private final boolean[] rivers;
    private DynamicTexture texture;
    /** Middle of each faction's land in world blocks, and how many cells it holds, by faction index. */
    private double[] labelX;
@@ -86,6 +91,7 @@ public class WorldMapScreen extends Screen {
    private WorldMapScreen(WorldMap.Data data) {
       super(Component.translatable("gui.ancientwarfare.world_map.title"));
       this.data = data;
+      this.rivers = WorldMap.rivers(data.rivers());
       this.viewX = Double.isNaN(savedX) ? 0.0 : savedX;
       this.viewZ = Double.isNaN(savedX) ? 0.0 : savedZ;
    }
@@ -193,7 +199,9 @@ public class WorldMapScreen extends Screen {
                color = owner == 0
                   ? mix(WILD_GREY, base, WILD_GREYING)
                   : mix(shade(factionColor(this.data.factions().get(owner)), 1.15), base, FACTION_TINT);
-               if (touchesWater(water, size, px, py)) {
+               if (this.river(px, py)) {
+                  color = RIVER_COLOR;
+               } else if (touchesWater(water, size, px, py)) {
                   color = COAST_COLOR;
                } else if (owner != 0 && this.borderAt(owner, px, py, water, size)) {
                   color = shade(color, 0.45);
@@ -247,6 +255,12 @@ public class WorldMapScreen extends Screen {
       }
 
       return best;
+   }
+
+   /** Whether a river runs through a texture pixel; the river mask has the texture's own detail. */
+   private boolean river(int px, int py) {
+      int size = WorldMap.SIZE * WorldMap.RIVER_DETAIL;
+      return this.rivers.length == size * size && px < size && py < size && this.rivers[py * size + px];
    }
 
    private static boolean touchesWater(boolean[] water, int size, int px, int py) {
@@ -396,7 +410,11 @@ public class WorldMapScreen extends Screen {
       this.renderScaleBar(graphics, right - SCALE_BAR_WIDTH - 8, bottom - 14);
       this.renderNorth(graphics, right - 12, top + 6);
       if (showKey) {
+         // Above the names on the map, which are drawn a little in front of the land.
+         graphics.pose().pushPose();
+         graphics.pose().translate(0.0F, 0.0F, 200.0F);
          this.renderKey(graphics, left + 4, top + 4, bottom - 4);
+         graphics.pose().popPose();
       }
       graphics.disableScissor();
       // The title follows the buttons; the hint takes the rest of the line when it fits.
@@ -474,7 +492,11 @@ public class WorldMapScreen extends Screen {
          String owner = this.ownerAt(x, z);
          lines.add(owner.isEmpty() ? Component.translatable("gui.ancientwarfare.world_map.wild") : Component.translatable("faction.ancientwarfare." + owner));
          int terrain = this.terrainAt(x, z);
-         if (terrain >= 0) {
+         int riverX = Math.floorDiv(x - this.data.originX(), WorldMap.STEP / WorldMap.RIVER_DETAIL);
+         int riverZ = Math.floorDiv(z - this.data.originZ(), WorldMap.STEP / WorldMap.RIVER_DETAIL);
+         if (riverX >= 0 && riverZ >= 0 && this.river(riverX, riverZ) && terrain >= 0 && !isWater(terrain)) {
+            lines.add(Component.translatable("gui.ancientwarfare.world_map.terrain.river").withStyle(net.minecraft.ChatFormatting.GRAY));
+         } else if (terrain >= 0) {
             lines.add(Component.translatable("gui.ancientwarfare.world_map.terrain." + TERRAIN_NAMES[terrain]).withStyle(net.minecraft.ChatFormatting.GRAY));
          }
       }
@@ -702,8 +724,8 @@ public class WorldMapScreen extends Screen {
       List<Component> names = new ArrayList<>();
       if (this.data.terrain().length > 0) {
          for (byte kind : KEY_TERRAIN) {
-            entries.add(pattern(TERRAIN_COLORS[kind], kind, 1, 1));
-            names.add(Component.translatable("gui.ancientwarfare.world_map.terrain." + TERRAIN_NAMES[kind]));
+            entries.add(kind == KEY_RIVER ? RIVER_COLOR : pattern(TERRAIN_COLORS[kind], kind, 1, 1));
+            names.add(Component.translatable("gui.ancientwarfare.world_map.terrain." + (kind == KEY_RIVER ? "river" : TERRAIN_NAMES[kind])));
          }
       }
 

@@ -1715,10 +1715,11 @@
   "gui.ancientwarfare.world_map.key": "Key",
   "gui.ancientwarfare.world_map.north": "N",
   "gui.ancientwarfare.world_map.terrain.plain": "Plains",
-  "gui.ancientwarfare.world_map.terrain.water": "Sea, river",
+  "gui.ancientwarfare.world_map.terrain.water": "Sea, lake",
   "gui.ancientwarfare.world_map.terrain.deep_water": "Deep sea",
   "gui.ancientwarfare.world_map.terrain.forest": "Forest",
   "gui.ancientwarfare.world_map.terrain.mountain": "Mountains",
   "gui.ancientwarfare.world_map.terrain.desert": "Desert",
-  "gui.ancientwarfare.world_map.terrain.snow": "Snow"
+  "gui.ancientwarfare.world_map.terrain.snow": "Snow",
+  "gui.ancientwarfare.world_map.terrain.river": "River"
 }

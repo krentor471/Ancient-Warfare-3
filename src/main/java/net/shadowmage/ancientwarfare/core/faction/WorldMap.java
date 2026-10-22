@@ -45,19 +45,29 @@ public final class WorldMap {
    public static final byte TERRAIN_MOUNTAIN = 4;
    public static final byte TERRAIN_DESERT = 5;
    public static final byte TERRAIN_SNOW = 6;
-   /** The surveyed terrain of each level's map; it never changes, so it is surveyed once, off the server thread. */
-   private static final Map<String, CompletableFuture<byte[]>> TERRAIN = new ConcurrentHashMap<>();
+   /** River pixels per cell side: the river mask is SIZE * RIVER_DETAIL across, a pixel every 16 blocks. */
+   public static final int RIVER_DETAIL = 4;
+   private static final int RIVER_STEP = STEP / RIVER_DETAIL;
+   /** The surveyed terrain and rivers of each level's map; they never change, so they are surveyed once, off the server thread. */
+   private static final Map<String, CompletableFuture<Survey>> TERRAIN = new ConcurrentHashMap<>();
+   private static final Survey SURVEYING = new Survey(new byte[0], new byte[0]);
+
+   /** terrain per cell, and the river mask as a deflated bitset, row by row. */
+   private record Survey(byte[] terrain, byte[] rivers) {
+   }
 
    private WorldMap() {
    }
 
-   /** The level's map terrain, or an empty array while the survey is still running. */
-   private static byte[] terrain(ServerLevel level, int originX, int originZ) {
-      CompletableFuture<byte[]> survey = TERRAIN.computeIfAbsent(level.dimension().location() + "@" + level.getSeed(), key -> CompletableFuture.supplyAsync(() -> survey(level, originX, originZ)));
-      return survey.getNow(new byte[0]);
+   /** The level's map survey, or empty arrays while it is still running. */
+   private static Survey survey(ServerLevel level, int originX, int originZ) {
+      CompletableFuture<Survey> survey = TERRAIN.computeIfAbsent(
+         level.dimension().location() + "@" + level.getSeed(), key -> CompletableFuture.supplyAsync(() -> doSurvey(level, originX, originZ))
+      );
+      return survey.getNow(SURVEYING);
    }
 
-   private static byte[] survey(ServerLevel level, int originX, int originZ) {
+   private static Survey doSurvey(ServerLevel level, int originX, int originZ) {
       byte[] terrain = new byte[SIZE * SIZE];
       BiomeSource source = level.getChunkSource().getGenerator().getBiomeSource();
       Climate.Sampler sampler = level.getChunkSource().randomState().sampler();
@@ -67,11 +77,85 @@ public final class WorldMap {
          for (int column = 0; column < SIZE; column++) {
             int x = originX + column * STEP + STEP / 2;
             int z = originZ + row * STEP + STEP / 2;
-            terrain[row * SIZE + column] = terrainOf(source.getNoiseBiome(QuartPos.fromBlock(x), quartY, QuartPos.fromBlock(z), sampler));
+            Holder<Biome> biome = source.getNoiseBiome(QuartPos.fromBlock(x), quartY, QuartPos.fromBlock(z), sampler);
+            // A river is drawn from the river mask; the cell itself is the land along it.
+            for (int i = 0; i < RIVER_BANKS.length && biome.is(BiomeTags.IS_RIVER); i++) {
+               biome = source.getNoiseBiome(QuartPos.fromBlock(x + RIVER_BANKS[i][0]), quartY, QuartPos.fromBlock(z + RIVER_BANKS[i][1]), sampler);
+            }
+
+            terrain[row * SIZE + column] = biome.is(BiomeTags.IS_RIVER) ? TERRAIN_LAND : terrainOf(biome);
          }
       }
 
-      return terrain;
+      // Rivers every 16 blocks, from four samples each, so narrow ones are not missed.
+      int size = SIZE * RIVER_DETAIL;
+      byte[] mask = new byte[(size * size + 7) / 8];
+      for (int py = 0; py < size; py++) {
+         for (int px = 0; px < size; px++) {
+            for (int sample = 0; sample < 4; sample++) {
+               int x = originX + px * RIVER_STEP + (sample % 2 == 0 ? 4 : 12);
+               int z = originZ + py * RIVER_STEP + (sample < 2 ? 4 : 12);
+               if (source.getNoiseBiome(QuartPos.fromBlock(x), quartY, QuartPos.fromBlock(z), sampler).is(BiomeTags.IS_RIVER)) {
+                  int index = py * size + px;
+                  mask[index >> 3] |= (byte)(1 << (index & 7));
+                  break;
+               }
+            }
+         }
+      }
+
+      return new Survey(terrain, deflate(mask));
+   }
+
+   /** Where to look for the land beside a river crossing a cell's middle. */
+   private static final int[][] RIVER_BANKS = {{24, 0}, {-24, 0}, {0, 24}, {0, -24}, {24, 24}, {-24, -24}, {24, -24}, {-24, 24}};
+
+   private static byte[] deflate(byte[] bytes) {
+      java.util.zip.Deflater deflater = new java.util.zip.Deflater(java.util.zip.Deflater.BEST_COMPRESSION);
+      deflater.setInput(bytes);
+      deflater.finish();
+      java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+      byte[] buffer = new byte[8192];
+      while (!deflater.finished()) {
+         out.write(buffer, 0, deflater.deflate(buffer));
+      }
+
+      deflater.end();
+      return out.toByteArray();
+   }
+
+   /** The river mask from the map data: a bit per pixel, SIZE * RIVER_DETAIL across; empty when not yet surveyed. */
+   public static boolean[] rivers(byte[] deflated) {
+      int size = SIZE * RIVER_DETAIL;
+      if (deflated.length == 0) {
+         return new boolean[0];
+      }
+
+      byte[] mask = new byte[(size * size + 7) / 8];
+      java.util.zip.Inflater inflater = new java.util.zip.Inflater();
+      try {
+         inflater.setInput(deflated);
+         int read = 0;
+         while (read < mask.length && !inflater.finished()) {
+            int n = inflater.inflate(mask, read, mask.length - read);
+            if (n == 0 && (inflater.needsInput() || inflater.needsDictionary())) {
+               break;
+            }
+
+            read += n;
+         }
+      } catch (java.util.zip.DataFormatException e) {
+         return new boolean[0];
+      } finally {
+         inflater.end();
+      }
+
+      boolean[] rivers = new boolean[size * size];
+      for (int i = 0; i < rivers.length; i++) {
+         rivers[i] = (mask[i >> 3] & 1 << (i & 7)) != 0;
+      }
+
+      return rivers;
    }
 
    private static byte terrainOf(Holder<Biome> biome) {
@@ -141,7 +225,7 @@ public final class WorldMap {
     * still being surveyed. marches hold x, z of each marching army and x, z of its target.
     */
    public static record Data(
-      int originX, int originZ, byte[] owners, byte[] terrain, List<String> factions, List<Marker> markers, List<int[]> roads, List<int[]> marches, boolean canTeleport
+      int originX, int originZ, byte[] owners, byte[] terrain, byte[] rivers, List<String> factions, List<Marker> markers, List<int[]> roads, List<int[]> marches, boolean canTeleport
    ) {
    }
 
@@ -276,7 +360,8 @@ public final class WorldMap {
          marches.add(new int[]{x, z, target.getX(), target.getZ()});
       }
 
-      return new Data(originX, originZ, owners, terrain(level, originX, originZ), factions, markers, roads, marches, canTeleport(player));
+      Survey survey = survey(level, originX, originZ);
+      return new Data(originX, originZ, owners, survey.terrain(), survey.rivers(), factions, markers, roads, marches, canTeleport(player));
    }
 
    private static String templateName(String template) {

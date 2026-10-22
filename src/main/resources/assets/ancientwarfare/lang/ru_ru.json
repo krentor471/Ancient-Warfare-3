@@ -1715,10 +1715,11 @@
   "gui.ancientwarfare.world_map.key": "Обозначения",
   "gui.ancientwarfare.world_map.north": "С",
   "gui.ancientwarfare.world_map.terrain.plain": "Равнина",
-  "gui.ancientwarfare.world_map.terrain.water": "Море, река",
+  "gui.ancientwarfare.world_map.terrain.water": "Море, озеро",
   "gui.ancientwarfare.world_map.terrain.deep_water": "Глубокое море",
   "gui.ancientwarfare.world_map.terrain.forest": "Лес",
   "gui.ancientwarfare.world_map.terrain.mountain": "Горы",
   "gui.ancientwarfare.world_map.terrain.desert": "Пустыня",
-  "gui.ancientwarfare.world_map.terrain.snow": "Снега"
+  "gui.ancientwarfare.world_map.terrain.snow": "Снега",
+  "gui.ancientwarfare.world_map.terrain.river": "Река"
 }

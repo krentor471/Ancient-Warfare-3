@@ -73,7 +73,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "7";
+   private static final String PROTOCOL_VERSION = "8";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
@@ -888,6 +888,7 @@ public final class AWCoreNetwork {
          buffer.writeInt(data.originZ());
          buffer.writeByteArray(data.owners());
          buffer.writeByteArray(data.terrain());
+         buffer.writeByteArray(data.rivers());
          buffer.writeVarInt(data.factions().size());
          data.factions().forEach(faction -> buffer.writeUtf(faction, 64));
          List<WorldMap.Marker> markers = data.markers().subList(0, Math.min(MAX_ITEMS, data.markers().size()));
@@ -917,6 +918,7 @@ public final class AWCoreNetwork {
          int originZ = buffer.readInt();
          byte[] owners = buffer.readByteArray(WorldMap.SIZE * WorldMap.SIZE);
          byte[] terrain = buffer.readByteArray(WorldMap.SIZE * WorldMap.SIZE);
+         byte[] rivers = buffer.readByteArray(WorldMap.SIZE * WorldMap.SIZE * WorldMap.RIVER_DETAIL * WorldMap.RIVER_DETAIL / 8 + 1024);
          int factionCount = Math.min(256, buffer.readVarInt());
          List<String> factions = new ArrayList<>();
 
@@ -949,7 +951,7 @@ public final class AWCoreNetwork {
             marches.add(buffer.readVarIntArray(4));
          }
 
-         return new AWCoreNetwork.WorldMapDataPacket(new WorldMap.Data(originX, originZ, owners, terrain, factions, markers, roads, marches, buffer.readBoolean()));
+         return new AWCoreNetwork.WorldMapDataPacket(new WorldMap.Data(originX, originZ, owners, terrain, rivers, factions, markers, roads, marches, buffer.readBoolean()));
       }
 
       private static void handle(AWCoreNetwork.WorldMapDataPacket packet, Supplier<Context> supplier) {
