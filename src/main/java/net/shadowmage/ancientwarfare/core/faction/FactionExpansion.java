@@ -167,6 +167,7 @@ public final class FactionExpansion {
                   && rival != null
                   && !rival.isEmpty()
                   && !rival.equals(faction)
+                  && !PlayerCountry.isLand(rival)
                   && FactionDiplomacy.relation(level, faction, rival).state() != RelationState.ALLIANCE) {
                   FactionRegions.Province across = FactionRegions.provinceByCell(level, cellX + dx, cellZ + dz);
                   int x = (int)Math.round(home.seedX() + (across.seedX() - home.seedX()) * FORT_BORDER_SHARE);
@@ -333,7 +334,7 @@ public final class FactionExpansion {
    /** Every faction with land and no capital founds one on paper, near the middle of its country. */
    public static void foundCapitals(ServerLevel level, FactionWorldData data) {
       for (String faction : new TreeSet<>(data.provinceOwners().values())) {
-         if (faction.isEmpty() || FactionDiplomacy.isOutlaw(faction) || hasCapital(data, faction) || !FactionTowns.canBuild(faction, true)) {
+         if (faction.isEmpty() || FactionDiplomacy.isOutlaw(faction) || PlayerCountry.isLand(faction) || hasCapital(data, faction) || !FactionTowns.canBuild(faction, true)) {
             continue;
          }
 

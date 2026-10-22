@@ -17,10 +17,12 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerationData;
 import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator;
+import net.shadowmage.ancientwarfare.core.structure.IslandChunkWindow;
 
 /**
  * Lays the road of each trade route: a three-wide track of path and gravel following the land,
- * with plank bridges over short water. It is laid a short stretch at a time from one end, wherever
+ * with plank bridges over short water. Several roads are laid at once, a short stretch at a time
+ * from one end on land loaded in the background ahead of the work, wherever
  * no player is near enough to see it appear, steering around steep ground, settlements and other
  * buildings toward the far end. A finished road gets roadside posts every hundred and eighty blocks
  * or so, taverns, guard posts and trade posts in turn, built by the faction of the nearer end. A
@@ -29,11 +31,25 @@ import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator;
 public final class FactionRoads {
    private static final int STEP = 4;
    private static final int SEGMENT_STEPS = 4;
-   private static final int TICK_INTERVAL = 40;
+   private static final int TICK_INTERVAL = 10;
+   /** One roadside post at most this often, as each is a whole building. */
+   private static final int POST_INTERVAL = 40;
    private static final double PLAYER_RANGE = 192.0;
    /** Roads within this distance of a player are built first, and several stretches at a time. */
    private static final double NEAR_PLAYER_ROADS = 1500.0;
-   private static final int NEAR_STRETCHES = 3;
+   /** Roads built at once, each by its own crew with its land loading in the background. */
+   private static final int ROAD_CREWS = 8;
+   /** Stretches one crew lays per call, as long as its land is loaded. */
+   private static final int MAX_STRETCHES = 4;
+   private static final long ROAD_BUDGET_NANOS = 12_000_000L;
+   /** Blocks around the road's end one stretch may touch: its four steps, the road's width and ramps. */
+   private static final int STRETCH_REACH = STEP * SEGMENT_STEPS + 8;
+   /** How far ahead the next land is asked for. */
+   private static final int LOOK_AHEAD = 40;
+   /** Marks road tickets apart from other chunk windows, which use real positions. */
+   private static final int ROAD_TICKET_Y = -30000;
+   /** The land each road under way holds loaded, by route. */
+   private static final Map<Integer, IslandChunkWindow> WORK = new HashMap<>();
    /** Highest fill or cut that evens out one road cell. */
    private static final int MAX_RAMP = 6;
    /** Longest bridge, in blocks of water crossed. */
@@ -80,7 +96,7 @@ public final class FactionRoads {
          return;
       }
 
-      for (FactionWorldData.Route route : data.routes()) {
+      for (FactionWorldData.Route route : level.getGameTime() % POST_INTERVAL == 0L ? data.routes() : List.<FactionWorldData.Route>of()) {
          // Counted afresh rather than by the posts flag, so roads finished before posts stood closer get the rest.
          if (route.road() == FactionWorldData.RoadState.DONE && route.postsBuilt < postSpots(route).size() && buildPost(level, data, route)) {
             data.setDirty();
@@ -88,8 +104,8 @@ public final class FactionRoads {
          }
       }
 
-      FactionWorldData.Route best = null;
-      double bestDistance = Double.MAX_VALUE;
+      List<FactionWorldData.Route> wanted = new ArrayList<>();
+      Map<Integer, Double> distances = new HashMap<>();
 
       for (FactionWorldData.Route route : data.routes()) {
          if (route.road() == FactionWorldData.RoadState.FAILED) {
@@ -128,31 +144,82 @@ public final class FactionRoads {
             distance = Math.min(distance, dx * dx + dz * dz);
          }
 
-         if (best == null || distance < bestDistance) {
-            best = route;
-            bestDistance = distance;
+         // Roads already under way keep their crew, so they are finished rather than all begun.
+         if (WORK.containsKey(route.id())) {
+            distance = Math.min(distance, NEAR_PLAYER_ROADS * NEAR_PLAYER_ROADS - 1.0);
+         }
+
+         distances.put(route.id(), distance);
+         wanted.add(route);
+      }
+
+      wanted.sort(java.util.Comparator.comparingDouble(route -> distances.get(route.id())));
+      List<FactionWorldData.Route> crews = wanted.subList(0, Math.min(ROAD_CREWS, wanted.size()));
+      java.util.Set<Integer> working = new java.util.HashSet<>();
+      crews.forEach(route -> working.add(route.id()));
+      WORK.entrySet().removeIf(entry -> {
+         if (!working.contains(entry.getKey())) {
+            entry.getValue().releaseAll();
+            return true;
+         }
+
+         return false;
+      });
+
+      long deadline = System.nanoTime() + ROAD_BUDGET_NANOS;
+      for (FactionWorldData.Route route : crews) {
+         FactionWorldData.Settlement from = data.endpoint(route, true);
+         FactionWorldData.Settlement to = data.endpoint(route, false);
+         if (route.road() == FactionWorldData.RoadState.NONE) {
+            route.cursorX = from.center().getX();
+            route.cursorZ = from.center().getZ();
+            route.road = FactionWorldData.RoadState.BUILDING;
+         }
+
+         IslandChunkWindow window = WORK.computeIfAbsent(route.id(), id -> new IslandChunkWindow());
+         // Each stretch is laid only on land already loaded, while the land ahead loads in the background.
+         for (int i = 0; i < MAX_STRETCHES && route.road() == FactionWorldData.RoadState.BUILDING && System.nanoTime() < deadline; i++) {
+            if (!landReady(level, window, route, to)) {
+               break;
+            }
+
+            buildStretch(level, data, route, from, to);
+         }
+
+         if (route.road() != FactionWorldData.RoadState.BUILDING) {
+            window.releaseAll();
+            WORK.remove(route.id());
          }
       }
 
-      if (best == null) {
-         return;
-      }
-
-      FactionWorldData.Settlement from = data.endpoint(best, true);
-      FactionWorldData.Settlement to = data.endpoint(best, false);
-      if (best.road() == FactionWorldData.RoadState.NONE) {
-         best.cursorX = from.center().getX();
-         best.cursorZ = from.center().getZ();
-      }
-
-      best.road = FactionWorldData.RoadState.BUILDING;
-      // Near a player the road goes on faster, its land being loaded already.
-      int stretches = bestDistance < NEAR_PLAYER_ROADS * NEAR_PLAYER_ROADS ? NEAR_STRETCHES : 1;
-      for (int i = 0; i < stretches && best.road() == FactionWorldData.RoadState.BUILDING; i++) {
-         buildStretch(level, data, best, from, to);
-      }
-
       data.setDirty();
+   }
+
+   /** Asks for the land around the road's end and a little ahead; true once the land around its end is loaded. */
+   private static boolean landReady(ServerLevel level, IslandChunkWindow window, FactionWorldData.Route route, FactionWorldData.Settlement to) {
+      int x = route.cursorX;
+      int z = route.cursorZ;
+      double dx = to.center().getX() - x;
+      double dz = to.center().getZ() - z;
+      double length = Math.max(1.0, Math.sqrt(dx * dx + dz * dz));
+      int aheadX = x + (int)Math.round(dx / length * LOOK_AHEAD);
+      int aheadZ = z + (int)Math.round(dz / length * LOOK_AHEAD);
+      java.util.LinkedHashSet<ChunkPos> here = chunksAround(x, z);
+      java.util.LinkedHashSet<ChunkPos> all = new java.util.LinkedHashSet<>(here);
+      all.addAll(chunksAround(aheadX, aheadZ));
+      window.requestGroup(level, new BlockPos(route.id(), ROAD_TICKET_Y, 0), new ArrayList<>(all), all.size());
+      return here.stream().allMatch(chunk -> level.getChunkSource().getChunkNow(chunk.x, chunk.z) != null);
+   }
+
+   private static java.util.LinkedHashSet<ChunkPos> chunksAround(int x, int z) {
+      java.util.LinkedHashSet<ChunkPos> chunks = new java.util.LinkedHashSet<>();
+      for (int cx = (x - STRETCH_REACH) >> 4; cx <= (x + STRETCH_REACH) >> 4; cx++) {
+         for (int cz = (z - STRETCH_REACH) >> 4; cz <= (z + STRETCH_REACH) >> 4; cz++) {
+            chunks.add(new ChunkPos(cx, cz));
+         }
+      }
+
+      return chunks;
    }
 
    private static void buildStretch(ServerLevel level, FactionWorldData data, FactionWorldData.Route route, FactionWorldData.Settlement from, FactionWorldData.Settlement to) {

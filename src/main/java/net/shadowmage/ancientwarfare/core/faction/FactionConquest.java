@@ -248,11 +248,11 @@ public final class FactionConquest {
       );
    }
 
-   /** Daily: villages taken from factions pay their tax into the town hall. */
+   /** Daily: villages taken from factions pay their tax into the town hall, or a country's into its treasury. */
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       for (Map.Entry<BlockPos, UUID> village : data.villages().entrySet()) {
          int tax = FactionLife.villageTax(data, village.getKey());
-         if (tax > 0 && level.getBlockEntity(village.getKey()) instanceof TownHallBlockEntity hall) {
+         if (tax > 0 && !PlayerCountry.collect(data, village.getKey(), village.getValue(), tax) && level.getBlockEntity(village.getKey()) instanceof TownHallBlockEntity hall) {
             Coins.store(hall, tax);
             hall.setChanged();
          }

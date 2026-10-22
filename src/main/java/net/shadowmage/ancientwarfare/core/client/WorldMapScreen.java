@@ -475,7 +475,7 @@ public class WorldMapScreen extends Screen {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.kind." + hovered.kind().name().toLowerCase(java.util.Locale.ROOT)));
          String faction = this.data.factions().get(hovered.faction());
          if (!faction.isEmpty()) {
-            lines.add(Component.translatable("faction.ancientwarfare." + faction));
+            lines.add(WorldMap.ownerName(faction));
          }
 
          addLife(lines, hovered.life());
@@ -490,7 +490,7 @@ public class WorldMapScreen extends Screen {
          z = hovered.z();
       } else {
          String owner = this.ownerAt(x, z);
-         lines.add(owner.isEmpty() ? Component.translatable("gui.ancientwarfare.world_map.wild") : Component.translatable("faction.ancientwarfare." + owner));
+         lines.add(owner.isEmpty() ? Component.translatable("gui.ancientwarfare.world_map.wild") : WorldMap.ownerName(owner));
          int terrain = this.terrainAt(x, z);
          int riverX = Math.floorDiv(x - this.data.originX(), WorldMap.STEP / WorldMap.RIVER_DETAIL);
          int riverZ = Math.floorDiv(z - this.data.originZ(), WorldMap.STEP / WorldMap.RIVER_DETAIL);
@@ -514,7 +514,7 @@ public class WorldMapScreen extends Screen {
 
       for (int i = 1; i < this.data.factions().size(); i++) {
          String faction = this.data.factions().get(i);
-         Component name = Component.translatable("faction.ancientwarfare." + faction);
+         Component name = WorldMap.ownerName(faction);
          int width = 12 + this.font.width(name) + 10;
          if (cursor + width > this.width - MARGIN) {
             if (y > this.height - MARGIN) {
@@ -664,7 +664,7 @@ public class WorldMapScreen extends Screen {
             continue;
          }
 
-         Component name = Component.translatable("faction.ancientwarfare." + this.data.factions().get(i));
+         Component name = WorldMap.ownerName(this.data.factions().get(i));
          double across = Math.sqrt(this.landCells[i]) * WorldMap.STEP * this.scale;
          if (across >= this.font.width(name) * 0.8) {
             graphics.drawCenteredString(this.font, name, (int)Math.round(this.screenX(this.labelX[i])), (int)Math.round(this.screenY(this.labelZ[i])) - 18, 0xFFFFF4D0);

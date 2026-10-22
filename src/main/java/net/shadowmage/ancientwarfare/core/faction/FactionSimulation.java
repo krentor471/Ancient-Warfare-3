@@ -84,6 +84,7 @@ public final class FactionSimulation {
       FactionExpansion.tick(level, data);
       FactionArmies.tick(level, data);
       FactionConquest.tick(level, data);
+      PlayerCountry.tick(level, data);
       FactionSpies.tick(level, data);
       FactionTournaments.tick(level);
       FactionCampaigns.tick(level, data);
@@ -146,6 +147,7 @@ public final class FactionSimulation {
       FactionBandits.simulateDay(level, data);
       FactionFleets.simulateDay(level, data);
       FactionArmies.simulateDay(level, data, data.lastSimulatedDay());
+      PlayerCountry.startTaxDay(data);
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);
       data.setDirty();

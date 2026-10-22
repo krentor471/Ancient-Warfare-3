@@ -229,6 +229,21 @@ public final class WorldMap {
    ) {
    }
 
+   /** Before a name in the owner list, a player's country rather than a faction key. */
+   public static final String COUNTRY_MARK = "@";
+
+   /** How a province owner goes in the owner list: a player's land by its country's name. */
+   private static String countryKey(FactionWorldData data, String owner) {
+      return PlayerCountry.isLand(owner) ? COUNTRY_MARK + PlayerCountry.landName(data, owner) : owner;
+   }
+
+   /** An owner from the list, for people to read. */
+   public static net.minecraft.network.chat.MutableComponent ownerName(String owner) {
+      return owner.startsWith(COUNTRY_MARK)
+         ? net.minecraft.network.chat.Component.literal(owner.substring(COUNTRY_MARK.length()))
+         : net.minecraft.network.chat.Component.translatable("faction.ancientwarfare." + owner);
+   }
+
    public static void open(ServerPlayer player) {
       AWCoreNetwork.sendWorldMap(player, build(player));
    }
@@ -248,7 +263,7 @@ public final class WorldMap {
       for (int row = 0; row < SIZE; row++) {
          for (int column = 0; column < SIZE; column++) {
             String owner = FactionRegions.ownerAt(level, originX + column * STEP + STEP / 2, originZ + row * STEP + STEP / 2);
-            owners[row * SIZE + column] = (byte)index(owner, factions, indices);
+            owners[row * SIZE + column] = (byte)index(countryKey(data, owner), factions, indices);
          }
       }
 
@@ -279,8 +294,10 @@ public final class WorldMap {
             ServerPlayer villageOwner = level.getServer().getPlayerList().getPlayer(owner);
             FactionWorldData.VillageState state = data.villageState(pos);
             int[] life = state == null ? new int[0] : new int[]{state.people, state.guards, -1, -1, state.order, state.loyalty, FLAG_TAKEN};
+            FactionWorldData.Country country = data.country(owner);
+            int ownerIndex = country == null ? 0 : index(COUNTRY_MARK + country.name, factions, indices);
             markers.add(
-               new Marker(pos.getX(), pos.getZ(), Kind.PLAYER_VILLAGE, 0, villageOwner == null ? "player village" : villageOwner.getScoreboardName(), "", life)
+               new Marker(pos.getX(), pos.getZ(), Kind.PLAYER_VILLAGE, ownerIndex, villageOwner == null ? "player village" : villageOwner.getScoreboardName(), "", life)
             );
          }
       });

@@ -386,14 +386,14 @@ public final class FactionAI {
       Map<Long, String> owners = data.provinceOwners();
       Map<String, Set<String>> neighbours = new HashMap<>();
       owners.forEach((province, owner) -> {
-         if (!owner.isEmpty()) {
+         if (!owner.isEmpty() && !PlayerCountry.isLand(owner)) {
             int cellX = ChunkPos.getX(province);
             int cellZ = ChunkPos.getZ(province);
 
             for (int dx = -1; dx <= 1; dx++) {
                for (int dz = -1; dz <= 1; dz++) {
                   String other = owners.get(ChunkPos.asLong(cellX + dx, cellZ + dz));
-                  if (other != null && !other.isEmpty() && !other.equals(owner)) {
+                  if (other != null && !other.isEmpty() && !other.equals(owner) && !PlayerCountry.isLand(other)) {
                      neighbours.computeIfAbsent(owner, ignored -> new HashSet<>()).add(other);
                   }
                }

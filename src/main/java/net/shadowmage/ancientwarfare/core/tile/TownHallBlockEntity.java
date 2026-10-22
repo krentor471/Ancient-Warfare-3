@@ -437,6 +437,15 @@ public class TownHallBlockEntity extends BlockEntity implements Container, MenuP
    }
 
    public Component getDisplayName() {
+      if (this.owner != null && this.level instanceof ServerLevel server) {
+         FactionWorldData.Country country = FactionWorldData.get(server).country(this.owner);
+         if (country != null) {
+            return Component.translatable(
+               this.worldPosition.equals(country.capital) ? "container.ancientwarfare.town_hall.capital" : "container.ancientwarfare.town_hall.country", country.name
+            );
+         }
+      }
+
       return Component.translatable("container.ancientwarfare.town_hall");
    }
 

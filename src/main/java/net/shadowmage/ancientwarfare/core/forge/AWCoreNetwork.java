@@ -59,6 +59,7 @@ import net.shadowmage.ancientwarfare.core.menu.StructureScannerMenu;
 import net.shadowmage.ancientwarfare.core.menu.TradeOrderMenu;
 import net.shadowmage.ancientwarfare.core.client.ConquestScreen;
 import net.shadowmage.ancientwarfare.core.faction.FactionConquest;
+import net.shadowmage.ancientwarfare.core.faction.PlayerCountry;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseControlMenu;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseCraftingStationMenu;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseInterfaceMenu;
@@ -73,7 +74,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "9";
+   private static final String PROTOCOL_VERSION = "10";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
@@ -216,6 +217,11 @@ public final class AWCoreNetwork {
          .encoder(AWCoreNetwork.ConquestChoicePacket::encode)
          .decoder(AWCoreNetwork.ConquestChoicePacket::decode)
          .consumerMainThread(AWCoreNetwork.ConquestChoicePacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.FoundCountryPacket.class, 43, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.FoundCountryPacket::encode)
+         .decoder(AWCoreNetwork.FoundCountryPacket::decode)
+         .consumerMainThread(AWCoreNetwork.FoundCountryPacket::handle)
          .add();
       CHANNEL.messageBuilder(AWCoreNetwork.BatonStancePacket.class, 29, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.BatonStancePacket::encode)
@@ -423,6 +429,10 @@ public final class AWCoreNetwork {
 
    public static void sendConquestOffer(ServerPlayer player, FactionConquest.Offer offer) {
       CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.ConquestOfferPacket(offer));
+   }
+
+   public static void sendFoundCountry(BlockPos hall, String name) {
+      CHANNEL.sendToServer(new AWCoreNetwork.FoundCountryPacket(hall, name));
    }
 
    public static void sendConquestChoice(int settlement, FactionConquest.Choice choice) {
@@ -1134,6 +1144,28 @@ public final class AWCoreNetwork {
             ServerPlayer player = context.getSender();
             if (player != null) {
                FactionConquest.choose(player, packet.settlement, packet.choice);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record FoundCountryPacket(BlockPos hall, String name) {
+      private static void encode(AWCoreNetwork.FoundCountryPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeBlockPos(packet.hall);
+         buffer.writeUtf(packet.name, PlayerCountry.MAX_NAME * 4);
+      }
+
+      private static AWCoreNetwork.FoundCountryPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.FoundCountryPacket(buffer.readBlockPos(), buffer.readUtf(PlayerCountry.MAX_NAME * 4));
+      }
+
+      private static void handle(AWCoreNetwork.FoundCountryPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               PlayerCountry.found(player, packet.hall, packet.name);
             }
          });
          context.setPacketHandled(true);

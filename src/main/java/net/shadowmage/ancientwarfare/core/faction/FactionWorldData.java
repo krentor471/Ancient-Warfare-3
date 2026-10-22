@@ -26,6 +26,8 @@ public final class FactionWorldData extends SavedData {
    private final Map<String, Integer> treasuries = new HashMap<>();
    /** Each faction's stores of wood, stone and iron; see FactionResources. */
    private final Map<String, int[]> stores = new HashMap<>();
+   /** Countries players founded, by founder; see PlayerCountry. */
+   private final Map<UUID, Country> countries = new HashMap<>();
    /** Until when each player knows the movements of each faction's armies, from a spy's report. */
    private final Map<UUID, Map<String, Long>> intel = new HashMap<>();
    /** Spies on their way; see FactionSpies. */
@@ -425,6 +427,28 @@ public final class FactionWorldData extends SavedData {
       return this.stores.computeIfAbsent(faction, ignored -> FactionResources.startingStores());
    }
 
+   /** The country the player founded, or null. */
+   public Country country(UUID owner) {
+      return this.countries.get(owner);
+   }
+
+   public Map<UUID, Country> countries() {
+      return Collections.unmodifiableMap(this.countries);
+   }
+
+   public Country addCountry(UUID owner, String name, BlockPos capital, long founded) {
+      Country country = new Country(name, capital.immutable(), founded);
+      this.countries.put(owner, country);
+      this.setDirty();
+      return country;
+   }
+
+   public void removeCountry(UUID owner) {
+      if (this.countries.remove(owner) != null) {
+         this.setDirty();
+      }
+   }
+
    public long lastSimulatedDay() {
       return this.lastSimulatedDay;
    }
@@ -487,6 +511,13 @@ public final class FactionWorldData extends SavedData {
       CompoundTag storeTag = new CompoundTag();
       this.stores.forEach(storeTag::putIntArray);
       tag.put("Stores", storeTag);
+      ListTag countryList = new ListTag();
+      this.countries.forEach((owner, country) -> {
+         CompoundTag entry = country.save();
+         entry.putUUID("Owner", owner);
+         countryList.add(entry);
+      });
+      tag.put("Countries", countryList);
       CompoundTag rulerTag = new CompoundTag();
       this.rulers.forEach((faction, ruler) -> {
          CompoundTag entry = new CompoundTag();
@@ -708,6 +739,12 @@ public final class FactionWorldData extends SavedData {
          int[] stock = FactionResources.startingStores();
          System.arraycopy(saved, 0, stock, 0, Math.min(saved.length, stock.length));
          data.stores.put(faction, stock);
+      }
+      for (Tag element : tag.getList("Countries", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         if (entry.hasUUID("Owner")) {
+            data.countries.put(entry.getUUID("Owner"), Country.load(entry));
+         }
       }
       CompoundTag intelTag = tag.getCompound("Intel");
       for (String key : intelTag.getAllKeys()) {
@@ -1194,9 +1231,44 @@ public final class FactionWorldData extends SavedData {
    }
 
    /** A village a player took from a faction; see FactionUnrest. */
+   /** A player's country: its name, capital town hall and the tax waiting to reach the capital. */
+   public static final class Country {
+      public final String name;
+      public BlockPos capital;
+      public final long founded;
+      /** Silver collected but not yet in the capital's town hall, which may be unloaded. */
+      public int pending;
+      /** Silver the whole country paid on the last tax day. */
+      public int income;
+
+      Country(String name, BlockPos capital, long founded) {
+         this.name = name;
+         this.capital = capital;
+         this.founded = founded;
+      }
+
+      CompoundTag save() {
+         CompoundTag tag = new CompoundTag();
+         tag.putString("Name", this.name);
+         tag.putLong("Capital", this.capital.asLong());
+         tag.putLong("Founded", this.founded);
+         tag.putInt("Pending", this.pending);
+         tag.putInt("Income", this.income);
+         return tag;
+      }
+
+      static Country load(CompoundTag tag) {
+         Country country = new Country(tag.getString("Name"), BlockPos.of(tag.getLong("Capital")), tag.getLong("Founded"));
+         country.pending = tag.getInt("Pending");
+         country.income = tag.getInt("Income");
+         return country;
+      }
+   }
+
    public static final class VillageState {
       public final String from;
-      public final int people;
+      /** Fixed for a taken village; for one of the player's own, counted daily while it is loaded. */
+      public int people;
       public int loyalty;
       public int order;
       /** 0 low, 1 usual, 2 high. */

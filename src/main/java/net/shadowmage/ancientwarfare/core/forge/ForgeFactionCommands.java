@@ -771,11 +771,14 @@ public final class ForgeFactionCommands {
       FactionTrade.updateRoutes(source.getLevel(), data);
       List<FactionWorldData.Route> routes = data.routes();
       long done = routes.stream().filter(route -> route.road() == FactionWorldData.RoadState.DONE).count();
-      tell(source, Component.literal(routes.size() + " route(s), " + done + " road(s) finished"));
+      long building = routes.stream().filter(route -> route.road() == FactionWorldData.RoadState.BUILDING).count();
+      long failed = routes.stream().filter(route -> route.road() == FactionWorldData.RoadState.FAILED).count();
+      tell(source, Component.literal(routes.size() + " route(s), " + done + " road(s) finished, " + building + " being built, " + failed + " failed"));
 
-      // Routes to player villages first: those are the ones a player looks for.
+      // Routes to player villages first: those are the ones a player looks for; then roads under way.
       List<FactionWorldData.Route> shown = new ArrayList<>(routes);
-      shown.sort(Comparator.comparing(route -> route.village() == null));
+      shown.sort(Comparator.<FactionWorldData.Route, Boolean>comparing(route -> route.village() == null)
+         .thenComparing(route -> route.road() != FactionWorldData.RoadState.BUILDING));
 
       for (FactionWorldData.Route route : shown.subList(0, Math.min(24, shown.size()))) {
          FactionWorldData.Settlement a = data.endpoint(route, true);

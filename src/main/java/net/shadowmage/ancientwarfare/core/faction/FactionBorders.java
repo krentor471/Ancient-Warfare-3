@@ -41,7 +41,7 @@ public final class FactionBorders {
       });
       Map<Long, String> changes = new HashMap<>();
       owners.forEach((province, owner) -> {
-         if (settled.contains(province)) {
+         if (settled.contains(province) || PlayerCountry.isLand(owner)) {
             return;
          }
 
@@ -49,7 +49,7 @@ public final class FactionBorders {
          int own = owner.isEmpty() ? 0 : around.getOrDefault(owner, 0);
          for (Map.Entry<String, Integer> entry : around.entrySet()) {
             String neighbour = entry.getKey();
-            if (neighbour.isEmpty() || neighbour.equals(owner) || FactionDiplomacy.isOutlaw(neighbour)) {
+            if (neighbour.isEmpty() || neighbour.equals(owner) || FactionDiplomacy.isOutlaw(neighbour) || PlayerCountry.isLand(neighbour)) {
                continue;
             }
 
