@@ -23,6 +23,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.shadowmage.ancientwarfare.core.faction.FactionArmies;
 import net.shadowmage.ancientwarfare.core.faction.FactionRulers;
+import net.shadowmage.ancientwarfare.core.faction.FactionTournaments;
 import net.shadowmage.ancientwarfare.core.entity.ChestPushcartEntity;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
@@ -52,6 +53,15 @@ public final class ForgeFactionEvents {
       }
    }
 
+   /** Blows in a tournament bout. */
+   @SubscribeEvent
+   public static void onTournamentDamage(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+      if (!event.getEntity().level().isClientSide
+         && FactionTournaments.onDamage(event.getEntity(), event.getSource().getEntity(), event.getAmount())) {
+         event.setCanceled(true);
+      }
+   }
+
    @SubscribeEvent
    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
       if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
@@ -64,7 +74,7 @@ public final class ForgeFactionEvents {
       if (event.getEntity() instanceof FactionNpcEntity npc
          && event.getLevel() instanceof ServerLevel serverLevel
          && serverLevel.dimension() == Level.OVERWORLD
-         && (FactionEnvoys.isStaleEnvoy(npc) || !FactionSimulation.onNpcJoin(serverLevel, npc))) {
+         && (FactionEnvoys.isStaleEnvoy(npc) || FactionTournaments.isStaleChampion(npc) || !FactionSimulation.onNpcJoin(serverLevel, npc))) {
          event.setCanceled(true);
       } else if (event.getEntity() instanceof FactionNpcEntity npc && event.getLevel() instanceof ServerLevel serverLevel && FactionRulers.isRuler(serverLevel, npc)) {
          FactionRulers.nameLeader(serverLevel, npc);

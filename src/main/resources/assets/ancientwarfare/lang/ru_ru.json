@@ -536,7 +536,7 @@
   "veteran.ancientwarfare.promoted.2": "%s стал героем твоего войска: намного сильнее (убил врагов: %s).",
   "veteran.ancientwarfare.fell": "Пал твой ветеран %s (убил врагов: %s). Товарищи потрясены.",
   "block.ancientwarfare.field_tent": "Походный шатёр",
-  "gui.ancientwarfare.diplomacy.action.spy": "Послать лазутчика (%s изумр.)",
+  "gui.ancientwarfare.diplomacy.action.spy": "Лазутчик (%s)",
   "spy.ancientwarfare.already": "Твой лазутчик уже в землях фракции %s.",
   "spy.ancientwarfare.missing": "Лазутчик стоит %s изумрудов.",
   "spy.ancientwarfare.sent": "Лазутчик отправился в земли фракции %s. Жди донесения.",
@@ -549,5 +549,17 @@
   "spy.ancientwarfare.raid_other": "  Набег на поселение игрока у %2$s, %3$s: налётчиков %1$s.",
   "spy.ancientwarfare.assault": "  Штурм: %s солдат против фракции %s у %s, %s (поселение%5$s).",
   "spy.ancientwarfare.quiet": "  Их войска стоят дома.",
-  "spy.ancientwarfare.map": "Три дня их войска видны на твоей карте мира (M)."
+  "spy.ancientwarfare.map": "Три дня их войска видны на твоей карте мира (M).",
+  "gui.ancientwarfare.diplomacy.action.tournament": "Турнир (%s)",
+  "tournament.ancientwarfare.no_capital": "Турниры проводят в столице фракции %s.",
+  "tournament.ancientwarfare.hostile": "Фракция %s не устроит турнир для врага.",
+  "tournament.ancientwarfare.busy": "Твой боец уже на ристалище.",
+  "tournament.ancientwarfare.no_fighter": "Приведи с собой своего бойца: драться с чемпионом будет он.",
+  "tournament.ancientwarfare.missing": "Взнос за участие: %s изумрудов.",
+  "tournament.ancientwarfare.champion": "Чемпион фракции %s",
+  "tournament.ancientwarfare.begins": "Турнир: %s против чемпиона фракции %s. Кто ослабеет, тот сдаётся.",
+  "tournament.ancientwarfare.won": "%s победил чемпиона фракции %s! Награда: %s изумрудов, и отношение к тебе лучше.",
+  "tournament.ancientwarfare.lost": "%s сдался чемпиону фракции %s.",
+  "tournament.ancientwarfare.draw": "Поединок с чемпионом фракции %s закончился вничью.",
+  "news.ancientwarfare.tournament_won": "Турнир: %s победил чемпиона фракции %s"
 }

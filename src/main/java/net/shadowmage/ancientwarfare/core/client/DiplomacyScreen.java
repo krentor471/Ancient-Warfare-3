@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.shadowmage.ancientwarfare.core.faction.FactionRulers;
 import net.shadowmage.ancientwarfare.core.faction.FactionSpies;
+import net.shadowmage.ancientwarfare.core.faction.FactionTournaments;
 import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.RelationState;
 import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
@@ -80,7 +81,9 @@ public class DiplomacyScreen extends Screen {
          this.addAction(entry, PlayerDiplomacy.Action.GIFT, x, y + 22, width, true);
          this.addAction(entry, PlayerDiplomacy.Action.TRADE, x + width + 2, y + 22, width, entry.trade() || entry.treaty() != RelationState.WAR);
          this.addAction(entry, PlayerDiplomacy.Action.WAR, x + (width + 2) * 2, y + 22, width, entry.treaty() != RelationState.WAR);
-         this.addAction(entry, PlayerDiplomacy.Action.SPY, x, y + 44, width * 3 + 4, true);
+         int half = (width * 3 + 2) / 2;
+         this.addAction(entry, PlayerDiplomacy.Action.SPY, x, y + 44, half, true);
+         this.addAction(entry, PlayerDiplomacy.Action.TOURNAMENT, x + half + 2, y + 44, half, entry.treaty() != RelationState.WAR);
       }
    }
 
@@ -92,7 +95,9 @@ public class DiplomacyScreen extends Screen {
 
       Component label = action == PlayerDiplomacy.Action.GIFT
          ? Component.translatable(key, PlayerDiplomacy.GIFT_EMERALDS)
-         : action == PlayerDiplomacy.Action.SPY ? Component.translatable(key, FactionSpies.SPY_EMERALDS) : Component.translatable(key);
+         : action == PlayerDiplomacy.Action.SPY
+            ? Component.translatable(key, FactionSpies.SPY_EMERALDS)
+            : action == PlayerDiplomacy.Action.TOURNAMENT ? Component.translatable(key, FactionTournaments.ENTRY_EMERALDS) : Component.translatable(key);
       Button button = Button.builder(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 20).build();
       boolean anywhere = action == PlayerDiplomacy.Action.WAR || action == PlayerDiplomacy.Action.SPY || action == PlayerDiplomacy.Action.TRADE && entry.trade();
       button.active = applicable && (anywhere || entry.leaderNear());

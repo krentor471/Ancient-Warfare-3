@@ -46,7 +46,9 @@ public final class PlayerDiplomacy {
       /** Signs a trade agreement, or ends the one in force. */
       TRADE,
       /** Sends a spy to learn where the faction's armies are bound. */
-      SPY;
+      SPY,
+      /** Enters one of the player's soldiers against the faction's champion. */
+      TOURNAMENT;
 
       public static Action byId(int id) {
          return id >= 0 && id < values().length ? values()[id] : null;
@@ -132,6 +134,9 @@ public final class PlayerDiplomacy {
          }
          case SPY -> {
             return FactionSpies.send(player, faction);
+         }
+         case TOURNAMENT -> {
+            return FactionTournaments.enter(player, faction);
          }
          case GIFT -> {
             if (!takeEmeralds(player, GIFT_EMERALDS)) {

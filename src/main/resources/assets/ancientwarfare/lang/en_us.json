@@ -1656,7 +1656,7 @@
   "veteran.ancientwarfare.promoted.2": "%s is now a hero of your army: much stronger (kills: %s).",
   "veteran.ancientwarfare.fell": "Your veteran %s has fallen (kills: %s). His comrades are shaken.",
   "block.ancientwarfare.field_tent": "Field Tent",
-  "gui.ancientwarfare.diplomacy.action.spy": "Send a spy (%s emeralds)",
+  "gui.ancientwarfare.diplomacy.action.spy": "Spy (%s)",
   "spy.ancientwarfare.already": "A spy of yours is already in the lands of %s.",
   "spy.ancientwarfare.missing": "A spy costs %s emeralds.",
   "spy.ancientwarfare.sent": "Your spy sets off into the lands of %s. Expect his report soon.",
@@ -1669,5 +1669,17 @@
   "spy.ancientwarfare.raid_other": "  A raid on a player's village at %2$s, %3$s: %1$s raiders.",
   "spy.ancientwarfare.assault": "  An assault of %s soldiers on %s at %s, %s (settlement%5$s).",
   "spy.ancientwarfare.quiet": "  Their armies stay at home.",
-  "spy.ancientwarfare.map": "For three days their armies show on your world map (M)."
+  "spy.ancientwarfare.map": "For three days their armies show on your world map (M).",
+  "gui.ancientwarfare.diplomacy.action.tournament": "Tournament (%s)",
+  "tournament.ancientwarfare.no_capital": "Tournaments are held in the capital of %s.",
+  "tournament.ancientwarfare.hostile": "%s will not hold a tournament for an enemy.",
+  "tournament.ancientwarfare.busy": "Your fighter is already in the lists.",
+  "tournament.ancientwarfare.no_fighter": "Bring one of your soldiers with you: he fights the champion.",
+  "tournament.ancientwarfare.missing": "The entry fee is %s emeralds.",
+  "tournament.ancientwarfare.champion": "Champion of %s",
+  "tournament.ancientwarfare.begins": "Tournament: %s faces the champion of %s. The one brought low yields.",
+  "tournament.ancientwarfare.won": "%s beat the champion of %s! Prize: %s emeralds, and they think better of you.",
+  "tournament.ancientwarfare.lost": "%s yields to the champion of %s.",
+  "tournament.ancientwarfare.draw": "The bout with the champion of %s ends in a draw.",
+  "news.ancientwarfare.tournament_won": "Tournament: %s beat the champion of %s"
 }

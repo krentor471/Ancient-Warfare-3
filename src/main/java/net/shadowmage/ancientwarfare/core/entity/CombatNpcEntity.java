@@ -170,6 +170,11 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.addCombatExperience(KILL_EXPERIENCE);
    }
 
+   /** Beat a champion in the lists. */
+   public void onTournamentWin(int experience) {
+      this.addCombatExperience(experience);
+   }
+
    public int getKills() {
       return this.kills;
    }
