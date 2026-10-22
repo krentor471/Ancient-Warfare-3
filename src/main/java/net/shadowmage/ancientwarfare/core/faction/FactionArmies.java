@@ -158,7 +158,7 @@ public final class FactionArmies {
       data.setLastRaid(village, data.lastSimulatedDay());
       FactionWorldData.Army army = data.addArmy(faction, "", 0, owner, village, taken, level.getGameTime() + ULTIMATUM_TICKS);
       army.siege = true;
-      army.tribute = Mth.clamp(taken * 2, MIN_TRIBUTE, MAX_TRIBUTE);
+      army.tribute = Mth.clamp((int)Math.round(taken * 2 * FactionRulers.trait(data, faction, level.getRandom()).tribute), MIN_TRIBUTE, MAX_TRIBUTE);
       data.setDirty();
       ServerPlayer player = level.getServer().getPlayerList().getPlayer(owner);
       if (player != null) {
@@ -247,10 +247,11 @@ public final class FactionArmies {
             }
 
             RelationState treaty = standings.getTreaty(owner, faction);
+            FactionRulers.Trait ruler = FactionRulers.trait(data, faction, random);
             if (treaty == RelationState.NEUTRAL
                && day >= FIRST_WAR_DAY
-               && standings.getStanding(owner, faction) <= PLAYER_WAR_STANDING
-               && random.nextDouble() < PLAYER_WAR_CHANCE) {
+               && standings.getStanding(owner, faction) <= PLAYER_WAR_STANDING + ruler.warTemper
+               && random.nextDouble() < PLAYER_WAR_CHANCE * ruler.warChance) {
                standings.setTreaty(owner, faction, RelationState.WAR);
                standings.discover(owner, faction);
                FactionNews.tellPlayer(level, owner, Component.translatable("news.ancientwarfare.war_on_you", FactionNews.factionName(faction)));
@@ -263,7 +264,7 @@ public final class FactionArmies {
                && !raided
                && size >= MIN_RAID
                && day - data.lastRaid(pos) >= RAID_COOLDOWN_DAYS
-               && random.nextDouble() < RAID_CHANCE
+               && random.nextDouble() < RAID_CHANCE * ruler.raidChance
                && (siegeSize >= MIN_VILLAGE_SIEGE
                   ? siege(level, data, faction, pos, owner, siegeSize) != null
                   : raid(level, data, faction, pos, owner, size, RAID_WARNING_TICKS) != null)) {

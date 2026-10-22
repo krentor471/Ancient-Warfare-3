@@ -9,6 +9,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.shadowmage.ancientwarfare.core.faction.FactionRulers;
 import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.RelationState;
 import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
@@ -120,6 +121,14 @@ public class DiplomacyScreen extends Screen {
       int width = PANEL_WIDTH - LIST_WIDTH - 20;
       graphics.drawString(this.font, factionName(entry.faction()).copy().withStyle(ChatFormatting.BOLD), x, y, TEXT_COLOR);
       y += 14;
+      graphics.drawString(
+         this.font,
+         Component.translatable("gui.ancientwarfare.diplomacy.ruler", FactionRulers.name(entry.ruler()), FactionRulers.traitName(entry.trait())),
+         x,
+         y,
+         0xFFFFD27F
+      );
+      y += 11;
       graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.state", stateName(entry.treaty())), x, y, TEXT_COLOR);
       y += 11;
       graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.standing", standingText(entry.standing())), x, y, TEXT_COLOR);

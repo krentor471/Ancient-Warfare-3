@@ -18,6 +18,8 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionTradeListRegistry;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 import net.shadowmage.ancientwarfare.core.menu.FactionTradeMenu;
+import net.shadowmage.ancientwarfare.core.faction.FactionRulers;
+import net.minecraft.server.level.ServerLevel;
 
 public class FactionTraderNpcEntity extends FactionNpcEntity {
    private static final String SAVED_TRADES_TAG = "AWFactionTrades";
@@ -61,7 +63,7 @@ public class FactionTraderNpcEntity extends FactionNpcEntity {
       }
 
       if (!this.level().isClientSide) {
-         List<FactionTradeListRegistry.FactionTradeEntry> trades = this.getAvailableTrades();
+         List<FactionTradeListRegistry.FactionTradeEntry> trades = FactionRulers.price((ServerLevel)this.level(), this.getFactionName(), this.getAvailableTrades());
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(

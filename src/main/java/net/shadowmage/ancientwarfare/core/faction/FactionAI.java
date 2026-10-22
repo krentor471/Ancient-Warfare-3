@@ -74,6 +74,15 @@ public final class FactionAI {
       }
    }
 
+   /** How much stronger a ruler wants to be before he attacks. */
+   private static double advantage(FactionRulers.Trait ruler) {
+      return switch (ruler) {
+         case WARLIKE -> 1.0;
+         case CAUTIOUS -> 1.6;
+         default -> STRENGTH_ADVANTAGE;
+      };
+   }
+
    private static void driftOpinion(ServerLevel level, List<String> factions, String faction, String other, boolean bordering) {
       RelationState state = FactionDiplomacy.relation(level, faction, other).state();
       int delta = 0;
@@ -106,12 +115,17 @@ public final class FactionAI {
       FactionDiplomacy.Relation relation = FactionDiplomacy.relation(level, faction, other);
       int mine = strength.getOrDefault(faction, 0);
       int theirs = strength.getOrDefault(other, 0);
+      FactionRulers.Trait myRuler = FactionRulers.trait(data, faction, random);
+      FactionRulers.Trait theirRuler = FactionRulers.trait(data, other, random);
+      // The fiercer of the two rulers sets how soon it comes to war; each needs his own edge in strength.
+      double warChance = WAR_CHANCE * Math.max(myRuler.warChance, theirRuler.warChance);
+      int warOpinion = WAR_OPINION + Math.max(myRuler.warTemper, theirRuler.warTemper);
       switch (relation.state()) {
          case NEUTRAL -> {
-            if (bordering && day >= FIRST_WAR_DAY && relation.opinion() <= WAR_OPINION && random.nextDouble() < WAR_CHANCE) {
-               if (mine >= theirs * STRENGTH_ADVANTAGE) {
+            if (bordering && day >= FIRST_WAR_DAY && relation.opinion() <= warOpinion && random.nextDouble() < warChance) {
+               if (mine >= theirs * advantage(myRuler)) {
                   declareWar(level, data, faction, other);
-               } else if (theirs >= mine * STRENGTH_ADVANTAGE) {
+               } else if (theirs >= mine * advantage(theirRuler)) {
                   declareWar(level, data, other, faction);
                }
             } else if (relation.opinion() >= PACT_OPINION && random.nextDouble() < TREATY_CHANCE) {
@@ -126,7 +140,8 @@ public final class FactionAI {
          case WAR -> {
             long days = day - relation.since();
             boolean beaten = mine == 0 || theirs == 0;
-            if (beaten || days >= MIN_WAR_DAYS && random.nextDouble() < PEACE_CHANCE_PER_DAY * (days - MIN_WAR_DAYS + 1)) {
+            double peaceChance = PEACE_CHANCE_PER_DAY * Math.min(myRuler.peaceChance, theirRuler.peaceChance) * (days - MIN_WAR_DAYS + 1);
+            if (beaten || days >= MIN_WAR_DAYS && random.nextDouble() < peaceChance) {
                if (FactionDiplomacy.setState(level, faction, other, RelationState.NEUTRAL)) {
                   FactionBorders.settlePeace(level, data, faction, other);
                   if (beaten) {

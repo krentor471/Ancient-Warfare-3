@@ -24,6 +24,8 @@ public final class FactionWorldData extends SavedData {
    private final Map<String, Map<String, FactionDiplomacy.Relation>> relations = new HashMap<>();
    private final List<Settlement> settlements = new ArrayList<>();
    private final Map<String, Integer> treasuries = new HashMap<>();
+   /** Each faction's ruler: see FactionRulers. */
+   private final Map<String, Ruler> rulers = new HashMap<>();
    private final List<PlannedSettlement> plannedSettlements = new ArrayList<>();
    private final Map<String, Long> lastFounding = new HashMap<>();
    private final List<Army> armies = new ArrayList<>();
@@ -368,6 +370,15 @@ public final class FactionWorldData extends SavedData {
       this.setDirty();
    }
 
+   public Ruler ruler(String faction) {
+      return this.rulers.get(faction);
+   }
+
+   public void setRuler(String faction, Ruler ruler) {
+      this.rulers.put(faction, ruler);
+      this.setDirty();
+   }
+
    public int treasury(String faction) {
       return this.treasuries.getOrDefault(faction, 0);
    }
@@ -430,6 +441,15 @@ public final class FactionWorldData extends SavedData {
       CompoundTag gold = new CompoundTag();
       this.treasuries.forEach(gold::putInt);
       tag.put("Treasuries", gold);
+      CompoundTag rulerTag = new CompoundTag();
+      this.rulers.forEach((faction, ruler) -> {
+         CompoundTag entry = new CompoundTag();
+         entry.putInt("Name", ruler.name());
+         entry.putInt("Trait", ruler.trait());
+         entry.putLong("Since", ruler.since());
+         rulerTag.put(faction, entry);
+      });
+      tag.put("Rulers", rulerTag);
       tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
       tag.putLong("DayOffset", this.dayOffset);
       tag.putBoolean("HistoryDone", this.historyDone);
@@ -595,6 +615,11 @@ public final class FactionWorldData extends SavedData {
       data.nextSettlementId = Math.max(tag.getInt("NextSettlementId"), data.settlements.size() + 1);
       CompoundTag gold = tag.getCompound("Treasuries");
       gold.getAllKeys().forEach(faction -> data.treasuries.put(faction, gold.getInt(faction)));
+      CompoundTag rulerTag = tag.getCompound("Rulers");
+      for (String faction : rulerTag.getAllKeys()) {
+         CompoundTag entry = rulerTag.getCompound(faction);
+         data.rulers.put(faction, new Ruler(entry.getInt("Name"), entry.getInt("Trait"), entry.getLong("Since")));
+      }
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
       data.dayOffset = tag.getLong("DayOffset");
       data.historyDone = tag.getBoolean("HistoryDone");
@@ -1004,6 +1029,10 @@ public final class FactionWorldData extends SavedData {
     * the NPCs standing there are spawned to match the garrison while a player is near.
     */
    public static record ChronicleEntry(long day, String json) {
+   }
+
+   /** A faction's ruler: a name (an index into the lang names) and a trait (a FactionRulers.Trait ordinal). */
+   public static record Ruler(int name, int trait, long since) {
    }
 
    public static final class Settlement {

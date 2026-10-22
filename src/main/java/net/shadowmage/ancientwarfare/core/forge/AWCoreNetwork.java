@@ -75,7 +75,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 public final class AWCoreNetwork {
    private static final String PROTOCOL_VERSION = "5";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-      new ResourceLocation("ancientwarfare", "main"), () -> "8", "8"::equals, "8"::equals
+      new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
 
    private AWCoreNetwork() {
@@ -976,6 +976,8 @@ public final class AWCoreNetwork {
             buffer.writeBoolean(entry.leaderNear());
             buffer.writeBoolean(entry.trade());
             buffer.writeVarInt(entry.routes());
+            buffer.writeVarInt(entry.ruler());
+            buffer.writeVarInt(entry.trait());
          }
       }
 
@@ -997,7 +999,9 @@ public final class AWCoreNetwork {
             }
 
             entries.add(
-               new PlayerDiplomacy.Entry(faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt())
+               new PlayerDiplomacy.Entry(
+                  faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt()
+               )
             );
          }
 

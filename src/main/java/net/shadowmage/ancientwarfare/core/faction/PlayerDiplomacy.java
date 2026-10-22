@@ -82,12 +82,13 @@ public final class PlayerDiplomacy {
       Component name = FactionNews.factionName(faction);
       RelationState treaty = standings.getTreaty(player.getUUID(), faction);
       int standing = standings.getStanding(player.getUUID(), faction);
+      int temper = FactionRulers.trait(player.serverLevel(), faction).treatyStanding;
       switch (action) {
          case PEACE -> {
             if (treaty != RelationState.WAR) {
                return Component.translatable("diplomacy.ancientwarfare.not_at_war", name);
-            } else if (standing < PEACE_STANDING) {
-               return Component.translatable("diplomacy.ancientwarfare.refused", name, standing, PEACE_STANDING);
+            } else if (standing < PEACE_STANDING + temper) {
+               return Component.translatable("diplomacy.ancientwarfare.refused", name, standing, PEACE_STANDING + temper);
             }
 
             standings.setTreaty(player.getUUID(), faction, RelationState.NEUTRAL);
@@ -97,8 +98,8 @@ public final class PlayerDiplomacy {
          case PACT -> {
             if (treaty != RelationState.NEUTRAL) {
                return Component.translatable("diplomacy.ancientwarfare.pact_needs_neutral", name);
-            } else if (standing < PACT_STANDING) {
-               return Component.translatable("diplomacy.ancientwarfare.refused", name, standing, PACT_STANDING);
+            } else if (standing < PACT_STANDING + temper) {
+               return Component.translatable("diplomacy.ancientwarfare.refused", name, standing, PACT_STANDING + temper);
             }
 
             standings.setTreaty(player.getUUID(), faction, RelationState.PACT);
@@ -107,8 +108,8 @@ public final class PlayerDiplomacy {
          case ALLIANCE -> {
             if (treaty != RelationState.PACT) {
                return Component.translatable("diplomacy.ancientwarfare.alliance_needs_pact", name);
-            } else if (standing < ALLIANCE_STANDING) {
-               return Component.translatable("diplomacy.ancientwarfare.refused", name, standing, ALLIANCE_STANDING);
+            } else if (standing < ALLIANCE_STANDING + temper) {
+               return Component.translatable("diplomacy.ancientwarfare.refused", name, standing, ALLIANCE_STANDING + temper);
             }
 
             standings.setTreaty(player.getUUID(), faction, RelationState.ALLIANCE);
@@ -208,7 +209,9 @@ public final class PlayerDiplomacy {
                settlements,
                leaderNear(player, faction),
                standings.hasTrade(player.getUUID(), faction),
-               FactionTrade.playerRoutes(data, player.getUUID(), faction)
+               FactionTrade.playerRoutes(data, player.getUUID(), faction),
+               FactionRulers.ruler(data, faction, player.getRandom()).name(),
+               FactionRulers.ruler(data, faction, player.getRandom()).trait()
             )
          );
       }
@@ -217,7 +220,7 @@ public final class PlayerDiplomacy {
    }
 
    public static record Entry(
-      String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes
+      String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait
    ) {
    }
 }
