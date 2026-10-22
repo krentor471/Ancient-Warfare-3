@@ -75,7 +75,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "11";
+   private static final String PROTOCOL_VERSION = "12";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
@@ -228,6 +228,16 @@ public final class AWCoreNetwork {
          .encoder(AWCoreNetwork.QuestActionPacket::encode)
          .decoder(AWCoreNetwork.QuestActionPacket::decode)
          .consumerMainThread(AWCoreNetwork.QuestActionPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.ConstructionActionPacket.class, 46, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.ConstructionActionPacket::encode)
+         .decoder(AWCoreNetwork.ConstructionActionPacket::decode)
+         .consumerMainThread(AWCoreNetwork.ConstructionActionPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.ConstructionJobsPacket.class, 47, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.ConstructionJobsPacket::encode)
+         .decoder(AWCoreNetwork.ConstructionJobsPacket::decode)
+         .consumerMainThread(AWCoreNetwork.ConstructionJobsPacket::handle)
          .add();
       CHANNEL.messageBuilder(AWCoreNetwork.FoundCountryPacket.class, 43, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.FoundCountryPacket::encode)
@@ -446,6 +456,23 @@ public final class AWCoreNetwork {
       ServerPlayer player, BlockPos board, Component title, Component note, List<FactionQuests.Line> offers, List<FactionQuests.Line> active
    ) {
       CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.QuestBoardPacket(board, title, note, offers, active));
+   }
+
+   public static void sendConstructionCreate(BlockPos min, BlockPos max, int kind) {
+      CHANNEL.sendToServer(new AWCoreNetwork.ConstructionActionPacket(ConstructionActionPacket.CREATE, min, max, kind));
+   }
+
+   public static void sendConstructionCancel(int id) {
+      CHANNEL.sendToServer(new AWCoreNetwork.ConstructionActionPacket(ConstructionActionPacket.CANCEL, BlockPos.ZERO, BlockPos.ZERO, id));
+   }
+
+   public static void sendConstructionJobs(ServerPlayer player, List<net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Job> jobs) {
+      List<ConstructionJobsPacket.Entry> entries = new ArrayList<>();
+      for (var job : jobs) {
+         entries.add(new ConstructionJobsPacket.Entry(job.id(), job.kind().ordinal(), job.min(), job.max(), job.done(), job.total(), job.state().getBlock().getName()));
+      }
+
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.ConstructionJobsPacket(entries));
    }
 
    public static void sendQuestAction(BlockPos board, int action, long argument) {
@@ -1245,6 +1272,86 @@ public final class AWCoreNetwork {
                   default -> {
                   }
                }
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   /** create: the box and the kind of work; cancel: the job's id in argument. */
+   public static record ConstructionActionPacket(int action, BlockPos min, BlockPos max, int argument) {
+      public static final int CREATE = 0;
+      public static final int CANCEL = 1;
+
+      private static void encode(AWCoreNetwork.ConstructionActionPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarInt(packet.action);
+         buffer.writeBlockPos(packet.min);
+         buffer.writeBlockPos(packet.max);
+         buffer.writeVarInt(packet.argument);
+      }
+
+      private static AWCoreNetwork.ConstructionActionPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.ConstructionActionPacket(buffer.readVarInt(), buffer.readBlockPos(), buffer.readBlockPos(), buffer.readVarInt());
+      }
+
+      private static void handle(AWCoreNetwork.ConstructionActionPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               if (packet.action == CREATE) {
+                  net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.create(
+                     player, packet.min, packet.max, net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Kind.values()[Math.floorMod(packet.argument, 4)]
+                  );
+               } else if (packet.action == CANCEL) {
+                  net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.cancel(player, packet.argument);
+               }
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record ConstructionJobsPacket(List<ConstructionJobsPacket.Entry> jobs) {
+      private static final int MAX_JOBS = 16;
+
+      public static record Entry(int id, int kind, BlockPos min, BlockPos max, int done, int total, Component block) {
+      }
+
+      private static void encode(AWCoreNetwork.ConstructionJobsPacket packet, FriendlyByteBuf buffer) {
+         List<Entry> jobs = packet.jobs.subList(0, Math.min(MAX_JOBS, packet.jobs.size()));
+         buffer.writeVarInt(jobs.size());
+         for (Entry job : jobs) {
+            buffer.writeVarInt(job.id);
+            buffer.writeVarInt(job.kind);
+            buffer.writeBlockPos(job.min);
+            buffer.writeBlockPos(job.max);
+            buffer.writeVarInt(job.done);
+            buffer.writeVarInt(job.total);
+            buffer.writeComponent(job.block);
+         }
+      }
+
+      private static AWCoreNetwork.ConstructionJobsPacket decode(FriendlyByteBuf buffer) {
+         int count = Math.min(MAX_JOBS, buffer.readVarInt());
+         List<Entry> jobs = new ArrayList<>();
+         for (int index = 0; index < count; index++) {
+            jobs.add(new Entry(buffer.readVarInt(), buffer.readVarInt(), buffer.readBlockPos(), buffer.readBlockPos(), buffer.readVarInt(), buffer.readVarInt(), buffer.readComponent()));
+         }
+
+         return new AWCoreNetwork.ConstructionJobsPacket(jobs);
+      }
+
+      private static void handle(AWCoreNetwork.ConstructionJobsPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               List<net.shadowmage.ancientwarfare.core.client.ConstructionClient.JobView> views = new ArrayList<>();
+               for (Entry job : packet.jobs) {
+                  views.add(new net.shadowmage.ancientwarfare.core.client.ConstructionClient.JobView(job.id, job.kind, job.min, job.max, job.done, job.total, job.block));
+               }
+
+               net.shadowmage.ancientwarfare.core.client.ConstructionClient.setJobs(views);
             }
          });
          context.setPacketHandled(true);

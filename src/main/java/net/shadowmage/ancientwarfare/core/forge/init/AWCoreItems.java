@@ -488,6 +488,9 @@ public final class AWCoreItems {
    public static final RegistryObject<Item> GOLD_COMMAND_BATON = REGISTER.register("gold_command_baton", () -> new CommandBatonItem(Tiers.GOLD));
    public static final RegistryObject<Item> DIAMOND_COMMAND_BATON = REGISTER.register("diamond_command_baton", () -> new CommandBatonItem(Tiers.DIAMOND));
    public static final RegistryObject<Item> WORK_ORDER = REGISTER.register("work_order", WorkOrderItem::new);
+   public static final RegistryObject<Item> CONSTRUCTION_WAND = REGISTER.register(
+      "construction_wand", net.shadowmage.ancientwarfare.core.item.ConstructionWandItem::new
+   );
    public static final RegistryObject<Item> ROUTING_ORDER = REGISTER.register("routing_order", RoutingOrderItem::new);
    public static final RegistryObject<Item> TRADE_ORDER = REGISTER.register("trade_order", TradeOrderItem::new);
    public static final RegistryObject<Item> UPKEEP_ORDER = REGISTER.register("upkeep_order", UpkeepOrderItem::new);

@@ -52,6 +52,9 @@ public final class ForgeFactionEvents {
    public static void onServerTick(ServerTickEvent event) {
       if (event.phase == Phase.END) {
          FactionSimulation.tick(event.getServer().overworld());
+         if (event.getServer().getTickCount() % 20 == 0) {
+            net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.sync(event.getServer());
+         }
       }
    }
 

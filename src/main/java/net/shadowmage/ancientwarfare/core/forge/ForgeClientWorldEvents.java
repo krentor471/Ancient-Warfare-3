@@ -306,6 +306,7 @@ public final class ForgeClientWorldEvents {
             }
 
             renderSelectedNpcBoxes(poseStack, consumer, minecraft);
+            net.shadowmage.ancientwarfare.core.client.ConstructionClient.render(poseStack, consumer, minecraft);
             renderOrderPreview(poseStack, consumer, minecraft, event.getPartialTick());
             bufferSource.endBatch(RenderType.lines());
             Set<ForgeClientWorldEvents.PreviewKey> visibleGhosts = new HashSet<>();

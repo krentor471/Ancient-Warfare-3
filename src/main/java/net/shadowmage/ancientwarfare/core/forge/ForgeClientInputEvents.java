@@ -72,14 +72,14 @@ public final class ForgeClientInputEvents {
    /** In the command view the camera is not the player, so the player's hand and the crosshair are hidden. */
    @SubscribeEvent
    public static void onRenderHand(RenderHandEvent event) {
-      if (CommandViewScreen.isOpen(Minecraft.getInstance())) {
+      if (CommandViewScreen.isOpen(Minecraft.getInstance()) || ConstructionViewScreen.isOpen(Minecraft.getInstance())) {
          event.setCanceled(true);
       }
    }
 
    @SubscribeEvent
    public static void onRenderOverlay(RenderGuiOverlayEvent.Pre event) {
-      if (CommandViewScreen.isOpen(Minecraft.getInstance()) && event.getOverlay().id().equals(VanillaGuiOverlay.CROSSHAIR.id())) {
+      if ((CommandViewScreen.isOpen(Minecraft.getInstance()) || ConstructionViewScreen.isOpen(Minecraft.getInstance())) && event.getOverlay().id().equals(VanillaGuiOverlay.CROSSHAIR.id())) {
          event.setCanceled(true);
       }
    }
@@ -103,7 +103,9 @@ public final class ForgeClientInputEvents {
          consumeBatonKey(minecraft, BATON_CLEAR_SELECTIONS);
          while (COMMAND_VIEW.consumeClick()) {
             ItemStack baton = CommandViewScreen.heldBaton(minecraft);
-            if (CommandBatonItem.isAdvanced(baton)) {
+            if (ConstructionViewScreen.holdingWand(minecraft)) {
+               ConstructionViewScreen.open(minecraft, COMMAND_VIEW);
+            } else if (CommandBatonItem.isAdvanced(baton)) {
                CommandViewScreen.open(minecraft, COMMAND_VIEW);
             } else if (isHoldingBaton(baton)) {
                minecraft.player.displayClientMessage(Component.translatable("guistrings.npc.command_view.needs_advanced_baton"), true);

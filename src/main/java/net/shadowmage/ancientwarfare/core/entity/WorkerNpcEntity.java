@@ -73,6 +73,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       this.goalSelector.addGoal(1, new WorkerNpcEntity.SleepGoal(this, this.playerSprintNavigationSpeed()));
       this.goalSelector.addGoal(2, new WorkerNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
       this.goalSelector.addGoal(4, new WorkerNpcEntity.WorkOrderGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(4, new BuilderGoal(this));
       this.goalSelector.addGoal(5, new WorkerNpcEntity.NearbyWorkGoal(this, 1.0));
       this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
       this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
@@ -283,7 +284,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       return 4.0;
    }
 
-   private boolean hasAssignedWorkOrder() {
+   boolean hasAssignedWorkOrder() {
       return AWCoreRegistryAccess.is(this.getOrdersStack(), AWCoreIds.WORK_ORDER) && !WorkOrderData.getWorkEntries(this.getOrdersStack()).isEmpty();
    }
 
