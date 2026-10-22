@@ -39,7 +39,8 @@ public final class AwtWorldGenerator {
    private static AwtTownPlacer.TownPlan cachedPlan;
    private static final Set<Long> FORCED_CHUNKS = new HashSet<>();
    /** Land under the faction town site being looked at, loaded ahead of the check. */
-   private static final IslandChunkWindow SITE_WINDOW = new IslandChunkWindow();
+   private static final java.util.LinkedHashMap<Long, IslandChunkWindow> SITE_LOADS = new java.util.LinkedHashMap<>();
+   private static final int MAX_SITE_LOADS = 4;
    private static BlockPos forcedOwner;
 
    private AwtWorldGenerator() {
@@ -140,7 +141,29 @@ public final class AwtWorldGenerator {
          }
       }
 
-      return SITE_WINDOW.requestGroup(level, new BlockPos(x, 0, z), needed, needed.size());
+      BlockPos key = new BlockPos(x, 0, z);
+      IslandChunkWindow window = SITE_LOADS.remove(key.asLong());
+      if (window == null) {
+         window = new IslandChunkWindow();
+         if (SITE_LOADS.size() >= MAX_SITE_LOADS) {
+            // The site asked about longest ago gives up its land.
+            var oldest = SITE_LOADS.entrySet().iterator().next();
+            oldest.getValue().releaseAll();
+            SITE_LOADS.remove(oldest.getKey());
+         }
+      }
+
+      // Most recently asked last, so the oldest is first to go.
+      SITE_LOADS.put(key.asLong(), window);
+      return window.requestGroup(level, key, needed, needed.size());
+   }
+
+   /** The site has been looked at; its land need not stay loaded for it. */
+   public static void siteDone(int x, int z) {
+      IslandChunkWindow window = SITE_LOADS.remove(new BlockPos(x, 0, z).asLong());
+      if (window != null) {
+         window.releaseAll();
+      }
    }
 
    public static boolean siteAcceptable(ServerLevel level, int x, int z, int chunks) {

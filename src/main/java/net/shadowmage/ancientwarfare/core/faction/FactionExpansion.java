@@ -83,6 +83,8 @@ public final class FactionExpansion {
    private static final IslandChunkWindow FORT_WINDOW = new IslandChunkWindow();
    /** checkSite's answer while the land under a site is still being generated. */
    private static final int[] PENDING = new int[0];
+   /** Sites whose land may load at once during a search. */
+   private static final int SITE_LOOKAHEAD = 4;
    /** Capitals that found no site this session. */
    private static final Set<Integer> GIVEN_UP = new HashSet<>();
 
@@ -414,7 +416,12 @@ public final class FactionExpansion {
       int[] moved = SEARCH_CENTER.get(target.id());
       BlockPos center = moved != null ? new BlockPos(moved[0], target.center().getY(), moved[1]) : target.center();
 
-      for (int i = 0; i < SITE_CHECKS_PER_TICK && checked < points && chunks > 0; i++, checked++) {
+      // The first site whose land is still loading; the search resumes there, while the land under
+      // the next few candidates loads alongside it.
+      int resume = -1;
+      int pending = 0;
+
+      for (int i = 0; i < SITE_CHECKS_PER_TICK + pending && checked < points && chunks > 0; i++, checked++) {
          if (capital && !small && checked >= points / 2) {
             break;
          }
@@ -422,9 +429,15 @@ public final class FactionExpansion {
          int index = small ? checked - points / 2 : checked;
          int[] site = checkSite(level, data, faction, center.getX(), center.getZ(), index, capital ? CAPITAL_SEARCH_STEP : VILLAGE_SEARCH_STEP, chunks, target, true);
          if (site == PENDING) {
-            // The land there is still being generated; look again at the same spot next time.
-            SITE_SEARCH.put(target.id(), checked);
-            return;
+            if (resume < 0) {
+               resume = checked;
+            }
+
+            if (++pending >= SITE_LOOKAHEAD) {
+               break;
+            }
+
+            continue;
          }
 
          if (site != null) {
@@ -438,6 +451,12 @@ public final class FactionExpansion {
             AncientWarfareCore.LOG.info("Faction {} lays out its {} #{} at {}, {}", faction, target.kind(), target.id(), site[0], site[1]);
             return;
          }
+      }
+
+      if (resume >= 0) {
+         // Look again at the first site still loading next time.
+         SITE_SEARCH.put(target.id(), resume);
+         return;
       }
 
       if (chunks > 0 && checked < points) {
@@ -577,11 +596,18 @@ public final class FactionExpansion {
          }
       }
 
+      if (!AwtWorldGenerator.roughSiteAcceptable(level, siteX, siteZ, chunks)) {
+         return null;
+      }
+
       if (patient && !AwtWorldGenerator.siteLoaded(level, siteX, siteZ, chunks)) {
+         AncientWarfareCore.LOG.debug("Site {}, {} for {}: land loading", siteX, siteZ, faction);
          return PENDING;
       }
 
-      return AwtWorldGenerator.siteAcceptable(level, siteX, siteZ, chunks) ? new int[]{siteX, siteZ} : null;
+      boolean acceptable = AwtWorldGenerator.siteAcceptable(level, siteX, siteZ, chunks);
+      AwtWorldGenerator.siteDone(siteX, siteZ);
+      return acceptable ? new int[]{siteX, siteZ} : null;
    }
 
    private static FactionWorldData.Settlement largestSettlement(FactionWorldData data, String faction) {

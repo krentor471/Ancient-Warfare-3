@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ChunkPos;
@@ -30,6 +31,9 @@ public final class FactionRoads {
    private static final int SEGMENT_STEPS = 4;
    private static final int TICK_INTERVAL = 40;
    private static final double PLAYER_RANGE = 192.0;
+   /** Roads within this distance of a player are built first, and several stretches at a time. */
+   private static final double NEAR_PLAYER_ROADS = 1500.0;
+   private static final int NEAR_STRETCHES = 3;
    /** Highest fill or cut that evens out one road cell. */
    private static final int MAX_RAMP = 6;
    /** Longest bridge, in blocks of water crossed. */
@@ -84,6 +88,9 @@ public final class FactionRoads {
          }
       }
 
+      FactionWorldData.Route best = null;
+      double bestDistance = Double.MAX_VALUE;
+
       for (FactionWorldData.Route route : data.routes()) {
          if (route.road() == FactionWorldData.RoadState.FAILED) {
             // The land is the same, but bridges may have grown longer or a settlement moved since.
@@ -107,18 +114,45 @@ public final class FactionRoads {
             continue;
          }
 
-         if (route.road() == FactionWorldData.RoadState.NONE) {
-            route.cursorX = from.center().getX();
-            route.cursorZ = from.center().getZ();
+         int startX = route.road() == FactionWorldData.RoadState.NONE ? from.center().getX() : route.cursorX;
+         int startZ = route.road() == FactionWorldData.RoadState.NONE ? from.center().getZ() : route.cursorZ;
+         if (level.hasNearbyAlivePlayer(startX, level.getSeaLevel(), startZ, PLAYER_RANGE)) {
+            continue;
          }
 
-         if (!level.hasNearbyAlivePlayer(route.cursorX, level.getSeaLevel(), route.cursorZ, PLAYER_RANGE)) {
-            route.road = FactionWorldData.RoadState.BUILDING;
-            buildStretch(level, data, route, from, to);
-            data.setDirty();
-            return;
+         // The roads a player will soon walk come first, nearest first; the rest of the world in turn.
+         double distance = NEAR_PLAYER_ROADS * NEAR_PLAYER_ROADS;
+         for (ServerPlayer player : level.players()) {
+            double dx = player.getX() - startX;
+            double dz = player.getZ() - startZ;
+            distance = Math.min(distance, dx * dx + dz * dz);
+         }
+
+         if (best == null || distance < bestDistance) {
+            best = route;
+            bestDistance = distance;
          }
       }
+
+      if (best == null) {
+         return;
+      }
+
+      FactionWorldData.Settlement from = data.endpoint(best, true);
+      FactionWorldData.Settlement to = data.endpoint(best, false);
+      if (best.road() == FactionWorldData.RoadState.NONE) {
+         best.cursorX = from.center().getX();
+         best.cursorZ = from.center().getZ();
+      }
+
+      best.road = FactionWorldData.RoadState.BUILDING;
+      // Near a player the road goes on faster, its land being loaded already.
+      int stretches = bestDistance < NEAR_PLAYER_ROADS * NEAR_PLAYER_ROADS ? NEAR_STRETCHES : 1;
+      for (int i = 0; i < stretches && best.road() == FactionWorldData.RoadState.BUILDING; i++) {
+         buildStretch(level, data, best, from, to);
+      }
+
+      data.setDirty();
    }
 
    private static void buildStretch(ServerLevel level, FactionWorldData data, FactionWorldData.Route route, FactionWorldData.Settlement from, FactionWorldData.Settlement to) {
