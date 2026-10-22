@@ -220,6 +220,10 @@ public final class FactionSimulation {
          return !FactionTownLife.isStale(npc);
       }
 
+      if (FactionTownLife.isThief(npc)) {
+         return !FactionTownLife.isStaleThief(npc);
+      }
+
       int campaign = FactionCampaigns.campaignId(npc);
       if (campaign != 0) {
          // A marching column is spawned afresh from its numbers; old soldiers of it go.

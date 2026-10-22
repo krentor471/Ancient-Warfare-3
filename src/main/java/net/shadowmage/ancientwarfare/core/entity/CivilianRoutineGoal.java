@@ -55,6 +55,7 @@ public class CivilianRoutineGoal extends Goal {
    private boolean keepsOwnWays() {
       return FactionTravellers.isTraveller(this.npc)
          || FactionTownLife.isFairgoer(this.npc)
+         || FactionTownLife.isThief(this.npc)
          || FactionCaravans.caravanId(this.npc) != 0
          || this.npc.getTarget() != null
          || this.npc.getLastHurtByMob() != null;

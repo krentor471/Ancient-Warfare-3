@@ -1786,5 +1786,8 @@
   "town.ancientwarfare.market": "Базарный день в %s! На площади торговцы, до вечера цены ниже на %s%%.",
   "town.ancientwarfare.festival": "Праздник в %s: %s На площади музыка, ночью фейерверки, цены ниже на %s%%.",
   "town.ancientwarfare.festival.victory": "празднуют победу над врагом (%s).",
-  "town.ancientwarfare.festival.harvest": "празднуют богатый урожай."
+  "town.ancientwarfare.festival.harvest": "празднуют богатый урожай.",
+  "town.ancientwarfare.thief": "Держи вора! Воришка обокрал торговца в %s и бежит, %s. Стража за ним.",
+  "town.ancientwarfare.thief_escaped": "Вор скрылся.",
+  "town.ancientwarfare.thief_caught": "Ты поймал вора. Тебя благодарят (%s): награда %s сер."
 }

@@ -255,6 +255,10 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("armies").executes(context -> showArmies(context.getSource())))
                .then(Commands.literal("bandits").executes(context -> showBandits(context.getSource())))
                .then(Commands.literal("rumours").executes(context -> showRumours(context.getSource())))
+               .then(Commands.literal("thief").requires(source -> source.hasPermission(2)).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionTownLife.forceTheft(context.getSource().getLevel(), context.getSource().getPlayerOrException());
+                  return 1;
+               }))
                .then(Commands.literal("festival").requires(source -> source.hasPermission(2)).executes(context -> startFestival(context.getSource())))
                .then(
                   Commands.literal("routes")

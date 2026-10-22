@@ -122,6 +122,7 @@ public final class ForgeFactionEvents {
          }
          if (event.getSource().getEntity() instanceof Player player) {
             FactionCaravans.onNpcKilled(serverLevel, npc, player);
+            net.shadowmage.ancientwarfare.core.faction.FactionTownLife.onNpcKilled(serverLevel, npc, player);
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                FactionEnvoys.onKill(serverPlayer, npc);
             }

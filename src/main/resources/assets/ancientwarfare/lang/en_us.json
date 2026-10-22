@@ -1786,5 +1786,8 @@
   "town.ancientwarfare.market": "Market day in %s! Traders crowd the square, prices are %s%% lower until evening.",
   "town.ancientwarfare.festival": "A festival in %s: %s Music in the square, fireworks after dark, prices %s%% lower.",
   "town.ancientwarfare.festival.victory": "they celebrate the victory over %s.",
-  "town.ancientwarfare.festival.harvest": "they celebrate a rich harvest."
+  "town.ancientwarfare.festival.harvest": "they celebrate a rich harvest.",
+  "town.ancientwarfare.thief": "Stop, thief! A pickpocket robbed a trader in %s and runs %s. The guards are after him.",
+  "town.ancientwarfare.thief_escaped": "The thief got away.",
+  "town.ancientwarfare.thief_caught": "You caught the thief. %s thank you: %s silver as a reward."
 }

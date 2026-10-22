@@ -70,6 +70,38 @@ public final class FactionTownLife {
    private static final Map<Integer, Festival> FESTIVALS = new HashMap<>();
    /** Crowds standing in towns now, by settlement. */
    private static final Map<Integer, Crowd> CROWDS = new HashMap<>();
+   public static final String THIEF_PREFIX = "aw_thief_";
+   private static final int THIEF_CHECK_TICKS = 600;
+   private static final double THIEF_CHANCE = 0.15;
+   private static final double THIEF_TOWN_RANGE = 64.0;
+   private static final double THIEF_ESCAPE = 72.0;
+   private static final long THIEF_TICKS = 2400L;
+   private static final double THIEF_SPEED = 0.32;
+   private static final double GUARD_RANGE = 48.0;
+   private static final int THIEF_REWARD = 8;
+   private static final int THIEF_STANDING = 4;
+   /** Thieves on the run, by id. */
+   private static final Map<Integer, Thief> THIEVES = new HashMap<>();
+   private static final Map<Integer, Long> LAST_THEFT = new HashMap<>();
+   private static int nextThief = 1;
+
+   private static final class Thief {
+      final int id;
+      final int settlement;
+      final String town;
+      final long since;
+      final BlockPos away;
+      UUID entity;
+
+      Thief(int id, int settlement, String town, long since, BlockPos away) {
+         this.id = id;
+         this.settlement = settlement;
+         this.town = town;
+         this.since = since;
+         this.away = away;
+      }
+   }
+
    /** Who has been told of the day's event in a town, so it is said once. */
    private static final Set<String> TOLD = new HashSet<>();
 
@@ -165,6 +197,13 @@ public final class FactionTownLife {
          return;
       }
 
+      chaseThieves(level, data, now);
+      if (now % THIEF_CHECK_TICKS == 0L) {
+         for (ServerPlayer player : level.players()) {
+            maybeTheft(level, data, player, now);
+         }
+      }
+
       Map<Integer, FactionWorldData.Settlement> byId = new HashMap<>();
       data.settlements().forEach(settlement -> byId.put(settlement.id(), settlement));
       Iterator<Crowd> iterator = CROWDS.values().iterator();
@@ -219,6 +258,153 @@ public final class FactionTownLife {
    private static boolean playerWithin(ServerLevel level, FactionWorldData.Settlement settlement, double range) {
       BlockPos center = settlement.center();
       return level.players().stream().anyMatch(player -> player.distanceToSqr(center.getX(), player.getY(), center.getZ()) < range * range);
+   }
+
+   /** Now and then, by day, a pickpocket strikes in the town the player is in and runs for it. */
+   private static void maybeTheft(ServerLevel level, FactionWorldData data, ServerPlayer player, long now) {
+      long time = level.getDayTime() % FactionSimulation.DAY_TICKS;
+      if (time < MARKET_OPENS || time > MARKET_CLOSES || player.isSpectator() || level.getRandom().nextDouble() >= THIEF_CHANCE) {
+         return;
+      }
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (!isTown(settlement)
+            || settlement.horizontalDistanceSquared(player.getX(), player.getZ()) > THIEF_TOWN_RANGE * THIEF_TOWN_RANGE
+            || underAttack(data, settlement)
+            || now - LAST_THEFT.getOrDefault(settlement.id(), Long.MIN_VALUE / 2) < FactionSimulation.DAY_TICKS
+            || FactionStandingData.get(level).isHostile(player.getUUID(), settlement.faction())) {
+            continue;
+         }
+
+         RandomSource random = level.getRandom();
+         BlockPos center = settlement.center();
+         int x = center.getX() + random.nextInt(9) - 4;
+         int z = center.getZ() + random.nextInt(9) - 4;
+         if (!level.hasChunk(x >> 4, z >> 4)) {
+            return;
+         }
+
+         double angle = random.nextDouble() * Math.PI * 2.0;
+         BlockPos away = new BlockPos(center.getX() + (int)(Math.cos(angle) * 90), center.getY(), center.getZ() + (int)(Math.sin(angle) * 90));
+         FactionNpcEntity npc = AWCoreEntityTypes.FACTION_CIVILIAN_MALE_NPC.get().create(level);
+         if (npc == null) {
+            return;
+         }
+
+         Thief thief = new Thief(nextThief++, settlement.id(), settlement.faction(), now, away);
+         THIEVES.put(thief.id, thief);
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         npc.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
+         npc.addTag(THIEF_PREFIX + thief.id);
+         npc.finalizeSpawn(level, level.getCurrentDifficultyAt(new BlockPos(x, y, z)), MobSpawnType.EVENT, null, null);
+         // An outlaw: the guards and the player may cut him down.
+         npc.setFactionName("brigand");
+         var speed = npc.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+         if (speed != null) {
+            speed.setBaseValue(THIEF_SPEED);
+         }
+
+         level.addFreshEntity(npc);
+         thief.entity = npc.getUUID();
+         LAST_THEFT.put(settlement.id(), now);
+         Component name = settlement.name().isEmpty() ? FactionNews.factionName(settlement.faction()) : settlement.nameComponent();
+         Component way = FactionRumours.where(x, z, away.getX(), away.getZ());
+         for (ServerPlayer near : level.players()) {
+            if (near.distanceToSqr(x, near.getY(), z) < 96.0 * 96.0) {
+               near.sendSystemMessage(Component.translatable("town.ancientwarfare.thief", name, way).withStyle(ChatFormatting.YELLOW));
+            }
+         }
+
+         AncientWarfareCore.LOG.info("A thief strikes in settlement #{}", settlement.id());
+         return;
+      }
+   }
+
+   /** The thief runs for the edge of town, the guards after him; out of reach or out of time, he is gone. */
+   private static void chaseThieves(ServerLevel level, FactionWorldData data, long now) {
+      Iterator<Thief> iterator = THIEVES.values().iterator();
+      while (iterator.hasNext()) {
+         Thief thief = iterator.next();
+         Entity entity = thief.entity == null ? null : level.getEntity(thief.entity);
+         if (!(entity instanceof FactionNpcEntity npc) || !npc.isAlive()) {
+            iterator.remove();
+            continue;
+         }
+
+         FactionWorldData.Settlement settlement = data.settlements().stream().filter(s -> s.id() == thief.settlement).findFirst().orElse(null);
+         boolean escaped = settlement == null
+            || settlement.horizontalDistanceSquared(npc.getX(), npc.getZ()) > THIEF_ESCAPE * THIEF_ESCAPE
+            || now - thief.since > THIEF_TICKS;
+         if (escaped) {
+            for (ServerPlayer near : level.players()) {
+               if (near.distanceToSqr(npc) < 96.0 * 96.0) {
+                  near.sendSystemMessage(Component.translatable("town.ancientwarfare.thief_escaped").withStyle(ChatFormatting.GRAY));
+               }
+            }
+
+            npc.discard();
+            iterator.remove();
+            continue;
+         }
+
+         if (npc.getNavigation().isDone()) {
+            npc.getNavigation().moveTo(thief.away.getX() + 0.5, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, thief.away.getX(), thief.away.getZ()), thief.away.getZ() + 0.5, 1.3);
+         }
+
+         for (FactionNpcEntity guard : level.getEntitiesOfClass(
+            FactionNpcEntity.class,
+            npc.getBoundingBox().inflate(GUARD_RANGE),
+            other -> other.isAlive() && other.getFactionName().equals(thief.town) && !FactionSimulation.isCivilian(other) && other.getTarget() == null
+         )) {
+            guard.setTarget(npc);
+         }
+      }
+   }
+
+   public static boolean isThief(Entity entity) {
+      return entity.getTags().stream().anyMatch(tag -> tag.startsWith(THIEF_PREFIX));
+   }
+
+   /** For the debug command: a thief strikes near the player now. */
+   public static void forceTheft(ServerLevel level, ServerPlayer player) {
+      LAST_THEFT.clear();
+      for (int i = 0; i < 20 && THIEVES.isEmpty(); i++) {
+         long time = level.getDayTime() % FactionSimulation.DAY_TICKS;
+         if (time < MARKET_OPENS || time > MARKET_CLOSES) {
+            return;
+         }
+
+         maybeTheft(level, FactionWorldData.get(level), player, level.getGameTime());
+      }
+   }
+
+   /** A thief from an old save is gone; one still running is kept. */
+   public static boolean isStaleThief(Entity entity) {
+      for (String tag : entity.getTags()) {
+         if (tag.startsWith(THIEF_PREFIX)) {
+            try {
+               return !THIEVES.containsKey(Integer.parseInt(tag.substring(THIEF_PREFIX.length())));
+            } catch (NumberFormatException e) {
+               return true;
+            }
+         }
+      }
+
+      return false;
+   }
+
+   /** A player caught the thief: the town pays a reward and thinks better of them. */
+   public static void onNpcKilled(ServerLevel level, FactionNpcEntity npc, net.minecraft.world.entity.player.Player killer) {
+      for (Thief thief : THIEVES.values()) {
+         if (npc.getUUID().equals(thief.entity) && killer instanceof ServerPlayer player) {
+            Coins.give(player, THIEF_REWARD);
+            FactionStandingData.get(level).adjustStanding(player.getUUID(), thief.town, THIEF_STANDING);
+            player.sendSystemMessage(
+               Component.translatable("town.ancientwarfare.thief_caught", FactionNews.factionName(thief.town), THIEF_REWARD).withStyle(ChatFormatting.GREEN)
+            );
+            return;
+         }
+      }
    }
 
    public static boolean isFairgoer(Entity entity) {
