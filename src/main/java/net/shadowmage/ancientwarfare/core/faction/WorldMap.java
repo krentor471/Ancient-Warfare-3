@@ -109,7 +109,8 @@ public final class WorldMap {
       CAPITAL,
       CAPITAL_AREA,
       PLAYER_VILLAGE,
-      OUTLAW
+      OUTLAW,
+      FLEET
    }
 
    /** name is a FactionNames code, or empty. */
@@ -234,7 +235,7 @@ public final class WorldMap {
          }
 
          markers.add(
-            new Marker(x, z, Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + (campaign.raid() ? " raiders" : " soldiers") + ", against settlement #" + campaign.targetSettlement(), "")
+            new Marker(x, z, campaign.naval() ? Kind.FLEET : Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + (campaign.naval() ? " aboard" : campaign.raid() ? " raiders" : " soldiers") + ", against settlement #" + campaign.targetSettlement(), "")
          );
 
          for (FactionWorldData.Settlement settlement : data.settlements()) {

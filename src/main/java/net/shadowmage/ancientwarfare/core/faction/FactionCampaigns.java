@@ -72,6 +72,17 @@ public final class FactionCampaigns {
       return SPAWNED.getOrDefault(campaignId(npc), Set.of()).contains(npc.getUUID());
    }
 
+   /** A fresh set of the campaign's soldiers (and boats) in the world, replacing any earlier one. */
+   static Set<UUID> newColumn(int id) {
+      Set<UUID> column = new HashSet<>();
+      SPAWNED.put(id, column);
+      return column;
+   }
+
+   static boolean inColumn(int id, UUID uuid) {
+      return SPAWNED.getOrDefault(id, Set.of()).contains(uuid);
+   }
+
    static boolean marchingAgainst(FactionWorldData data, String attacker, String defender) {
       for (FactionWorldData.Campaign campaign : data.campaigns()) {
          if (campaign.faction().equals(attacker) && campaign.defender().equals(defender) && !campaign.raid) {
@@ -141,7 +152,32 @@ public final class FactionCampaigns {
       return campaign;
    }
 
+   /** Fits out boats at the port and sends the soldiers by sea to the landing beach near the target. */
+   static FactionWorldData.Campaign sail(
+      ServerLevel level, FactionWorldData data, FactionWorldData.Settlement home, FactionWorldData.Settlement target, int taken, BlockPos port, BlockPos landing, boolean raid
+   ) {
+      home.garrison -= taken;
+      String attacker = home.faction();
+      FactionWorldData.Campaign campaign = data.addCampaign(attacker, target.faction(), target.id(), port.getX() + 0.5, port.getZ() + 0.5, taken, level.getGameTime());
+      campaign.raid = raid;
+      campaign.sail(landing.getX() + 0.5, landing.getZ() + 0.5);
+      data.setDirty();
+      AncientWarfareCore.LOG
+         .info("Faction {} sails {} soldiers from #{} against {} #{} (fleet #{})", attacker, taken, home.id(), target.faction(), target.id(), campaign.id());
+      FactionNews.tell(
+         level,
+         Component.translatable(
+            "news.ancientwarfare.fleet_set_out", FactionNews.factionName(attacker), taken, FactionNews.factionName(target.faction()), FactionNews.named(target)
+         )
+      );
+      return campaign;
+   }
+
    public static void tick(ServerLevel level, FactionWorldData data) {
+      if (!data.campaigns().isEmpty()) {
+         FactionFleets.steer(level, data);
+      }
+
       if (level.getGameTime() % TICK_INTERVAL != 0L || data.campaigns().isEmpty()) {
          return;
       }
@@ -168,6 +204,11 @@ public final class FactionCampaigns {
          || FactionDiplomacy.relation(level, campaign.faction(), campaign.defender()).state() != RelationState.WAR) {
          // Taken by someone else, or peace was made: the army goes home.
          end(level, data, campaign, walkers, campaign.size);
+         return;
+      }
+
+      if (campaign.naval()) {
+         FactionFleets.sail(level, data, campaign, walkers, TICK_INTERVAL / 20.0);
          return;
       }
 
@@ -220,8 +261,7 @@ public final class FactionCampaigns {
       boolean show = near != null && near.distanceToSqr(campaign.x, near.getY(), campaign.z) <= SHOW_RANGE * SHOW_RANGE;
       if (walkers.isEmpty() && show && level.hasChunkAt(BlockPos.containing(campaign.x, 0, campaign.z))) {
          int wanted = Math.min(MAX_WALKING, campaign.size);
-         Set<UUID> column = new HashSet<>();
-         SPAWNED.put(campaign.id(), column);
+         Set<UUID> column = newColumn(campaign.id());
          RandomSource random = level.getRandom();
 
          for (int i = 0; i < wanted * 3 && walkers.size() < wanted; i++) {
@@ -380,6 +420,7 @@ public final class FactionCampaigns {
          npc.discard();
       }
 
+      FactionFleets.scuttle(level, campaign);
       campaign.walking = 0;
       SPAWNED.remove(campaign.id());
       data.removeCampaign(campaign);
@@ -405,7 +446,7 @@ public final class FactionCampaigns {
       return null;
    }
 
-   private static void tellNear(ServerLevel level, double x, double z, Component message) {
+   static void tellNear(ServerLevel level, double x, double z, Component message) {
       if (FactionHistory.running()) {
          return;
       }

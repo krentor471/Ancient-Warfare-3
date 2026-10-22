@@ -137,6 +137,7 @@ public final class FactionSimulation {
       FactionAI.simulateDay(level, data, data.lastSimulatedDay());
       FactionBorders.simulateDay(level, data);
       FactionBandits.simulateDay(level, data);
+      FactionFleets.simulateDay(level, data);
       FactionArmies.simulateDay(level, data, data.lastSimulatedDay());
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);

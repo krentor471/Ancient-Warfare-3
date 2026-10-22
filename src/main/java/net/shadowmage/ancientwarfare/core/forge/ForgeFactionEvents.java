@@ -34,6 +34,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 import net.shadowmage.ancientwarfare.core.faction.FactionCaravans;
+import net.shadowmage.ancientwarfare.core.faction.FactionFleets;
 import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionEnvoys;
 import net.shadowmage.ancientwarfare.core.faction.FactionSimulation;
@@ -106,7 +107,7 @@ public final class ForgeFactionEvents {
    public static void onCaravanAnimalJoin(EntityJoinLevelEvent event) {
       if ((event.getEntity() instanceof AbstractHorse || event.getEntity() instanceof ChestPushcartEntity)
          && event.getLevel() instanceof ServerLevel
-         && FactionCaravans.isStale(event.getEntity())) {
+         && (FactionCaravans.isStale(event.getEntity()) || FactionFleets.isStaleShip(event.getEntity()))) {
          event.setCanceled(true);
       }
    }

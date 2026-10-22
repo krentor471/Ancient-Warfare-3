@@ -281,6 +281,27 @@ public final class ForgeFactionCommands {
                      .executes(context -> lifeEvent(context.getSource(), false))
                )
                .then(
+                  Commands.literal("fleet")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(
+                              Commands.argument("settlement", IntegerArgumentType.integer(1))
+                                 .then(
+                                    Commands.argument("size", IntegerArgumentType.integer(1, 100))
+                                       .executes(
+                                          context -> fleet(
+                                             context.getSource(),
+                                             faction(context, "faction"),
+                                             IntegerArgumentType.getInteger(context, "settlement"),
+                                             IntegerArgumentType.getInteger(context, "size")
+                                          )
+                                       )
+                                 )
+                           )
+                     )
+               )
+               .then(
                   Commands.literal("plague")
                      .requires(source -> source.hasPermission(2))
                      .executes(context -> lifeEvent(context.getSource(), true))
@@ -421,6 +442,26 @@ public final class ForgeFactionCommands {
    }
 
    /** Brings a bad harvest or plague on the settlement nearest the source, for testing. */
+   private static int fleet(CommandSourceStack source, String faction, int settlementId, int size) {
+      FactionWorldData data = FactionWorldData.get(source.getLevel());
+      FactionWorldData.Settlement target = data.settlements().stream().filter(settlement -> settlement.id() == settlementId).findFirst().orElse(null);
+      if (target == null) {
+         source.sendFailure(Component.literal("No settlement #" + settlementId));
+         return 0;
+      }
+
+      FactionWorldData.Campaign campaign = net.shadowmage.ancientwarfare.core.faction.FactionFleets.sendFrom(
+         source.getLevel(), data, faction, target, size, BlockPos.containing(source.getPosition())
+      );
+      if (campaign == null) {
+         source.sendFailure(Component.literal(faction + " has no settlement to sail from"));
+         return 0;
+      }
+
+      tell(source, Component.literal("Fleet #" + campaign.id() + " lands at " + Math.round(campaign.landX()) + " " + Math.round(campaign.landZ())));
+      return campaign.id();
+   }
+
    private static int lifeEvent(CommandSourceStack source, boolean plague) {
       FactionWorldData data = FactionWorldData.get(source.getLevel());
       FactionWorldData.Settlement nearest = data.settlements()

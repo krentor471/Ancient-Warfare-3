@@ -1708,5 +1708,8 @@
   "gui.ancientwarfare.world_map.hungry": "Hunger",
   "gui.ancientwarfare.world_map.famine": "Bad harvest",
   "gui.ancientwarfare.world_map.plague": "Plague",
-  "gui.ancientwarfare.world_map.unrest": "Unrest"
+  "gui.ancientwarfare.world_map.unrest": "Unrest",
+  "gui.ancientwarfare.world_map.kind.fleet": "Fleet at sea",
+  "news.ancientwarfare.fleet_set_out": "A fleet of %1$s puts to sea with %2$s soldiers, bound for%4$s of %3$s",
+  "news.ancientwarfare.fleet_landed": "Boats of %1$s run ashore: %2$s soldiers land on the beach"
 }

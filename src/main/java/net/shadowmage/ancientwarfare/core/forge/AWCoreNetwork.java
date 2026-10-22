@@ -73,7 +73,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "6";
+   private static final String PROTOCOL_VERSION = "7";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );

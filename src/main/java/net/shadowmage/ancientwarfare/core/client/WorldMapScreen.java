@@ -41,7 +41,7 @@ public class WorldMapScreen extends Screen {
    /** Map kinds shown in the legend of signs, in order. */
    private static final WorldMap.Kind[] LEGEND_KINDS = {
       WorldMap.Kind.CAPITAL, WorldMap.Kind.VILLAGE, WorldMap.Kind.FORT, WorldMap.Kind.FARM, WorldMap.Kind.MINE, WorldMap.Kind.TEMPLE,
-      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY
+      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY, WorldMap.Kind.FLEET
    };
    /** Lengths the scale bar may show, in blocks. */
    private static final int[] SCALE_STEPS = {50, 100, 250, 500, 1000, 2000, 5000};
@@ -423,6 +423,15 @@ public class WorldMapScreen extends Screen {
             graphics.fill(x - 4, y - 6, x + 5, y + 3, 0xFFE03030);
             graphics.fill(x - 3, y - 5, x + 4, y + 2, color);
             graphics.fill(x - 4, y + 3, x - 2, y + 7, 0xFF000000);
+         }
+         case FLEET -> {
+            // A boat: a hull in the faction's colour under a white sail, outlined in red.
+            graphics.fill(x - 6, y, x + 7, y + 6, 0xFF000000);
+            graphics.fill(x - 5, y + 1, x + 6, y + 5, 0xFFE03030);
+            graphics.fill(x - 4, y + 2, x + 5, y + 4, color);
+            graphics.fill(x, y - 6, x + 1, y + 2, 0xFF000000);
+            graphics.fill(x + 1, y - 6, x + 6, y, 0xFF000000);
+            graphics.fill(x + 1, y - 5, x + 5, y - 1, 0xFFF0F0F0);
          }
          case TAVERN -> {
             graphics.fill(x - 2, y - 2, x + 3, y + 3, outline);

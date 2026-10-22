@@ -576,6 +576,12 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Size", campaign.size);
          entry.putLong("Since", campaign.since);
          entry.putBoolean("Raid", campaign.raid);
+         if (campaign.naval) {
+            entry.putBoolean("Naval", true);
+            entry.putDouble("LandX", campaign.landX);
+            entry.putDouble("LandZ", campaign.landZ);
+         }
+
          campaignList.add(entry);
       }
 
@@ -766,6 +772,9 @@ public final class FactionWorldData extends SavedData {
             entry.getLong("Since")
          );
          campaign.raid = entry.getBoolean("Raid");
+         campaign.naval = entry.getBoolean("Naval");
+         campaign.landX = entry.getDouble("LandX");
+         campaign.landZ = entry.getDouble("LandZ");
          data.campaigns.add(campaign);
          data.nextArmyId = Math.max(data.nextArmyId, campaign.id + 1);
       }
@@ -1058,6 +1067,9 @@ public final class FactionWorldData extends SavedData {
       int walking;
       /** A raid plunders the target and goes home instead of taking it. */
       boolean raid;
+      boolean naval;
+      double landX;
+      double landZ;
 
       Campaign(int id, String faction, String defender, int targetSettlement, double x, double z, int size, long since) {
          this.id = id;
@@ -1104,6 +1116,24 @@ public final class FactionWorldData extends SavedData {
 
       public long since() {
          return this.since;
+      }
+
+      public boolean naval() {
+         return this.naval;
+      }
+
+      public double landX() {
+         return this.landX;
+      }
+
+      public double landZ() {
+         return this.landZ;
+      }
+
+      public void sail(double landX, double landZ) {
+         this.naval = true;
+         this.landX = landX;
+         this.landZ = landZ;
       }
 
       public String tag() {

@@ -69,7 +69,11 @@ public final class FactionBandits {
          }
 
          int lairLevel = level(lair);
-         FactionWorldData.Campaign raid = FactionCampaigns.launchFrom(level, data, lair, target, force);
+         FactionWorldData.Campaign raid = FactionFleets.pirateRaid(level, data, lair, target, force);
+         if (raid == null) {
+            raid = FactionCampaigns.launchFrom(level, data, lair, target, force);
+         }
+
          if (raid != null) {
             RAIDING.put(lair.id(), raid.id());
             RAID_LEVEL.put(raid.id(), lairLevel);

@@ -1708,5 +1708,8 @@
   "gui.ancientwarfare.world_map.hungry": "Голод",
   "gui.ancientwarfare.world_map.famine": "Неурожай",
   "gui.ancientwarfare.world_map.plague": "Мор",
-  "gui.ancientwarfare.world_map.unrest": "Волнения"
+  "gui.ancientwarfare.world_map.unrest": "Волнения",
+  "gui.ancientwarfare.world_map.kind.fleet": "Флот в море",
+  "news.ancientwarfare.fleet_set_out": "Флот: %1$s выходит в море, %2$s солдат на борту, цель: поселение%4$s (%3$s)",
+  "news.ancientwarfare.fleet_landed": "Флот: %1$s высаживает на берег %2$s солдат"
 }
