@@ -46,7 +46,8 @@ public final class FactionRoads {
    private static final double TURN_ANGLE = Math.PI / 8.0;
    /** Road points are recorded every two steps. */
    private static final int POINT_SPACING = STEP * 2;
-   private static final int POST_SPACING = 180;
+   /** Road length between posts; half the posts are taverns, so a tavern every twice this. */
+   private static final int POST_SPACING = 360;
    /** Posts keep this far from either end of the road. */
    private static final int POST_END_GAP = 80;
    private static final int POST_OFFSET = 22;
