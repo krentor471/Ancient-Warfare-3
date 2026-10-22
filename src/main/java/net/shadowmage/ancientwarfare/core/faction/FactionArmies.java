@@ -263,6 +263,7 @@ public final class FactionArmies {
                standings.setTreaty(owner, faction, RelationState.WAR);
                standings.discover(owner, faction);
                FactionNews.tellPlayer(level, owner, Component.translatable("news.ancientwarfare.war_on_you", FactionNews.factionName(faction)));
+               CountryDiplomacy.warDeclaredOn(level, owner, faction);
                treaty = RelationState.WAR;
             }
 

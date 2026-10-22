@@ -2030,5 +2030,12 @@
   "gui.ancientwarfare.construction.facing.east": "east",
   "gui.ancientwarfare.construction.size": "Size %s×%s×%s",
   "gui.ancientwarfare.construction.needs": "Needs:",
-  "gui.ancientwarfare.construction.needs_more": ", and %s more kinds"
+  "gui.ancientwarfare.construction.needs_more": ", and %s more kinds",
+  "news.ancientwarfare.war_on_country": "%s declares war on the country of %s.",
+  "news.ancientwarfare.war.country_ally": "%s goes to war with %s, standing by its ally %s.",
+  "news.ancientwarfare.war.country_call": "%s answers the call of %s and goes to war with %s.",
+  "diplomacy.ancientwarfare.ally_already": "Your ally %s is already at war with them.",
+  "diplomacy.ancientwarfare.ally_declined": "Your ally %s will not join this war (standing %s, needs %s).",
+  "diplomacy.ancientwarfare.ally_torn": "Your ally %s is also allied to %s and stays out of the war.",
+  "country.ancientwarfare.someone": "a stranger"
 }

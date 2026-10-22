@@ -157,6 +157,7 @@ public final class PlayerDiplomacy {
             boolean betrayal = treaty == RelationState.PACT || treaty == RelationState.ALLIANCE;
             standings.setTreaty(player.getUUID(), faction, RelationState.WAR);
             standings.setStanding(player.getUUID(), faction, Math.min(standing, 0) + WAR_STANDING + (betrayal ? BETRAYAL_STANDING : 0));
+            CountryDiplomacy.warDeclaredBy(player, faction);
             return Component.translatable(betrayal ? "diplomacy.ancientwarfare.betrayal" : "diplomacy.ancientwarfare.war", name);
          }
       }

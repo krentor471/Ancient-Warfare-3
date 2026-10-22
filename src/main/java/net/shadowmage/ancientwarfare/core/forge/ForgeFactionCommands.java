@@ -337,6 +337,18 @@ public final class ForgeFactionCommands {
                .then(stateCommand("pact", RelationState.PACT))
                .then(stateCommand("alliance", RelationState.ALLIANCE))
                .then(
+                  Commands.literal("treaty")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(
+                              Commands.argument("state", StringArgumentType.word())
+                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("war", "neutral", "pact", "alliance"), builder))
+                                 .executes(context -> setTreaty(context.getSource(), faction(context, "faction"), StringArgumentType.getString(context, "state")))
+                           )
+                     )
+               )
+               .then(
                   Commands.literal("opinion")
                      .requires(source -> source.hasPermission(2))
                      .then(
@@ -355,6 +367,31 @@ public final class ForgeFactionCommands {
                      )
                )
          );
+   }
+
+   /** Sets the player's treaty with a faction; "war" is the faction falling on the player, with all that follows. */
+   private static int setTreaty(CommandSourceStack source, String faction, String state) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+      ServerPlayer player = source.getPlayerOrException();
+      RelationState treaty = switch (state.toLowerCase(Locale.ROOT)) {
+         case "war" -> RelationState.WAR;
+         case "pact" -> RelationState.PACT;
+         case "alliance" -> RelationState.ALLIANCE;
+         default -> RelationState.NEUTRAL;
+      };
+      if (!FactionRegistry.isKnown(faction)) {
+         source.sendFailure(Component.literal("Unknown faction " + faction));
+         return 0;
+      }
+
+      FactionStandingData standings = FactionStandingData.get(source.getLevel());
+      standings.discover(player.getUUID(), faction);
+      standings.setTreaty(player.getUUID(), faction, treaty);
+      if (treaty == RelationState.WAR) {
+         net.shadowmage.ancientwarfare.core.faction.CountryDiplomacy.warDeclaredOn(source.getLevel(), player.getUUID(), faction);
+      }
+
+      tell(source, Component.literal("Treaty of " + player.getScoreboardName() + " with " + faction + " is now " + treaty.serializedName()));
+      return 1;
    }
 
    private static RequiredArgumentBuilder<CommandSourceStack, String> factionArgument(String name) {

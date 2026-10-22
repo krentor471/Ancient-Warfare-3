@@ -381,6 +381,7 @@ public final class FactionEnvoys {
             if (standing <= TRIBUTE_WAR_STANDING && standings.getTreaty(id, offer.faction) != RelationState.WAR) {
                standings.setTreaty(id, offer.faction, RelationState.WAR);
                player.sendSystemMessage(Component.translatable("news.ancientwarfare.war_on_you", faction).withStyle(ChatFormatting.RED));
+               CountryDiplomacy.warDeclaredOn(player.serverLevel(), id, offer.faction);
                return;
             }
          }
