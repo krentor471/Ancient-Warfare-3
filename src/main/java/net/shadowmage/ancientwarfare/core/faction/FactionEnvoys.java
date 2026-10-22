@@ -341,7 +341,7 @@ public final class FactionEnvoys {
       );
    }
 
-   private static MutableComponent button(String key, String command, ChatFormatting color) {
+   static MutableComponent button(String key, String command, ChatFormatting color) {
       return Component.literal("[")
          .append(Component.translatable(key))
          .append("]")

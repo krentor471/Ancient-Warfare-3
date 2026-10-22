@@ -31,6 +31,8 @@ public final class FactionWorldData extends SavedData {
    /** Player villages by town hall position, with their owner. */
    private final Map<BlockPos, UUID> villages = new HashMap<>();
    private final Map<BlockPos, Long> lastRaid = new HashMap<>();
+   /** Emeralds a village taken from a faction pays its new owner each day. */
+   private final Map<BlockPos, Integer> taxes = new HashMap<>();
    private int nextSettlementId = 1;
    private int nextArmyId = 1;
    private final List<Route> routes = new ArrayList<>();
@@ -334,9 +336,27 @@ public final class FactionWorldData extends SavedData {
    }
 
    public void setVillage(BlockPos pos, UUID owner) {
+      if (owner == null) {
+         this.taxes.remove(pos);
+      }
+
       if (owner == null ? this.villages.remove(pos) != null : !owner.equals(this.villages.put(pos.immutable(), owner))) {
          this.setDirty();
       }
+   }
+
+   public int tax(BlockPos village) {
+      return this.taxes.getOrDefault(village, 0);
+   }
+
+   public void setTax(BlockPos village, int emeralds) {
+      if (emeralds <= 0) {
+         this.taxes.remove(village);
+      } else {
+         this.taxes.put(village.immutable(), emeralds);
+      }
+
+      this.setDirty();
    }
 
    public long lastRaid(BlockPos village) {
@@ -464,6 +484,8 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("CampX", army.campX);
          entry.putInt("CampZ", army.campZ);
          entry.putBoolean("Engines", army.engines);
+         entry.putBoolean("Siege", army.siege);
+         entry.putInt("Tribute", army.tribute);
          armyList.add(entry);
       }
 
@@ -492,6 +514,7 @@ public final class FactionWorldData extends SavedData {
          entry.put("Pos", NbtUtils.writeBlockPos(pos));
          entry.putUUID("Owner", owner);
          entry.putLong("LastRaid", this.lastRaid(pos));
+         entry.putInt("Tax", this.tax(pos));
          villageList.add(entry);
       });
       tag.put("Villages", villageList);
@@ -612,6 +635,8 @@ public final class FactionWorldData extends SavedData {
          army.campX = entry.getInt("CampX");
          army.campZ = entry.getInt("CampZ");
          army.engines = entry.getBoolean("Engines");
+         army.siege = entry.getBoolean("Siege");
+         army.tribute = entry.getInt("Tribute");
          data.armies.add(army);
          data.nextArmyId = Math.max(data.nextArmyId, army.id + 1);
       }
@@ -671,6 +696,9 @@ public final class FactionWorldData extends SavedData {
             BlockPos pos = NbtUtils.readBlockPos(entry.getCompound("Pos"));
             data.villages.put(pos, entry.getUUID("Owner"));
             data.lastRaid.put(pos, entry.getLong("LastRaid"));
+            if (entry.getInt("Tax") > 0) {
+               data.taxes.put(pos, entry.getInt("Tax"));
+            }
          }
       }
 
@@ -802,7 +830,7 @@ public final class FactionWorldData extends SavedData {
       private final BlockPos target;
       private final int size;
       /** Game time from which the army may set out. */
-      private final long ready;
+      long ready;
       boolean spawned;
       long started;
       int alive;
@@ -815,6 +843,10 @@ public final class FactionWorldData extends SavedData {
       int campZ;
       /** Whether its siege engines have been brought up. */
       boolean engines;
+      /** A full siege of a player's village with ranks, engines and ladders, not a raid. */
+      boolean siege;
+      /** Emeralds the attacker asks to call the siege off; 0 once the ultimatum is answered or expired. */
+      int tribute;
 
       Army(int id, String faction, String defender, int targetSettlement, UUID villageOwner, BlockPos target, int size, long ready) {
          this.id = id;
@@ -866,6 +898,14 @@ public final class FactionWorldData extends SavedData {
 
       public long ready() {
          return this.ready;
+      }
+
+      public boolean siege() {
+         return this.siege;
+      }
+
+      public int tribute() {
+         return this.tribute;
       }
 
       public boolean spawned() {

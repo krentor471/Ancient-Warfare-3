@@ -118,6 +118,13 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("accept").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, true))))
                .then(Commands.literal("decline").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, false))))
          );
+      // Run by clicking the buttons of a besieger's ultimatum in chat.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awultimatum")
+               .then(Commands.literal("pay").then(Commands.argument("army", IntegerArgumentType.integer()).executes(context -> answerUltimatum(context, true))))
+               .then(Commands.literal("refuse").then(Commands.argument("army", IntegerArgumentType.integer()).executes(context -> answerUltimatum(context, false))))
+         );
       // Run by clicking a mercenary captain's offer in chat.
       event.getDispatcher()
          .register(
@@ -184,7 +191,18 @@ public final class ForgeFactionCommands {
                         factionArgument("faction")
                            .then(
                               Commands.argument("size", IntegerArgumentType.integer(1, 12))
-                                 .executes(context -> raid(context.getSource(), faction(context, "faction"), IntegerArgumentType.getInteger(context, "size")))
+                                 .executes(context -> raid(context.getSource(), faction(context, "faction"), IntegerArgumentType.getInteger(context, "size"), false))
+                           )
+                     )
+               )
+               .then(
+                  Commands.literal("siege")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        factionArgument("faction")
+                           .then(
+                              Commands.argument("size", IntegerArgumentType.integer(1, 100))
+                                 .executes(context -> raid(context.getSource(), faction(context, "faction"), IntegerArgumentType.getInteger(context, "size"), true))
                            )
                      )
                )
@@ -430,6 +448,15 @@ public final class ForgeFactionCommands {
       return 0;
    }
 
+   private static int answerUltimatum(CommandContext<CommandSourceStack> context, boolean pay) {
+      if (context.getSource().getEntity() instanceof ServerPlayer player) {
+         FactionArmies.answerUltimatum(player, IntegerArgumentType.getInteger(context, "army"), pay);
+         return 1;
+      }
+
+      return 0;
+   }
+
    private static int answerEnvoy(CommandContext<CommandSourceStack> context, boolean accepted) {
       if (context.getSource().getEntity() instanceof ServerPlayer player) {
          FactionEnvoys.answer(player, IntegerArgumentType.getInteger(context, "offer"), accepted);
@@ -552,7 +579,7 @@ public final class ForgeFactionCommands {
    }
 
    /** Sends a raid against the player village nearest to the command's position, setting out almost at once. */
-   private static int raid(CommandSourceStack source, String faction, int size) {
+   private static int raid(CommandSourceStack source, String faction, int size, boolean siege) {
       FactionWorldData data = FactionWorldData.get(source.getLevel());
       BlockPos origin = BlockPos.containing(source.getPosition());
       BlockPos village = null;
@@ -570,13 +597,15 @@ public final class ForgeFactionCommands {
 
       UUID owner = data.villages().get(village);
       FactionStandingData.get(source.getLevel()).setTreaty(owner, faction, RelationState.WAR);
-      FactionWorldData.Army army = FactionArmies.raid(source.getLevel(), data, faction, village, owner, size, 100L);
+      FactionWorldData.Army army = siege
+         ? FactionArmies.siege(source.getLevel(), data, faction, village, owner, size)
+         : FactionArmies.raid(source.getLevel(), data, faction, village, owner, size, 100L);
       if (army == null) {
          source.sendFailure(Component.literal(faction + " has no soldiers to send"));
          return 0;
       }
 
-      tell(source, Component.literal("Army #" + army.id() + " of " + faction + " (" + army.size() + ") raids the village at " + village.toShortString()));
+      tell(source, Component.literal("Army #" + army.id() + " of " + faction + " (" + army.size() + ") " + (siege ? "besieges" : "raids") + " the village at " + village.toShortString()));
       return army.id();
    }
 

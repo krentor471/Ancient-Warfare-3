@@ -57,6 +57,8 @@ import net.shadowmage.ancientwarfare.core.menu.DraftingStationMenu;
 import net.shadowmage.ancientwarfare.core.menu.EngineeringStationMenu;
 import net.shadowmage.ancientwarfare.core.menu.StructureScannerMenu;
 import net.shadowmage.ancientwarfare.core.menu.TradeOrderMenu;
+import net.shadowmage.ancientwarfare.core.client.ConquestScreen;
+import net.shadowmage.ancientwarfare.core.faction.FactionConquest;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseControlMenu;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseCraftingStationMenu;
 import net.shadowmage.ancientwarfare.core.menu.WarehouseInterfaceMenu;
@@ -73,7 +75,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 public final class AWCoreNetwork {
    private static final String PROTOCOL_VERSION = "5";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-      new ResourceLocation("ancientwarfare", "main"), () -> "7", "7"::equals, "7"::equals
+      new ResourceLocation("ancientwarfare", "main"), () -> "8", "8"::equals, "8"::equals
    );
 
    private AWCoreNetwork() {
@@ -204,6 +206,16 @@ public final class AWCoreNetwork {
          .encoder(AWCoreNetwork.CommandViewFacePacket::encode)
          .decoder(AWCoreNetwork.CommandViewFacePacket::decode)
          .consumerMainThread(AWCoreNetwork.CommandViewFacePacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.ConquestOfferPacket.class, 41, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.ConquestOfferPacket::encode)
+         .decoder(AWCoreNetwork.ConquestOfferPacket::decode)
+         .consumerMainThread(AWCoreNetwork.ConquestOfferPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.ConquestChoicePacket.class, 42, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.ConquestChoicePacket::encode)
+         .decoder(AWCoreNetwork.ConquestChoicePacket::decode)
+         .consumerMainThread(AWCoreNetwork.ConquestChoicePacket::handle)
          .add();
       CHANNEL.messageBuilder(AWCoreNetwork.BatonStancePacket.class, 29, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.BatonStancePacket::encode)
@@ -407,6 +419,14 @@ public final class AWCoreNetwork {
 
    public static void sendChronicleOpen() {
       CHANNEL.sendToServer(new AWCoreNetwork.ChronicleOpenPacket());
+   }
+
+   public static void sendConquestOffer(ServerPlayer player, FactionConquest.Offer offer) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.ConquestOfferPacket(offer));
+   }
+
+   public static void sendConquestChoice(int settlement, FactionConquest.Choice choice) {
+      CHANNEL.sendToServer(new AWCoreNetwork.ConquestChoicePacket(settlement, choice));
    }
 
    public static void sendChronicle(ServerPlayer player, List<FactionWorldData.ChronicleEntry> entries) {
@@ -1040,6 +1060,67 @@ public final class AWCoreNetwork {
             ServerPlayer player = context.getSender();
             if (player != null) {
                CommandBatonItem.commandViewShape(heldBaton(player), player, packet.points, packet.queued);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record ConquestOfferPacket(FactionConquest.Offer offer) {
+      private static void encode(AWCoreNetwork.ConquestOfferPacket packet, FriendlyByteBuf buffer) {
+         FactionConquest.Offer offer = packet.offer;
+         buffer.writeVarInt(offer.settlement());
+         buffer.writeUtf(offer.faction(), 64);
+         buffer.writeComponent(offer.name());
+         buffer.writeVarInt(offer.population());
+         buffer.writeVarInt(offer.tax());
+         buffer.writeVarInt(offer.ransom());
+         buffer.writeVarInt(offer.loot());
+         buffer.writeVarInt(offer.razeLoot());
+      }
+
+      private static AWCoreNetwork.ConquestOfferPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.ConquestOfferPacket(
+            new FactionConquest.Offer(
+               buffer.readVarInt(),
+               buffer.readUtf(64),
+               buffer.readComponent(),
+               buffer.readVarInt(),
+               buffer.readVarInt(),
+               buffer.readVarInt(),
+               buffer.readVarInt(),
+               buffer.readVarInt()
+            )
+         );
+      }
+
+      private static void handle(AWCoreNetwork.ConquestOfferPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               ConquestScreen.open(packet.offer);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record ConquestChoicePacket(int settlement, FactionConquest.Choice choice) {
+      private static void encode(AWCoreNetwork.ConquestChoicePacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarInt(packet.settlement);
+         buffer.writeEnum(packet.choice);
+      }
+
+      private static AWCoreNetwork.ConquestChoicePacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.ConquestChoicePacket(buffer.readVarInt(), buffer.readEnum(FactionConquest.Choice.class));
+      }
+
+      private static void handle(AWCoreNetwork.ConquestChoicePacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               FactionConquest.choose(player, packet.settlement, packet.choice);
             }
          });
          context.setPacketHandled(true);

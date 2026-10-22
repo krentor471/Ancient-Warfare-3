@@ -102,7 +102,7 @@ public final class NpcMovementSafety {
    }
 
    private static Double findSupportTop(Entity entity, double x, double footY, double z, double maxDrop) {
-      for (int drop = 0; drop <= 2; drop++) {
+      for (int drop = 0; drop <= Math.max(2, (int)Math.ceil(maxDrop)); drop++) {
          BlockPos pos = BlockPos.containing(x, footY - 0.05 - (double)drop, z);
          BlockState state = entity.level().getBlockState(pos);
          VoxelShape shape = state.getCollisionShape(entity.level(), pos);

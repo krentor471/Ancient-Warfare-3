@@ -19,7 +19,9 @@ import net.minecraftforge.event.TickEvent.ServerTickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.shadowmage.ancientwarfare.core.faction.FactionArmies;
 import net.shadowmage.ancientwarfare.core.entity.ChestPushcartEntity;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
@@ -46,6 +48,13 @@ public final class ForgeFactionEvents {
    public static void onServerTick(ServerTickEvent event) {
       if (event.phase == Phase.END) {
          FactionSimulation.tick(event.getServer().overworld());
+      }
+   }
+
+   @SubscribeEvent
+   public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+      if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+         FactionArmies.onLogin(player);
       }
    }
 

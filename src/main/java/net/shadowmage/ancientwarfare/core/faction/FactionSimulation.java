@@ -83,6 +83,7 @@ public final class FactionSimulation {
 
       FactionExpansion.tick(level, data);
       FactionArmies.tick(level, data);
+      FactionConquest.tick(level, data);
       FactionCampaigns.tick(level, data);
       FactionRoads.tick(level, data);
       FactionCaravans.tick(level, data);
@@ -132,6 +133,7 @@ public final class FactionSimulation {
       FactionBorders.simulateDay(level, data);
       FactionBandits.simulateDay(level, data);
       FactionArmies.simulateDay(level, data, data.lastSimulatedDay());
+      FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);
       data.setDirty();
       AncientWarfareCore.LOG.debug("Simulated faction day {}: recruits {}", data.lastSimulatedDay(), recruited);
@@ -206,14 +208,19 @@ public final class FactionSimulation {
       return true;
    }
 
+   /** The faction's settlement at a place; of two near each other, the one whose middle is closer. */
    public static FactionWorldData.Settlement settlementAt(FactionWorldData data, String faction, double x, double z, int margin) {
+      FactionWorldData.Settlement best = null;
+
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         if (settlement.faction().equals(faction) && settlement.contains(x, z, margin)) {
-            return settlement;
+         if (settlement.faction().equals(faction)
+            && settlement.contains(x, z, margin)
+            && (best == null || settlement.horizontalDistanceSquared(x, z) < best.horizontalDistanceSquared(x, z))) {
+            best = settlement;
          }
       }
 
-      return null;
+      return best;
    }
 
    private static void maintainGarrisons(ServerLevel level, FactionWorldData data) {
@@ -370,7 +377,7 @@ public final class FactionSimulation {
       return npc;
    }
 
-   private static boolean isCivilian(FactionNpcEntity npc) {
+   static boolean isCivilian(FactionNpcEntity npc) {
       return FactionNpcRole.byId(npc.getNpcSubtype()).map(FactionNpcRole::isCivilian).orElse(false);
    }
 }

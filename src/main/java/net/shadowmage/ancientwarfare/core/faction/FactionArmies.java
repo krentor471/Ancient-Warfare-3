@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,6 +18,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LadderBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
@@ -35,7 +40,9 @@ import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
  * who march from the attacker's side and take the settlement if they clear it. Factions at war with
  * a player raid the player's villages (a town hall) with a warning first; raiders who hold the town
  * hall with no defenders left take the village. A player who clears a faction settlement's garrison
- * can claim it by placing a town hall there.
+ * can claim it by placing a town hall there. A strong faction lays siege to a player's village
+ * instead of raiding it: a herald brings an ultimatum first, and if no tribute is paid the army comes
+ * with engines, draws up in ranks and puts ladders to the walls.
  */
 public final class FactionArmies {
    public static final String TAG_PREFIX = "aw_army_";
@@ -79,6 +86,16 @@ public final class FactionArmies {
    private static final double VILLAGE_RADIUS = 32.0;
    private static final double HOLD_RADIUS = 8.0;
    private static final int CLAIM_STANDING = -20;
+   /** A faction that can send this many against a village besieges it instead of raiding. */
+   private static final int MIN_VILLAGE_SIEGE = 20;
+   private static final double SIEGE_SHARE = 0.6;
+   /** Time the player has to answer the ultimatum before the army sets out. */
+   public static final long ULTIMATUM_TICKS = 6000L;
+   private static final int MIN_TRIBUTE = 16;
+   private static final int MAX_TRIBUTE = 128;
+   private static final int TRIBUTE_STANDING = 10;
+   /** How high a ladder put to a wall may go. */
+   private static final int MAX_LADDER = 12;
 
    private FactionArmies() {
    }
@@ -128,6 +145,91 @@ public final class FactionArmies {
       return data.addArmy(faction, "", 0, owner, village, taken, level.getGameTime() + delay);
    }
 
+   /**
+    * Plans a siege of a player's village. A herald brings the owner an ultimatum: pay tribute and the
+    * army stays home, refuse or keep silent and it sets out with its engines.
+    */
+   public static FactionWorldData.Army siege(ServerLevel level, FactionWorldData data, String faction, BlockPos village, UUID owner, int size) {
+      int taken = FactionAI.takeLosses(data, faction, Math.min(MAX_SIEGE, size));
+      if (taken <= 0) {
+         return null;
+      }
+
+      data.setLastRaid(village, data.lastSimulatedDay());
+      FactionWorldData.Army army = data.addArmy(faction, "", 0, owner, village, taken, level.getGameTime() + ULTIMATUM_TICKS);
+      army.siege = true;
+      army.tribute = Mth.clamp(taken * 2, MIN_TRIBUTE, MAX_TRIBUTE);
+      data.setDirty();
+      ServerPlayer player = level.getServer().getPlayerList().getPlayer(owner);
+      if (player != null) {
+         deliverUltimatum(player, army);
+      } else {
+         FactionNews.tellPlayer(level, owner, ultimatumText(army));
+      }
+
+      return army;
+   }
+
+   private static Component ultimatumText(FactionWorldData.Army army) {
+      Component faction = FactionNews.factionName(army.faction());
+      return Component.translatable("ultimatum.ancientwarfare.herald", faction)
+         .withStyle(ChatFormatting.GOLD)
+         .append(
+            Component.translatable("ultimatum.ancientwarfare.terms", faction, army.size(), army.target().getX(), army.target().getZ(), army.tribute())
+               .withStyle(ChatFormatting.WHITE)
+         );
+   }
+
+   private static void deliverUltimatum(ServerPlayer player, FactionWorldData.Army army) {
+      player.sendSystemMessage(ultimatumText(army));
+      player.sendSystemMessage(
+         Component.literal("  ")
+            .append(FactionEnvoys.button("ultimatum.ancientwarfare.pay", "/awultimatum pay " + army.id(), ChatFormatting.GREEN))
+            .append("  ")
+            .append(FactionEnvoys.button("ultimatum.ancientwarfare.refuse", "/awultimatum refuse " + army.id(), ChatFormatting.RED))
+      );
+   }
+
+   /** A player who logs in while an ultimatum stands hears it again. */
+   public static void onLogin(ServerPlayer player) {
+      for (FactionWorldData.Army army : FactionWorldData.get(player.serverLevel()).armies()) {
+         if (army.siege() && army.tribute() > 0 && !army.spawned() && player.getUUID().equals(army.villageOwner())) {
+            deliverUltimatum(player, army);
+         }
+      }
+   }
+
+   /** The player answers an ultimatum: tribute sends the army home, a refusal sends it out at once. */
+   public static void answerUltimatum(ServerPlayer player, int armyId, boolean pay) {
+      ServerLevel level = player.serverLevel();
+      FactionWorldData data = FactionWorldData.get(level);
+      FactionWorldData.Army army = null;
+      for (FactionWorldData.Army candidate : data.armies()) {
+         if (candidate.id() == armyId) {
+            army = candidate;
+         }
+      }
+
+      if (army == null || !army.siege() || army.tribute() <= 0 || army.spawned() || !player.getUUID().equals(army.villageOwner())) {
+         player.sendSystemMessage(Component.translatable("ultimatum.ancientwarfare.gone"));
+         return;
+      }
+
+      Component faction = FactionNews.factionName(army.faction());
+      if (!pay) {
+         army.tribute = 0;
+         army.ready = level.getGameTime();
+         data.setDirty();
+         player.sendSystemMessage(Component.translatable("ultimatum.ancientwarfare.refused", faction).withStyle(ChatFormatting.RED));
+      } else if (!PlayerDiplomacy.takeEmeralds(player, army.tribute())) {
+         player.sendSystemMessage(Component.translatable("ultimatum.ancientwarfare.missing", army.tribute()));
+      } else {
+         goHome(level, data, army, army.size());
+         FactionStandingData.get(level).adjustStanding(player.getUUID(), army.faction(), TRIBUTE_STANDING);
+         player.sendSystemMessage(Component.translatable("ultimatum.ancientwarfare.paid", faction, army.tribute()).withStyle(ChatFormatting.GREEN));
+      }
+   }
+
    /** Daily: factions that hate a nearby player declare war on them, and factions at war plan raids. */
    public static void simulateDay(ServerLevel level, FactionWorldData data, long day) {
       RandomSource random = level.getRandom();
@@ -156,12 +258,15 @@ public final class FactionArmies {
             }
 
             int size = (int)Math.ceil(strength.getOrDefault(faction, 0) * RAID_SHARE);
+            int siegeSize = (int)Math.ceil(strength.getOrDefault(faction, 0) * SIEGE_SHARE);
             if (treaty == RelationState.WAR
                && !raided
                && size >= MIN_RAID
                && day - data.lastRaid(pos) >= RAID_COOLDOWN_DAYS
                && random.nextDouble() < RAID_CHANCE
-               && raid(level, data, faction, pos, owner, size, RAID_WARNING_TICKS) != null) {
+               && (siegeSize >= MIN_VILLAGE_SIEGE
+                  ? siege(level, data, faction, pos, owner, siegeSize) != null
+                  : raid(level, data, faction, pos, owner, size, RAID_WARNING_TICKS) != null)) {
                raided = true;
             }
          }
@@ -194,6 +299,13 @@ public final class FactionArmies {
          return;
       }
 
+      if (army.tribute > 0) {
+         // The ultimatum ran out unanswered.
+         army.tribute = 0;
+         data.setDirty();
+         FactionNews.tellPlayer(level, army.villageOwner(), Component.translatable("ultimatum.ancientwarfare.expired", FactionNews.factionName(army.faction())));
+      }
+
       if (!level.hasChunkAt(target) || !level.hasNearbyAlivePlayer(target.getX(), target.getY(), target.getZ(), ACTIVE_RANGE)) {
          if (!army.isRaid() && now - army.ready() > WAIT_TICKS) {
             goHome(level, data, army, army.size());
@@ -214,7 +326,9 @@ public final class FactionArmies {
       // The rest wait in reserve and come on in waves as the first fall.
       army.reserve = army.size() - spawned.size();
       data.setDirty();
-      Component message = army.isRaid()
+      Component message = army.siege()
+         ? Component.translatable("news.ancientwarfare.siege_arrived", FactionNews.factionName(army.faction()), army.size(), target.getX(), target.getZ())
+         : army.isRaid()
          ? Component.translatable("news.ancientwarfare.raid_arrived", FactionNews.factionName(army.faction()), target.getX(), target.getZ())
          : Component.translatable(
             "news.ancientwarfare.assault",
@@ -226,6 +340,9 @@ public final class FactionArmies {
          );
       if (army.isRaid()) {
          FactionNews.tellPlayer(level, army.villageOwner(), message);
+         if (army.siege()) {
+            siegeBegins(level, data, army, null);
+         }
       } else {
          tellNear(level, target, message);
          FactionWorldData.Settlement settlement = settlementById(data, army.targetSettlement());
@@ -288,13 +405,19 @@ public final class FactionArmies {
          return;
       }
 
-      if (!army.isRaid() && now - army.started < FORM_TICKS) {
+      boolean ranks = !army.isRaid() || army.siege();
+      if (ranks && now - army.started < FORM_TICKS) {
          formUp(level, army, soldiers);
       } else {
          march(level, soldiers, target);
       }
 
       if (army.isRaid()) {
+         if (army.siege() && now - army.started >= FORM_TICKS) {
+            ladders(level, army, soldiers);
+            escalade(level, army, soldiers, soldiers.stream().filter(npc -> npc.distanceToSqr(target.getX() + 0.5, npc.getY(), target.getZ() + 0.5) < VILLAGE_RADIUS * VILLAGE_RADIUS).toList(), defenders(level, army));
+         }
+
          checkVillageTaken(level, data, army, members);
       } else {
          if (now - army.started >= FORM_TICKS) {
@@ -312,24 +435,101 @@ public final class FactionArmies {
     */
    private static void escalade(ServerLevel level, FactionWorldData data, FactionWorldData.Army army, List<FactionNpcEntity> soldiers) {
       FactionWorldData.Settlement settlement = settlementById(data, army.targetSettlement());
+      if (settlement != null) {
+         List<FactionNpcEntity> climbers = soldiers.stream().filter(npc -> settlement.contains(npc.getX(), npc.getZ(), WALL_MARGIN)).toList();
+         escalade(level, army, soldiers, climbers, FactionSimulation.liveSoldierList(level, settlement));
+      }
+   }
+
+   private static void escalade(ServerLevel level, FactionWorldData.Army army, List<FactionNpcEntity> soldiers, List<FactionNpcEntity> climbers, List<? extends net.minecraft.world.entity.LivingEntity> defenders) {
       long now = level.getGameTime();
       Long last = LAST_ESCALADE.putIfAbsent(army.id(), now);
-      if (settlement == null || last == null || now - last < ESCALADE_TICKS) {
+      if (last == null || now - last < ESCALADE_TICKS) {
          return;
       }
 
       LAST_ESCALADE.put(army.id(), now);
-      List<FactionNpcEntity> climbers = soldiers.stream().filter(npc -> settlement.contains(npc.getX(), npc.getZ(), WALL_MARGIN)).toList();
-      List<FactionNpcEntity> defenders = FactionSimulation.liveSoldierList(level, settlement);
       if (climbers.size() < MIN_CLIMBERS || defenders.isEmpty()) {
          return;
       }
 
       RandomSource random = level.getRandom();
       if (random.nextInt(climbers.size() + defenders.size()) < climbers.size()) {
-         defenders.stream().max(Comparator.comparingDouble(FactionNpcEntity::getY)).ifPresent(FactionNpcEntity::kill);
+         defenders.stream().max(Comparator.comparingDouble(net.minecraft.world.entity.LivingEntity::getY)).ifPresent(net.minecraft.world.entity.LivingEntity::kill);
       } else {
          climbers.get(random.nextInt(climbers.size())).kill();
+      }
+   }
+
+   /** The village owner's soldiers in the village. */
+   private static List<CombatNpcEntity> defenders(ServerLevel level, FactionWorldData.Army army) {
+      UUID owner = army.villageOwner();
+      AABB village = new AABB(army.target()).inflate(VILLAGE_RADIUS, 16.0, VILLAGE_RADIUS);
+      return level.getEntitiesOfClass(CombatNpcEntity.class, village, npc -> npc.isAlive() && npc.getOwner().map(owner::equals).orElse(false));
+   }
+
+   /**
+    * Besiegers held up by a wall put a ladder to it and climb: a soldier with no target who stands
+    * still against a wall two or more blocks high fills the wall face above him with ladder, and one
+    * standing in a ladder is pushed into the wall so he goes up.
+    */
+   private static void ladders(ServerLevel level, FactionWorldData.Army army, List<FactionNpcEntity> soldiers) {
+      BlockPos hall = army.target();
+      for (FactionNpcEntity npc : soldiers) {
+         BlockPos feet = npc.blockPosition();
+         BlockState here = level.getBlockState(feet);
+         if (here.is(Blocks.LADDER)) {
+            Direction face = here.getValue(LadderBlock.FACING);
+            BlockPos wall = feet.relative(face.getOpposite());
+            npc.getMoveControl().setWantedPosition(wall.getX() + 0.5, npc.getY() + 1.0, wall.getZ() + 0.5, 1.0);
+            continue;
+         }
+
+         if (npc.getTarget() == null
+            && npc.onGround()
+            && npc.getY() >= hall.getY() + 2
+            && (npc.getNavigation().getPath() == null || !npc.getNavigation().getPath().canReach())
+            && npc.distanceToSqr(hall.getX() + 0.5, npc.getY(), hall.getZ() + 0.5) < VILLAGE_RADIUS * VILLAGE_RADIUS) {
+            // Up on the wall: jump down inside, a drop too deep for a path.
+            npc.getNavigation().stop();
+            npc.setMaxDrop(MAX_LADDER);
+            npc.getMoveControl().setWantedPosition(hall.getX() + 0.5, hall.getY(), hall.getZ() + 0.5, 1.0);
+            continue;
+         }
+
+         if (npc.getTarget() != null || !(npc.horizontalCollision || npc.getNavigation().isDone()) || npc.distanceToSqr(hall.getX() + 0.5, npc.getY(), hall.getZ() + 0.5) < 9.0) {
+            continue;
+         }
+
+         if (!here.canBeReplaced() || !level.getFluidState(feet).isEmpty()) {
+            continue;
+         }
+
+         // The wall is the side facing the hall.
+         double dx = hall.getX() + 0.5 - npc.getX();
+         double dz = hall.getZ() + 0.5 - npc.getZ();
+         Direction toward = Direction.getNearest(dx, 0.0, dz);
+         BlockPos wall = feet.relative(toward);
+         if (!level.getBlockState(wall).isFaceSturdy(level, wall, toward.getOpposite())
+            || !level.getBlockState(wall.above()).isFaceSturdy(level, wall.above(), toward.getOpposite())) {
+            continue;
+         }
+
+         BlockState ladder = Blocks.LADDER.defaultBlockState().setValue(LadderBlock.FACING, toward.getOpposite());
+         for (int dy = 0; dy < MAX_LADDER; dy++) {
+            BlockPos pos = feet.above(dy);
+            BlockPos behind = wall.above(dy);
+            if (!level.getBlockState(behind).isFaceSturdy(level, behind, toward.getOpposite())) {
+               break;
+            }
+
+            BlockState current = level.getBlockState(pos);
+            if (!current.is(Blocks.LADDER) && (!current.canBeReplaced() || !level.getFluidState(pos).isEmpty())) {
+               break;
+            }
+
+            level.setBlockAndUpdate(pos, ladder);
+         }
       }
    }
 
@@ -552,7 +752,11 @@ public final class FactionArmies {
       }
 
       List<EntityType<? extends Entity>> engines = new ArrayList<>();
-      if (FactionTowns.CAPITAL.equals(target.kind())) {
+      if (target == null) {
+         // A player's village: a ram for the gate and a catapult for the walls.
+         engines.add(AWCoreEntityTypes.CATAPULT_MOBILE.get());
+         engines.add(AWCoreEntityTypes.BATTERING_RAM.get());
+      } else if (FactionTowns.CAPITAL.equals(target.kind())) {
          engines.add(AWCoreEntityTypes.TREBUCHET_MOBILE.get());
          engines.add(AWCoreEntityTypes.BATTERING_RAM.get());
       } else if (FactionAI.isFort(target)) {
@@ -581,7 +785,9 @@ public final class FactionArmies {
          }
       }
 
-      if (placed > 0) {
+      if (placed > 0 && target == null) {
+         FactionNews.tellPlayer(level, army.villageOwner(), Component.translatable("news.ancientwarfare.siege_camp_village", FactionNews.factionName(army.faction()), placed));
+      } else if (placed > 0) {
          tellNear(
             level,
             army.target(),

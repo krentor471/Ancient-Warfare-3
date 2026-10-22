@@ -181,7 +181,7 @@ public class DiplomacyScreen extends Screen {
       return (this.height - PANEL_HEIGHT) / 2;
    }
 
-   private static Component factionName(String faction) {
+   static Component factionName(String faction) {
       return Component.translatable("faction.ancientwarfare." + faction);
    }
 
