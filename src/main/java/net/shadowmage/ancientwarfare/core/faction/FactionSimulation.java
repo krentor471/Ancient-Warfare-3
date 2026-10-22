@@ -268,10 +268,11 @@ public final class FactionSimulation {
    /** A capital always has its leader: one stands near the town's centre, back a day after he falls. */
    private static void keepLeader(ServerLevel level, FactionWorldData.Settlement settlement) {
       AABB area = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(GARRISON_MARGIN, 32.0, GARRISON_MARGIN);
-      if (!level.getEntitiesOfClass(
-            FactionNpcEntity.class, area, npc -> npc.isAlive() && PlayerDiplomacy.isLeader(npc) && npc.getFactionName().equals(settlement.faction())
-         )
-         .isEmpty()) {
+      List<FactionNpcEntity> leaders = level.getEntitiesOfClass(
+         FactionNpcEntity.class, area, npc -> npc.isAlive() && PlayerDiplomacy.isLeader(npc) && npc.getFactionName().equals(settlement.faction())
+      );
+      if (!leaders.isEmpty()) {
+         FactionRulers.settleThrone(level, leaders);
          return;
       }
 

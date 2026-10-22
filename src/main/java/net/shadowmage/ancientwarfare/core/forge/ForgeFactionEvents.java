@@ -23,6 +23,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.shadowmage.ancientwarfare.core.faction.FactionArmies;
 import net.shadowmage.ancientwarfare.core.faction.FactionRulers;
+import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 import net.shadowmage.ancientwarfare.core.faction.FactionTournaments;
 import net.shadowmage.ancientwarfare.core.entity.ChestPushcartEntity;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -76,8 +77,8 @@ public final class ForgeFactionEvents {
          && serverLevel.dimension() == Level.OVERWORLD
          && (FactionEnvoys.isStaleEnvoy(npc) || FactionTournaments.isStaleChampion(npc) || !FactionSimulation.onNpcJoin(serverLevel, npc))) {
          event.setCanceled(true);
-      } else if (event.getEntity() instanceof FactionNpcEntity npc && event.getLevel() instanceof ServerLevel serverLevel && FactionRulers.isRuler(serverLevel, npc)) {
-         FactionRulers.nameLeader(serverLevel, npc);
+      } else if (event.getEntity() instanceof FactionNpcEntity npc && event.getLevel() instanceof ServerLevel serverLevel && PlayerDiplomacy.isLeader(npc)) {
+         FactionRulers.onLeaderJoin(serverLevel, npc);
       }
    }
 
@@ -103,7 +104,7 @@ public final class ForgeFactionEvents {
       if (event.getEntity() instanceof FactionNpcEntity npc && npc.level() instanceof ServerLevel serverLevel) {
          generateConfiguredLoot(npc, serverLevel, event.getSource());
          FactionSimulation.onNpcDeath(serverLevel, npc);
-         if (FactionRulers.isRuler(serverLevel, npc)) {
+         if (FactionRulers.isRuler(npc)) {
             FactionRulers.onLeaderDeath(serverLevel, npc);
          }
          if (event.getSource().getEntity() instanceof Player player) {

@@ -3,11 +3,13 @@ package net.shadowmage.ancientwarfare.core.faction;
 import java.util.List;
 import java.util.Locale;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionTradeListRegistry;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
 
@@ -92,14 +94,61 @@ public final class FactionRulers {
       return Component.translatable("ruler.ancientwarfare.trait." + TRAITS[Mth.clamp(trait, 0, TRAITS.length - 1)].key());
    }
 
-   /** A leader in his faction's capital: the ruler himself. */
-   public static boolean isRuler(ServerLevel level, FactionNpcEntity npc) {
+   /** Marks the one leader in a capital who is the ruler; any other leaders there are his captains. */
+   public static final String RULER_TAG = "aw_ruler";
+
+   public static boolean isRuler(FactionNpcEntity npc) {
+      return npc.getTags().contains(RULER_TAG);
+   }
+
+   /** The capital the leader stands in, or null when he is not a leader in his faction's capital. */
+   private static FactionWorldData.Settlement capitalOf(ServerLevel level, FactionNpcEntity npc) {
       if (!PlayerDiplomacy.isLeader(npc)) {
-         return false;
+         return null;
       }
 
       FactionWorldData.Settlement settlement = FactionSimulation.settlementAt(FactionWorldData.get(level), npc.getFactionName(), npc.getX(), npc.getZ(), 16);
-      return settlement != null && FactionTowns.CAPITAL.equals(settlement.kind());
+      return settlement != null && FactionTowns.CAPITAL.equals(settlement.kind()) ? settlement : null;
+   }
+
+   private static List<FactionNpcEntity> otherLeaders(ServerLevel level, FactionWorldData.Settlement capital, FactionNpcEntity npc) {
+      return level.getEntitiesOfClass(
+         FactionNpcEntity.class,
+         new AABB(capital.min(), capital.max().offset(1, 1, 1)).inflate(24.0, 32.0, 24.0),
+         other -> other != npc && other.isAlive() && PlayerDiplomacy.isLeader(other) && other.getFactionName().equals(npc.getFactionName())
+      );
+   }
+
+   /** A leader comes into a capital: if he is the ruler, he bears the ruler's present name. */
+   public static void onLeaderJoin(ServerLevel level, FactionNpcEntity npc) {
+      if (isRuler(npc)) {
+         nameLeader(level, npc);
+      }
+   }
+
+   /**
+    * Exactly one of the leaders standing in a capital is the ruler: the first is crowned when none is,
+    * and any other who still bears the title, as after a chunk loaded two at once, steps down.
+    */
+   static void settleThrone(ServerLevel level, List<FactionNpcEntity> leaders) {
+      FactionNpcEntity ruler = leaders.stream().filter(FactionRulers::isRuler).findFirst().orElse(leaders.get(0));
+      for (FactionNpcEntity leader : leaders) {
+         if (leader == ruler) {
+            if (!isRuler(leader)) {
+               leader.addTag(RULER_TAG);
+               nameLeader(level, leader);
+            }
+         } else if (isRuler(leader) || isTitled(leader)) {
+            leader.removeTag(RULER_TAG);
+            leader.setCustomName(null);
+         }
+      }
+   }
+
+   private static boolean isTitled(FactionNpcEntity npc) {
+      return npc.getCustomName() != null
+         && npc.getCustomName().getContents() instanceof TranslatableContents title
+         && "ruler.ancientwarfare.title".equals(title.getKey());
    }
 
    /** The ruler fell: a successor takes the throne, never of the same name and seldom of the same mind. */
@@ -114,10 +163,18 @@ public final class FactionRulers {
       FactionNews.tell(
          level, Component.translatable("news.ancientwarfare.ruler_fell", FactionNews.factionName(faction), name(old.name()), name(name), traitName(trait))
       );
+      // A captain in the capital is crowned at once.
+      FactionWorldData.Settlement capital = capitalOf(level, leader);
+      if (capital != null) {
+         otherLeaders(level, capital, leader).stream().findFirst().ifPresent(heir -> {
+            heir.addTag(RULER_TAG);
+            nameLeader(level, heir);
+         });
+      }
    }
 
-   /** The leader standing in the capital bears the ruler's name. */
-   public static void nameLeader(ServerLevel level, FactionNpcEntity leader) {
+   /** The ruler bears his name and epithet. */
+   private static void nameLeader(ServerLevel level, FactionNpcEntity leader) {
       FactionWorldData.Ruler ruler = ruler(FactionWorldData.get(level), leader.getFactionName(), level.getRandom());
       leader.setCustomName(
          Component.translatable(
