@@ -39,8 +39,10 @@ public final class FactionExpansion {
    private static final double PLAN_PLAYER_RANGE = 256.0;
    private static final double BUILD_PLAYER_RANGE = 192.0;
    /** Settlements further than this from every player stay on paper. */
-   private static final double BUILD_REACH = 1000.0;
+   private static final double BUILD_REACH = 1500.0;
    private static final int BUILD_CHECK_TICKS = 100;
+   /** Towns are laid out more often than the rest is looked at: a site is mostly ruled out from the noise, cheaply. */
+   private static final int LAYOUT_CHECK_TICKS = 20;
    public static final int FORT_COST = 60;
    /** A new fort's garrison is capped at this, whatever its template spawns. */
    public static final int FORT_GARRISON = 12;
@@ -55,8 +57,8 @@ public final class FactionExpansion {
    private static final int CAPITAL_SEARCH_POINTS = 162;
    private static final int VILLAGE_SEARCH_STEP = 40;
    private static final int VILLAGE_SEARCH_POINTS = 33;
-   /** Sites checked per build check; each loads the land under it. */
-   private static final int SITE_CHECKS_PER_TICK = 3;
+   /** Sites checked per layout check; most are ruled out from the noise, the rest load the land under them. */
+   private static final int SITE_CHECKS_PER_TICK = 6;
    private static final int SETTLEMENT_CLEARANCE = 32;
    /** How far each settlement's site search got, by settlement; not saved, so a restart searches again from the centre. */
    private static final Map<Integer, Integer> SITE_SEARCH = new HashMap<>();
@@ -188,6 +190,10 @@ public final class FactionExpansion {
     */
    public static void tick(ServerLevel level, FactionWorldData data) {
       if (level.getGameTime() % BUILD_CHECK_TICKS != 0L) {
+         if (level.getGameTime() % LAYOUT_CHECK_TICKS == 0L) {
+            buildNearest(level, data);
+         }
+
          return;
       }
 

@@ -26,9 +26,9 @@ import net.shadowmage.ancientwarfare.core.tile.ProtectionFlagBlockEntity;
 
 public final class AwtWorldGenerator {
    private static final int MAX_TOWN_RADIUS_CHUNKS = 11;
-   private static final int SURVEY_POINTS_PER_TICK = 32;
-   private static final int CLEAR_COLUMNS_PER_TICK = 96;
-   private static final int ROAD_BLOCKS_PER_TICK = 192;
+   private static final int SURVEY_POINTS_PER_TICK = 64;
+   private static final int CLEAR_COLUMNS_PER_TICK = 192;
+   private static final int ROAD_BLOCKS_PER_TICK = 384;
    private static final int MAX_SURFACE_RANGE = 18;
    private static final int FACTION_SITE_RANGE = 15;
    private static final int FACTION_TOWN_SURVEY_RANGE = 28;
@@ -122,6 +122,10 @@ public final class AwtWorldGenerator {
     * The land is loaded (generated if need be) first, as heights of unloaded land read as the void.
     */
    public static boolean siteAcceptable(ServerLevel level, int x, int z, int chunks) {
+      if (!roughSiteAcceptable(level, x, z, chunks)) {
+         return false;
+      }
+
       return NaturalGenerationContext.run(() -> {
          int halfSize = Math.max(16, chunks * 8);
          List<Integer> samples = new ArrayList<>(25);
@@ -146,6 +150,36 @@ public final class AwtWorldGenerator {
          AncientWarfareCore.LOG.debug("Faction town site {}, {}: heights {}", x, z, samples);
          return percentile(samples, 0.1) + FACTION_SITE_RANGE >= percentile(samples, 0.9);
       });
+   }
+
+   /**
+    * The same look at a site from the world generator's noise alone, without generating the land:
+    * sea over the terrain or too steep a spread of heights rules it out at once. Lakes, rivers cut
+    * by carvers and the like only show in the real check that follows, which loads the land.
+    */
+   private static boolean roughSiteAcceptable(ServerLevel level, int x, int z, int chunks) {
+      net.minecraft.world.level.chunk.ChunkGenerator generator = level.getChunkSource().getGenerator();
+      net.minecraft.world.level.levelgen.RandomState random = level.getChunkSource().randomState();
+      int halfSize = Math.max(16, chunks * 8);
+      List<Integer> samples = new ArrayList<>(25);
+
+      for (int gx = 0; gx < 5; gx++) {
+         for (int gz = 0; gz < 5; gz++) {
+            int sx = x - halfSize + halfSize * 2 * gx / 4;
+            int sz = z - halfSize + halfSize * 2 * gz / 4;
+            int surface = generator.getBaseHeight(sx, sz, Types.WORLD_SURFACE_WG, level, random);
+            int floor = generator.getBaseHeight(sx, sz, Types.OCEAN_FLOOR_WG, level, random);
+            if (surface > floor) {
+               AncientWarfareCore.LOG.debug("Faction town site {}, {}: sea at {}, {} (noise)", x, z, sx, sz);
+               return false;
+            }
+
+            samples.add(surface);
+         }
+      }
+
+      samples.sort(Integer::compareTo);
+      return percentile(samples, 0.1) + FACTION_SITE_RANGE >= percentile(samples, 0.9);
    }
 
    /** Size in chunks of a faction town template; 0 when it cannot be read. */
@@ -331,7 +365,7 @@ public final class AwtWorldGenerator {
    private static void survey(ServerLevel level, AwtWorldGenerationData data, AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
       int samplesPerSide = Math.max(4, plan.totalSize() / 8);
       int total = samplesPerSide * samplesPerSide;
-      int end = Math.min(total, task.progress + 32);
+      int end = Math.min(total, task.progress + SURVEY_POINTS_PER_TICK);
 
       for (int index = task.progress; index < end; index++) {
          int sx = index % samplesPerSide;
@@ -392,7 +426,7 @@ public final class AwtWorldGenerator {
 
    private static void clear(ServerLevel level, AwtWorldGenerationData data, AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
       int total = plan.totalSize() * plan.totalSize();
-      int end = Math.min(total, task.progress + 96);
+      int end = Math.min(total, task.progress + CLEAR_COLUMNS_PER_TICK);
       int floorY = task.y - 1;
 
       for (int index = task.progress; index < end; index++) {
@@ -432,7 +466,7 @@ public final class AwtWorldGenerator {
    }
 
    private static void roads(ServerLevel level, AwtWorldGenerationData data, AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
-      int end = Math.min(plan.roads().size(), task.progress + 192);
+      int end = Math.min(plan.roads().size(), task.progress + ROAD_BLOCKS_PER_TICK);
 
       for (int index = task.progress; index < end; index++) {
          BlockPos pos = plan.roads().get(index);
