@@ -335,10 +335,6 @@ public final class FactionArmies {
       // The rest wait in reserve and come on in waves as the first fall.
       army.reserve = army.size() - spawned.size();
       data.setDirty();
-      if (army.isRaid()) {
-         PlayerCountry.callToArms(level, data, target, army.villageOwner());
-      }
-
       Component message = army.siege()
          ? Component.translatable("news.ancientwarfare.siege_arrived", FactionNews.factionName(army.faction()), army.size(), target.getX(), target.getZ())
          : army.isRaid()

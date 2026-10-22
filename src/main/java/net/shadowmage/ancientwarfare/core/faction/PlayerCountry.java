@@ -1,7 +1,6 @@
 package net.shadowmage.ancientwarfare.core.faction;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -33,14 +32,6 @@ public final class PlayerCountry {
    private static final long CHECK_TICKS = 200L;
    private static final int OWN_VILLAGE_LOYALTY = 70;
    private static final int OWN_VILLAGE_ORDER = 60;
-   /** In silver, for a militiaman's arms; there is no pay after that. */
-   public static final int RECRUIT_COST = 5;
-   private static final double GUARD_RANGE = 48.0;
-   /** Militia a village raises by itself when attacked, and sends to a neighbour in need. */
-   private static final int RAISED_AT_HOME = 4;
-   private static final int SENT_BY_NEIGHBOUR = 2;
-   private static final int HELPING_NEIGHBOURS = 2;
-   private static final int HELP_RANGE = 800;
 
    private PlayerCountry() {
    }
@@ -240,136 +231,6 @@ public final class PlayerCountry {
       }
 
       return data.settlements().stream().anyMatch(settlement -> settlement.province() == province && settlement.faction().equals(faction));
-   }
-
-   /** Soldiers a village can keep from its own people: a third of them, at least two. */
-   public static int militiaCap(int people) {
-      return Math.max(2, people / 3);
-   }
-
-   private static int guards(ServerLevel level, BlockPos hall, UUID owner) {
-      return level.getEntitiesOfClass(
-            net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity.class,
-            new AABB(hall).inflate(GUARD_RANGE),
-            npc -> npc.isAlive() && npc.getOwner().map(owner::equals).orElse(false)
-         )
-         .size();
-   }
-
-   /** At a hall of the player's country: one of the villagers takes up arms, for the price of them. */
-   public static void recruit(ServerPlayer player, BlockPos hall) {
-      ServerLevel level = player.serverLevel();
-      FactionWorldData data = FactionWorldData.get(level);
-      UUID owner = player.getUUID();
-      FactionWorldData.VillageState state = data.villageState(hall);
-      if (data.country(owner) == null || state == null || !owner.equals(data.villages().get(hall))) {
-         return;
-      }
-
-      int guards = guards(level, hall, owner);
-      int cap = militiaCap(state.people);
-      if (guards >= cap) {
-         refuse(player, "country.ancientwarfare.militia_full", guards, cap);
-         return;
-      }
-
-      if (!Coins.take(player, RECRUIT_COST)) {
-         refuse(player, "country.ancientwarfare.no_coins", RECRUIT_COST);
-         return;
-      }
-
-      if (militia(level, hall, owner, hall, 4) != null) {
-         if (!state.from.isEmpty()) {
-            state.people = Math.max(1, state.people - 1);
-         }
-
-         state.guards = guards + 1;
-         data.setDirty();
-         player.sendSystemMessage(Component.translatable("country.ancientwarfare.recruited", guards + 1, cap).withStyle(ChatFormatting.GREEN));
-      }
-   }
-
-   /** A militiaman of the owner's, spawned near a spot and set to guard the village. */
-   private static net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity militia(ServerLevel level, BlockPos near, UUID owner, BlockPos post, int spread) {
-      var random = level.getRandom();
-      int x = near.getX() + random.nextInt(spread * 2 + 1) - spread;
-      int z = near.getZ() + random.nextInt(spread * 2 + 1) - spread;
-      BlockPos at = new BlockPos(x, 0, z);
-      if (!level.isLoaded(at)) {
-         return null;
-      }
-
-      int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-      net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity npc = net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess
-         .<net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity>entityType(net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds.COMBAT_NPC)
-         .create(level);
-      if (npc == null) {
-         return null;
-      }
-
-      npc.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
-      npc.setNpcType("combat");
-      npc.setOwner(owner);
-      npc.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE_SWORD));
-      npc.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LEATHER_HELMET));
-      npc.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LEATHER_CHESTPLATE));
-      npc.setCustomName(Component.translatable("country.ancientwarfare.militiaman"));
-      level.addFreshEntity(npc);
-      npc.setHome(post);
-      if (post.equals(near)) {
-         npc.setHoldCommand(npc.blockPosition());
-      } else {
-         npc.setMoveCommand(post);
-      }
-
-      return npc;
-   }
-
-   /**
-    * Raiders reached one of the country's villages: its people take up arms, and the nearest other
-    * villages of the country send theirs to help. A village outside a country stands alone.
-    */
-   public static void callToArms(ServerLevel level, FactionWorldData data, BlockPos hall, UUID owner) {
-      FactionWorldData.VillageState state = data.villageState(hall);
-      if (owner == null || data.country(owner) == null || state == null) {
-         return;
-      }
-
-      int raised = 0;
-      int room = Math.min(RAISED_AT_HOME, militiaCap(state.people) - guards(level, hall, owner));
-      for (int i = 0; i < room; i++) {
-         if (militia(level, hall, owner, hall, 6) != null) {
-            raised++;
-         }
-      }
-
-      List<Map.Entry<BlockPos, UUID>> neighbours = new java.util.ArrayList<>();
-      for (Map.Entry<BlockPos, UUID> village : data.villages().entrySet()) {
-         if (owner.equals(village.getValue()) && !village.getKey().equals(hall) && village.getKey().distSqr(hall) <= (double)HELP_RANGE * HELP_RANGE) {
-            neighbours.add(village);
-         }
-      }
-
-      neighbours.sort(java.util.Comparator.comparingDouble(village -> village.getKey().distSqr(hall)));
-      int helpers = 0;
-      for (Map.Entry<BlockPos, UUID> village : neighbours.subList(0, Math.min(HELPING_NEIGHBOURS, neighbours.size()))) {
-         // They come along the road from their village, already near enough to be seen.
-         double dx = village.getKey().getX() - hall.getX();
-         double dz = village.getKey().getZ() - hall.getZ();
-         double length = Math.max(1.0, Math.sqrt(dx * dx + dz * dz));
-         BlockPos from = hall.offset((int)(dx / length * 28), 0, (int)(dz / length * 28));
-         for (int i = 0; i < SENT_BY_NEIGHBOUR; i++) {
-            if (militia(level, from, owner, hall, 3) != null) {
-               helpers++;
-            }
-         }
-      }
-
-      if (raised > 0 || helpers > 0) {
-         FactionNews.tellPlayer(
-            level, owner, Component.translatable("country.ancientwarfare.call_to_arms", hall.getX(), hall.getZ(), raised, helpers).withStyle(ChatFormatting.GOLD)
-         );
-      }
    }
 
    /** Tax day: every village of a country pays into its treasury instead of its own hall. Returns false for villages outside a country. */
