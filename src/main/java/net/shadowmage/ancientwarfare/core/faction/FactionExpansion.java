@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
+import net.shadowmage.ancientwarfare.core.structure.IslandChunkWindow;
 import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator;
 import net.shadowmage.ancientwarfare.core.structure.AwtWorldGenerator;
 import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
@@ -40,6 +41,10 @@ public final class FactionExpansion {
    private static final double BUILD_PLAYER_RANGE = 192.0;
    /** Settlements further than this from every player stay on paper. */
    private static final double BUILD_REACH = 1500.0;
+   /** Settlements beyond every player's reach are built only while a tick takes less than this. */
+   private static final float FAR_BUILD_MAX_TICK_MS = 35.0F;
+   /** A far capital goes before any far village. */
+   private static final double FAR_CAPITAL_PRIORITY = 1.0E12;
    private static final int BUILD_CHECK_TICKS = 100;
    /** Towns are laid out more often than the rest is looked at: a site is mostly ruled out from the noise, cheaply. */
    private static final int LAYOUT_CHECK_TICKS = 20;
@@ -62,9 +67,22 @@ public final class FactionExpansion {
    private static final int VILLAGE_SEARCH_POINTS = 33;
    /** Sites checked per layout check; most are ruled out from the noise, the rest load the land under them. */
    private static final int SITE_CHECKS_PER_TICK = 6;
-   private static final int SETTLEMENT_CLEARANCE = 32;
+   /** Open land kept between a new town and any other settlement, so they stand apart. */
+   private static final int SETTLEMENT_CLEARANCE = 200;
+   private static final int LONE_BUILDING_CLEARANCE = 48;
    /** How far each settlement's site search got, by settlement; not saved, so a restart searches again from the centre. */
    private static final Map<Integer, Integer> SITE_SEARCH = new HashMap<>();
+   /** How many provinces a capital has searched beyond its own, and where it searches now; not saved. */
+   private static final Map<Integer, Integer> CAPITAL_PROVINCE_TRIES = new HashMap<>();
+   private static final Map<Integer, int[]> SEARCH_CENTER = new HashMap<>();
+   private static final int MAX_CAPITAL_PROVINCES = 5;
+   /** Far building takes a step this often, and rests this long after laying out a town, so players feel no stalls. */
+   private static final long FAR_STEP_TICKS = 60L;
+   private static final long FAR_LAYOUT_REST_TICKS = 1200L;
+   private static long nextFarWork;
+   private static final IslandChunkWindow FORT_WINDOW = new IslandChunkWindow();
+   /** checkSite's answer while the land under a site is still being generated. */
+   private static final int[] PENDING = new int[0];
    /** Capitals that found no site this session. */
    private static final Set<Integer> GIVEN_UP = new HashSet<>();
 
@@ -215,8 +233,19 @@ public final class FactionExpansion {
             continue;
          }
 
-         if (level.hasNearbyAlivePlayer(plan.x(), level.getSeaLevel(), plan.z(), BUILD_PLAYER_RANGE) || !withinReach(level, plan.x(), plan.z())) {
+         boolean far = !withinReach(level, plan.x(), plan.z());
+         if (level.hasNearbyAlivePlayer(plan.x(), level.getSeaLevel(), plan.z(), BUILD_PLAYER_RANGE)
+            || far && (level.getServer().getAverageTickTime() >= FAR_BUILD_MAX_TICK_MS || level.getGameTime() < nextFarWork)) {
             continue;
+         }
+
+         if (!fortLandLoaded(level, plan.x(), plan.z())) {
+            // The land is generated off the main thread first; the fort goes up once it is there.
+            return;
+         }
+
+         if (far) {
+            nextFarWork = level.getGameTime() + FAR_LAYOUT_REST_TICKS;
          }
 
          iterator.remove();
@@ -252,6 +281,22 @@ public final class FactionExpansion {
       }
 
       return false;
+   }
+
+   /** Asks for the land around a fort site to be generated in the background; true once it all is. */
+   private static boolean fortLandLoaded(ServerLevel level, int x, int z) {
+      List<ChunkPos> chunks = new ArrayList<>(25);
+      for (int dx = -2; dx <= 2; dx++) {
+         for (int dz = -2; dz <= 2; dz++) {
+            chunks.add(new ChunkPos((x >> 4) + dx, (z >> 4) + dz));
+         }
+      }
+
+      return FORT_WINDOW.requestGroup(level, new BlockPos(x, 0, z), chunks, chunks.size());
+   }
+
+   private static boolean isTown(FactionWorldData.Settlement settlement) {
+      return FactionTowns.CAPITAL.equals(settlement.kind()) || FactionTowns.VILLAGE.equals(settlement.kind()) || "town".equals(settlement.kind());
    }
 
    private static boolean nearFailedFort(int x, int z) {
@@ -310,6 +355,8 @@ public final class FactionExpansion {
 
       FactionWorldData.Settlement target = null;
       double best = Double.MAX_VALUE;
+      FactionWorldData.Settlement far = null;
+      double farBest = Double.MAX_VALUE;
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          if (settlement.built() || GIVEN_UP.contains(settlement.id())) {
@@ -322,10 +369,31 @@ public final class FactionExpansion {
             nearest = Math.min(nearest, settlement.horizontalDistanceSquared(player.getX(), player.getZ()));
          }
 
-         if (nearest >= BUILD_PLAYER_RANGE * BUILD_PLAYER_RANGE && nearest <= BUILD_REACH * BUILD_REACH && nearest < best) {
-            best = nearest;
-            target = settlement;
+         if (nearest < BUILD_PLAYER_RANGE * BUILD_PLAYER_RANGE) {
+            continue;
          }
+
+         if (nearest <= BUILD_REACH * BUILD_REACH) {
+            if (nearest < best) {
+               best = nearest;
+               target = settlement;
+            }
+         } else {
+            double rank = nearest - (FactionTowns.CAPITAL.equals(settlement.kind()) ? FAR_CAPITAL_PRIORITY : 0.0);
+            if (rank < farBest) {
+               farBest = rank;
+               far = settlement;
+            }
+         }
+      }
+
+      boolean distant = false;
+      if (target == null && far != null && level.getServer().getAverageTickTime() < FAR_BUILD_MAX_TICK_MS && level.getGameTime() >= nextFarWork) {
+         // Beyond reach of every player: while the server keeps up, the rest of the world is built
+         // too, capitals first, slowly, so lands nobody visits still get their towns, mines and roads.
+         target = far;
+         distant = true;
+         nextFarWork = level.getGameTime() + FAR_STEP_TICKS;
       }
 
       if (target == null) {
@@ -339,7 +407,8 @@ public final class FactionExpansion {
       boolean small = capital && checked >= points / 2;
       String path = small ? FactionTowns.smallCapitalPath(faction) : FactionTowns.path(faction, capital);
       int chunks = FactionTowns.canBuild(faction, capital) ? AwtWorldGenerator.townChunks(path) : 0;
-      BlockPos center = target.center();
+      int[] moved = SEARCH_CENTER.get(target.id());
+      BlockPos center = moved != null ? new BlockPos(moved[0], target.center().getY(), moved[1]) : target.center();
 
       for (int i = 0; i < SITE_CHECKS_PER_TICK && checked < points && chunks > 0; i++, checked++) {
          if (capital && !small && checked >= points / 2) {
@@ -347,11 +416,21 @@ public final class FactionExpansion {
          }
 
          int index = small ? checked - points / 2 : checked;
-         int[] site = checkSite(level, data, faction, center.getX(), center.getZ(), index, capital ? CAPITAL_SEARCH_STEP : VILLAGE_SEARCH_STEP, chunks, target);
+         int[] site = checkSite(level, data, faction, center.getX(), center.getZ(), index, capital ? CAPITAL_SEARCH_STEP : VILLAGE_SEARCH_STEP, chunks, target, true);
+         if (site == PENDING) {
+            // The land there is still being generated; look again at the same spot next time.
+            SITE_SEARCH.put(target.id(), checked);
+            return;
+         }
+
          if (site != null) {
             // Keep counting: if the town fails to build here, the next search starts further on.
             SITE_SEARCH.put(target.id(), checked + 1);
             AwtWorldGenerator.queueFactionTown(level, path, site[0], site[1], target.id());
+            if (distant) {
+               nextFarWork = level.getGameTime() + FAR_LAYOUT_REST_TICKS;
+            }
+
             AncientWarfareCore.LOG.info("Faction {} lays out its {} #{} at {}, {}", faction, target.kind(), target.id(), site[0], site[1]);
             return;
          }
@@ -364,6 +443,16 @@ public final class FactionExpansion {
 
       SITE_SEARCH.remove(target.id());
       if (capital) {
+         int tried = CAPITAL_PROVINCE_TRIES.getOrDefault(target.id(), 0) + 1;
+         FactionRegions.Province next = tried < MAX_CAPITAL_PROVINCES ? nthNearestProvince(level, data, faction, target.center(), tried) : null;
+         if (next != null) {
+            // No room in the heartland: the capital is raised in the next province out instead.
+            CAPITAL_PROVINCE_TRIES.put(target.id(), tried);
+            SEARCH_CENTER.put(target.id(), new int[]{next.seedX(), next.seedZ()});
+            AncientWarfareCore.LOG.info("Faction {} looks for room for its capital in another province, near {}, {}", faction, next.seedX(), next.seedZ());
+            return;
+         }
+
          GIVEN_UP.add(target.id());
          AncientWarfareCore.LOG.info("Faction {} found no dry, flat land for its capital near {}, {}; it stays on paper", faction, center.getX(), center.getZ());
          return;
@@ -391,6 +480,17 @@ public final class FactionExpansion {
       }
 
       return false;
+   }
+
+   /** The faction's n-th province by distance from a point (0 is the nearest), or null. */
+   private static FactionRegions.Province nthNearestProvince(ServerLevel level, FactionWorldData data, String faction, BlockPos from, int n) {
+      List<FactionRegions.Province> provinces = new ArrayList<>();
+      for (long key : data.provincesOf(faction)) {
+         provinces.add(FactionRegions.provinceByCell(level, ChunkPos.getX(key), ChunkPos.getZ(key)));
+      }
+
+      provinces.sort(Comparator.comparingDouble(province -> Math.pow(province.seedX() - from.getX(), 2) + Math.pow(province.seedZ() - from.getZ(), 2)));
+      return n < provinces.size() ? provinces.get(n) : null;
    }
 
    /** The faction's province nearest the middle of all its land. */
@@ -429,7 +529,7 @@ public final class FactionExpansion {
       FactionWorldData data = FactionWorldData.get(level);
 
       for (int index = 0; index < VILLAGE_SEARCH_POINTS; index++) {
-         int[] site = checkSite(level, data, null, x, z, index, VILLAGE_SEARCH_STEP, chunks, null);
+         int[] site = checkSite(level, data, null, x, z, index, VILLAGE_SEARCH_STEP, chunks, null, false);
          if (site != null) {
             return site;
          }
@@ -443,7 +543,7 @@ public final class FactionExpansion {
     * the faction's own land (any land for a null faction), clear of other settlements, dry and flat enough for a town of this size.
     */
    private static int[] checkSite(
-      ServerLevel level, FactionWorldData data, String faction, int x, int z, int index, int step, int chunks, FactionWorldData.Settlement building
+      ServerLevel level, FactionWorldData data, String faction, int x, int z, int index, int step, int chunks, FactionWorldData.Settlement building, boolean patient
    ) {
       if (chunks <= 0) {
          return null;
@@ -463,13 +563,18 @@ public final class FactionExpansion {
          return null;
       }
 
-      int clearance = chunks * 8 + SETTLEMENT_CLEARANCE;
-
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         if (settlement != building && settlement.contains(siteX, siteZ, clearance)) {
+         // Towns keep open country between them; a lone tower or camp only needs room to stand clear.
+         // Settlements still on paper find their own room around those already standing.
+         int clearance = chunks * 8 + (isTown(settlement) ? SETTLEMENT_CLEARANCE : LONE_BUILDING_CLEARANCE);
+         if (settlement != building && settlement.built() && settlement.contains(siteX, siteZ, clearance)) {
             AncientWarfareCore.LOG.debug("Site {}, {} for {}: next to settlement #{}", siteX, siteZ, faction, settlement.id());
             return null;
          }
+      }
+
+      if (patient && !AwtWorldGenerator.siteLoaded(level, siteX, siteZ, chunks)) {
+         return PENDING;
       }
 
       return AwtWorldGenerator.siteAcceptable(level, siteX, siteZ, chunks) ? new int[]{siteX, siteZ} : null;

@@ -162,25 +162,9 @@ public final class PlayerDiplomacy {
       }
    }
 
+   /** Takes a price in silver coins; false when the player has too little. */
    static boolean takeEmeralds(ServerPlayer player, int count) {
-      if (player.isCreative()) {
-         return true;
-      } else if (player.getInventory().countItem(Items.EMERALD) < count) {
-         return false;
-      }
-
-      int remaining = count;
-
-      for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {
-         ItemStack stack = player.getInventory().getItem(slot);
-         if (stack.is(Items.EMERALD)) {
-            int taken = Math.min(remaining, stack.getCount());
-            stack.shrink(taken);
-            remaining -= taken;
-         }
-      }
-
-      return true;
+      return Coins.take(player, count);
    }
 
    public static boolean leaderNear(ServerPlayer player, String faction) {

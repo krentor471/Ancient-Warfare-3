@@ -198,11 +198,7 @@ public final class FactionConquest {
    }
 
    private static void give(ServerPlayer player, int emeralds) {
-      while (emeralds > 0) {
-         int stack = Math.min(64, emeralds);
-         player.getInventory().placeItemBackInInventory(new ItemStack(Items.EMERALD, stack));
-         emeralds -= stack;
-      }
+      Coins.give(player, emeralds);
    }
 
    /**
@@ -257,19 +253,7 @@ public final class FactionConquest {
       for (Map.Entry<BlockPos, UUID> village : data.villages().entrySet()) {
          int tax = FactionLife.villageTax(data, village.getKey());
          if (tax > 0 && level.getBlockEntity(village.getKey()) instanceof TownHallBlockEntity hall) {
-            ItemStack rest = new ItemStack(Items.EMERALD, tax);
-            for (int slot = 0; slot < hall.getContainerSize() && !rest.isEmpty(); slot++) {
-               ItemStack current = hall.getItem(slot);
-               if (current.isEmpty()) {
-                  hall.setItem(slot, rest);
-                  rest = ItemStack.EMPTY;
-               } else if (ItemStack.isSameItemSameTags(current, rest) && current.getCount() < current.getMaxStackSize()) {
-                  int moved = Math.min(rest.getCount(), current.getMaxStackSize() - current.getCount());
-                  current.grow(moved);
-                  rest.shrink(moved);
-               }
-            }
-
+            Coins.store(hall, tax);
             hall.setChanged();
          }
       }

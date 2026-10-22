@@ -12,7 +12,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
@@ -29,7 +32,8 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
 public final class FactionTournaments {
    public static final String CHAMPION_TAG = "aw_champion";
    public static final int ENTRY_EMERALDS = 5;
-   private static final int PRIZE_EMERALDS = 15;
+   /** Enchantment levels a champion's prize weapon or armour is worked with. */
+   private static final int PRIZE_ENCHANT_LEVEL = 20;
    private static final int WIN_STANDING = 10;
    private static final int LOSS_STANDING = 2;
    private static final int WIN_EXPERIENCE = 20;
@@ -168,6 +172,31 @@ public final class FactionTournaments {
       return null;
    }
 
+   /**
+    * The champion's prize: a fine weapon or piece of armour, worked with enchantments and named for
+    * the faction's tournament, or a pouch of jewels.
+    */
+   private static ItemStack prize(RandomSource random, String faction) {
+      int roll = random.nextInt(10);
+      if (roll >= 8) {
+         return roll == 8 ? new ItemStack(Items.DIAMOND, 2 + random.nextInt(3)) : new ItemStack(Items.EMERALD, 4 + random.nextInt(5));
+      }
+
+      Item item = switch (roll) {
+         case 0 -> Items.DIAMOND_SWORD;
+         case 1 -> Items.IRON_SWORD;
+         case 2 -> Items.IRON_AXE;
+         case 3 -> Items.BOW;
+         case 4 -> Items.IRON_CHESTPLATE;
+         case 5 -> Items.IRON_HELMET;
+         case 6 -> Items.DIAMOND_HELMET;
+         default -> Items.GOLDEN_HELMET;
+      };
+      ItemStack stack = EnchantmentHelper.enchantItem(random, new ItemStack(item), PRIZE_ENCHANT_LEVEL, false);
+      stack.setHoverName(Component.translatable("tournament.ancientwarfare.prize", stack.getItem().getDescription(), FactionNews.factionName(faction)).withStyle(ChatFormatting.GOLD));
+      return stack;
+   }
+
    /** The bout is over: winner is the player's fighter, or null when he lost or it was a draw. */
    private static void end(ServerLevel level, Duel duel, CombatNpcEntity winner) {
       DUELS.remove(duel.champion.getUUID());
@@ -181,8 +210,10 @@ public final class FactionTournaments {
          standings.adjustStanding(duel.player, duel.faction, WIN_STANDING);
          winner.onTournamentWin(WIN_EXPERIENCE);
          if (player != null) {
-            player.getInventory().placeItemBackInInventory(new ItemStack(Items.EMERALD, PRIZE_EMERALDS));
-            player.sendSystemMessage(Component.translatable("tournament.ancientwarfare.won", winner.getDisplayName(), faction, PRIZE_EMERALDS).withStyle(ChatFormatting.GREEN));
+            ItemStack prize = prize(level.getRandom(), duel.faction);
+            Component prizeName = prize.getHoverName().copy().append(prize.getCount() > 1 ? " x" + prize.getCount() : "");
+            player.getInventory().placeItemBackInInventory(prize);
+            player.sendSystemMessage(Component.translatable("tournament.ancientwarfare.won", winner.getDisplayName(), faction, prizeName).withStyle(ChatFormatting.GREEN));
          }
 
          FactionNews.tell(level, Component.translatable("news.ancientwarfare.tournament_won", winner.getDisplayName(), faction));

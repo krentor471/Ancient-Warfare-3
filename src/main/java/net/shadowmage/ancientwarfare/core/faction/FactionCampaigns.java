@@ -44,6 +44,13 @@ public final class FactionCampaigns {
    private static final double STRAGGLE = 40.0;
    private static final double HIDDEN_RANGE = 24.0;
    private static final double WAIT_DISTANCE = 48.0;
+   /** How often a defender sends help to a threatened settlement, and from how far. */
+   private static final double RELIEF_CHANCE = 0.6;
+   private static final double RELIEF_RANGE = 2000.0;
+   private static final int RELIEF_MIN_GARRISON = 8;
+   /** How often a defender marches out to cut an army off on the road, and from how far. */
+   private static final double INTERCEPT_CHANCE = 0.45;
+   private static final double INTERCEPT_RANGE = 1200.0;
    /** Marching soldiers spawned since the server started. */
    private static final Map<Integer, Set<UUID>> SPAWNED = new HashMap<>();
 
@@ -85,7 +92,7 @@ public final class FactionCampaigns {
 
    static boolean marchingAgainst(FactionWorldData data, String attacker, String defender) {
       for (FactionWorldData.Campaign campaign : data.campaigns()) {
-         if (campaign.faction().equals(attacker) && campaign.defender().equals(defender) && !campaign.raid) {
+         if (campaign.faction().equals(attacker) && campaign.defender().equals(defender) && !campaign.raid && !campaign.relief && campaign.hunt == 0) {
             return true;
          }
       }
@@ -149,7 +156,82 @@ public final class FactionCampaigns {
             "news.ancientwarfare.army_set_out", FactionNews.factionName(attacker), taken, FactionNews.factionName(target.faction()), FactionNews.named(target)
          )
       );
+      respond(level, data, campaign, target);
       return campaign;
+   }
+
+   /**
+    * The defender answers an army on the march: a settlement near the threatened one may send help
+    * to its garrison, and another (a fort, most often) may march out to cut the enemy off on the road.
+    */
+   private static void respond(ServerLevel level, FactionWorldData data, FactionWorldData.Campaign threat, FactionWorldData.Settlement target) {
+      if (FactionDiplomacy.isOutlaw(target.faction()) || FactionDiplomacy.isOutlaw(threat.faction())) {
+         return;
+      }
+
+      RandomSource random = level.getRandom();
+      FactionWorldData.Settlement helper = null;
+      boolean helped = data.campaigns().stream().anyMatch(other -> other.relief() && other.targetSettlement() == target.id());
+      if (!helped && random.nextDouble() < RELIEF_CHANCE) {
+         helper = nearestHelper(data, target, target.center().getX(), target.center().getZ(), RELIEF_RANGE, RELIEF_MIN_GARRISON, null);
+         if (helper != null) {
+            int sent = Math.min(helper.garrison / 2, Math.max(4, threat.size - target.garrison));
+            if (sent > 0) {
+               helper.garrison -= sent;
+               FactionWorldData.Campaign relief = data.addCampaign(
+                  target.faction(), threat.faction(), target.id(), helper.center().getX() + 0.5, helper.center().getZ() + 0.5, sent, level.getGameTime()
+               );
+               relief.relief = true;
+               AncientWarfareCore.LOG.info("Faction {} sends {} soldiers from #{} to relieve #{} (army #{})", target.faction(), sent, helper.id(), target.id(), relief.id());
+               FactionNews.tell(
+                  level, Component.translatable("news.ancientwarfare.relief_set_out", FactionNews.factionName(target.faction()), sent, FactionNews.named(target))
+               );
+            }
+         }
+      }
+
+      if (random.nextDouble() < INTERCEPT_CHANCE) {
+         // Somewhere along the enemy's road, a third of the way from where it set out.
+         double x = threat.x + (target.center().getX() - threat.x) / 3.0;
+         double z = threat.z + (target.center().getZ() - threat.z) / 3.0;
+         FactionWorldData.Settlement hunter = nearestHelper(data, target, x, z, INTERCEPT_RANGE, Math.max(RELIEF_MIN_GARRISON, threat.size / 3), helper);
+         if (hunter != null) {
+            int sent = Math.min(hunter.garrison * 2 / 3, threat.size);
+            hunter.garrison -= sent;
+            FactionWorldData.Campaign hunt = data.addCampaign(
+               target.faction(), threat.faction(), target.id(), hunter.center().getX() + 0.5, hunter.center().getZ() + 0.5, sent, level.getGameTime()
+            );
+            hunt.hunt = threat.id();
+            AncientWarfareCore.LOG.info("Faction {} sends {} soldiers from #{} to cut off army #{} (army #{})", target.faction(), sent, hunter.id(), threat.id(), hunt.id());
+            FactionNews.tell(
+               level, Component.translatable("news.ancientwarfare.intercept_set_out", FactionNews.factionName(target.faction()), sent, FactionNews.factionName(threat.faction()))
+            );
+         }
+      }
+
+      data.setDirty();
+   }
+
+   /** The defender's settlement nearest a point, other than the target and the one already helping, with soldiers enough to spare. */
+   private static FactionWorldData.Settlement nearestHelper(
+      FactionWorldData data, FactionWorldData.Settlement target, double x, double z, double range, int minGarrison, FactionWorldData.Settlement excluded
+   ) {
+      FactionWorldData.Settlement best = null;
+      double bestDistance = range * range;
+
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement == target || settlement == excluded || !settlement.faction().equals(target.faction()) || settlement.garrison < minGarrison) {
+            continue;
+         }
+
+         double distance = settlement.horizontalDistanceSquared(x, z);
+         if (distance < bestDistance) {
+            bestDistance = distance;
+            best = settlement;
+         }
+      }
+
+      return best;
    }
 
    /** Fits out boats at the port and sends the soldiers by sea to the landing beach near the target. */
@@ -199,6 +281,11 @@ public final class FactionCampaigns {
          return;
       }
 
+      if (campaign.relief() || campaign.hunt() != 0) {
+         support(level, data, campaign, target, walkers);
+         return;
+      }
+
       if (target == null
          || !target.faction().equals(campaign.defender())
          || FactionDiplomacy.relation(level, campaign.faction(), campaign.defender()).state() != RelationState.WAR) {
@@ -235,6 +322,63 @@ public final class FactionCampaigns {
       }
 
       showOrHide(level, data, campaign, walkers, dx / distance, dz / distance);
+   }
+
+   /**
+    * A relief column marches to its own settlement and joins the garrison there; a hunting column
+    * marches on the enemy army itself and fights it where they meet. Either goes home once the
+    * settlement is lost, the enemy army is gone or peace is made.
+    */
+   private static void support(ServerLevel level, FactionWorldData data, FactionWorldData.Campaign campaign, FactionWorldData.Settlement target, List<FactionNpcEntity> walkers) {
+      FactionWorldData.Campaign prey = campaign.hunt() == 0 ? null : campaignById(data, campaign.hunt());
+      boolean over = target == null
+         || !target.faction().equals(campaign.faction())
+         || FactionDiplomacy.relation(level, campaign.faction(), campaign.defender()).state() != RelationState.WAR
+         || campaign.hunt() != 0 && (prey == null || prey.naval());
+      if (over) {
+         end(level, data, campaign, walkers, campaign.size);
+         return;
+      }
+
+      double goalX = prey != null ? prey.x : target.center().getX() + 0.5;
+      double goalZ = prey != null ? prey.z : target.center().getZ() + 0.5;
+      double dx = goalX - campaign.x;
+      double dz = goalZ - campaign.z;
+      double distance = Math.sqrt(dx * dx + dz * dz);
+      if (prey == null && distance <= ARRIVE_RANGE) {
+         target.garrison += campaign.size;
+         data.setDirty();
+         AncientWarfareCore.LOG.info("Relief army #{} of {} joins the garrison of #{} with {} soldiers", campaign.id(), campaign.faction(), target.id(), campaign.size);
+         tellNear(level, campaign.x, campaign.z, Component.translatable("news.ancientwarfare.relief_arrived", FactionNews.factionName(campaign.faction()), campaign.size, FactionNews.named(target)));
+         // They stay as garrison: real soldiers on the road go, the muster brings them out again.
+         end(level, data, campaign, walkers, 0);
+         return;
+      }
+
+      if (distance > 0.0) {
+         double step = Math.min(distance, SPEED * TICK_INTERVAL / 20.0);
+         campaign.x += dx / distance * step;
+         campaign.z += dz / distance * step;
+         data.setDirty();
+      }
+
+      if (meetEnemy(level, data, campaign)) {
+         return;
+      }
+
+      if (distance > 0.0) {
+         showOrHide(level, data, campaign, walkers, dx / distance, dz / distance);
+      }
+   }
+
+   private static FactionWorldData.Campaign campaignById(FactionWorldData data, int id) {
+      for (FactionWorldData.Campaign campaign : data.campaigns()) {
+         if (campaign.id() == id) {
+            return campaign;
+         }
+      }
+
+      return null;
    }
 
    /** A soldier of a marching column fell: the army is one fewer. */

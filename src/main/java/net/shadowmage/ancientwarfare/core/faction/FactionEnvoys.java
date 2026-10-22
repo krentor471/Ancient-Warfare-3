@@ -447,10 +447,7 @@ public final class FactionEnvoys {
       tag.remove(QUEST_TAG);
       int reward = quest.getInt("Reward");
       String faction = quest.getString("Faction");
-      ItemStack emeralds = new ItemStack(Items.EMERALD, reward);
-      if (!player.getInventory().add(emeralds)) {
-         player.drop(emeralds, false);
-      }
+      Coins.give(player, reward);
 
       FactionStandingData.get(player.serverLevel()).adjustStanding(player.getUUID(), faction, QUEST_STANDING);
       player.sendSystemMessage(Component.translatable("envoy.ancientwarfare.done", FactionNews.factionName(faction), reward).withStyle(ChatFormatting.GOLD));

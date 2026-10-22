@@ -24,6 +24,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
+import net.shadowmage.ancientwarfare.core.common.npc.CoinMetal;
+import net.shadowmage.ancientwarfare.core.item.CoinItem;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.entity.ChestPushcartEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
@@ -380,7 +382,7 @@ public final class FactionCaravans {
             new ItemStack(Items.WHITE_WOOL, 8 + random.nextInt(16)),
             new ItemStack(Items.LEATHER, 4 + random.nextInt(12)),
             new ItemStack(Items.IRON_INGOT, 4 + random.nextInt(8)),
-            new ItemStack(Items.EMERALD, 2 + random.nextInt(5))
+            CoinItem.create(CoinMetal.SILVER, 2 + random.nextInt(5))
          };
 
          for (int slot = 0; slot < goods.length; slot++) {

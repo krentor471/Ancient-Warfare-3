@@ -33,6 +33,8 @@ public final class AwsWorldGenerator {
    private static final int ROADSIDE_DUPLICATE_DISTANCE = 150;
    /** How far around a levelled site the land is sloped toward its floor. */
    private static final int BLEND_RADIUS = 8;
+   /** Open land kept between a new faction building (natural, a fort, a lone village) and any settlement. */
+   private static final int SETTLEMENT_SPACING = 150;
    private static boolean generating;
 
    private AwsWorldGenerator() {
@@ -50,6 +52,19 @@ public final class AwsWorldGenerator {
    }
 
    /** Builds one of faction's templates near chunk, for a settlement the faction founded. */
+   /** Whether a settlement already stands within SETTLEMENT_SPACING blocks of the chunk. */
+   private static boolean crowded(ServerLevel level, ChunkPos chunk) {
+      int x = chunk.getMiddleBlockX();
+      int z = chunk.getMiddleBlockZ();
+      for (FactionWorldData.Settlement settlement : FactionWorldData.get(level).settlements()) {
+         if (settlement.built() && settlement.contains(x, z, SETTLEMENT_SPACING)) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
    public static boolean generateSettlementAt(ServerLevel level, ChunkPos chunk, String faction) {
       return generateSettlementAt(level, chunk, faction, false);
    }
@@ -123,6 +138,9 @@ public final class AwsWorldGenerator {
          long seed = level.getSeed() ^ (long)chunk.x * 341873128712L ^ (long)chunk.z * 132897987541L;
          RandomSource random = RandomSource.create(seed);
          if (!forced && requiredFaction == null && !isCandidateChunk(level.getSeed(), chunk)) {
+            return false;
+         } else if (!forced && (site == Site.SETTLEMENT || site == Site.VILLAGE || site == Site.FORT) && crowded(level, chunk)) {
+            // Settlements stand apart; road posts are spaced along their roads instead.
             return false;
          } else {
             BlockPos spawn = level.getSharedSpawnPos();

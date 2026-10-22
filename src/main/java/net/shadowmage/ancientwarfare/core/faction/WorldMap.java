@@ -319,7 +319,7 @@ public final class WorldMap {
          }
 
          markers.add(
-            new Marker(x, z, campaign.naval() ? Kind.FLEET : Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + (campaign.naval() ? " aboard" : campaign.raid() ? " raiders" : " soldiers") + ", against settlement #" + campaign.targetSettlement(), "")
+            new Marker(x, z, campaign.naval() ? Kind.FLEET : Kind.ARMY, index(campaign.faction(), factions, indices), campaign.size() + (campaign.naval() ? " aboard" : campaign.raid() ? " raiders" : " soldiers") + (campaign.relief() ? ", to relieve settlement #" + campaign.targetSettlement() : campaign.hunt() != 0 ? ", to cut off army #" + campaign.hunt() : ", against settlement #" + campaign.targetSettlement()), "")
          );
 
          for (FactionWorldData.Settlement settlement : data.settlements()) {

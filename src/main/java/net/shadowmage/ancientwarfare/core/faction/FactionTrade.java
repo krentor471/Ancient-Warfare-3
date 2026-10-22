@@ -146,7 +146,7 @@ public final class FactionTrade {
 
    /**
     * A day's trade between a faction settlement and a player's village: the faction's half goes to
-    * its treasury, the player's half to the town hall as emeralds, and steady trade warms the faction.
+    * its treasury, the player's half to the town hall as coins, and steady trade warms the faction.
     */
    private static void payVillage(
       ServerLevel level, FactionWorldData data, FactionStandingData standings, FactionWorldData.Route route, FactionWorldData.Settlement settlement, FactionWorldData.Settlement village
@@ -162,7 +162,7 @@ public final class FactionTrade {
       data.setTreasury(settlement.faction(), data.treasury(settlement.faction()) + (gold + 1) / 2);
       if (level.getBlockEntity(route.village()) instanceof TownHallBlockEntity townHall) {
          // Whatever does not fit in a full town hall is lost.
-         HopperBlockEntity.addItem(null, townHall, new ItemStack(Items.EMERALD, Math.max(1, gold / 2)), null);
+         Coins.store(townHall, Math.max(1, gold / 2));
       }
 
       if (standings.getStanding(route.owner(), settlement.faction()) < TRADE_STANDING_CAP) {

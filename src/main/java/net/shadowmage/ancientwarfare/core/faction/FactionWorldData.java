@@ -576,6 +576,8 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Size", campaign.size);
          entry.putLong("Since", campaign.since);
          entry.putBoolean("Raid", campaign.raid);
+         entry.putBoolean("Relief", campaign.relief);
+         entry.putInt("Hunt", campaign.hunt);
          if (campaign.naval) {
             entry.putBoolean("Naval", true);
             entry.putDouble("LandX", campaign.landX);
@@ -772,6 +774,8 @@ public final class FactionWorldData extends SavedData {
             entry.getLong("Since")
          );
          campaign.raid = entry.getBoolean("Raid");
+         campaign.relief = entry.getBoolean("Relief");
+         campaign.hunt = entry.getInt("Hunt");
          campaign.naval = entry.getBoolean("Naval");
          campaign.landX = entry.getDouble("LandX");
          campaign.landZ = entry.getDouble("LandZ");
@@ -1070,6 +1074,10 @@ public final class FactionWorldData extends SavedData {
       boolean naval;
       double landX;
       double landZ;
+      /** Marches to its own besieged settlement to join the garrison there. */
+      boolean relief;
+      /** The enemy army (campaign id) this one marches out to cut off; 0 for none. */
+      int hunt;
 
       Campaign(int id, String faction, String defender, int targetSettlement, double x, double z, int size, long since) {
          this.id = id;
@@ -1120,6 +1128,14 @@ public final class FactionWorldData extends SavedData {
 
       public boolean naval() {
          return this.naval;
+      }
+
+      public boolean relief() {
+         return this.relief;
+      }
+
+      public int hunt() {
+         return this.hunt;
       }
 
       public double landX() {

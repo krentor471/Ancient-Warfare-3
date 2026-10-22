@@ -38,6 +38,8 @@ public final class AwtWorldGenerator {
    private static String cachedPlanKey = "";
    private static AwtTownPlacer.TownPlan cachedPlan;
    private static final Set<Long> FORCED_CHUNKS = new HashSet<>();
+   /** Land under the faction town site being looked at, loaded ahead of the check. */
+   private static final IslandChunkWindow SITE_WINDOW = new IslandChunkWindow();
    private static BlockPos forcedOwner;
 
    private AwtWorldGenerator() {
@@ -121,6 +123,26 @@ public final class AwtWorldGenerator {
     * Whether a faction town of this many chunks fits here: dry, and flat enough for the town planner.
     * The land is loaded (generated if need be) first, as heights of unloaded land read as the void.
     */
+   /**
+    * Asks for the land under a site's samples to be generated off the main thread; true once all of
+    * it is there, so the real check that follows reads it without stalling the server.
+    */
+   public static boolean siteLoaded(ServerLevel level, int x, int z, int chunks) {
+      int halfSize = Math.max(16, chunks * 8);
+      List<ChunkPos> needed = new ArrayList<>(25);
+
+      for (int gx = 0; gx < 5; gx++) {
+         for (int gz = 0; gz < 5; gz++) {
+            ChunkPos chunk = new ChunkPos((x - halfSize + halfSize * 2 * gx / 4) >> 4, (z - halfSize + halfSize * 2 * gz / 4) >> 4);
+            if (!needed.contains(chunk)) {
+               needed.add(chunk);
+            }
+         }
+      }
+
+      return SITE_WINDOW.requestGroup(level, new BlockPos(x, 0, z), needed, needed.size());
+   }
+
    public static boolean siteAcceptable(ServerLevel level, int x, int z, int chunks) {
       if (!roughSiteAcceptable(level, x, z, chunks)) {
          return false;
