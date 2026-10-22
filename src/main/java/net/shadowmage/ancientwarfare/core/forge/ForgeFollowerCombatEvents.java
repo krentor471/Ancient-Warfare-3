@@ -62,6 +62,17 @@ public final class ForgeFollowerCombatEvents {
     * Someone hits one of the player's men or the player: idle soldiers of the same lord nearby turn on the attacker,
     * instead of watching their comrade die.
     */
+   /** Soldiers count their kills: of men, monsters and beasts that fought back. */
+   @SubscribeEvent
+   public static void onKill(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+      LivingEntity victim = event.getEntity();
+      if (!victim.level().isClientSide
+         && event.getSource().getEntity() instanceof net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity soldier
+         && (victim instanceof net.minecraft.world.entity.monster.Enemy || victim instanceof Player || victim instanceof net.shadowmage.ancientwarfare.core.entity.NpcBaseEntity)) {
+         soldier.onKill(victim);
+      }
+   }
+
    @SubscribeEvent
    public static void onAllyHurt(LivingHurtEvent event) {
       LivingEntity victim = event.getEntity();

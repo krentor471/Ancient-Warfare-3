@@ -411,8 +411,25 @@ public abstract class NpcBaseEntity extends PathfinderMob {
          this.entityData.set(COMBAT_ATTACK_COUNT, attacks);
          if (this.getCombatRank() != previousRank) {
             this.applyCombatRankAttributes();
+            this.onPromoted(this.getCombatRank());
          }
       }
+   }
+
+   /** Experience towards the next rank, as a number of attacks: a kill is worth many. */
+   protected final void addCombatExperience(int attacks) {
+      if (!this.level().isClientSide && this.supportsCombatPromotion()) {
+         int previousRank = this.getCombatRank();
+         this.entityData.set(COMBAT_ATTACK_COUNT, Math.min(100, this.getCombatAttackCount() + attacks));
+         if (this.getCombatRank() != previousRank) {
+            this.applyCombatRankAttributes();
+            this.onPromoted(this.getCombatRank());
+         }
+      }
+   }
+
+   /** Reached a higher combat rank. */
+   protected void onPromoted(int rank) {
    }
 
    protected final void applyCombatRankAttributes() {

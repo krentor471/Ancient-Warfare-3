@@ -1,5 +1,10 @@
 package net.shadowmage.ancientwarfare.core.entity;
 
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerLevel;
 import java.util.UUID;
 import net.shadowmage.ancientwarfare.core.faction.FactionHeraldry;
@@ -123,6 +128,13 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       return navigation;
    }
 
+   private static final EntityDataAccessor<Integer> VETERAN_NAME = SynchedEntityData.defineId(CombatNpcEntity.class, EntityDataSerializers.INT);
+   public static final int VETERAN_NAMES = 40;
+   private static final int KILL_EXPERIENCE = 10;
+   /** How hard a veteran's fall shakes his comrades, per rank. */
+   private static final float VETERAN_DEATH_MORALE = 20.0F;
+   private int kills;
+
    public CombatNpcEntity(EntityType<? extends CombatNpcEntity> entityType, Level level) {
       super(entityType, level);
       this.setNpcType("combat");
@@ -131,6 +143,61 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    @Override
    protected boolean supportsCombatPromotion() {
       return true;
+   }
+
+   @Override
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(VETERAN_NAME, -1);
+   }
+
+   /** A kill counts as much as ten blows towards the next rank. */
+   public void onKill(LivingEntity victim) {
+      this.kills++;
+      this.addCombatExperience(KILL_EXPERIENCE);
+   }
+
+   public int getKills() {
+      return this.kills;
+   }
+
+   /** The personal name a veteran earns, as an index into the lang names; -1 for a recruit. */
+   public int getVeteranName() {
+      return (Integer)this.entityData.get(VETERAN_NAME);
+   }
+
+   /** On his first promotion the soldier is known by name; his owner hears of each promotion. */
+   @Override
+   protected void onPromoted(int rank) {
+      if (this.getVeteranName() < 0) {
+         this.entityData.set(VETERAN_NAME, this.random.nextInt(VETERAN_NAMES));
+      }
+
+      this.tellOwner(Component.translatable("veteran.ancientwarfare.promoted." + rank, this.veteranName(), this.kills).withStyle(ChatFormatting.GOLD));
+   }
+
+   private Component veteranName() {
+      return this.getVeteranName() < 0 ? this.getDisplayName() : Component.translatable("veteran.ancientwarfare.name." + this.getVeteranName());
+   }
+
+   private void tellOwner(Component message) {
+      if (this.level() instanceof ServerLevel serverLevel && this.getOwner().isPresent()) {
+         ServerPlayer owner = serverLevel.getServer().getPlayerList().getPlayer(this.getOwner().get());
+         if (owner != null) {
+            owner.sendSystemMessage(message);
+         }
+      }
+   }
+
+   /** The fall of a veteran is felt: his comrades are shaken and his owner is told. */
+   @Override
+   public void die(DamageSource damageSource) {
+      boolean veteran = !this.dead && !this.level().isClientSide && this.isEliteCombatRank();
+      Component name = this.veteranName();
+      super.die(damageSource);
+      if (veteran && this.dead) {
+         this.tellOwner(Component.translatable("veteran.ancientwarfare.fell", name, this.kills).withStyle(ChatFormatting.RED));
+      }
    }
 
    public static Builder createAttributes() {
@@ -257,7 +324,11 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    /** A fallen standard-bearer shakes his comrades far more than another man. */
    @Override
    protected float deathMoraleBlow() {
-      return this.isStandardBearer() ? FactionHeraldry.BEARER_DEATH_MORALE : super.deathMoraleBlow();
+      if (this.isStandardBearer()) {
+         return FactionHeraldry.BEARER_DEATH_MORALE;
+      } else {
+         return this.isEliteCombatRank() ? VETERAN_DEATH_MORALE * this.getCombatRank() : super.deathMoraleBlow();
+      }
    }
 
    public void openNpcInventory(Player player) {
@@ -283,7 +354,10 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    @Override
    public Component getTypeName() {
       Component baseName = Component.translatable("entity.ancientwarfare.combat." + this.getNpcSubtype());
-      return this.applyCombatRankName(baseName);
+      int name = this.getVeteranName();
+      return name < 0
+         ? this.applyCombatRankName(baseName)
+         : Component.translatable("entity.ancientwarfare.combat.veteran", Component.translatable("veteran.ancientwarfare.name." + name), this.applyCombatRankName(baseName));
    }
 
    private boolean canAttackTarget(LivingEntity target) {
@@ -440,6 +514,8 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
 
       tag.putString("Stance", this.stance.serializedName());
+      tag.putInt("Kills", this.kills);
+      tag.putInt("VeteranName", this.getVeteranName());
    }
 
    @Override
@@ -451,6 +527,8 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.barragePoint = tag.contains("BarragePoint") ? BlockPos.of(tag.getLong("BarragePoint")) : null;
       this.barrageRadius = tag.contains("BarrageRadius") ? tag.getInt("BarrageRadius") : DEFAULT_BARRAGE_RADIUS;
       this.stance = NpcStance.byName(tag.getString("Stance"));
+      this.kills = tag.getInt("Kills");
+      this.entityData.set(VETERAN_NAME, tag.contains("VeteranName") ? tag.getInt("VeteranName") : -1);
    }
 
    @Override
