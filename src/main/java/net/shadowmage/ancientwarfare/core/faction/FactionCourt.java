@@ -468,6 +468,10 @@ public final class FactionCourt extends SavedData {
       return courtier(level, faction, Role.MARSHAL).character;
    }
 
+   static FactionRulers.Trait priestTrait(ServerLevel level, String faction) {
+      return courtier(level, faction, Role.PRIEST).trait();
+   }
+
    static FactionRulers.Trait marshalTrait(ServerLevel level, String faction) {
       return courtier(level, faction, Role.MARSHAL).trait();
    }

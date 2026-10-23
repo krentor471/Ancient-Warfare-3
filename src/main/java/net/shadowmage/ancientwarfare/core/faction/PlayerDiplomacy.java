@@ -325,7 +325,8 @@ public final class PlayerDiplomacy {
 
    /** The realm's armies and troubles: a civil war, risings, hosts mustering or on the march. */
    private static List<Component> hosts(ServerLevel level, String faction) {
-      List<Component> lines = new ArrayList<>(FactionRebellions.lines(level, faction));
+      List<Component> lines = new ArrayList<>(FactionFaith.lines(level, faction));
+      lines.addAll(FactionRebellions.lines(level, faction));
       lines.addAll(FactionMusters.lines(level, faction));
       return lines;
    }

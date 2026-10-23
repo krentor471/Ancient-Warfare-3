@@ -99,7 +99,7 @@ public final class FactionLife {
          }
 
          disease(level, settlements, settlement, random);
-         order(settlement);
+         order(settlement, FactionFaith.order(level, data, settlement));
          loyalty(settlement);
          if (settlement.famine > 0) {
             settlement.famine--;
@@ -297,8 +297,8 @@ public final class FactionLife {
    }
 
    /** Order drifts toward what the garrison, the stores and the people's mood allow. */
-   private static void order(FactionWorldData.Settlement settlement) {
-      int target = 50 + guardOrder(settlement.garrison, settlement.population);
+   private static void order(FactionWorldData.Settlement settlement, int faith) {
+      int target = 50 + guardOrder(settlement.garrison, settlement.population) + faith;
       if (HUNGRY.contains(settlement.id())) {
          target -= 30;
       }

@@ -242,7 +242,7 @@ public final class FactionPastimes extends SavedData {
          if (home && !ruler.ill() && !pastimes.hunts.containsKey(faction) && FactionFeasts.capital(data, faction) != null && random.nextDouble() < HUNT_CHANCE) {
             pastimes.proclaimHunt(level, data, faction, day + 1);
          } else if (home && !ruler.ill() && !pastimes.hunts.containsKey(faction)
-            && random.nextDouble() < (FactionPeople.has(ruler.character(), FactionPeople.Character.PIOUS) ? PIOUS_PILGRIM_CHANCE : PILGRIM_CHANCE)) {
+            && random.nextDouble() < (FactionPeople.has(ruler.character(), FactionPeople.Character.PIOUS) ? PIOUS_PILGRIM_CHANCE : PILGRIM_CHANCE) * FactionFaith.pilgrimFactor(level, faction)) {
             pastimes.depart(level, data, faction, day);
          }
 

@@ -149,6 +149,11 @@ public final class ForgeFactionCommands {
                return 1;
             }))));
       event.getDispatcher()
+         .register(Commands.literal("awoffering").then(Commands.argument("faith", StringArgumentType.word()).executes(context -> {
+            net.shadowmage.ancientwarfare.core.faction.FactionFaith.offer(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faith"));
+            return 1;
+         })));
+      event.getDispatcher()
          .register(Commands.literal("awquarrel").then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("role", IntegerArgumentType.integer()).executes(context -> {
             net.shadowmage.ancientwarfare.core.faction.FactionPastimes.side(
                context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"), IntegerArgumentType.getInteger(context, "role")
@@ -485,6 +490,13 @@ public final class ForgeFactionCommands {
                }))))
                .then(Commands.literal("rebel").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word()).executes(context -> {
                   String result = net.shadowmage.ancientwarfare.core.faction.FactionRebellions.debug(
+                     context.getSource().getLevel(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what")
+                  );
+                  context.getSource().sendSuccess(() -> Component.literal(result), false);
+                  return 1;
+               }))))
+               .then(Commands.literal("faith").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.greedyString()).executes(context -> {
+                  String result = net.shadowmage.ancientwarfare.core.faction.FactionFaith.debug(
                      context.getSource().getLevel(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what")
                   );
                   context.getSource().sendSuccess(() -> Component.literal(result), false);

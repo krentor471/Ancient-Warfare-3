@@ -124,7 +124,8 @@ public final class FactionAI {
          * Math.max(FactionRulers.character(data, faction, random, c -> c.factionWar), FactionRulers.character(data, other, random, c -> c.factionWar))
          * FactionFeasts.warFactor(level, faction, other)
          * FactionPastimes.warFactor(level, faction, other)
-         * FactionRebellions.warFactor(level, faction, other);
+         * FactionRebellions.warFactor(level, faction, other)
+         * FactionFaith.warFactor(level, faction, other);
       int warOpinion = WAR_OPINION + Math.max(myRuler.warTemper, theirRuler.warTemper);
       switch (relation.state()) {
          case NEUTRAL -> {
@@ -173,6 +174,11 @@ public final class FactionAI {
     */
    private static void declareWar(ServerLevel level, FactionWorldData data, String faction, String other) {
       if (!FactionDiplomacy.setState(level, faction, other, RelationState.WAR)) {
+         return;
+      }
+
+      if (FactionFaith.holyWar(level, faction, other)) {
+         FactionNews.relationChanged(level, faction, other, RelationState.WAR, "holy", FactionFaith.name(FactionFaith.faith(level, faction)));
          return;
       }
 

@@ -116,6 +116,7 @@ public final class FactionSimulation {
       FactionMarkets.simulateDay(level, data);
       FactionMusters.simulateDay(level, data);
       FactionRebellions.simulateDay(level, data);
+      FactionFaith.simulateDay(level, data);
       Map<String, Integer> recruited = new HashMap<>();
       Map<String, Integer> settlements = new HashMap<>();
       data.settlements().forEach(settlement -> settlements.merge(settlement.faction(), 1, Integer::sum));

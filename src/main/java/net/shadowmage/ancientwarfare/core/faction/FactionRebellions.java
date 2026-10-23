@@ -90,6 +90,8 @@ public final class FactionRebellions extends SavedData {
       int loyal;
       final Set<Integer> towns = new HashSet<>();
       final Map<UUID, Boolean> backers = new HashMap<>();
+      /** For a war of faith, the creed the pretender holds to; -1 for none. */
+      int faith = -1;
 
       CivilWar(String faction, FactionCourt.Role role, long day) {
          this.faction = faction;
@@ -415,10 +417,49 @@ public final class FactionRebellions extends SavedData {
    }
 
    private boolean startCivilWar(ServerLevel level, FactionWorldData data, String faction, FactionCourt.Role role, long day) {
+      return this.startCivilWar(level, data, faction, role, day, null, -1);
+   }
+
+   /**
+    * A war of faith: the towns given, turned to another creed, rise for a pretender who holds to
+    * it. Returns false when the realm cannot split that way.
+    */
+   static boolean religiousWar(ServerLevel level, FactionWorldData data, String faction, FactionCourt.Role role, Set<Integer> towns, int faith) {
+      FactionRebellions rebellions = get(level);
+      return !rebellions.wars.containsKey(faction) && rebellions.startCivilWar(level, data, faction, role, Math.max(0L, data.lastSimulatedDay()), towns, faith);
+   }
+
+   /** Discontent rises or falls in a town: festivals calm it, persecution stirs it. */
+   static void stir(ServerLevel level, int settlement, int change) {
+      FactionRebellions rebellions = get(level);
+      int value = Mth.clamp(rebellions.discontent.getOrDefault(settlement, 0) + change, 0, 100);
+      if (value == 0) {
+         rebellions.discontent.remove(settlement);
+      } else {
+         rebellions.discontent.put(settlement, value);
+      }
+
+      rebellions.setDirty();
+   }
+
+   static int discontent(ServerLevel level, int settlement) {
+      return get(level).discontent.getOrDefault(settlement, 0);
+   }
+
+   private boolean startCivilWar(ServerLevel level, FactionWorldData data, String faction, FactionCourt.Role role, long day, Set<Integer> chosen, int faith) {
       RandomSource random = level.getRandom();
       CivilWar war = new CivilWar(faction, role, day);
+      war.faith = faith;
       List<FactionWorldData.Settlement> towns = towns(data, faction);
       for (FactionWorldData.Settlement town : towns) {
+         if (chosen != null) {
+            if (chosen.contains(town.id()) && !FactionTowns.CAPITAL.equals(town.kind())) {
+               war.towns.add(town.id());
+            }
+
+            continue;
+         }
+
          if (FactionTowns.CAPITAL.equals(town.kind())) {
             continue;
          }
@@ -458,7 +499,10 @@ public final class FactionRebellions extends SavedData {
       AncientWarfareCore.LOG.info("Civil war in {}: the {} raises his banner with {} of {} towns", faction, role.key(), war.towns.size(), towns.size());
       FactionNews.tell(
          level,
-         Component.translatable("news.ancientwarfare.civil_war", FactionNews.factionName(faction), roleName, pretender, war.towns.size(), towns.size()).withStyle(ChatFormatting.RED)
+         (faith < 0
+               ? Component.translatable("news.ancientwarfare.civil_war", FactionNews.factionName(faction), roleName, pretender, war.towns.size(), towns.size())
+               : Component.translatable("news.ancientwarfare.civil_war_faith", FactionNews.factionName(faction), roleName, pretender, war.towns.size(), towns.size(), FactionFaith.name(faith)))
+            .withStyle(ChatFormatting.RED)
       );
       tellKnown(
          level,
@@ -547,6 +591,9 @@ public final class FactionRebellions extends SavedData {
          FactionWorldData.Ruler crowned = FactionCourt.crown(level, war.faction, war.role, day);
          FactionRulers.enthrone(level, war.faction, crowned);
          FactionNews.tell(level, Component.translatable("news.ancientwarfare.civil_war_won", faction, pretender, FactionRulers.name(old.name())).withStyle(ChatFormatting.RED));
+         if (war.faith >= 0) {
+            FactionFaith.convert(level, war.faction, war.faith);
+         }
       } else {
          FactionCourt.replace(level, war.faction, war.role, day);
          FactionNews.tell(level, Component.translatable("news.ancientwarfare.civil_war_lost", faction, pretender));
@@ -765,6 +812,7 @@ public final class FactionRebellions extends SavedData {
          CivilWar war = new CivilWar(entry.getString("Faction"), roles[Mth.clamp(entry.getInt("Role"), 0, roles.length - 1)], entry.getLong("Day"));
          war.rebels = entry.getInt("Rebels");
          war.loyal = entry.getInt("Loyal");
+         war.faith = entry.contains("Faith") ? entry.getInt("Faith") : -1;
          for (int id : entry.getIntArray("Towns")) {
             war.towns.add(id);
          }
@@ -819,6 +867,7 @@ public final class FactionRebellions extends SavedData {
          entry.putLong("Day", war.day);
          entry.putInt("Rebels", war.rebels);
          entry.putInt("Loyal", war.loyal);
+         entry.putInt("Faith", war.faith);
          entry.put("Towns", new IntArrayTag(war.towns.stream().mapToInt(Integer::intValue).toArray()));
          CompoundTag backers = new CompoundTag();
          war.backers.forEach((id, side) -> backers.putBoolean(id.toString(), side));

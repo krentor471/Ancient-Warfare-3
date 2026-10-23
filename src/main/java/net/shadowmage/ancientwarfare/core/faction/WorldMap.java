@@ -216,7 +216,8 @@ public final class WorldMap {
       CAPITAL_AREA,
       PLAYER_VILLAGE,
       OUTLAW,
-      FLEET
+      FLEET,
+      SHRINE
    }
 
    /** name is a FactionNames code, or empty. */
@@ -309,6 +310,15 @@ public final class WorldMap {
                   life(settlement)
                )
             );
+         }
+      }
+
+      // Each faith's holy site, beside the settlement that holds it.
+      for (int[] site : FactionFaith.holySites(level, data)) {
+         FactionWorldData.Settlement settlement = data.settlement(site[0]);
+         BlockPos center = settlement.center();
+         if (center.getX() >= originX && center.getX() < maxX && center.getZ() >= originZ && center.getZ() < maxZ) {
+            markers.add(new Marker(center.getX() + 24, center.getZ() - 24, Kind.SHRINE, index(settlement.faction(), factions, indices), "", "faith:" + site[1] + ".0"));
          }
       }
 
@@ -426,6 +436,10 @@ public final class WorldMap {
    /** A standing inn or tavern, where mercenaries can be hired. */
    static boolean isTavern(FactionWorldData.Settlement settlement) {
       return settlement.built() && kind(settlement) == Kind.TAVERN;
+   }
+
+   static boolean isTemple(FactionWorldData.Settlement settlement) {
+      return settlement.built() && kind(settlement) == Kind.TEMPLE;
    }
 
    private static Kind kind(FactionWorldData.Settlement settlement) {

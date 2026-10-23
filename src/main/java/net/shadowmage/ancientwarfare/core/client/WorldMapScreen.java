@@ -47,7 +47,7 @@ public class WorldMapScreen extends Screen {
    /** Map kinds shown in the legend of signs, in order. */
    private static final WorldMap.Kind[] LEGEND_KINDS = {
       WorldMap.Kind.CAPITAL, WorldMap.Kind.VILLAGE, WorldMap.Kind.FORT, WorldMap.Kind.FARM, WorldMap.Kind.MINE, WorldMap.Kind.TEMPLE,
-      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY, WorldMap.Kind.FLEET
+      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY, WorldMap.Kind.FLEET, WorldMap.Kind.SHRINE
    };
    /** Lengths the scale bar may show, in blocks. */
    private static final int[] SCALE_STEPS = {50, 100, 250, 500, 1000, 2000, 5000};
@@ -484,7 +484,9 @@ public class WorldMapScreen extends Screen {
          }
 
          addLife(lines, hovered.life());
-         if (hovered.life().length == 0 || hovered.kind() == WorldMap.Kind.PLAYER_VILLAGE) {
+         if (hovered.label().isEmpty()) {
+            // A holy site says all it has to say by its name.
+         } else if (hovered.life().length == 0 || hovered.kind() == WorldMap.Kind.PLAYER_VILLAGE) {
             lines.add(Component.literal(hovered.label()));
          } else if (this.data.canTeleport()) {
             // The settlement's number and template, for the operator.
@@ -603,6 +605,15 @@ public class WorldMapScreen extends Screen {
             graphics.fill(x - 3, y - 3, x + 4, y + 4, outline);
             graphics.fill(x - 2, y - 2, x + 3, y + 3, 0xFFF0F0F0);
             graphics.fill(x, y, x + 1, y + 1, color);
+         }
+         case SHRINE -> {
+            // A golden star: a cross with a heart in the holder's colour.
+            graphics.fill(x - 1, y - 5, x + 2, y + 6, outline);
+            graphics.fill(x - 5, y - 1, x + 6, y + 2, outline);
+            graphics.fill(x, y - 4, x + 1, y + 5, 0xFFF0C040);
+            graphics.fill(x - 4, y, x + 5, y + 1, 0xFFF0C040);
+            graphics.fill(x - 2, y - 2, x + 3, y + 3, 0xFFF0C040);
+            graphics.fill(x - 1, y - 1, x + 2, y + 2, color);
          }
          case HOMESTEAD -> {
             graphics.fill(x - 2, y - 2, x + 3, y + 3, outline);
