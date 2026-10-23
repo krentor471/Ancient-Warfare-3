@@ -915,7 +915,7 @@ public final class AWCoreNetwork {
       return new net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer(
          Math.max(0, Math.min(10000, buffer.readVarInt())), Math.max(0, Math.min(1000, buffer.readVarInt())), buffer.readUtf(64),
          Math.max(0, Math.min(10000, buffer.readVarInt())), buffer.readBoolean(), buffer.readBoolean(), buffer.readUtf(64),
-         java.util.Arrays.stream(buffer.readVarIntArray(8)).map(load -> Math.max(0, Math.min(1000, load))).toArray(), Math.max(0, Math.min(net.shadowmage.ancientwarfare.core.faction.FactionDeals.GIVE_DAUGHTER, buffer.readVarInt()))
+         java.util.Arrays.stream(buffer.readVarIntArray(32)).map(load -> Math.max(0, Math.min(1000, load))).toArray(), Math.max(0, Math.min(net.shadowmage.ancientwarfare.core.faction.FactionDeals.GIVE_DAUGHTER, buffer.readVarInt()))
       );
    }
 
@@ -1234,7 +1234,7 @@ public final class AWCoreNetwork {
             entries.add(
                new PlayerDiplomacy.Entry(
                   faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                  buffer.readVarIntArray(8), buffer.readVarIntArray(32), readGoals(buffer), buffer.readInt(), readNames(buffer), buffer.readVarIntArray(64), readLines(buffer, 6), buffer.readVarIntArray(8),
+                  buffer.readVarIntArray(16), buffer.readVarIntArray(32), readGoals(buffer), buffer.readInt(), readNames(buffer), buffer.readVarIntArray(64), readLines(buffer, 6), buffer.readVarIntArray(8),
                   buffer.readVarIntArray(32), readLines(buffer, 8)
                )
             );

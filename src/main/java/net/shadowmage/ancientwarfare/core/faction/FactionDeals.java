@@ -35,11 +35,11 @@ public final class FactionDeals extends SavedData {
    public static final int GOLD_STEP = 5;
    /** Goods change hands in loads of this many items. */
    public static final int GOODS_STEP = 16;
-   /** Wood, stone and iron. */
-   public static final int KINDS = 3;
+   /** Wood, stone, iron and the goods made for trade; see FactionResources. */
+   public static final int KINDS = FactionResources.KINDS;
    public static final int GOODS = KINDS * 2;
    /** What an item of each kind is worth in silver to a faction with middling stores. */
-   private static final double[] GOODS_PRICE = {0.5, 0.5, 2.0};
+   private static final double[] GOODS_PRICE = {0.5, 0.5, 2.0, 0.3, 1.5, 1.0, 0.8, 1.2};
    public static final int TRIBUTE_STEP = 2;
    public static final int TRIBUTE_WEEKS = 4;
    private static final int WEEK_DAYS = 7;
@@ -372,18 +372,22 @@ public final class FactionDeals extends SavedData {
 
    private static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item>[] GOODS_TAGS = goodsTags();
    private static final net.minecraft.world.item.Item[] GOODS_ITEMS = {
-      net.minecraft.world.item.Items.OAK_LOG, net.minecraft.world.item.Items.COBBLESTONE, net.minecraft.world.item.Items.IRON_INGOT
+      net.minecraft.world.item.Items.OAK_LOG, net.minecraft.world.item.Items.COBBLESTONE, net.minecraft.world.item.Items.IRON_INGOT,
+      net.minecraft.world.item.Items.WHEAT, net.minecraft.world.item.Items.LEATHER, net.minecraft.world.item.Items.WHITE_WOOL,
+      net.minecraft.world.item.Items.COAL, net.minecraft.world.item.Items.COPPER_INGOT
    };
 
    @SuppressWarnings("unchecked")
    private static net.minecraft.tags.TagKey<net.minecraft.world.item.Item>[] goodsTags() {
       return new net.minecraft.tags.TagKey[]{
-         net.minecraft.tags.ItemTags.LOGS, net.minecraftforge.common.Tags.Items.COBBLESTONE, net.minecraftforge.common.Tags.Items.INGOTS_IRON
+         net.minecraft.tags.ItemTags.LOGS, net.minecraftforge.common.Tags.Items.COBBLESTONE, net.minecraftforge.common.Tags.Items.INGOTS_IRON,
+         net.minecraftforge.common.Tags.Items.CROPS_WHEAT, net.minecraftforge.common.Tags.Items.LEATHER, net.minecraft.tags.ItemTags.WOOL,
+         net.minecraft.tags.ItemTags.COALS, net.minecraftforge.common.Tags.Items.INGOTS_COPPER
       };
    }
 
    public static Component goodsName(int kind) {
-      return Component.translatable("supply.ancientwarfare.goods." + (kind == 0 ? "wood" : kind == 1 ? "stone" : "iron"));
+      return Component.translatable("supply.ancientwarfare.goods." + FactionResources.NAMES[Math.floorMod(kind, KINDS)]);
    }
 
    /** The first kind of goods the player offers more of than they carry, or -1. */

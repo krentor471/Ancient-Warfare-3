@@ -252,6 +252,16 @@ public final class PlayerDiplomacy {
       return FactionNpcRole.LEADER.id().equals(npc.getNpcSubtype()) || FactionNpcRole.LEADER_ELITE.id().equals(npc.getNpcSubtype());
    }
 
+   /** The treasury, then the stores of every kind, then the good the faction is known for. */
+   private static int[] stores(FactionWorldData data, String faction) {
+      int[] stores = data.stores(faction);
+      int[] view = new int[stores.length + 2];
+      view[0] = data.treasury(faction);
+      System.arraycopy(stores, 0, view, 1, stores.length);
+      view[view.length - 1] = FactionResources.specialty(faction);
+      return view;
+   }
+
    private static List<Entry> entries(ServerPlayer player) {
       FactionStandingData standings = FactionStandingData.get(player.serverLevel());
       FactionWorldData data = FactionWorldData.get(player.serverLevel());
@@ -293,7 +303,7 @@ public final class PlayerDiplomacy {
                FactionTrade.playerRoutes(data, player.getUUID(), faction),
                FactionRulers.ruler(data, faction, player.getRandom()).name(),
                FactionRulers.ruler(data, faction, player.getRandom()).trait(),
-               new int[]{data.treasury(faction), data.stores(faction)[FactionResources.WOOD], data.stores(faction)[FactionResources.STONE], data.stores(faction)[FactionResources.IRON]},
+               stores(data, faction),
                FactionCourt.courtView(player.serverLevel(), faction, player.getUUID()),
                FactionCourt.goalLines(player, faction),
                FactionIntrigue.pendingMask(player.serverLevel(), player.getUUID(), faction)
