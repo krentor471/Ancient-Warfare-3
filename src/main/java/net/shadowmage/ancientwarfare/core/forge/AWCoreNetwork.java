@@ -1201,6 +1201,7 @@ public final class AWCoreNetwork {
             buffer.writeVarIntArray(entry.court());
             buffer.writeVarInt(Math.min(4, entry.goals().size()));
             entry.goals().stream().limit(4).forEach(buffer::writeComponent);
+            buffer.writeInt(entry.pending());
          }
       }
 
@@ -1224,7 +1225,7 @@ public final class AWCoreNetwork {
             entries.add(
                new PlayerDiplomacy.Entry(
                   faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                  buffer.readVarIntArray(8), buffer.readVarIntArray(16), readGoals(buffer)
+                  buffer.readVarIntArray(8), buffer.readVarIntArray(16), readGoals(buffer), buffer.readInt()
                )
             );
          }

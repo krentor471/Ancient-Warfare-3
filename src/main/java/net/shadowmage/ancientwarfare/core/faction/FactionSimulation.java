@@ -86,6 +86,7 @@ public final class FactionSimulation {
       FactionConquest.tick(level, data);
       PlayerCountry.tick(level, data);
       FactionSpies.tick(level, data);
+      FactionIntrigue.tick(level, data);
       FactionTournaments.tick(level);
       FactionCampaigns.tick(level, data);
       FactionRoads.tick(level, data);

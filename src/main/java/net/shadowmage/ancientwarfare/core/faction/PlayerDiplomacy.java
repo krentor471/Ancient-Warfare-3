@@ -34,6 +34,8 @@ public final class PlayerDiplomacy {
    public static final int BETRAYAL_STANDING = -40;
    private static final double LEADER_RANGE = 8.0;
    public static final double DISCOVERY_RANGE = 64.0;
+   /** In an entry's pending mask: a spy is on the way, beside the bits of the intrigues under way. */
+   public static final int SPY_PENDING = 1 << 30;
 
    private PlayerDiplomacy() {
    }
@@ -58,10 +60,24 @@ public final class PlayerDiplomacy {
       COURT_HEIR,
       COURT_MARSHAL,
       COURT_TREASURER,
-      COURT_PRIEST;
+      COURT_PRIEST,
+      /** Secret work by the player's agents, one action for each kind. */
+      STEAL,
+      BRIBE,
+      ARSON,
+      RUMOUR,
+      FORGERY;
 
       public boolean court() {
-         return this.ordinal() >= COURT_HEIR.ordinal();
+         return this.ordinal() >= COURT_HEIR.ordinal() && this.ordinal() <= COURT_PRIEST.ordinal();
+      }
+
+      public boolean intrigue() {
+         return this.ordinal() >= STEAL.ordinal();
+      }
+
+      public FactionIntrigue.Op op() {
+         return this.intrigue() ? FactionIntrigue.Op.values()[this.ordinal() - STEAL.ordinal()] : null;
       }
 
       public static Action byId(int id) {
@@ -85,7 +101,7 @@ public final class PlayerDiplomacy {
       return switch (action) {
          case ALLIANCE -> net.shadowmage.ancientwarfare.core.research.PlayerResearch.DIPLOMACY;
          case TRADE -> "trade";
-         case SPY -> net.shadowmage.ancientwarfare.core.research.PlayerResearch.ESPIONAGE;
+         case SPY, STEAL, BRIBE, ARSON, RUMOUR, FORGERY -> net.shadowmage.ancientwarfare.core.research.PlayerResearch.ESPIONAGE;
          default -> null;
       };
    }
@@ -101,7 +117,7 @@ public final class PlayerDiplomacy {
          return;
       }
 
-      boolean ending = action == Action.WAR || action == Action.SPY || action == Action.TRADE && standings.hasTrade(player.getUUID(), faction);
+      boolean ending = action == Action.WAR || action == Action.SPY || action.intrigue() || action == Action.TRADE && standings.hasTrade(player.getUUID(), faction);
       if (!ending && !leaderNear(player, faction)) {
          player.sendSystemMessage(Component.translatable("diplomacy.ancientwarfare.need_leader", FactionNews.factionName(faction)));
       } else {
@@ -119,6 +135,8 @@ public final class PlayerDiplomacy {
       int temper = FactionRulers.trait(player.serverLevel(), faction).treatyStanding - FactionCourt.treatyBonus(player.serverLevel(), faction, player.getUUID());
       if (action.court()) {
          return FactionCourt.gift(player, faction, action.ordinal() - Action.COURT_HEIR.ordinal());
+      } else if (action.intrigue()) {
+         return FactionIntrigue.start(player, faction, action.op());
       }
 
       switch (action) {
@@ -258,7 +276,9 @@ public final class PlayerDiplomacy {
                FactionRulers.ruler(data, faction, player.getRandom()).trait(),
                new int[]{data.treasury(faction), data.stores(faction)[FactionResources.WOOD], data.stores(faction)[FactionResources.STONE], data.stores(faction)[FactionResources.IRON]},
                FactionCourt.courtView(player.serverLevel(), faction, player.getUUID()),
-               FactionCourt.goalLines(player, faction)
+               FactionCourt.goalLines(player, faction),
+               FactionIntrigue.pendingMask(player.serverLevel(), player.getUUID(), faction)
+                  | (data.spies().stream().anyMatch(spy -> spy.player().equals(player.getUUID()) && spy.faction().equals(faction)) ? SPY_PENDING : 0)
             )
          );
       }
@@ -268,7 +288,7 @@ public final class PlayerDiplomacy {
 
    public static record Entry(
       String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores,
-      int[] court, List<Component> goals
+      int[] court, List<Component> goals, int pending
    ) {
    }
 }

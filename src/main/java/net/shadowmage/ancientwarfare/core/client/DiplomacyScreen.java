@@ -52,7 +52,9 @@ public class DiplomacyScreen extends Screen {
    private static final int OVERVIEW = 0;
    private static final int COURT = 1;
    private static final int DEAL = 2;
-   private static final String[] TABS = {"overview", "court", "deal"};
+   private static final int INTRIGUE = 3;
+   private static final String[] TABS = {"overview", "court", "deal", "intrigue"};
+   private static final int INTRIGUE_ROW = 26;
    /** The tab shown, kept between openings. */
    private static int tab;
    private List<PlayerDiplomacy.Entry> entries;
@@ -197,6 +199,7 @@ public class DiplomacyScreen extends Screen {
       switch (tab) {
          case COURT -> this.initCourt(entry);
          case DEAL -> this.initDeal(entry);
+         case INTRIGUE -> this.initIntrigue(entry);
          default -> this.initOverview(entry);
       }
    }
@@ -204,12 +207,11 @@ public class DiplomacyScreen extends Screen {
    private void initOverview(PlayerDiplomacy.Entry entry) {
       int x = this.contentX();
       int width = (this.contentWidth() - 4) / 3;
-      int y = this.top() + this.panelHeight() - 8 - 4 * 21;
+      int y = this.top() + this.panelHeight() - 8 - 3 * 21;
       PlayerDiplomacy.Action[][] grid = {
          {PlayerDiplomacy.Action.PEACE, PlayerDiplomacy.Action.PACT, PlayerDiplomacy.Action.ALLIANCE},
          {PlayerDiplomacy.Action.TRADE, PlayerDiplomacy.Action.WAR, PlayerDiplomacy.Action.TOURNAMENT},
-         {PlayerDiplomacy.Action.GIFT, PlayerDiplomacy.Action.SUPPLY, PlayerDiplomacy.Action.MEDIATE},
-         {PlayerDiplomacy.Action.SPY}
+         {PlayerDiplomacy.Action.GIFT, PlayerDiplomacy.Action.SUPPLY, PlayerDiplomacy.Action.MEDIATE}
       };
       for (int row = 0; row < grid.length; row++) {
          for (int column = 0; column < grid[row].length; column++) {
@@ -324,6 +326,66 @@ public class DiplomacyScreen extends Screen {
          .build();
       strike.active = this.verdict == FactionDeals.ACCEPT;
       this.addRenderableWidget(strike);
+   }
+
+   /** The spy's report first, then the agents' secret work. */
+   private static final PlayerDiplomacy.Action[] INTRIGUES = {
+      PlayerDiplomacy.Action.SPY,
+      PlayerDiplomacy.Action.STEAL,
+      PlayerDiplomacy.Action.BRIBE,
+      PlayerDiplomacy.Action.ARSON,
+      PlayerDiplomacy.Action.RUMOUR,
+      PlayerDiplomacy.Action.FORGERY
+   };
+
+   private static boolean pending(PlayerDiplomacy.Entry entry, PlayerDiplomacy.Action action) {
+      return action == PlayerDiplomacy.Action.SPY ? (entry.pending() & PlayerDiplomacy.SPY_PENDING) != 0 : (entry.pending() & 1 << action.op().ordinal()) != 0;
+   }
+
+   private void initIntrigue(PlayerDiplomacy.Entry entry) {
+      boolean known = ClientResearch.has(PlayerResearch.ESPIONAGE);
+      for (int i = 0; i < INTRIGUES.length; i++) {
+         PlayerDiplomacy.Action action = INTRIGUES[i];
+         boolean away = pending(entry, action);
+         Button button = Button.builder(
+               Component.translatable(away ? "gui.ancientwarfare.intrigue.away" : "gui.ancientwarfare.intrigue.send"),
+               ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)
+            )
+            .bounds(this.contentX() + this.contentWidth() - 66, this.contentY() + i * INTRIGUE_ROW + 3, 64, 18)
+            .build();
+         button.active = known && !away;
+         if (!known) {
+            button.setTooltip(Tooltip.create(PlayerResearch.needs(PlayerResearch.ESPIONAGE)));
+         }
+
+         this.addRenderableWidget(button);
+      }
+   }
+
+   private void renderIntrigue(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int mouseX, int mouseY) {
+      int x = this.contentX();
+      int width = this.contentWidth();
+      boolean secret = ClientResearch.has(PlayerResearch.SECRET_SERVICE);
+      boolean ciphers = ClientResearch.has(PlayerResearch.CIPHERS);
+      for (int i = 0; i < INTRIGUES.length; i++) {
+         PlayerDiplomacy.Action action = INTRIGUES[i];
+         int y = this.contentY() + i * INTRIGUE_ROW;
+         graphics.fill(x - 2, y, x + width, y + INTRIGUE_ROW - 2, CARD_COLOR);
+         String key = action == PlayerDiplomacy.Action.SPY ? "spy" : action.op().key();
+         graphics.drawString(this.font, Component.translatable("intrigue.ancientwarfare.op." + key), x + 2, y + 3, GOLD_COLOR);
+         Component detail;
+         if (action == PlayerDiplomacy.Action.SPY) {
+            detail = Component.translatable("gui.ancientwarfare.intrigue.spy_detail", FactionSpies.SPY_EMERALDS);
+         } else {
+            int chance = (int)Math.round(net.shadowmage.ancientwarfare.core.faction.FactionIntrigue.chance(action.op(), entry.trait(), secret, ciphers) * 100);
+            detail = Component.translatable("gui.ancientwarfare.intrigue.detail", action.op().cost, chance);
+         }
+
+         graphics.drawString(this.font, detail, x + 2, y + 13, MUTED_COLOR);
+         if (mouseX >= x && mouseX < x + width - 68 && mouseY >= y && mouseY < y + INTRIGUE_ROW - 2) {
+            graphics.renderTooltip(this.font, this.font.split(Component.translatable("intrigue.ancientwarfare.op." + key + ".tip"), 200), mouseX, mouseY);
+         }
+      }
    }
 
    private static Component check(boolean on, Component label) {
@@ -447,6 +509,7 @@ public class DiplomacyScreen extends Screen {
          switch (tab) {
             case COURT -> this.renderCourt(graphics, entry);
             case DEAL -> this.renderDeal(graphics, entry, mouseX, mouseY);
+            case INTRIGUE -> this.renderIntrigue(graphics, entry, mouseX, mouseY);
             default -> this.renderOverview(graphics, entry, mouseX, mouseY);
          }
       }

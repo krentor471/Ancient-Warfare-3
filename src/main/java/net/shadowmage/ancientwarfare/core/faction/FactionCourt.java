@@ -573,6 +573,21 @@ public final class FactionCourt extends SavedData {
       });
    }
 
+   /** An agent's bribe wins over the courtier who thinks least of the player; returns their role. */
+   static Role bribe(ServerLevel level, String faction, UUID player, int favor) {
+      Courtier[] court = court(level, faction);
+      int worst = 0;
+      for (int i = 1; i < court.length; i++) {
+         if (court[i].favor(player) < court[worst].favor(player)) {
+            worst = i;
+         }
+      }
+
+      court[worst].favor.put(player, Math.min(MAX_FAVOR, court[worst].favor(player) + favor));
+      get(level).setDirty();
+      return Role.values()[worst];
+   }
+
    /** Whether the faction has set its heart on beating the other, for revenge or for a town. */
    static boolean wantsWar(ServerLevel level, String faction, String target) {
       return get(level).goals.getOrDefault(faction, List.of()).stream().anyMatch(goal -> goal.kind != GoalKind.GOLD && goal.target.equals(target));
