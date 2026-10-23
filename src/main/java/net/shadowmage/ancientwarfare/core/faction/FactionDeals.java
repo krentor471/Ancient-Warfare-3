@@ -73,6 +73,8 @@ public final class FactionDeals extends SavedData {
    public static final int FEALTY = 2;
    /** The player asks for the hand of the ruler's daughter. */
    public static final int MARRIAGE = 3;
+   /** The player offers his own daughter to the ruler. */
+   public static final int GIVE_DAUGHTER = 4;
    /** What a vassal's submission costs it, in silver: per settlement it holds, and per soldier. */
    private static final int VASSAL_SETTLEMENT_PRICE = 150;
    private static final int VASSAL_SOLDIER_PRICE = 3;
@@ -288,13 +290,17 @@ public final class FactionDeals extends SavedData {
          return new Weighed(REFUSE, Component.translatable("deal.ancientwarfare.too_weak_protector", name, FactionVassals.PROTECTOR_SETTLEMENTS));
       } else if (offer.bond() == MARRIAGE && FactionFamilies.cannotMarry(level, player.getUUID(), faction) != null) {
          return refuse(FactionFamilies.cannotMarry(level, player.getUUID(), faction), name);
-      } else if (offer.bond() == MARRIAGE && treaty == RelationState.WAR) {
+      } else if (offer.bond() == GIVE_DAUGHTER && FactionFamilies.cannotGiveDaughter(level, player.getUUID(), faction) != null) {
+         return refuse(FactionFamilies.cannotGiveDaughter(level, player.getUUID(), faction), name);
+      } else if ((offer.bond() == MARRIAGE || offer.bond() == GIVE_DAUGHTER) && treaty == RelationState.WAR) {
          return refuse("deal.ancientwarfare.at_war", name);
       } else if (offer.trade() && (standings.hasTrade(player.getUUID(), faction) || !PlayerResearch.has(player, "trade"))) {
          return refuse("deal.ancientwarfare.no_trade", name);
       }
 
-      double trust = Mth.clamp(1.0 + 0.15 * word, 0.25, 1.5);
+      // An honest ruler weighs a player's word, kept or broken, twice as heavily.
+      boolean honest = FactionPeople.has(FactionRulers.ruler(data, faction, level.getRandom()).character(), FactionPeople.Character.HONEST);
+      double trust = Mth.clamp(1.0 + 0.15 * word * (honest ? 2 : 1), 0.25, 1.5);
       double goldTaste = (trait == FactionRulers.Trait.GREEDY ? 1.5 : 1.0) * (FactionCourt.wantsGold(level, faction) ? 1.3 : 1.0) * (data.treasury(faction) < 200 ? 1.3 : 1.0);
       double costs = 0.0;
       double gains = offer.playerGold() * 10 * goldTaste + offer.tribute() * 10 * TRIBUTE_WEEKS * goldTaste * trust;
@@ -333,6 +339,8 @@ public final class FactionDeals extends SavedData {
          double price = settlements(data, faction) * VASSAL_SETTLEMENT_PRICE + soldiers * VASSAL_SOLDIER_PRICE;
          // A beaten foe bows sooner; a proud ruler later.
          costs += price * (treaty == RelationState.WAR ? 0.6 : 1.0) * (trait == FactionRulers.Trait.WARLIKE ? 1.3 : 1.0) + Math.max(0, -standing) * STANDING_PRICE / 2.0;
+      } else if (offer.bond() == GIVE_DAUGHTER) {
+         gains += FactionFamilies.daughterWorth();
       } else if (offer.bond() == MARRIAGE) {
          costs += Math.max(0.0, FactionFamilies.price(data, faction, standing)) + Math.max(0, -standing) * STANDING_PRICE;
       } else if (offer.bond() == FEALTY) {
@@ -465,6 +473,8 @@ public final class FactionDeals extends SavedData {
          FactionVassals.swear(level, player, faction);
       } else if (offer.bond() == MARRIAGE) {
          FactionFamilies.marry(level, player, faction);
+      } else if (offer.bond() == GIVE_DAUGHTER) {
+         FactionFamilies.giveDaughter(level, player, faction);
       }
 
       if (!offer.factionWar().isEmpty() && FactionDiplomacy.setState(level, faction, offer.factionWar(), RelationState.WAR)) {

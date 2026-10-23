@@ -268,7 +268,8 @@ public final class FactionArmies {
             if (treaty == RelationState.NEUTRAL
                && day >= FIRST_WAR_DAY
                && standings.getStanding(owner, faction) <= PLAYER_WAR_STANDING + ruler.warTemper
-               && random.nextDouble() < PLAYER_WAR_CHANCE * ruler.warChance * FactionCourt.playerWarFactor(level, faction, owner) * protection(level, owner, faction)) {
+               && random.nextDouble() < PLAYER_WAR_CHANCE * ruler.warChance * FactionRulers.character(data, faction, random, c -> c.playerWar)
+                  * FactionCourt.playerWarFactor(level, faction, owner) * protection(level, owner, faction)) {
                standings.setTreaty(owner, faction, RelationState.WAR);
                standings.discover(owner, faction);
                FactionNews.tellPlayer(level, owner, Component.translatable("news.ancientwarfare.war_on_you", FactionNews.factionName(faction)));
@@ -282,7 +283,7 @@ public final class FactionArmies {
                && !raided
                && size >= MIN_RAID
                && day - data.lastRaid(pos) >= RAID_COOLDOWN_DAYS
-               && random.nextDouble() < RAID_CHANCE * ruler.raidChance
+               && random.nextDouble() < RAID_CHANCE * ruler.raidChance * FactionRulers.character(data, faction, random, c -> c.raid)
                && (siegeSize >= MIN_VILLAGE_SIEGE
                   ? siege(level, data, faction, pos, owner, siegeSize) != null
                   : raid(level, data, faction, pos, owner, size, RAID_WARNING_TICKS) != null)) {

@@ -124,14 +124,14 @@ public final class FactionPlots extends SavedData {
                continue;
             }
 
-            if (plots.plots.stream().noneMatch(plot -> plot.player.equals(id)) && random.nextDouble() < PLOT_CHANCE) {
+            if (plots.plots.stream().noneMatch(plot -> plot.player.equals(id)) && random.nextDouble() < PLOT_CHANCE * FactionRulers.character(data, faction, random, c -> c.plot)) {
                FactionCourt.Role role = FactionCourt.plotter(level, faction, id, PLOT_FAVOR);
                if (role != null) {
                   plots.offer(level, player, faction, role, day);
                }
             }
 
-            if (data.intelUntil(id, faction) > level.getGameTime() && (mine == null || !mine.containsKey(faction)) && random.nextDouble() < SECRET_CHANCE) {
+            if (data.intelUntil(id, faction) > level.getGameTime() && (mine == null || !mine.containsKey(faction)) && random.nextDouble() < SECRET_CHANCE * FactionRulers.character(data, faction, random, c -> c.secret)) {
                plots.find(level, player, faction, day);
                mine = plots.secrets.get(id);
             }

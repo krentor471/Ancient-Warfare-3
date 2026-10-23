@@ -69,12 +69,21 @@ public final class FactionRulers {
       if (ruler == null) {
          long day = Math.max(0L, data.lastSimulatedDay());
          ruler = new FactionWorldData.Ruler(
-            random.nextInt(NAMES), random.nextInt(TRAITS.length), day, FactionPeople.newLook(random), FactionPeople.bornAt(day, 25 + random.nextInt(26), random), false
+            random.nextInt(NAMES), random.nextInt(TRAITS.length), day, FactionPeople.newLook(random), FactionPeople.bornAt(day, 25 + random.nextInt(26), random), false, FactionPeople.newCharacter(random)
          );
          data.setRuler(faction, ruler);
       }
 
       return ruler;
+   }
+
+   /** How the ruler's character weighs on one of his chances; see FactionPeople.Character. */
+   static double character(FactionWorldData data, String faction, RandomSource random, java.util.function.ToDoubleFunction<FactionPeople.Character> effect) {
+      return FactionPeople.factor(ruler(data, faction, random).character(), effect);
+   }
+
+   static double character(ServerLevel level, String faction, java.util.function.ToDoubleFunction<FactionPeople.Character> effect) {
+      return character(FactionWorldData.get(level), faction, level.getRandom(), effect);
    }
 
    public static Trait trait(ServerLevel level, String faction) {
@@ -205,7 +214,7 @@ public final class FactionRulers {
       int age = FactionPeople.age(ruler.born(), day);
       // A ruler from a world read before ages were kept may have reigned longer than he has lived.
       int reign = Math.min(FactionPeople.years(ruler.since(), day), Math.max(0, age - 16));
-      return new int[]{ruler.look(), age, reign, ruler.ill() ? 1 : 0};
+      return new int[]{ruler.look(), age, reign, ruler.ill() ? 1 : 0, ruler.character()};
    }
 
    /** Daily: rulers fall ill and get well, and the old or the sick die and their heir takes the throne. */
@@ -223,15 +232,15 @@ public final class FactionRulers {
          FactionWorldData.Ruler ruler = ruler(data, faction, random);
          int age = FactionPeople.age(ruler.born(), day);
          if (ruler.ill()) {
-            if (random.nextDouble() < FactionPeople.illnessDeath(age)) {
+            if (random.nextDouble() < FactionPeople.illnessDeath(age) * FactionPeople.factor(ruler.character(), c -> c.oldAge)) {
                die(level, faction, "illness", day);
             } else if (random.nextDouble() < FactionPeople.recovery(age)) {
                data.setRuler(faction, ruler.withIll(false));
                FactionNews.tell(level, Component.translatable("news.ancientwarfare.ruler_recovered", FactionNews.factionName(faction), name(ruler.name())));
             }
-         } else if (random.nextDouble() < FactionPeople.oldAgeDeath(age)) {
+         } else if (random.nextDouble() < FactionPeople.oldAgeDeath(age) * FactionPeople.factor(ruler.character(), c -> c.oldAge)) {
             die(level, faction, "old_age", day);
-         } else if (random.nextDouble() < FactionPeople.illness(age)) {
+         } else if (random.nextDouble() < FactionPeople.illness(age) * FactionPeople.factor(ruler.character(), c -> c.illness)) {
             data.setRuler(faction, ruler.withIll(true));
             FactionNews.tell(level, Component.translatable("news.ancientwarfare.ruler_ill", FactionNews.factionName(faction), name(ruler.name()), age));
          }
@@ -244,7 +253,7 @@ public final class FactionRulers {
       long day = Math.max(0L, data.lastSimulatedDay());
       FactionWorldData.Ruler ruler = ruler(data, faction, level.getRandom());
       switch (what) {
-         case "age" -> data.setRuler(faction, new FactionWorldData.Ruler(ruler.name(), ruler.trait(), ruler.since(), ruler.look(), day - (long)value * FactionPeople.YEAR_DAYS, ruler.ill()));
+         case "age" -> data.setRuler(faction, new FactionWorldData.Ruler(ruler.name(), ruler.trait(), ruler.since(), ruler.look(), day - (long)value * FactionPeople.YEAR_DAYS, ruler.ill(), ruler.character()));
          case "ill" -> data.setRuler(faction, ruler.withIll(true));
          case "die" -> die(level, faction, value == 1 ? "illness" : "old_age", day);
          case "day" -> {
@@ -291,7 +300,7 @@ public final class FactionRulers {
    public static List<FactionTradeListRegistry.FactionTradeEntry> price(
       ServerLevel level, String faction, List<FactionTradeListRegistry.FactionTradeEntry> trades, double extra
    ) {
-      double factor = trait(level, faction).prices * FactionCourt.priceFactor(level, faction) * extra;
+      double factor = trait(level, faction).prices * character(level, faction, c -> c.prices) * FactionCourt.priceFactor(level, faction) * extra;
       if (factor == 1.0) {
          return trades;
       }

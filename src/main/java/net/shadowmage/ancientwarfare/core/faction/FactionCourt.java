@@ -111,13 +111,16 @@ public final class FactionCourt extends SavedData {
       int look;
       /** The day they were born; Long.MIN_VALUE until a court read from an older world is first asked for. */
       long born;
+      /** Their traits of character; see FactionPeople.Character. */
+      int character;
       final Map<UUID, Integer> favor = new HashMap<>();
 
-      Courtier(int name, int trait, int look, long born) {
+      Courtier(int name, int trait, int look, long born, int character) {
          this.name = name;
          this.trait = trait;
          this.look = look;
          this.born = born;
+         this.character = character;
       }
 
       FactionRulers.Trait trait() {
@@ -180,7 +183,7 @@ public final class FactionCourt extends SavedData {
    /** Someone new at court: an heir in youth, the others grown. */
    private static Courtier newcomer(Courtier[] court, int ruler, RandomSource random, long day, Role role) {
       int age = role == Role.HEIR ? 14 + random.nextInt(14) : 25 + random.nextInt(30);
-      return new Courtier(freshName(court, ruler, random), random.nextInt(TRAITS.length), FactionPeople.newLook(random), FactionPeople.bornAt(day, age, random));
+      return new Courtier(freshName(court, ruler, random), random.nextInt(TRAITS.length), FactionPeople.newLook(random), FactionPeople.bornAt(day, age, random), FactionPeople.newCharacter(random));
    }
 
    private static int freshName(Courtier[] court, int ruler, RandomSource random) {
@@ -434,7 +437,7 @@ public final class FactionCourt extends SavedData {
       heir.favor.forEach((player, favor) -> standings.adjustStanding(player, faction, favor / 2));
       court[Role.HEIR.ordinal()] = newcomer(court, heir.name, level.getRandom(), day, Role.HEIR);
       data.setDirty();
-      return new FactionWorldData.Ruler(heir.name, heir.trait, day, heir.look, heir.born, false);
+      return new FactionWorldData.Ruler(heir.name, heir.trait, day, heir.look, heir.born, false, heir.character);
    }
 
    /** The courtier most fond of the player, if fond enough to plot with them; null if none is. */
@@ -462,8 +465,8 @@ public final class FactionCourt extends SavedData {
    }
 
    /** The ruler's son comes of age and is named heir in place of whoever was. */
-   static void nameHeir(ServerLevel level, String faction, int name, int trait, int look, long born) {
-      court(level, faction)[Role.HEIR.ordinal()] = new Courtier(name, trait, look, born);
+   static void nameHeir(ServerLevel level, String faction, int name, int trait, int look, long born, int character) {
+      court(level, faction)[Role.HEIR.ordinal()] = new Courtier(name, trait, look, born, character);
       get(level).setDirty();
    }
 
@@ -473,7 +476,7 @@ public final class FactionCourt extends SavedData {
       Courtier usurper = court[role.ordinal()];
       court[role.ordinal()] = newcomer(court, usurper.name, level.getRandom(), day, role);
       get(level).setDirty();
-      return new FactionWorldData.Ruler(usurper.name, usurper.trait, day, usurper.look, usurper.born, false);
+      return new FactionWorldData.Ruler(usurper.name, usurper.trait, day, usurper.look, usurper.born, false, usurper.character);
    }
 
    /** The old at court die in time and a newcomer takes their place; the realm hears when it was the heir. */
@@ -483,7 +486,7 @@ public final class FactionCourt extends SavedData {
       for (Role role : Role.values()) {
          Courtier courtier = court[role.ordinal()];
          int age = FactionPeople.age(courtier.born, day);
-         if (random.nextDouble() < FactionPeople.oldAgeDeath(age)) {
+         if (random.nextDouble() < FactionPeople.oldAgeDeath(age) * FactionPeople.factor(courtier.character, c -> c.oldAge)) {
             int ruler = FactionRulers.ruler(FactionWorldData.get(level), faction, random).name();
             court[role.ordinal()] = newcomer(court, ruler, random, day, role);
             FactionNews.tell(
@@ -745,7 +748,7 @@ public final class FactionCourt extends SavedData {
    }
 
    /** How many numbers courtView gives for each courtier. */
-   public static final int COURT_VIEW = 5;
+   public static final int COURT_VIEW = 6;
 
    /** The court for the diplomacy screen: name, trait, this player's favor, looks and age of each courtier. */
    static int[] courtView(ServerLevel level, String faction, UUID player) {
@@ -758,6 +761,7 @@ public final class FactionCourt extends SavedData {
          view[i * COURT_VIEW + 2] = court[i].favor(player);
          view[i * COURT_VIEW + 3] = court[i].look;
          view[i * COURT_VIEW + 4] = FactionPeople.age(court[i].born, day);
+         view[i * COURT_VIEW + 5] = court[i].character;
       }
 
       return view;
@@ -776,7 +780,10 @@ public final class FactionCourt extends SavedData {
          for (int i = 0; i < court.length; i++) {
             CompoundTag entry = i < list.size() ? list.getCompound(i) : new CompoundTag();
             int look = entry.contains("Look") ? entry.getInt("Look") : FactionPeople.oldLook(faction + i, entry.getInt("Name"));
-            court[i] = new Courtier(entry.getInt("Name"), entry.getInt("Trait"), look, entry.contains("Born") ? entry.getLong("Born") : Long.MIN_VALUE);
+            court[i] = new Courtier(
+               entry.getInt("Name"), entry.getInt("Trait"), look, entry.contains("Born") ? entry.getLong("Born") : Long.MIN_VALUE,
+               entry.contains("Character") ? entry.getInt("Character") : FactionPeople.oldCharacter(look)
+            );
             CompoundTag favor = entry.getCompound("Favor");
             for (String player : favor.getAllKeys()) {
                try {
@@ -829,6 +836,7 @@ public final class FactionCourt extends SavedData {
             entry.putInt("Trait", courtier.trait);
             entry.putInt("Look", courtier.look);
             entry.putLong("Born", courtier.born);
+            entry.putInt("Character", courtier.character);
             CompoundTag favor = new CompoundTag();
             courtier.favor.forEach((player, value) -> favor.putInt(player.toString(), value));
             entry.put("Favor", favor);

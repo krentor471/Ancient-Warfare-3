@@ -120,6 +120,12 @@ public final class ForgeFactionCommands {
          );
       // Run by the buttons under a courtier's plot.
       event.getDispatcher()
+         .register(Commands.literal("awfamily").executes(context -> {
+            ServerPlayer player = context.getSource().getPlayerOrException();
+            net.shadowmage.ancientwarfare.core.faction.FactionFamilies.describe(player.serverLevel(), player.getUUID()).forEach(line -> player.sendSystemMessage(line));
+            return 1;
+         }));
+      event.getDispatcher()
          .register(
             Commands.literal("awplot")
                .then(Commands.argument("answer", StringArgumentType.word())

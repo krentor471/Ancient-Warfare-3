@@ -120,7 +120,8 @@ public final class FactionAI {
       // The fiercer of the two rulers sets how soon it comes to war; each needs his own edge in strength.
       // Each court's marshal urges the war on or holds it back.
       double warChance = WAR_CHANCE * Math.max(myRuler.warChance, theirRuler.warChance)
-         * Math.max(FactionCourt.warFactor(level, faction), FactionCourt.warFactor(level, other));
+         * Math.max(FactionCourt.warFactor(level, faction), FactionCourt.warFactor(level, other))
+         * Math.max(FactionRulers.character(data, faction, random, c -> c.factionWar), FactionRulers.character(data, other, random, c -> c.factionWar));
       int warOpinion = WAR_OPINION + Math.max(myRuler.warTemper, theirRuler.warTemper);
       switch (relation.state()) {
          case NEUTRAL -> {

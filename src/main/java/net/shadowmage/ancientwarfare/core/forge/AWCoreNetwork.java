@@ -915,7 +915,7 @@ public final class AWCoreNetwork {
       return new net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer(
          Math.max(0, Math.min(10000, buffer.readVarInt())), Math.max(0, Math.min(1000, buffer.readVarInt())), buffer.readUtf(64),
          Math.max(0, Math.min(10000, buffer.readVarInt())), buffer.readBoolean(), buffer.readBoolean(), buffer.readUtf(64),
-         java.util.Arrays.stream(buffer.readVarIntArray(8)).map(load -> Math.max(0, Math.min(1000, load))).toArray(), Math.max(0, Math.min(net.shadowmage.ancientwarfare.core.faction.FactionDeals.MARRIAGE, buffer.readVarInt()))
+         java.util.Arrays.stream(buffer.readVarIntArray(8)).map(load -> Math.max(0, Math.min(1000, load))).toArray(), Math.max(0, Math.min(net.shadowmage.ancientwarfare.core.faction.FactionDeals.GIVE_DAUGHTER, buffer.readVarInt()))
       );
    }
 

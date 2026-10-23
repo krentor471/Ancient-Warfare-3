@@ -19,6 +19,7 @@ import net.shadowmage.ancientwarfare.core.common.npc.CoinMetal;
 import net.shadowmage.ancientwarfare.core.faction.FactionColors;
 import net.shadowmage.ancientwarfare.core.faction.FactionCourt;
 import net.shadowmage.ancientwarfare.core.faction.FactionDeals;
+import net.shadowmage.ancientwarfare.core.faction.FactionPeople;
 import net.shadowmage.ancientwarfare.core.faction.FactionRulers;
 import net.shadowmage.ancientwarfare.core.faction.FactionSpies;
 import net.shadowmage.ancientwarfare.core.faction.FactionTournaments;
@@ -38,7 +39,7 @@ public class DiplomacyScreen extends Screen {
    private static final int MAX_HEIGHT = 272;
    private static final int DEAL_ROW = 17;
    /** The height of the ruler's card above the court, with the gap below it. */
-   private static final int RULER_CARD = 40;
+   private static final int RULER_CARD = 50;
    /** The height of a courtier's card, with the gap below it. */
    private static final int COURT_CARD = 42;
    private static final int LIST_WIDTH = 124;
@@ -72,6 +73,8 @@ public class DiplomacyScreen extends Screen {
    private int factionGold;
    private boolean treaty;
    private int bond;
+   /** A tooltip found while drawing the court, drawn last so nothing covers it. */
+   private List<Component> courtTip;
    private boolean trade;
    private String factionWar = "";
    private int[] goods = new int[FactionDeals.GOODS];
@@ -321,6 +324,8 @@ public class DiplomacyScreen extends Screen {
                ? check(true, Component.translatable("gui.ancientwarfare.deal.fealty"))
                : this.bond == FactionDeals.MARRIAGE
                ? check(true, Component.translatable("gui.ancientwarfare.deal.marriage"))
+               : this.bond == FactionDeals.GIVE_DAUGHTER
+               ? check(true, Component.translatable("gui.ancientwarfare.deal.give_daughter"))
                : check(false, canTreaty ? Component.translatable("gui.ancientwarfare.deal.treaty." + state.serializedName()) : Component.translatable("gui.ancientwarfare.deal.bond"));
       Button treatyButton = Button.builder(bondLabel, ignored -> {
          if (this.treaty) {
@@ -331,6 +336,8 @@ public class DiplomacyScreen extends Screen {
          } else if (this.bond == FactionDeals.FEALTY) {
             this.bond = FactionDeals.MARRIAGE;
          } else if (this.bond == FactionDeals.MARRIAGE) {
+            this.bond = FactionDeals.GIVE_DAUGHTER;
+         } else if (this.bond == FactionDeals.GIVE_DAUGHTER) {
             this.bond = FactionDeals.NO_BOND;
          } else if (canTreaty) {
             this.treaty = true;
@@ -833,7 +840,7 @@ public class DiplomacyScreen extends Screen {
          return;
       }
 
-      PersonPortrait.draw(graphics, entry.faction(), person[0], person[1], person[3] != 0, PersonPortrait.NOBLE, 2, x + 3, y + 3, 30);
+      PersonPortrait.draw(graphics, entry.faction(), person[0], person[1], person[3] != 0, PersonPortrait.NOBLE, 2, x + 3, y + 7, 30);
       int textX = x + 38;
       graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.ruler_card", FactionRulers.name(entry.ruler()), FactionRulers.traitName(entry.trait())), textX, y + 3, GOLD_COLOR);
       graphics.drawString(
@@ -845,7 +852,39 @@ public class DiplomacyScreen extends Screen {
       );
       boolean ill = person[3] != 0;
       graphics.drawString(this.font, Component.translatable(ill ? "gui.ancientwarfare.diplomacy.health.ill" : person[1] >= 60 ? "gui.ancientwarfare.diplomacy.health.old" : "gui.ancientwarfare.diplomacy.health.well"), textX, y + 23, ill ? BAD_COLOR : person[1] >= 60 ? MUTED_COLOR : GOOD_COLOR);
-      this.renderFamily(graphics, entry, x + width - 3, y + 3, mouseX, mouseY);
+      if (person.length >= 5) {
+         this.renderCharacter(graphics, person[4], textX, y + 33, mouseX, mouseY);
+      }
+
+      this.renderFamily(graphics, entry, x + width - 3, y + 7, mouseX, mouseY);
+   }
+
+   /** Traits of character in a line, virtues green and vices red; hovering tells what each does. */
+   private void renderCharacter(GuiGraphics graphics, int character, int x, int y, int mouseX, int mouseY) {
+      MutableComponent line = Component.empty();
+      List<FactionPeople.Character> traits = FactionPeople.traits(character);
+      for (int i = 0; i < traits.size(); i++) {
+         if (i > 0) {
+            line.append(Component.literal(", ").withStyle(ChatFormatting.GRAY));
+         }
+
+         line.append(traits.get(i).title().copy().withStyle(traits.get(i).virtue ? ChatFormatting.GREEN : ChatFormatting.RED));
+      }
+
+      graphics.drawString(this.font, line, x, y, TEXT_COLOR);
+      if (mouseX >= x && mouseX < x + this.font.width(line) && mouseY >= y - 1 && mouseY < y + 9) {
+         this.courtTip = characterTip(character);
+      }
+   }
+
+   private static List<Component> characterTip(int character) {
+      List<Component> lines = new ArrayList<>();
+      for (FactionPeople.Character trait : FactionPeople.traits(character)) {
+         lines.add(trait.title().copy().withStyle(trait.virtue ? ChatFormatting.GREEN : ChatFormatting.RED));
+         lines.add(trait.description().copy().withStyle(ChatFormatting.GRAY));
+      }
+
+      return lines;
    }
 
    /** The ruler's wife and children at the right of his card, the children small, three to a row. */
@@ -884,12 +923,13 @@ public class DiplomacyScreen extends Screen {
       }
 
       if (tip != null) {
-         graphics.renderTooltip(this.font, tip, mouseX, mouseY);
+         this.courtTip = List.of(tip);
       }
    }
 
    /** The court as four cards, each courtier's mind and favour; then what the faction wants. */
    private void renderCourt(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int mouseX, int mouseY) {
+      this.courtTip = null;
       this.renderRuler(graphics, entry, mouseX, mouseY);
       FactionCourt.Role[] roles = FactionCourt.Role.values();
       int[] court = entry.court();
@@ -906,6 +946,11 @@ public class DiplomacyScreen extends Screen {
          this.standingBar(graphics, x + 4, y + 33, cardWidth - 54, 3, court[i * view + 2] * 2);
          boolean heir = roles[i] == FactionCourt.Role.HEIR;
          PersonPortrait.draw(graphics, entry.faction(), court[i * view + 3], court[i * view + 4], false, heir ? PersonPortrait.NOBLE : PersonPortrait.COURT, heir ? 1 : 0, x + cardWidth - 23, y + 2, 20);
+         if (mouseX >= x + cardWidth - 23 && mouseX < x + cardWidth - 3 && mouseY >= y + 2 && mouseY < y + 22) {
+            List<Component> lines = new ArrayList<>(characterTip(court[i * view + 5]));
+            lines.add(0, FactionRulers.name(court[i * view]).copy().withStyle(ChatFormatting.GOLD));
+            this.courtTip = lines;
+         }
       }
 
       int x = this.contentX();
@@ -924,6 +969,10 @@ public class DiplomacyScreen extends Screen {
 
          graphics.drawWordWrap(this.font, line, x, y, this.contentWidth(), 0xFF9FD7FF);
          y += this.font.split(line, this.contentWidth()).size() * this.font.lineHeight + 3;
+      }
+
+      if (this.courtTip != null) {
+         graphics.renderComponentTooltip(this.font, this.courtTip, mouseX, mouseY);
       }
    }
 

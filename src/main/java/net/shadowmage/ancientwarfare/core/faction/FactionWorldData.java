@@ -560,6 +560,7 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Look", ruler.look());
          entry.putLong("Born", ruler.born());
          entry.putBoolean("Ill", ruler.ill());
+         entry.putInt("Character", ruler.character());
          rulerTag.put(faction, entry);
       });
       tag.put("Rulers", rulerTag);
@@ -820,11 +821,12 @@ public final class FactionWorldData extends SavedData {
          // Rulers from before age and looks were kept get both, as if they had been in their prime when the world was read.
          int look = entry.contains("Look") ? entry.getInt("Look") : FactionPeople.oldLook(faction, name);
          long born = entry.contains("Born") ? entry.getLong("Born") : Long.MIN_VALUE;
-         data.rulers.put(faction, new Ruler(name, entry.getInt("Trait"), entry.getLong("Since"), look, born, entry.getBoolean("Ill")));
+         int character = entry.contains("Character") ? entry.getInt("Character") : FactionPeople.oldCharacter(look);
+         data.rulers.put(faction, new Ruler(name, entry.getInt("Trait"), entry.getLong("Since"), look, born, entry.getBoolean("Ill"), character));
       }
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
       data.rulers.replaceAll((faction, ruler) -> ruler.born() != Long.MIN_VALUE ? ruler : new Ruler(
-         ruler.name(), ruler.trait(), ruler.since(), ruler.look(), FactionPeople.oldBorn(ruler.look(), Math.max(0L, data.lastSimulatedDay)), ruler.ill()
+         ruler.name(), ruler.trait(), ruler.since(), ruler.look(), FactionPeople.oldBorn(ruler.look(), Math.max(0L, data.lastSimulatedDay)), ruler.ill(), ruler.character()
       ));
       data.dayOffset = tag.getLong("DayOffset");
       data.historyDone = tag.getBoolean("HistoryDone");
@@ -1283,9 +1285,9 @@ public final class FactionWorldData extends SavedData {
    }
 
    /** A faction's ruler: a name (an index into the lang names) and a trait (a FactionRulers.Trait ordinal). */
-   public static record Ruler(int name, int trait, long since, int look, long born, boolean ill) {
+   public static record Ruler(int name, int trait, long since, int look, long born, boolean ill, int character) {
       public Ruler withIll(boolean ill) {
-         return new Ruler(this.name, this.trait, this.since, this.look, this.born, ill);
+         return new Ruler(this.name, this.trait, this.since, this.look, this.born, ill, this.character);
       }
    }
 
