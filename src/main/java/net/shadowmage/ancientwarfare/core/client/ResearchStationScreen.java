@@ -10,6 +10,7 @@ import net.shadowmage.ancientwarfare.core.menu.ResearchStationMenu;
 public class ResearchStationScreen extends LegacyContainerScreen<ResearchStationMenu> {
    private static final int TEXT_COLOR = 16777215;
    private LegacyTexturedButton queueButton;
+   private LegacyTexturedButton treeButton;
 
    public ResearchStationScreen(ResearchStationMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title, 178, 240);
@@ -27,6 +28,15 @@ public class ResearchStationScreen extends LegacyContainerScreen<ResearchStation
          Component.translatable("guistrings.research.research_queue"),
          button -> this.minecraft.setScreen(new ResearchQueueScreen((ResearchStationMenu)this.menu, this.minecraft.player.getInventory(), this.title))
       );
+      this.treeButton = this.legacyButton(
+         "research tree",
+         120,
+         5,
+         50,
+         14,
+         Component.translatable("gui.ancientwarfare.research_tree.button"),
+         button -> this.minecraft.setScreen(new ResearchTreeScreen((ResearchStationMenu)this.menu, this.minecraft.player.getInventory(), this.title))
+      );
       this.registerLayoutRect("needed resource preview", 97, 97, 56, 56, false);
    }
 
@@ -40,6 +50,7 @@ public class ResearchStationScreen extends LegacyContainerScreen<ResearchStation
    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
       String researcherName = ((ResearchStationMenu)this.menu).getResearcherName();
       this.queueButton.active = !researcherName.isEmpty();
+      this.treeButton.active = !researcherName.isEmpty();
       graphics.drawString(
          this.font,
          researcherName.isEmpty() ? Component.translatable("guistrings.research.no_researcher") : Component.literal(researcherName),

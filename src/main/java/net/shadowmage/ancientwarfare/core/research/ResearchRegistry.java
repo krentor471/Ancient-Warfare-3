@@ -48,8 +48,15 @@ public final class ResearchRegistry {
    }
 
    /** Gives every technology without a set price the science its depth in the tree calls for. */
+   private static final Map<String, Integer> DEPTHS = new java.util.HashMap<>();
+
+   /** How many steps of research lie before this one: 0 for the roots of the tree. */
+   public static int depth(String id) {
+      return depth(id, DEPTHS);
+   }
+
    private static void priceScience() {
-      Map<String, Integer> depths = new java.util.HashMap<>();
+      Map<String, Integer> depths = DEPTHS;
       for (Map.Entry<String, ResearchGoal> entry : GOALS.entrySet()) {
          if (entry.getValue().science() == AUTO_SCIENCE) {
             int depth = depth(entry.getKey(), depths);

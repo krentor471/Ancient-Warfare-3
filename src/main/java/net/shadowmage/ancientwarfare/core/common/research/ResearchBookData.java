@@ -60,9 +60,19 @@ public final class ResearchBookData {
 
    public static boolean queueResearch(ItemStack stack, String id) {
       ResearchGoal goal = ResearchRegistry.get(id);
-      if (goal == null || getCurrentResearch(stack) != null || getCompletedResearch(stack).contains(id)) {
+      String current = getCurrentResearch(stack);
+      if (goal == null || id.equals(current) || getCompletedResearch(stack).contains(id)) {
          return false;
-      } else if (!goal.canResearch(getCompletedResearch(stack))) {
+      }
+
+      // Research may be queued behind what it needs, as long as that is learned, being studied, or queued ahead.
+      Set<String> ahead = new HashSet<>(getCompletedResearch(stack));
+      ahead.addAll(getQueuedResearch(stack));
+      if (current != null) {
+         ahead.add(current);
+      }
+
+      if (!ahead.containsAll(goal.dependencies())) {
          return false;
       } else {
          List<String> queued = getQueuedResearch(stack);

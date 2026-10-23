@@ -106,6 +106,10 @@ public class ResearchStationMenu extends AbstractContainerMenu {
       return current == null ? null : ResearchRegistry.get(current);
    }
 
+   public ItemStack book() {
+      return this.getResearchBook();
+   }
+
    private ItemStack getResearchBook() {
       return this.container.getItem(0);
    }
