@@ -458,6 +458,11 @@ public final class FactionCourt extends SavedData {
       return best;
    }
 
+   /** A courtier's traits of character; see FactionPeople.Character. */
+   static int character(ServerLevel level, String faction, Role role) {
+      return courtier(level, faction, role).character;
+   }
+
    /** The marshal's traits of character; see FactionPeople.Character. */
    static int marshalCharacter(ServerLevel level, String faction) {
       return courtier(level, faction, Role.MARSHAL).character;

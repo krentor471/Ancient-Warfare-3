@@ -32,6 +32,8 @@ public final class FactionMusters extends SavedData {
    /** Grain each soldier takes along when the host sets out, and eats a day on the road (per four). */
    private static final int PROVISIONS = 2;
    private static final int RATIONS = 4;
+   /** Grain kept back for the towns, which a host on the march does not touch. */
+   private static final int RESERVE = 150;
    /** Stores each archer and each rider ties up; a quarter of it is used up on the campaign. */
    private static final int BOW_WOOD = 20;
    private static final int HARNESS = 10;
@@ -78,6 +80,11 @@ public final class FactionMusters extends SavedData {
     * next days at its town nearest the target. Returns false when it has no town to gather at.
     */
    static boolean muster(ServerLevel level, FactionWorldData data, String faction, FactionWorldData.Settlement target, int force) {
+      if (FactionRebellions.inCivilWar(level, faction)) {
+         // A realm at war with itself sends no host abroad.
+         return false;
+      }
+
       FactionWorldData.Settlement rally = null;
       double best = Double.MAX_VALUE;
       for (FactionWorldData.Settlement settlement : data.settlements()) {
@@ -174,8 +181,9 @@ public final class FactionMusters extends SavedData {
       stores[FactionResources.WOOD] = Math.max(0, stores[FactionResources.WOOD] - bowmen * BOW_WOOD / 4);
       stores[FactionResources.LEATHER] = Math.max(0, stores[FactionResources.LEATHER] - riders * HARNESS / 4);
       stores[FactionResources.GRAIN] = Math.max(0, stores[FactionResources.GRAIN] - riders * FODDER / 4);
-      boolean hungry = stores[FactionResources.GRAIN] < size * PROVISIONS;
-      stores[FactionResources.GRAIN] = Math.max(0, stores[FactionResources.GRAIN] - size * PROVISIONS);
+      // The towns are fed first: the host takes only what the granaries can spare.
+      boolean hungry = stores[FactionResources.GRAIN] - RESERVE < size * PROVISIONS;
+      stores[FactionResources.GRAIN] -= Math.max(0, Math.min(size * PROVISIONS, stores[FactionResources.GRAIN] - RESERVE));
       FactionWorldData.Campaign campaign = FactionCampaigns.launchMustered(level, data, rally, target, size);
       campaign.led = true;
       campaign.archers = archers;
@@ -207,13 +215,13 @@ public final class FactionMusters extends SavedData {
    private static void feed(ServerLevel level, FactionWorldData data, FactionWorldData.Campaign campaign) {
       int[] stores = data.stores(campaign.faction());
       int need = Math.max(1, campaign.size / RATIONS);
-      if (stores[FactionResources.GRAIN] >= need) {
+      if (stores[FactionResources.GRAIN] - RESERVE >= need) {
          stores[FactionResources.GRAIN] -= need;
          campaign.hungry = false;
          return;
       }
 
-      stores[FactionResources.GRAIN] = 0;
+      stores[FactionResources.GRAIN] = Math.min(stores[FactionResources.GRAIN], RESERVE);
       if (!campaign.hungry) {
          FactionNews.tell(level, Component.translatable("news.ancientwarfare.host_hungry", FactionNews.factionName(campaign.faction())));
       }

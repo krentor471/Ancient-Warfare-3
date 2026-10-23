@@ -135,6 +135,20 @@ public final class ForgeFactionCommands {
             return 1;
          })));
       event.getDispatcher()
+         .register(Commands.literal("awrising").then(Commands.argument("settlement", IntegerArgumentType.integer()).executes(context -> {
+            net.shadowmage.ancientwarfare.core.faction.FactionRebellions.help(context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "settlement"));
+            return 1;
+         })));
+      event.getDispatcher()
+         .register(Commands.literal("awcivil").then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("side", StringArgumentType.word())
+            .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("ruler", "pretender"), builder))
+            .executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.FactionRebellions.back(
+                  context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"), "pretender".equals(StringArgumentType.getString(context, "side"))
+               );
+               return 1;
+            }))));
+      event.getDispatcher()
          .register(Commands.literal("awquarrel").then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("role", IntegerArgumentType.integer()).executes(context -> {
             net.shadowmage.ancientwarfare.core.faction.FactionPastimes.side(
                context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"), IntegerArgumentType.getInteger(context, "role")
@@ -464,6 +478,13 @@ public final class ForgeFactionCommands {
                })))
                .then(Commands.literal("pastime").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word()).executes(context -> {
                   String result = net.shadowmage.ancientwarfare.core.faction.FactionPastimes.debug(
+                     context.getSource().getLevel(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what")
+                  );
+                  context.getSource().sendSuccess(() -> Component.literal(result), false);
+                  return 1;
+               }))))
+               .then(Commands.literal("rebel").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word()).executes(context -> {
+                  String result = net.shadowmage.ancientwarfare.core.faction.FactionRebellions.debug(
                      context.getSource().getLevel(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what")
                   );
                   context.getSource().sendSuccess(() -> Component.literal(result), false);

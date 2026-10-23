@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.TreeSet;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -314,12 +315,19 @@ public final class PlayerDiplomacy {
                FactionRulers.person(data, faction, player.getRandom()),
                FactionFamilies.view(player.serverLevel(), faction),
                FactionFamilies.tips(player.serverLevel(), faction),
-               FactionMusters.lines(player.serverLevel(), faction)
+               hosts(player.serverLevel(), faction)
             )
          );
       }
 
       return entries;
+   }
+
+   /** The realm's armies and troubles: a civil war, risings, hosts mustering or on the march. */
+   private static List<Component> hosts(ServerLevel level, String faction) {
+      List<Component> lines = new ArrayList<>(FactionRebellions.lines(level, faction));
+      lines.addAll(FactionMusters.lines(level, faction));
+      return lines;
    }
 
    /** Coalitions and oaths between the player and the faction. */
