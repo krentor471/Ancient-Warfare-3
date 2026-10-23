@@ -262,6 +262,18 @@ public final class PlayerDiplomacy {
          }
 
          int settlements = (int)data.settlements().stream().filter(settlement -> settlement.faction().equals(faction)).count();
+         // How the faction stands with each other faction the player knows: state and opinion.
+         List<String> ties = new ArrayList<>();
+         List<Integer> tieData = new ArrayList<>();
+         for (String other : new TreeSet<>(standings.knownFactions(player.getUUID()))) {
+            if (!other.equals(faction) && !FactionDiplomacy.isOutlaw(other)) {
+               FactionDiplomacy.Relation relation = FactionDiplomacy.relation(player.serverLevel(), faction, other);
+               ties.add(other);
+               tieData.add(relation.state().ordinal());
+               tieData.add(relation.opinion());
+            }
+         }
+
          entries.add(
             new Entry(
                faction,
@@ -278,7 +290,9 @@ public final class PlayerDiplomacy {
                FactionCourt.courtView(player.serverLevel(), faction, player.getUUID()),
                FactionCourt.goalLines(player, faction),
                FactionIntrigue.pendingMask(player.serverLevel(), player.getUUID(), faction)
-                  | (data.spies().stream().anyMatch(spy -> spy.player().equals(player.getUUID()) && spy.faction().equals(faction)) ? SPY_PENDING : 0)
+                  | (data.spies().stream().anyMatch(spy -> spy.player().equals(player.getUUID()) && spy.faction().equals(faction)) ? SPY_PENDING : 0),
+               ties,
+               tieData.stream().mapToInt(Integer::intValue).toArray()
             )
          );
       }
@@ -288,7 +302,7 @@ public final class PlayerDiplomacy {
 
    public static record Entry(
       String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores,
-      int[] court, List<Component> goals, int pending
+      int[] court, List<Component> goals, int pending, List<String> ties, int[] tieData
    ) {
    }
 }

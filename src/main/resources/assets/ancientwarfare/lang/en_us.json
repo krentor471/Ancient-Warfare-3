@@ -2339,5 +2339,7 @@
   "incident.ancientwarfare.no_culprit": "The culprit is not to be found.",
   "incident.ancientwarfare.paid": "%s take the blood money. The matter is closed.",
   "incident.ancientwarfare.surrendered": "The culprit is handed over to %s. The matter is closed.",
-  "news.ancientwarfare.incident_refused": "%s bear a grudge: %s refused them satisfaction for a killing"
+  "news.ancientwarfare.incident_refused": "%s bear a grudge: %s refused them satisfaction for a killing",
+  "gui.ancientwarfare.diplomacy.tab.ties": "Ties",
+  "gui.ancientwarfare.diplomacy.ties_of": "Opinion of others"
 }

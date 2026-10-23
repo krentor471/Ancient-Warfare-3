@@ -2339,5 +2339,7 @@
   "incident.ancientwarfare.no_culprit": "Виновного не найти.",
   "incident.ancientwarfare.paid": "Фракция %s приняла виру. Дело закрыто.",
   "incident.ancientwarfare.surrendered": "Виновный выдан фракции %s. Дело закрыто.",
-  "news.ancientwarfare.incident_refused": "Фракция %s затаила обиду: %s отказал ей в ответе за убийство"
+  "news.ancientwarfare.incident_refused": "Фракция %s затаила обиду: %s отказал ей в ответе за убийство",
+  "gui.ancientwarfare.diplomacy.tab.ties": "Связи",
+  "gui.ancientwarfare.diplomacy.ties_of": "Мнение о других"
 }

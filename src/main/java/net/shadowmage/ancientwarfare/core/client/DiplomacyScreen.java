@@ -53,7 +53,8 @@ public class DiplomacyScreen extends Screen {
    private static final int COURT = 1;
    private static final int DEAL = 2;
    private static final int INTRIGUE = 3;
-   private static final String[] TABS = {"overview", "court", "deal", "intrigue"};
+   private static final int TIES = 4;
+   private static final String[] TABS = {"overview", "court", "deal", "intrigue", "ties"};
    private static final int INTRIGUE_ROW = 26;
    /** The tab shown, kept between openings. */
    private static int tab;
@@ -200,6 +201,8 @@ public class DiplomacyScreen extends Screen {
          case COURT -> this.initCourt(entry);
          case DEAL -> this.initDeal(entry);
          case INTRIGUE -> this.initIntrigue(entry);
+         case TIES -> {
+         }
          default -> this.initOverview(entry);
       }
    }
@@ -388,6 +391,108 @@ public class DiplomacyScreen extends Screen {
       }
    }
 
+   /** Where the faction at this index of the list sits on the ring of the ties diagram. */
+   private int[] node(int index) {
+      // Room below for the legend.
+      int height = this.top() + this.panelHeight() - 22 - this.contentY();
+      int radius = Math.max(30, Math.min(52, height / 2 - 12));
+      int cx = this.contentX() + radius + 34;
+      int cy = this.contentY() + height / 2;
+      double angle = -Math.PI / 2 + Math.PI * 2 * index / Math.max(1, this.entries.size());
+      return new int[]{cx + (int)Math.round(Math.cos(angle) * radius), cy + (int)Math.round(Math.sin(angle) * radius)};
+   }
+
+   private static int stateColor(RelationState state) {
+      return switch (state) {
+         case WAR -> 0xFFE05050;
+         case PACT -> 0xFF50C8E0;
+         case ALLIANCE -> 0xFF60E060;
+         default -> 0xFF606060;
+      };
+   }
+
+   /** Every war, pact and alliance between the factions the player knows, drawn on a ring; the chosen one's ties brightest. */
+   private void renderTies(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int mouseX, int mouseY) {
+      List<String> names = new ArrayList<>();
+      this.entries.forEach(other -> names.add(other.faction()));
+      for (int pass = 0; pass < 2; pass++) {
+         for (int i = 0; i < this.entries.size(); i++) {
+            PlayerDiplomacy.Entry from = this.entries.get(i);
+            boolean chosen = from.faction().equals(this.selected);
+            for (int t = 0; t < from.ties().size() && t * 2 + 1 < from.tieData().length; t++) {
+               int j = names.indexOf(from.ties().get(t));
+               RelationState state = RelationState.values()[Math.floorMod(from.tieData()[t * 2], RelationState.values().length)];
+               boolean involved = chosen || this.entries.get(Math.max(0, j)).faction().equals(this.selected);
+               // The chosen faction's ties go on top, on the second pass.
+               if (j < 0 || j <= i && !chosen || state == RelationState.NEUTRAL || involved != (pass == 1)) {
+                  continue;
+               }
+
+               int color = stateColor(state);
+               if (!involved) {
+                  color = (color & 0x00FFFFFF) | 0x50000000;
+               }
+
+               line(graphics, this.node(i), this.node(j), color, involved ? 2 : 1);
+            }
+         }
+      }
+
+      for (int i = 0; i < this.entries.size(); i++) {
+         PlayerDiplomacy.Entry node = this.entries.get(i);
+         int[] at = this.node(i);
+         boolean chosen = node.faction().equals(this.selected);
+         if (chosen) {
+            graphics.fill(at[0] - 5, at[1] - 5, at[0] + 5, at[1] + 5, GOLD_COLOR);
+         }
+
+         graphics.fill(at[0] - 4, at[1] - 4, at[0] + 4, at[1] + 4, 0xFF000000 | FactionColors.color(node.faction()));
+         Component label = factionName(node.faction());
+         int ringX = at[0] - this.node(0)[0];
+         int labelX = at[0] - this.font.width(label) / 2;
+         int labelY = at[1] + (at[1] >= this.node(0)[1] + 4 || ringX != 0 ? 6 : -14);
+         graphics.drawString(this.font, label, labelX, labelY, chosen ? GOLD_COLOR : MUTED_COLOR);
+      }
+
+      // The chosen faction's ties, one per line, beside the ring.
+      int x = this.contentX() + this.contentWidth() - 100;
+      int y = this.contentY();
+      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.ties_of").withStyle(ChatFormatting.BOLD), x, y, GOLD_COLOR);
+      y += 12;
+      for (int t = 0; t < entry.ties().size() && t * 2 + 1 < entry.tieData().length; t++) {
+         RelationState state = RelationState.values()[Math.floorMod(entry.tieData()[t * 2], RelationState.values().length)];
+         int opinion = entry.tieData()[t * 2 + 1];
+         String other = entry.ties().get(t);
+         graphics.fill(x, y + 1, x + 4, y + 8, 0xFF000000 | FactionColors.color(other));
+         graphics.drawString(this.font, factionName(other), x + 7, y, TEXT_COLOR);
+         Component mood = Component.literal(opinion > 0 ? "+" + opinion : Integer.toString(opinion));
+         graphics.drawString(this.font, mood, x + 100 - this.font.width(mood), y, opinion < -20 ? BAD_COLOR : opinion > 20 ? GOOD_COLOR : MUTED_COLOR);
+         graphics.fill(x + 7, y + 9, x + 100, y + 10, stateColor(state));
+         y += 13;
+      }
+
+      int legendY = this.top() + this.panelHeight() - 18;
+      int lx = this.contentX();
+      RelationState[] shown = {RelationState.WAR, RelationState.PACT, RelationState.ALLIANCE};
+      for (RelationState state : shown) {
+         graphics.fill(lx, legendY + 3, lx + 10, legendY + 5, stateColor(state));
+         Component name = stateName(state);
+         graphics.drawString(this.font, name, lx + 13, legendY, MUTED_COLOR);
+         lx += 13 + this.font.width(name) + 10;
+      }
+   }
+
+   private static void line(GuiGraphics graphics, int[] from, int[] to, int color, int thickness) {
+      int dx = to[0] - from[0];
+      int dy = to[1] - from[1];
+      int steps = Math.max(Math.abs(dx), Math.abs(dy));
+      for (int i = 0; i <= steps; i++) {
+         int x = from[0] + dx * i / Math.max(1, steps);
+         int y = from[1] + dy * i / Math.max(1, steps);
+         graphics.fill(x, y, x + thickness, y + thickness, color);
+      }
+   }
+
    private static Component check(boolean on, Component label) {
       return Component.literal(on ? "■ " : "□ ").withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY).append(label.copy().withStyle(ChatFormatting.WHITE));
    }
@@ -433,6 +538,21 @@ public class DiplomacyScreen extends Screen {
             }
 
             return true;
+         }
+      }
+
+      if (button == 0 && tab == TIES && this.selectedEntry() != null) {
+         for (int i = 0; i < this.entries.size(); i++) {
+            int[] node = this.node(i);
+            if (Math.abs(mouseX - node[0]) <= 5 && Math.abs(mouseY - node[1]) <= 5) {
+               String faction = this.entries.get(i).faction();
+               if (!faction.equals(this.selected)) {
+                  this.playClick();
+                  this.select(faction);
+               }
+
+               return true;
+            }
          }
       }
 
@@ -510,6 +630,7 @@ public class DiplomacyScreen extends Screen {
             case COURT -> this.renderCourt(graphics, entry);
             case DEAL -> this.renderDeal(graphics, entry, mouseX, mouseY);
             case INTRIGUE -> this.renderIntrigue(graphics, entry, mouseX, mouseY);
+            case TIES -> this.renderTies(graphics, entry, mouseX, mouseY);
             default -> this.renderOverview(graphics, entry, mouseX, mouseY);
          }
       }
