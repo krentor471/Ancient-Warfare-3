@@ -71,6 +71,8 @@ public final class FactionDeals extends SavedData {
    public static final int NO_BOND = 0;
    public static final int VASSAL = 1;
    public static final int FEALTY = 2;
+   /** The player asks for the hand of the ruler's daughter. */
+   public static final int MARRIAGE = 3;
    /** What a vassal's submission costs it, in silver: per settlement it holds, and per soldier. */
    private static final int VASSAL_SETTLEMENT_PRICE = 150;
    private static final int VASSAL_SOLDIER_PRICE = 3;
@@ -284,6 +286,10 @@ public final class FactionDeals extends SavedData {
          return refuse("deal.ancientwarfare.already_bound", name);
       } else if (offer.bond() == FEALTY && settlements(data, faction) < FactionVassals.PROTECTOR_SETTLEMENTS) {
          return new Weighed(REFUSE, Component.translatable("deal.ancientwarfare.too_weak_protector", name, FactionVassals.PROTECTOR_SETTLEMENTS));
+      } else if (offer.bond() == MARRIAGE && FactionFamilies.cannotMarry(level, player.getUUID(), faction) != null) {
+         return refuse(FactionFamilies.cannotMarry(level, player.getUUID(), faction), name);
+      } else if (offer.bond() == MARRIAGE && treaty == RelationState.WAR) {
+         return refuse("deal.ancientwarfare.at_war", name);
       } else if (offer.trade() && (standings.hasTrade(player.getUUID(), faction) || !PlayerResearch.has(player, "trade"))) {
          return refuse("deal.ancientwarfare.no_trade", name);
       }
@@ -327,6 +333,8 @@ public final class FactionDeals extends SavedData {
          double price = settlements(data, faction) * VASSAL_SETTLEMENT_PRICE + soldiers * VASSAL_SOLDIER_PRICE;
          // A beaten foe bows sooner; a proud ruler later.
          costs += price * (treaty == RelationState.WAR ? 0.6 : 1.0) * (trait == FactionRulers.Trait.WARLIKE ? 1.3 : 1.0) + Math.max(0, -standing) * STANDING_PRICE / 2.0;
+      } else if (offer.bond() == MARRIAGE) {
+         costs += Math.max(0.0, FactionFamilies.price(data, faction, standing)) + Math.max(0, -standing) * STANDING_PRICE;
       } else if (offer.bond() == FEALTY) {
          gains += FEALTY_WORTH;
          costs += Math.max(0, -standing) * STANDING_PRICE;
@@ -455,6 +463,8 @@ public final class FactionDeals extends SavedData {
          FactionVassals.addVassal(level, player, faction);
       } else if (offer.bond() == FEALTY) {
          FactionVassals.swear(level, player, faction);
+      } else if (offer.bond() == MARRIAGE) {
+         FactionFamilies.marry(level, player, faction);
       }
 
       if (!offer.factionWar().isEmpty() && FactionDiplomacy.setState(level, faction, offer.factionWar(), RelationState.WAR)) {

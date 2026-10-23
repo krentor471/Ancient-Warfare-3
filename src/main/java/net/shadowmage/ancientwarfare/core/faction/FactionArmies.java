@@ -295,7 +295,7 @@ public final class FactionArmies {
    /** A player under another faction's protection is attacked less readily. */
    private static double protection(ServerLevel level, UUID owner, String faction) {
       String overlord = FactionVassals.overlord(level, owner);
-      return overlord != null && !overlord.equals(faction) ? FactionVassals.PROTECTION : 1.0;
+      return (overlord != null && !overlord.equals(faction) ? FactionVassals.PROTECTION : 1.0) * (FactionFamilies.isKin(level, owner, faction) ? FactionFamilies.KIN_PROTECTION : 1.0);
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {

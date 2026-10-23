@@ -1,0 +1,451 @@
+package net.shadowmage.ancientwarfare.core.faction;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+
+/**
+ * Each ruler's household: a wife, from the nobles of his own land or a daughter of another ruler,
+ * and the children she bears him. A son who comes of age is named heir. A player may marry a ruler's
+ * daughter through a deal; her father's faction is then kin to the player and slow to make war on him.
+ * When the ruler changes, his widow and children leave the throne's household with him.
+ */
+public final class FactionFamilies extends SavedData {
+   private static final String DATA_NAME = "ancientwarfare_faction_families";
+   /** How many wives' and daughters' names the lang files hold: family.ancientwarfare.name.0 and on. */
+   public static final int FEMALE_NAMES = 24;
+   private static final int MARRY_AGE = 16;
+   private static final int OLDEST_GROOM = 60;
+   private static final int OLDEST_MOTHER = 44;
+   private static final int MAX_CHILDREN = 6;
+   private static final double MARRY_CHANCE = 0.05;
+   /** The chance a ruler who marries takes a daughter of another ruler rather than a noblewoman. */
+   private static final double FOREIGN_CHANCE = 0.5;
+   private static final double BIRTH_CHANCE = 0.12;
+   private static final double CHILD_DEATH = 0.004;
+   private static final int WEDDING_OPINION = 20;
+   private static final int WEDDING_STANDING = 25;
+   /** Kin's good will grows a little each day, up to this standing. */
+   private static final int KIN_STANDING = 30;
+   private static final int BROKEN_STANDING = -30;
+   /** How much less often kin raise an army against the player. */
+   public static final double KIN_PROTECTION = 0.1;
+   private static final int BASE_PRICE = 250;
+   private static final int SETTLEMENT_PRICE = 6;
+
+   static final class Person {
+      boolean female;
+      int name;
+      int look;
+      long born;
+      /** The faction she was born to, for a wife; empty for a noblewoman of the ruler's own land. */
+      String house = "";
+      /** The faction a daughter was married into; empty while unwed. */
+      String wed = "";
+
+      int age(long day) {
+         return FactionPeople.age(this.born, day);
+      }
+
+      Component name() {
+         return this.female ? femaleName(this.name) : FactionRulers.name(this.name);
+      }
+
+      CompoundTag save() {
+         CompoundTag tag = new CompoundTag();
+         tag.putBoolean("Female", this.female);
+         tag.putInt("Name", this.name);
+         tag.putInt("Look", this.look);
+         tag.putLong("Born", this.born);
+         tag.putString("House", this.house);
+         tag.putString("Wed", this.wed);
+         return tag;
+      }
+
+      static Person load(CompoundTag tag) {
+         Person person = new Person();
+         person.female = tag.getBoolean("Female");
+         person.name = tag.getInt("Name");
+         person.look = tag.getInt("Look");
+         person.born = tag.getLong("Born");
+         person.house = tag.getString("House");
+         person.wed = tag.getString("Wed");
+         return person;
+      }
+   }
+
+   static final class Family {
+      /** The ruler this household belongs to, by name and day of birth. */
+      String ruler = "";
+      Person wife;
+      final List<Person> children = new ArrayList<>();
+   }
+
+   /** A player's wife and the faction she came from. */
+   private record Bride(String faction, Person person) {
+   }
+
+   private final Map<String, Family> families = new HashMap<>();
+   private final Map<UUID, Bride> brides = new HashMap<>();
+
+   public static FactionFamilies get(ServerLevel level) {
+      return level.getServer().overworld().getDataStorage().computeIfAbsent(FactionFamilies::load, FactionFamilies::new, DATA_NAME);
+   }
+
+   public static Component femaleName(int name) {
+      return Component.translatable("family.ancientwarfare.name." + Math.floorMod(name, FEMALE_NAMES));
+   }
+
+   private static String key(FactionWorldData.Ruler ruler) {
+      return ruler.name() + ":" + ruler.born();
+   }
+
+   /** The household of the faction's present ruler; a new ruler starts with an empty one. */
+   private Family family(ServerLevel level, String faction) {
+      FactionWorldData.Ruler ruler = FactionRulers.ruler(FactionWorldData.get(level), faction, level.getRandom());
+      Family family = this.families.computeIfAbsent(faction, ignored -> new Family());
+      if (!family.ruler.equals(key(ruler))) {
+         family.ruler = key(ruler);
+         family.wife = null;
+         family.children.clear();
+         this.setDirty();
+      }
+
+      return family;
+   }
+
+   private static Person newPerson(boolean female, RandomSource random, long day, int age) {
+      Person person = new Person();
+      person.female = female;
+      person.name = random.nextInt(female ? FEMALE_NAMES : FactionRulers.NAMES);
+      person.look = FactionPeople.newLook(random);
+      person.born = FactionPeople.bornAt(day, age, random);
+      return person;
+   }
+
+   private static boolean bride(Person person, long day) {
+      return person.female && person.wed.isEmpty() && person.age(day) >= MARRY_AGE;
+   }
+
+   /** Daily: rulers wed, children are born, grow up and die, and the old pass away. */
+   static void simulateDay(ServerLevel level, FactionWorldData data) {
+      FactionFamilies families = get(level);
+      long day = Math.max(0L, data.lastSimulatedDay());
+      RandomSource random = level.getRandom();
+      Set<String> factions = new TreeSet<>();
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (!FactionDiplomacy.isOutlaw(settlement.faction())) {
+            factions.add(settlement.faction());
+         }
+      }
+
+      families.families.keySet().retainAll(factions);
+      for (String faction : factions) {
+         Family family = families.family(level, faction);
+         FactionWorldData.Ruler ruler = FactionRulers.ruler(data, faction, random);
+         int age = FactionPeople.age(ruler.born(), day);
+         if (family.wife != null && random.nextDouble() < FactionPeople.oldAgeDeath(family.wife.age(day))) {
+            FactionNews.tell(level, Component.translatable("news.ancientwarfare.wife_died", FactionNews.factionName(faction), family.wife.name(), FactionRulers.name(ruler.name())));
+            family.wife = null;
+         }
+
+         if (family.wife == null && age >= MARRY_AGE && age <= OLDEST_GROOM && random.nextDouble() < MARRY_CHANCE) {
+            families.wed(level, faction, family, ruler, day);
+         }
+
+         if (family.wife != null && family.wife.age(day) <= OLDEST_MOTHER && family.children.size() < MAX_CHILDREN && random.nextDouble() < BIRTH_CHANCE) {
+            Person child = newPerson(random.nextBoolean(), random, day, 0);
+            child.born = day;
+            family.children.add(child);
+            FactionNews.tell(
+               level,
+               Component.translatable(child.female ? "news.ancientwarfare.daughter_born" : "news.ancientwarfare.son_born", FactionNews.factionName(faction), FactionRulers.name(ruler.name()), child.name())
+            );
+         }
+
+         family.children.removeIf(child -> {
+            int childAge = child.age(day);
+            if (random.nextDouble() < (childAge < 5 ? CHILD_DEATH : FactionPeople.oldAgeDeath(childAge))) {
+               FactionNews.tell(level, Component.translatable("news.ancientwarfare.child_died", FactionNews.factionName(faction), child.name(), childAge));
+               return true;
+            }
+
+            return false;
+         });
+         // The eldest son of age is named heir.
+         family.children.stream()
+            .filter(child -> !child.female && child.age(day) >= MARRY_AGE)
+            .min(Comparator.comparingLong(child -> child.born))
+            .ifPresent(son -> {
+               family.children.remove(son);
+               FactionCourt.nameHeir(level, faction, son.name, random.nextInt(FactionRulers.Trait.values().length), son.look, son.born);
+               FactionNews.tell(level, Component.translatable("news.ancientwarfare.son_heir", FactionNews.factionName(faction), son.name(), FactionRulers.name(ruler.name())));
+            });
+      }
+
+      families.brides.entrySet().removeIf(entry -> {
+         Bride bride = entry.getValue();
+         if (random.nextDouble() < FactionPeople.oldAgeDeath(bride.person.age(day))) {
+            FactionNews.tellPlayer(level, entry.getKey(), Component.translatable("family.ancientwarfare.bride_died", bride.person.name(), FactionNews.factionName(bride.faction)).withStyle(ChatFormatting.GRAY));
+            return true;
+         }
+
+         FactionStandingData standings = FactionStandingData.get(level);
+         if (standings.getStanding(entry.getKey(), bride.faction) < KIN_STANDING) {
+            standings.adjustStanding(entry.getKey(), bride.faction, 1);
+         }
+
+         return false;
+      });
+      families.setDirty();
+   }
+
+   /** The ruler takes a wife: a daughter of a friendly ruler when one is free, else a noblewoman. */
+   private void wed(ServerLevel level, String faction, Family family, FactionWorldData.Ruler ruler, long day) {
+      RandomSource random = level.getRandom();
+      if (random.nextDouble() < FOREIGN_CHANCE) {
+         List<String> others = new ArrayList<>(this.families.keySet());
+         others.remove(faction);
+         java.util.Collections.shuffle(others, new java.util.Random(random.nextLong()));
+         for (String other : others) {
+            if (FactionDiplomacy.relation(level, faction, other).state() == RelationState.WAR) {
+               continue;
+            }
+
+            Family theirs = this.family(level, other);
+            Person daughter = theirs.children.stream().filter(child -> bride(child, day)).findFirst().orElse(null);
+            if (daughter != null) {
+               theirs.children.remove(daughter);
+               daughter.house = other;
+               family.wife = daughter;
+               FactionDiplomacy.adjustOpinion(level, faction, other, WEDDING_OPINION);
+               FactionDiplomacy.adjustOpinion(level, other, faction, WEDDING_OPINION);
+               FactionNews.tell(
+                  level,
+                  Component.translatable(
+                     "news.ancientwarfare.royal_wedding", FactionNews.factionName(faction), FactionRulers.name(ruler.name()), daughter.name(), FactionNews.factionName(other)
+                  )
+               );
+               return;
+            }
+         }
+      }
+
+      family.wife = newPerson(true, random, day, Math.max(MARRY_AGE, FactionPeople.age(ruler.born(), day) - 3 - random.nextInt(10)));
+      FactionNews.tell(level, Component.translatable("news.ancientwarfare.wedding", FactionNews.factionName(faction), FactionRulers.name(ruler.name()), family.wife.name()));
+   }
+
+   // ---------------------------------------------------------------- players
+
+   /** The faction whose daughter the player married, or null. */
+   public static String kin(ServerLevel level, UUID player) {
+      Bride bride = get(level).brides.get(player);
+      return bride == null ? null : bride.faction;
+   }
+
+   public static boolean isKin(ServerLevel level, UUID player, String faction) {
+      return faction.equals(kin(level, player));
+   }
+
+   /** Why the player cannot marry into the faction, or null when he can. */
+   static String cannotMarry(ServerLevel level, UUID player, String faction) {
+      FactionFamilies families = get(level);
+      if (families.brides.containsKey(player)) {
+         return "deal.ancientwarfare.already_married";
+      }
+
+      long day = Math.max(0L, FactionWorldData.get(level).lastSimulatedDay());
+      return families.family(level, faction).children.stream().anyMatch(child -> bride(child, day)) ? null : "deal.ancientwarfare.no_daughter";
+   }
+
+   /** What the ruler asks for his daughter's hand, in silver. */
+   static double price(FactionWorldData data, String faction, int standing) {
+      long settlements = data.settlements().stream().filter(settlement -> settlement.faction().equals(faction)).count();
+      return BASE_PRICE + settlements * SETTLEMENT_PRICE - Math.max(0, standing) * 3;
+   }
+
+   /** The deal is struck: the eldest unwed daughter is the player's wife. */
+   static void marry(ServerLevel level, ServerPlayer player, String faction) {
+      FactionFamilies families = get(level);
+      long day = Math.max(0L, FactionWorldData.get(level).lastSimulatedDay());
+      Family family = families.family(level, faction);
+      Person daughter = family.children.stream().filter(child -> bride(child, day)).min(Comparator.comparingLong(child -> child.born)).orElse(null);
+      if (daughter == null) {
+         return;
+      }
+
+      family.children.remove(daughter);
+      daughter.house = faction;
+      families.brides.put(player.getUUID(), new Bride(faction, daughter));
+      FactionStandingData.get(level).adjustStanding(player.getUUID(), faction, WEDDING_STANDING);
+      FactionNews.tell(
+         level,
+         Component.translatable(
+            "news.ancientwarfare.player_wedding", player.getDisplayName(), daughter.name(), FactionRulers.name(FactionRulers.ruler(FactionWorldData.get(level), faction, level.getRandom()).name()), FactionNews.factionName(faction)
+         )
+      );
+      families.setDirty();
+   }
+
+   /** The player made war on his wife's kin: she goes home, and they will not forget it. */
+   public static void warDeclared(ServerLevel level, UUID player, String faction) {
+      FactionFamilies families = get(level);
+      Bride bride = families.brides.get(player);
+      if (bride == null || !bride.faction.equals(faction)) {
+         return;
+      }
+
+      families.brides.remove(player);
+      FactionStandingData.get(level).adjustStanding(player, faction, BROKEN_STANDING);
+      FactionNews.tellPlayer(level, player, Component.translatable("family.ancientwarfare.bride_left", bride.person.name(), FactionNews.factionName(faction)).withStyle(ChatFormatting.RED));
+      families.setDirty();
+   }
+
+   /** The line in the overview: the player's wife from this faction. */
+   static Component line(ServerLevel level, UUID player, String faction) {
+      Bride bride = get(level).brides.get(player);
+      if (bride == null || !bride.faction.equals(faction)) {
+         return null;
+      }
+
+      long day = Math.max(0L, FactionWorldData.get(level).lastSimulatedDay());
+      return Component.translatable("family.ancientwarfare.line", bride.person.name(), bride.person.age(day)).withStyle(ChatFormatting.LIGHT_PURPLE);
+   }
+
+   /** For the diplomacy screen: for the wife and then each child, whether female, looks and age. */
+   static int[] view(ServerLevel level, String faction) {
+      Family family = get(level).family(level, faction);
+      long day = Math.max(0L, FactionWorldData.get(level).lastSimulatedDay());
+      List<Person> people = new ArrayList<>();
+      if (family.wife != null) {
+         people.add(family.wife);
+      }
+
+      people.addAll(family.children);
+      int[] view = new int[1 + people.size() * 3];
+      view[0] = family.wife != null ? 1 : 0;
+      for (int i = 0; i < people.size(); i++) {
+         Person person = people.get(i);
+         view[1 + i * 3] = person.female ? 1 : 0;
+         view[2 + i * 3] = person.look;
+         view[3 + i * 3] = person.age(day);
+      }
+
+      return view;
+   }
+
+   /** The names that go with view, in the same order, for the portraits' tooltips. */
+   static List<Component> tips(ServerLevel level, String faction) {
+      Family family = get(level).family(level, faction);
+      long day = Math.max(0L, FactionWorldData.get(level).lastSimulatedDay());
+      List<Component> tips = new ArrayList<>();
+      if (family.wife != null) {
+         tips.add(
+            family.wife.house.isEmpty()
+               ? Component.translatable("family.ancientwarfare.tip.wife", family.wife.name(), family.wife.age(day))
+               : Component.translatable("family.ancientwarfare.tip.wife_from", family.wife.name(), family.wife.age(day), FactionNews.factionName(family.wife.house))
+         );
+      }
+
+      for (Person child : family.children) {
+         tips.add(Component.translatable(child.female ? "family.ancientwarfare.tip.daughter" : "family.ancientwarfare.tip.son", child.name(), child.age(day)));
+      }
+
+      return tips;
+   }
+
+   /** For testing: wed the ruler at once, or give him a child of the given age. */
+   public static String debug(ServerLevel level, String faction, String what, int value) {
+      FactionFamilies families = get(level);
+      long day = Math.max(0L, FactionWorldData.get(level).lastSimulatedDay());
+      Family family = families.family(level, faction);
+      FactionWorldData.Ruler ruler = FactionRulers.ruler(FactionWorldData.get(level), faction, level.getRandom());
+      switch (what) {
+         case "wed" -> families.wed(level, faction, family, ruler, day);
+         case "son", "daughter" -> family.children.add(newPerson(what.equals("daughter"), level.getRandom(), day, value));
+         case "day" -> {
+            for (int i = 0; i < Math.max(1, value); i++) {
+               simulateDay(level, FactionWorldData.get(level));
+            }
+         }
+         default -> {
+            return "wed|son N|daughter N|day N";
+         }
+      }
+
+      families.setDirty();
+      return "wife " + (family.wife != null) + ", children " + family.children.size();
+   }
+
+   private static FactionFamilies load(CompoundTag tag) {
+      FactionFamilies data = new FactionFamilies();
+      CompoundTag families = tag.getCompound("Families");
+      for (String faction : families.getAllKeys()) {
+         CompoundTag entry = families.getCompound(faction);
+         Family family = new Family();
+         family.ruler = entry.getString("Ruler");
+         if (entry.contains("Wife")) {
+            family.wife = Person.load(entry.getCompound("Wife"));
+         }
+
+         for (Tag child : entry.getList("Children", Tag.TAG_COMPOUND)) {
+            family.children.add(Person.load((CompoundTag)child));
+         }
+
+         data.families.put(faction, family);
+      }
+
+      CompoundTag brides = tag.getCompound("Brides");
+      for (String player : brides.getAllKeys()) {
+         try {
+            CompoundTag entry = brides.getCompound(player);
+            data.brides.put(UUID.fromString(player), new Bride(entry.getString("Faction"), Person.load(entry.getCompound("Person"))));
+         } catch (IllegalArgumentException ignored) {
+         }
+      }
+
+      return data;
+   }
+
+   @Override
+   public CompoundTag save(CompoundTag tag) {
+      CompoundTag families = new CompoundTag();
+      this.families.forEach((faction, family) -> {
+         CompoundTag entry = new CompoundTag();
+         entry.putString("Ruler", family.ruler);
+         if (family.wife != null) {
+            entry.put("Wife", family.wife.save());
+         }
+
+         ListTag children = new ListTag();
+         family.children.forEach(child -> children.add(child.save()));
+         entry.put("Children", children);
+         families.put(faction, entry);
+      });
+      tag.put("Families", families);
+      CompoundTag brides = new CompoundTag();
+      this.brides.forEach((player, bride) -> {
+         CompoundTag entry = new CompoundTag();
+         entry.putString("Faction", bride.faction);
+         entry.put("Person", bride.person.save());
+         brides.put(player.toString(), entry);
+      });
+      tag.put("Brides", brides);
+      return tag;
+   }
+}

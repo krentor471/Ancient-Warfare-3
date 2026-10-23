@@ -461,6 +461,12 @@ public final class FactionCourt extends SavedData {
       get(level).setDirty();
    }
 
+   /** The ruler's son comes of age and is named heir in place of whoever was. */
+   static void nameHeir(ServerLevel level, String faction, int name, int trait, int look, long born) {
+      court(level, faction)[Role.HEIR.ordinal()] = new Courtier(name, trait, look, born);
+      get(level).setDirty();
+   }
+
    /** A courtier takes the throne; a newcomer fills their place at court. */
    static FactionWorldData.Ruler crown(ServerLevel level, String faction, Role role, long day) {
       Courtier[] court = court(level, faction);

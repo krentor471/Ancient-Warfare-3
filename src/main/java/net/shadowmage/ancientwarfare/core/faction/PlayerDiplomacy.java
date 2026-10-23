@@ -226,6 +226,7 @@ public final class PlayerDiplomacy {
             standings.setStanding(player.getUUID(), faction, Math.min(standing, 0) + WAR_STANDING + (betrayal ? BETRAYAL_STANDING : 0));
             CountryDiplomacy.warDeclaredBy(player, faction);
             FactionCourt.warDeclared(player.serverLevel(), player.getUUID(), faction);
+            FactionFamilies.warDeclared(player.serverLevel(), player.getUUID(), faction);
             return Component.translatable(betrayal ? "diplomacy.ancientwarfare.betrayal" : "diplomacy.ancientwarfare.war", name);
          }
       }
@@ -297,7 +298,9 @@ public final class PlayerDiplomacy {
                ties,
                tieData.stream().mapToInt(Integer::intValue).toArray(),
                bonds(player, faction),
-               FactionRulers.person(data, faction, player.getRandom())
+               FactionRulers.person(data, faction, player.getRandom()),
+               FactionFamilies.view(player.serverLevel(), faction),
+               FactionFamilies.tips(player.serverLevel(), faction)
             )
          );
       }
@@ -311,6 +314,11 @@ public final class PlayerDiplomacy {
       Component coalition = FactionCoalitions.line(player.serverLevel(), player.getUUID(), faction);
       if (coalition != null) {
          lines.add(coalition.copy().withStyle(ChatFormatting.RED));
+      }
+
+      Component wife = FactionFamilies.line(player.serverLevel(), player.getUUID(), faction);
+      if (wife != null) {
+         lines.add(wife);
       }
 
       Component bond = FactionVassals.line(player.serverLevel(), player.getUUID(), faction);
@@ -328,7 +336,8 @@ public final class PlayerDiplomacy {
 
    public static record Entry(
       String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores,
-      int[] court, List<Component> goals, int pending, List<String> ties, int[] tieData, List<Component> bonds, int[] person
+      int[] court, List<Component> goals, int pending, List<String> ties, int[] tieData, List<Component> bonds, int[] person,
+      int[] family, List<Component> familyTips
    ) {
    }
 }

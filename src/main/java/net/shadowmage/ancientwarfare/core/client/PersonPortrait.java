@@ -17,7 +17,8 @@ import net.shadowmage.ancientwarfare.core.faction.FactionColors;
  */
 final class PersonPortrait {
    private static final String SKINS = "textures/entity/npc/skin_pack";
-   private static final Pattern NOBLE = Pattern.compile("_(chief|chieftain|lord|warlord|noble|king|priest)(_\\d+)?\\.png$");
+   private static final Pattern NOBLE_SKIN = Pattern.compile("_(chief|chieftain|lord|warlord|noble|king|priest)(_\\d+)?\\.png$");
+   private static final Pattern FEMALE = Pattern.compile("_(woman|princess|queen|druidess|girl|priestess|childbearer|huntress)");
    private static final Pattern NOT_COURT = Pattern.compile("(woman|princess|queen|spirit|totem|animal|creature|childbearer|druidess|child|slave)");
    /** The bust is 16 by 16 skin pixels. */
    static final int SIZE = 16;
@@ -27,8 +28,13 @@ final class PersonPortrait {
    private PersonPortrait() {
    }
 
-   private static List<ResourceLocation> pool(String faction, boolean noble) {
-      return POOLS.computeIfAbsent(faction + (noble ? "#noble" : "#court"), key -> {
+   /** Which of a faction's skins a portrait is drawn from. */
+   static final int COURT = 0;
+   static final int NOBLE = 1;
+   static final int WOMAN = 2;
+
+   private static List<ResourceLocation> pool(String faction, int kind) {
+      return POOLS.computeIfAbsent(faction + "#" + kind, key -> {
          if (all == null) {
             all = new ArrayList<>(Minecraft.getInstance().getResourceManager().listResources(SKINS, id -> id.getNamespace().equals("ancientwarfare") && id.getPath().endsWith(".png")).keySet());
             all.sort(null);
@@ -37,8 +43,17 @@ final class PersonPortrait {
          String prefix = SKINS + "/" + faction + "_";
          List<ResourceLocation> mine = all.stream().filter(id -> id.getPath().startsWith(prefix)).toList();
          List<ResourceLocation> pool = mine.stream()
-            .filter(id -> noble ? NOBLE.matcher(id.getPath()).find() : !NOT_COURT.matcher(id.getPath().substring(prefix.length())).find())
+            .filter(id -> switch (kind) {
+               case NOBLE -> NOBLE_SKIN.matcher(id.getPath()).find();
+               case WOMAN -> FEMALE.matcher(id.getPath()).find();
+               default -> !NOT_COURT.matcher(id.getPath().substring(prefix.length())).find();
+            })
             .toList();
+         if (pool.isEmpty() && kind == WOMAN) {
+            // A faction with no women of its own among the skins borrows from the others.
+            pool = all.stream().filter(id -> FEMALE.matcher(id.getPath()).find()).toList();
+         }
+
          return !pool.isEmpty() ? pool : !mine.isEmpty() ? mine : all;
       });
    }
@@ -47,8 +62,8 @@ final class PersonPortrait {
     * Draws the portrait with its top left at x, y, size pixels across. The frame is the faction's
     * colour; a crown for the ruler, a circlet for the heir.
     */
-   static void draw(GuiGraphics graphics, String faction, int look, int age, boolean ill, boolean noble, int crown, int x, int y, int size) {
-      List<ResourceLocation> pool = pool(faction, noble);
+   static void draw(GuiGraphics graphics, String faction, int look, int age, boolean ill, int kind, int crown, int x, int y, int size) {
+      List<ResourceLocation> pool = pool(faction, kind);
       if (pool.isEmpty()) {
          return;
       }

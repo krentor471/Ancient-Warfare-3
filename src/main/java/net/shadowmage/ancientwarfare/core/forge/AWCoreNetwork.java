@@ -915,7 +915,7 @@ public final class AWCoreNetwork {
       return new net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer(
          Math.max(0, Math.min(10000, buffer.readVarInt())), Math.max(0, Math.min(1000, buffer.readVarInt())), buffer.readUtf(64),
          Math.max(0, Math.min(10000, buffer.readVarInt())), buffer.readBoolean(), buffer.readBoolean(), buffer.readUtf(64),
-         java.util.Arrays.stream(buffer.readVarIntArray(8)).map(load -> Math.max(0, Math.min(1000, load))).toArray(), Math.max(0, Math.min(2, buffer.readVarInt()))
+         java.util.Arrays.stream(buffer.readVarIntArray(8)).map(load -> Math.max(0, Math.min(1000, load))).toArray(), Math.max(0, Math.min(net.shadowmage.ancientwarfare.core.faction.FactionDeals.MARRIAGE, buffer.readVarInt()))
       );
    }
 
@@ -1208,6 +1208,9 @@ public final class AWCoreNetwork {
             buffer.writeVarInt(Math.min(4, entry.bonds().size()));
             entry.bonds().stream().limit(4).forEach(buffer::writeComponent);
             buffer.writeVarIntArray(entry.person());
+            buffer.writeVarIntArray(entry.family());
+            buffer.writeVarInt(Math.min(8, entry.familyTips().size()));
+            entry.familyTips().stream().limit(8).forEach(buffer::writeComponent);
          }
       }
 
@@ -1231,7 +1234,8 @@ public final class AWCoreNetwork {
             entries.add(
                new PlayerDiplomacy.Entry(
                   faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                  buffer.readVarIntArray(8), buffer.readVarIntArray(32), readGoals(buffer), buffer.readInt(), readNames(buffer), buffer.readVarIntArray(64), readGoals(buffer), buffer.readVarIntArray(8)
+                  buffer.readVarIntArray(8), buffer.readVarIntArray(32), readGoals(buffer), buffer.readInt(), readNames(buffer), buffer.readVarIntArray(64), readGoals(buffer), buffer.readVarIntArray(8),
+                  buffer.readVarIntArray(32), readLines(buffer, 8)
                )
             );
          }
@@ -1240,7 +1244,11 @@ public final class AWCoreNetwork {
       }
 
       private static List<net.minecraft.network.chat.Component> readGoals(FriendlyByteBuf buffer) {
-         int count = Math.min(4, buffer.readVarInt());
+         return readLines(buffer, 4);
+      }
+
+      private static List<net.minecraft.network.chat.Component> readLines(FriendlyByteBuf buffer, int max) {
+         int count = Math.min(max, buffer.readVarInt());
          List<net.minecraft.network.chat.Component> goals = new ArrayList<>();
          for (int i = 0; i < count; i++) {
             goals.add(buffer.readComponent());

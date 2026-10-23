@@ -158,7 +158,7 @@ public final class FactionCoalitions extends SavedData {
 
       for (String faction : preset != null ? List.<String>of() : standings.knownFactions(player)) {
          RelationState treaty = standings.getTreaty(player, faction);
-         if (FactionDiplomacy.isOutlaw(faction) || treaty == RelationState.ALLIANCE || treaty == RelationState.PACT) {
+         if (FactionDiplomacy.isOutlaw(faction) || treaty == RelationState.ALLIANCE || treaty == RelationState.PACT || FactionFamilies.isKin(level, player, faction)) {
             continue;
          }
 

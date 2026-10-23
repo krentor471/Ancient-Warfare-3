@@ -439,6 +439,10 @@ public final class ForgeFactionCommands {
                   context.getSource().sendSuccess(() -> Component.literal(offered ? "Plot offered" : "No courtier"), false);
                   return 1;
                })))
+               .then(Commands.literal("family").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word())
+                  .executes(context -> family(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), 0))
+                  .then(Commands.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 200))
+                     .executes(context -> family(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "value")))))))
                .then(Commands.literal("rulerlife").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word())
                   .executes(context -> rulerLife(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), 0))
                   .then(Commands.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 200))
@@ -1198,6 +1202,12 @@ public final class ForgeFactionCommands {
       return 1;
    }
 
+
+   private static int family(CommandSourceStack source, String faction, String what, int value) {
+      String result = net.shadowmage.ancientwarfare.core.faction.FactionFamilies.debug(source.getLevel(), faction, what, value);
+      source.sendSuccess(() -> Component.literal(result), false);
+      return 1;
+   }
 
    private static int rulerLife(CommandSourceStack source, String faction, String what, int value) {
       String result = net.shadowmage.ancientwarfare.core.faction.FactionRulers.debugLife(source.getLevel(), faction, what, value);
