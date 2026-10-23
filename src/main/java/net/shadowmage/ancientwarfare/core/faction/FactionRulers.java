@@ -67,7 +67,10 @@ public final class FactionRulers {
    public static FactionWorldData.Ruler ruler(FactionWorldData data, String faction, RandomSource random) {
       FactionWorldData.Ruler ruler = data.ruler(faction);
       if (ruler == null) {
-         ruler = new FactionWorldData.Ruler(random.nextInt(NAMES), random.nextInt(TRAITS.length), Math.max(0L, data.lastSimulatedDay()));
+         long day = Math.max(0L, data.lastSimulatedDay());
+         ruler = new FactionWorldData.Ruler(
+            random.nextInt(NAMES), random.nextInt(TRAITS.length), day, FactionPeople.newLook(random), FactionPeople.bornAt(day, 25 + random.nextInt(26), random), false
+         );
          data.setRuler(faction, ruler);
       }
 
@@ -191,6 +194,90 @@ public final class FactionRulers {
       leader.setCustomName(
          Component.translatable(
             "ruler.ancientwarfare.title", name(ruler.name()), Component.translatable("ruler.ancientwarfare.epithet." + TRAITS[Mth.clamp(ruler.trait(), 0, TRAITS.length - 1)].key())
+         )
+      );
+   }
+
+   /** For the diplomacy screen: the ruler's looks, age, years on the throne and whether he is ill. */
+   public static int[] person(FactionWorldData data, String faction, RandomSource random) {
+      FactionWorldData.Ruler ruler = ruler(data, faction, random);
+      long day = Math.max(0L, data.lastSimulatedDay());
+      int age = FactionPeople.age(ruler.born(), day);
+      // A ruler from a world read before ages were kept may have reigned longer than he has lived.
+      int reign = Math.min(FactionPeople.years(ruler.since(), day), Math.max(0, age - 16));
+      return new int[]{ruler.look(), age, reign, ruler.ill() ? 1 : 0};
+   }
+
+   /** Daily: rulers fall ill and get well, and the old or the sick die and their heir takes the throne. */
+   static void simulateDay(ServerLevel level, FactionWorldData data) {
+      long day = Math.max(0L, data.lastSimulatedDay());
+      RandomSource random = level.getRandom();
+      java.util.Set<String> factions = new java.util.TreeSet<>();
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (!FactionDiplomacy.isOutlaw(settlement.faction())) {
+            factions.add(settlement.faction());
+         }
+      }
+
+      for (String faction : factions) {
+         FactionWorldData.Ruler ruler = ruler(data, faction, random);
+         int age = FactionPeople.age(ruler.born(), day);
+         if (ruler.ill()) {
+            if (random.nextDouble() < FactionPeople.illnessDeath(age)) {
+               die(level, faction, "illness", day);
+            } else if (random.nextDouble() < FactionPeople.recovery(age)) {
+               data.setRuler(faction, ruler.withIll(false));
+               FactionNews.tell(level, Component.translatable("news.ancientwarfare.ruler_recovered", FactionNews.factionName(faction), name(ruler.name())));
+            }
+         } else if (random.nextDouble() < FactionPeople.oldAgeDeath(age)) {
+            die(level, faction, "old_age", day);
+         } else if (random.nextDouble() < FactionPeople.illness(age)) {
+            data.setRuler(faction, ruler.withIll(true));
+            FactionNews.tell(level, Component.translatable("news.ancientwarfare.ruler_ill", FactionNews.factionName(faction), name(ruler.name()), age));
+         }
+      }
+   }
+
+   /** For testing: set the ruler's age, make him ill, let him die, or run a day of his life. */
+   public static String debugLife(ServerLevel level, String faction, String what, int value) {
+      FactionWorldData data = FactionWorldData.get(level);
+      long day = Math.max(0L, data.lastSimulatedDay());
+      FactionWorldData.Ruler ruler = ruler(data, faction, level.getRandom());
+      switch (what) {
+         case "age" -> data.setRuler(faction, new FactionWorldData.Ruler(ruler.name(), ruler.trait(), ruler.since(), ruler.look(), day - (long)value * FactionPeople.YEAR_DAYS, ruler.ill()));
+         case "ill" -> data.setRuler(faction, ruler.withIll(true));
+         case "die" -> die(level, faction, value == 1 ? "illness" : "old_age", day);
+         case "day" -> {
+            for (int i = 0; i < Math.max(1, value); i++) {
+               simulateDay(level, data);
+            }
+         }
+         default -> {
+            return "age|ill|die|day";
+         }
+      }
+
+      data.setDirty();
+      FactionWorldData.Ruler now = ruler(data, faction, level.getRandom());
+      return name(now.name()).getString() + " age " + FactionPeople.age(now.born(), day) + (now.ill() ? " ill" : "");
+   }
+
+   /** The ruler dies in his bed: the heir is crowned and the ruler NPCs take his name. */
+   static void die(ServerLevel level, String faction, String cause, long day) {
+      FactionWorldData data = FactionWorldData.get(level);
+      FactionWorldData.Ruler old = ruler(data, faction, level.getRandom());
+      FactionWorldData.Ruler successor = FactionCourt.succession(level, faction, day);
+      enthrone(level, faction, successor);
+      FactionNews.tell(
+         level,
+         Component.translatable(
+            "news.ancientwarfare.ruler_died",
+            FactionNews.factionName(faction),
+            name(old.name()),
+            FactionPeople.age(old.born(), day),
+            Component.translatable("news.ancientwarfare.death." + cause),
+            name(successor.name()),
+            traitName(successor.trait())
          )
       );
    }

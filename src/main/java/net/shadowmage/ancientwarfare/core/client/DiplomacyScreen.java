@@ -37,6 +37,10 @@ public class DiplomacyScreen extends Screen {
    private static final int PANEL_WIDTH = 420;
    private static final int MAX_HEIGHT = 272;
    private static final int DEAL_ROW = 17;
+   /** The height of the ruler's card above the court, with the gap below it. */
+   private static final int RULER_CARD = 40;
+   /** The height of a courtier's card, with the gap below it. */
+   private static final int COURT_CARD = 42;
    private static final int LIST_WIDTH = 124;
    private static final int ROW_HEIGHT = 22;
    private static final int VISIBLE_ROWS = 10;
@@ -273,12 +277,12 @@ public class DiplomacyScreen extends Screen {
          PlayerDiplomacy.Action.COURT_HEIR, PlayerDiplomacy.Action.COURT_MARSHAL, PlayerDiplomacy.Action.COURT_TREASURER, PlayerDiplomacy.Action.COURT_PRIEST
       };
       int cardWidth = (this.contentWidth() - 4) / 2;
-      for (int i = 0; i < gifts.length && i * 3 + 2 < entry.court().length; i++) {
+      for (int i = 0; i < gifts.length && (i + 1) * FactionCourt.COURT_VIEW <= entry.court().length; i++) {
          PlayerDiplomacy.Action action = gifts[i];
          int x = this.contentX() + (i % 2) * (cardWidth + 4);
-         int y = this.contentY() + (i / 2) * 50;
+         int y = this.contentY() + RULER_CARD + (i / 2) * COURT_CARD;
          Button button = Button.builder(Component.translatable("gui.ancientwarfare.diplomacy.court_gift", FactionCourt.COURTIER_GIFT / 10), ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action))
-            .bounds(x + cardWidth - 58, y + 30, 54, 14)
+            .bounds(x + cardWidth - 44, y + 24, 40, 14)
             .build();
          button.active = entry.leaderNear();
          button.setTooltip(Tooltip.create(Component.translatable(entry.leaderNear() ? "gui.ancientwarfare.diplomacy.court_gift.tip" : "gui.ancientwarfare.diplomacy.leader_away")));
@@ -813,24 +817,54 @@ public class DiplomacyScreen extends Screen {
       graphics.fill(at - 1, y - 2, at + 2, y + height + 2, 0xFFFFFFFF);
    }
 
+   /** The ruler's own card above the court: his portrait, age, reign and health. */
+   private void renderRuler(GuiGraphics graphics, PlayerDiplomacy.Entry entry) {
+      int x = this.contentX();
+      int y = this.contentY();
+      int width = this.contentWidth();
+      int[] person = entry.person();
+      graphics.fill(x, y, x + width, y + RULER_CARD - 4, CARD_COLOR);
+      outline(graphics, x, y, width, RULER_CARD - 4, 0xFF6A5330);
+      if (person.length < 4) {
+         return;
+      }
+
+      PersonPortrait.draw(graphics, entry.faction(), person[0], person[1], person[3] != 0, true, 2, x + 3, y + 3, 30);
+      int textX = x + 38;
+      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.ruler_card", FactionRulers.name(entry.ruler()), FactionRulers.traitName(entry.trait())), textX, y + 3, GOLD_COLOR);
+      graphics.drawString(
+         this.font,
+         Component.translatable("gui.ancientwarfare.diplomacy.age", person[1]).append(" · ").append(Component.translatable("gui.ancientwarfare.diplomacy.reign", person[2])),
+         textX,
+         y + 13,
+         TEXT_COLOR
+      );
+      boolean ill = person[3] != 0;
+      graphics.drawString(this.font, Component.translatable(ill ? "gui.ancientwarfare.diplomacy.health.ill" : person[1] >= 60 ? "gui.ancientwarfare.diplomacy.health.old" : "gui.ancientwarfare.diplomacy.health.well"), textX, y + 23, ill ? BAD_COLOR : person[1] >= 60 ? MUTED_COLOR : GOOD_COLOR);
+   }
+
    /** The court as four cards, each courtier's mind and favour; then what the faction wants. */
    private void renderCourt(GuiGraphics graphics, PlayerDiplomacy.Entry entry) {
+      this.renderRuler(graphics, entry);
       FactionCourt.Role[] roles = FactionCourt.Role.values();
       int[] court = entry.court();
+      int view = FactionCourt.COURT_VIEW;
       int cardWidth = (this.contentWidth() - 4) / 2;
-      for (int i = 0; i < roles.length && i * 3 + 2 < court.length; i++) {
+      for (int i = 0; i < roles.length && (i + 1) * view <= court.length; i++) {
          int x = this.contentX() + (i % 2) * (cardWidth + 4);
-         int y = this.contentY() + (i / 2) * 50;
-         graphics.fill(x, y, x + cardWidth, y + 46, CARD_COLOR);
-         outline(graphics, x, y, cardWidth, 46, 0xFF4A3B26);
+         int y = this.contentY() + RULER_CARD + (i / 2) * COURT_CARD;
+         graphics.fill(x, y, x + cardWidth, y + COURT_CARD - 4, CARD_COLOR);
+         outline(graphics, x, y, cardWidth, COURT_CARD - 4, 0xFF4A3B26);
          graphics.drawString(this.font, FactionCourt.roleName(roles[i]), x + 4, y + 3, GOLD_COLOR);
-         graphics.drawString(this.font, FactionRulers.name(court[i * 3]), x + 4, y + 13, TEXT_COLOR);
-         graphics.drawString(this.font, FactionRulers.traitName(court[i * 3 + 1]), x + 4, y + 23, MUTED_COLOR);
-         this.standingBar(graphics, x + 4, y + 37, cardWidth - 66, 4, court[i * 3 + 2] * 2);
+         graphics.drawString(this.font, FactionRulers.name(court[i * view]).copy().append(" (" + court[i * view + 4] + ")"), x + 4, y + 13, TEXT_COLOR);
+         graphics.drawString(this.font, FactionRulers.traitName(court[i * view + 1]), x + 4, y + 23, MUTED_COLOR);
+         this.standingBar(graphics, x + 4, y + 33, cardWidth - 54, 3, court[i * view + 2] * 2);
+         boolean heir = roles[i] == FactionCourt.Role.HEIR;
+         PersonPortrait.draw(graphics, entry.faction(), court[i * view + 3], court[i * view + 4], false, heir, heir ? 1 : 0, x + cardWidth - 23, y + 2, 20);
       }
 
       int x = this.contentX();
-      int y = this.contentY() + 104;
+      int y = this.contentY() + RULER_CARD + 2 * COURT_CARD + 4;
       graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.goals").withStyle(ChatFormatting.BOLD), x, y, GOLD_COLOR);
       y += 12;
       if (entry.goals().isEmpty()) {
@@ -839,6 +873,10 @@ public class DiplomacyScreen extends Screen {
 
       for (Component goal : entry.goals()) {
          Component line = Component.literal("◆ ").append(goal);
+         if (y + this.font.split(line, this.contentWidth()).size() * this.font.lineHeight > this.top() + this.panelHeight() - 6) {
+            break;
+         }
+
          graphics.drawWordWrap(this.font, line, x, y, this.contentWidth(), 0xFF9FD7FF);
          y += this.font.split(line, this.contentWidth()).size() * this.font.lineHeight + 3;
       }

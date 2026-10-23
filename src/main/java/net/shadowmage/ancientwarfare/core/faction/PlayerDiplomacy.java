@@ -296,7 +296,8 @@ public final class PlayerDiplomacy {
                   | (data.spies().stream().anyMatch(spy -> spy.player().equals(player.getUUID()) && spy.faction().equals(faction)) ? SPY_PENDING : 0),
                ties,
                tieData.stream().mapToInt(Integer::intValue).toArray(),
-               bonds(player, faction)
+               bonds(player, faction),
+               FactionRulers.person(data, faction, player.getRandom())
             )
          );
       }
@@ -327,7 +328,7 @@ public final class PlayerDiplomacy {
 
    public static record Entry(
       String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores,
-      int[] court, List<Component> goals, int pending, List<String> ties, int[] tieData, List<Component> bonds
+      int[] court, List<Component> goals, int pending, List<String> ties, int[] tieData, List<Component> bonds, int[] person
    ) {
    }
 }

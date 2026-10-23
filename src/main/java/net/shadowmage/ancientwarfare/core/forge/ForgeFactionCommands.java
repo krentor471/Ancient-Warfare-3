@@ -439,6 +439,10 @@ public final class ForgeFactionCommands {
                   context.getSource().sendSuccess(() -> Component.literal(offered ? "Plot offered" : "No courtier"), false);
                   return 1;
                })))
+               .then(Commands.literal("rulerlife").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word())
+                  .executes(context -> rulerLife(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), 0))
+                  .then(Commands.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 200))
+                     .executes(context -> rulerLife(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "value")))))))
                .then(Commands.literal("secret").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.FactionPlots.forceSecret(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
                   return 1;
@@ -1194,4 +1198,10 @@ public final class ForgeFactionCommands {
       return 1;
    }
 
+
+   private static int rulerLife(CommandSourceStack source, String faction, String what, int value) {
+      String result = net.shadowmage.ancientwarfare.core.faction.FactionRulers.debugLife(source.getLevel(), faction, what, value);
+      source.sendSuccess(() -> Component.literal(result), false);
+      return 1;
+   }
 }

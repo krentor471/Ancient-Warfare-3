@@ -557,6 +557,9 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Name", ruler.name());
          entry.putInt("Trait", ruler.trait());
          entry.putLong("Since", ruler.since());
+         entry.putInt("Look", ruler.look());
+         entry.putLong("Born", ruler.born());
+         entry.putBoolean("Ill", ruler.ill());
          rulerTag.put(faction, entry);
       });
       tag.put("Rulers", rulerTag);
@@ -813,9 +816,16 @@ public final class FactionWorldData extends SavedData {
       CompoundTag rulerTag = tag.getCompound("Rulers");
       for (String faction : rulerTag.getAllKeys()) {
          CompoundTag entry = rulerTag.getCompound(faction);
-         data.rulers.put(faction, new Ruler(entry.getInt("Name"), entry.getInt("Trait"), entry.getLong("Since")));
+         int name = entry.getInt("Name");
+         // Rulers from before age and looks were kept get both, as if they had been in their prime when the world was read.
+         int look = entry.contains("Look") ? entry.getInt("Look") : FactionPeople.oldLook(faction, name);
+         long born = entry.contains("Born") ? entry.getLong("Born") : Long.MIN_VALUE;
+         data.rulers.put(faction, new Ruler(name, entry.getInt("Trait"), entry.getLong("Since"), look, born, entry.getBoolean("Ill")));
       }
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
+      data.rulers.replaceAll((faction, ruler) -> ruler.born() != Long.MIN_VALUE ? ruler : new Ruler(
+         ruler.name(), ruler.trait(), ruler.since(), ruler.look(), FactionPeople.oldBorn(ruler.look(), Math.max(0L, data.lastSimulatedDay)), ruler.ill()
+      ));
       data.dayOffset = tag.getLong("DayOffset");
       data.historyDone = tag.getBoolean("HistoryDone");
 
@@ -1273,7 +1283,10 @@ public final class FactionWorldData extends SavedData {
    }
 
    /** A faction's ruler: a name (an index into the lang names) and a trait (a FactionRulers.Trait ordinal). */
-   public static record Ruler(int name, int trait, long since) {
+   public static record Ruler(int name, int trait, long since, int look, long born, boolean ill) {
+      public Ruler withIll(boolean ill) {
+         return new Ruler(this.name, this.trait, this.since, this.look, this.born, ill);
+      }
    }
 
    /** A village a player took from a faction; see FactionUnrest. */

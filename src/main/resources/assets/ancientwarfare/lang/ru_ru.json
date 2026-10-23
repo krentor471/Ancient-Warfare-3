@@ -2446,5 +2446,17 @@
   "incident.ancientwarfare.border_warning": "Ваши бойцы (%1$s) стоят в поселении%3$s (%2$s) без договора. Уведите их поскорее, иначе будет инцидент.",
   "news.ancientwarfare.incident_refused.killing": "Фракция %s затаила обиду: %s отказал ей в ответе за убийство",
   "news.ancientwarfare.incident_refused.caravan": "Фракция %s затаила обиду: %s отказался возместить караван, ограбленный на его земле",
-  "news.ancientwarfare.incident_refused.border": "Фракция %s затаила обиду: %s не извинился за войска на её земле"
+  "news.ancientwarfare.incident_refused.border": "Фракция %s затаила обиду: %s не извинился за войска на её земле",
+  "gui.ancientwarfare.diplomacy.age": "возраст %s",
+  "gui.ancientwarfare.diplomacy.reign": "лет на троне: %s",
+  "gui.ancientwarfare.diplomacy.ruler_card": "Правитель %s, %s",
+  "gui.ancientwarfare.diplomacy.health.ill": "Тяжело болен",
+  "gui.ancientwarfare.diplomacy.health.old": "Стар и слаб",
+  "gui.ancientwarfare.diplomacy.health.well": "Здоров",
+  "news.ancientwarfare.ruler_ill": "%1$s: правитель %2$s (возраст %3$s) тяжело заболел.",
+  "news.ancientwarfare.ruler_recovered": "%1$s: правитель %2$s поправился.",
+  "news.ancientwarfare.ruler_died": "%1$s: правитель %2$s умер %4$s в возрасте %3$s. На трон восходит %5$s, %6$s.",
+  "news.ancientwarfare.death.old_age": "от старости",
+  "news.ancientwarfare.death.illness": "от болезни",
+  "news.ancientwarfare.courtier_died": "%1$s: %2$s %3$s умер в возрасте %4$s. Его место занял %5$s."
 }

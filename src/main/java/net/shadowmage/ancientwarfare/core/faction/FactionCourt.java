@@ -107,11 +107,17 @@ public final class FactionCourt extends SavedData {
    static final class Courtier {
       int name;
       int trait;
+      /** What they look like; see FactionPeople. */
+      int look;
+      /** The day they were born; Long.MIN_VALUE until a court read from an older world is first asked for. */
+      long born;
       final Map<UUID, Integer> favor = new HashMap<>();
 
-      Courtier(int name, int trait) {
+      Courtier(int name, int trait, int look, long born) {
          this.name = name;
          this.trait = trait;
+         this.look = look;
+         this.born = born;
       }
 
       FactionRulers.Trait trait() {
@@ -151,16 +157,30 @@ public final class FactionCourt extends SavedData {
       if (court == null) {
          RandomSource random = level.getRandom();
          int ruler = FactionRulers.ruler(FactionWorldData.get(level), faction, random).name();
+         long day = Math.max(0L, FactionWorldData.get(level).lastSimulatedDay());
          court = new Courtier[Role.values().length];
-         for (int i = 0; i < court.length; i++) {
-            court[i] = new Courtier(freshName(court, ruler, random), random.nextInt(TRAITS.length));
+         for (Role role : Role.values()) {
+            court[role.ordinal()] = newcomer(court, ruler, random, day, role);
          }
 
          data.courts.put(faction, court);
          data.setDirty();
+      } else {
+         for (Courtier courtier : court) {
+            if (courtier.born == Long.MIN_VALUE) {
+               courtier.born = FactionPeople.oldBorn(courtier.look, Math.max(0L, FactionWorldData.get(level).lastSimulatedDay()));
+               data.setDirty();
+            }
+         }
       }
 
       return court;
+   }
+
+   /** Someone new at court: an heir in youth, the others grown. */
+   private static Courtier newcomer(Courtier[] court, int ruler, RandomSource random, long day, Role role) {
+      int age = role == Role.HEIR ? 14 + random.nextInt(14) : 25 + random.nextInt(30);
+      return new Courtier(freshName(court, ruler, random), random.nextInt(TRAITS.length), FactionPeople.newLook(random), FactionPeople.bornAt(day, age, random));
    }
 
    private static int freshName(Courtier[] court, int ruler, RandomSource random) {
@@ -412,9 +432,9 @@ public final class FactionCourt extends SavedData {
       Courtier heir = court[Role.HEIR.ordinal()];
       FactionStandingData standings = FactionStandingData.get(level);
       heir.favor.forEach((player, favor) -> standings.adjustStanding(player, faction, favor / 2));
-      court[Role.HEIR.ordinal()] = new Courtier(freshName(court, heir.name, level.getRandom()), level.getRandom().nextInt(TRAITS.length));
+      court[Role.HEIR.ordinal()] = newcomer(court, heir.name, level.getRandom(), day, Role.HEIR);
       data.setDirty();
-      return new FactionWorldData.Ruler(heir.name, heir.trait, day);
+      return new FactionWorldData.Ruler(heir.name, heir.trait, day, heir.look, heir.born, false);
    }
 
    /** The courtier most fond of the player, if fond enough to plot with them; null if none is. */
@@ -445,9 +465,28 @@ public final class FactionCourt extends SavedData {
    static FactionWorldData.Ruler crown(ServerLevel level, String faction, Role role, long day) {
       Courtier[] court = court(level, faction);
       Courtier usurper = court[role.ordinal()];
-      court[role.ordinal()] = new Courtier(freshName(court, usurper.name, level.getRandom()), level.getRandom().nextInt(TRAITS.length));
+      court[role.ordinal()] = newcomer(court, usurper.name, level.getRandom(), day, role);
       get(level).setDirty();
-      return new FactionWorldData.Ruler(usurper.name, usurper.trait, day);
+      return new FactionWorldData.Ruler(usurper.name, usurper.trait, day, usurper.look, usurper.born, false);
+   }
+
+   /** The old at court die in time and a newcomer takes their place; the realm hears when it was the heir. */
+   private void age(ServerLevel level, String faction, long day) {
+      Courtier[] court = court(level, faction);
+      RandomSource random = level.getRandom();
+      for (Role role : Role.values()) {
+         Courtier courtier = court[role.ordinal()];
+         int age = FactionPeople.age(courtier.born, day);
+         if (random.nextDouble() < FactionPeople.oldAgeDeath(age)) {
+            int ruler = FactionRulers.ruler(FactionWorldData.get(level), faction, random).name();
+            court[role.ordinal()] = newcomer(court, ruler, random, day, role);
+            FactionNews.tell(
+               level,
+               Component.translatable("news.ancientwarfare.courtier_died", FactionNews.factionName(faction), roleName(role), FactionRulers.name(courtier.name), age, FactionRulers.name(court[role.ordinal()].name))
+            );
+            this.setDirty();
+         }
+      }
    }
 
    /** Daily: goals are set, fulfilled, or given up after a while. */
@@ -463,6 +502,7 @@ public final class FactionCourt extends SavedData {
       }
 
       for (String faction : factions) {
+         court.age(level, faction, day);
          List<Goal> goals = court.goals.computeIfAbsent(faction, ignored -> new ArrayList<>());
          goals.removeIf(goal -> {
             if (fulfilled(data, faction, goal)) {
@@ -698,14 +738,20 @@ public final class FactionCourt extends SavedData {
       }
    }
 
-   /** The court for the diplomacy screen: role, name, trait and this player's favor for each courtier. */
+   /** How many numbers courtView gives for each courtier. */
+   public static final int COURT_VIEW = 5;
+
+   /** The court for the diplomacy screen: name, trait, this player's favor, looks and age of each courtier. */
    static int[] courtView(ServerLevel level, String faction, UUID player) {
       Courtier[] court = court(level, faction);
-      int[] view = new int[court.length * 3];
+      long day = Math.max(0L, FactionWorldData.get(level).lastSimulatedDay());
+      int[] view = new int[court.length * COURT_VIEW];
       for (int i = 0; i < court.length; i++) {
-         view[i * 3] = court[i].name;
-         view[i * 3 + 1] = court[i].trait;
-         view[i * 3 + 2] = court[i].favor(player);
+         view[i * COURT_VIEW] = court[i].name;
+         view[i * COURT_VIEW + 1] = court[i].trait;
+         view[i * COURT_VIEW + 2] = court[i].favor(player);
+         view[i * COURT_VIEW + 3] = court[i].look;
+         view[i * COURT_VIEW + 4] = FactionPeople.age(court[i].born, day);
       }
 
       return view;
@@ -723,7 +769,8 @@ public final class FactionCourt extends SavedData {
          Courtier[] court = new Courtier[Role.values().length];
          for (int i = 0; i < court.length; i++) {
             CompoundTag entry = i < list.size() ? list.getCompound(i) : new CompoundTag();
-            court[i] = new Courtier(entry.getInt("Name"), entry.getInt("Trait"));
+            int look = entry.contains("Look") ? entry.getInt("Look") : FactionPeople.oldLook(faction + i, entry.getInt("Name"));
+            court[i] = new Courtier(entry.getInt("Name"), entry.getInt("Trait"), look, entry.contains("Born") ? entry.getLong("Born") : Long.MIN_VALUE);
             CompoundTag favor = entry.getCompound("Favor");
             for (String player : favor.getAllKeys()) {
                try {
@@ -774,6 +821,8 @@ public final class FactionCourt extends SavedData {
             CompoundTag entry = new CompoundTag();
             entry.putInt("Name", courtier.name);
             entry.putInt("Trait", courtier.trait);
+            entry.putInt("Look", courtier.look);
+            entry.putLong("Born", courtier.born);
             CompoundTag favor = new CompoundTag();
             courtier.favor.forEach((player, value) -> favor.putInt(player.toString(), value));
             entry.put("Favor", favor);

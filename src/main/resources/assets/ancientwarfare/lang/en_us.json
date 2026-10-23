@@ -2446,5 +2446,17 @@
   "incident.ancientwarfare.border_warning": "%1$s of your soldiers stand in the town%3$s of %2$s without a treaty. Lead them out soon, or there will be an incident.",
   "news.ancientwarfare.incident_refused.killing": "%s bears a grudge: %s refused to answer for a killing",
   "news.ancientwarfare.incident_refused.caravan": "%s bears a grudge: %s refused to answer for a caravan robbed on their land",
-  "news.ancientwarfare.incident_refused.border": "%s bears a grudge: %s refused to apologise for troops over its border"
+  "news.ancientwarfare.incident_refused.border": "%s bears a grudge: %s refused to apologise for troops over its border",
+  "gui.ancientwarfare.diplomacy.age": "age %s",
+  "gui.ancientwarfare.diplomacy.reign": "%s years on the throne",
+  "gui.ancientwarfare.diplomacy.ruler_card": "Ruler %s, %s",
+  "gui.ancientwarfare.diplomacy.health.ill": "Gravely ill",
+  "gui.ancientwarfare.diplomacy.health.old": "Old and frail",
+  "gui.ancientwarfare.diplomacy.health.well": "In good health",
+  "news.ancientwarfare.ruler_ill": "%1$s: ruler %2$s (age %3$s) has fallen gravely ill.",
+  "news.ancientwarfare.ruler_recovered": "%1$s: ruler %2$s has recovered.",
+  "news.ancientwarfare.ruler_died": "%1$s: ruler %2$s has died %4$s at the age of %3$s. %5$s, %6$s, takes the throne.",
+  "news.ancientwarfare.death.old_age": "of old age",
+  "news.ancientwarfare.death.illness": "of illness",
+  "news.ancientwarfare.courtier_died": "%1$s: %2$s %3$s has died at the age of %4$s. %5$s takes the post."
 }
