@@ -907,12 +907,14 @@ public final class AWCoreNetwork {
       buffer.writeBoolean(offer.treaty());
       buffer.writeBoolean(offer.trade());
       buffer.writeUtf(offer.factionWar(), 64);
+      buffer.writeVarIntArray(offer.goods());
    }
 
    private static net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer readOffer(FriendlyByteBuf buffer) {
       return new net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer(
          Math.max(0, Math.min(10000, buffer.readVarInt())), Math.max(0, Math.min(1000, buffer.readVarInt())), buffer.readUtf(64),
-         Math.max(0, Math.min(10000, buffer.readVarInt())), buffer.readBoolean(), buffer.readBoolean(), buffer.readUtf(64)
+         Math.max(0, Math.min(10000, buffer.readVarInt())), buffer.readBoolean(), buffer.readBoolean(), buffer.readUtf(64),
+         java.util.Arrays.stream(buffer.readVarIntArray(8)).map(load -> Math.max(0, Math.min(1000, load))).toArray()
       );
    }
 
@@ -976,7 +978,7 @@ public final class AWCoreNetwork {
          Context context = supplier.get();
          context.enqueueWork(() -> {
             if (context.getSender() == null) {
-               net.shadowmage.ancientwarfare.core.client.DealScreen.accept(packet.open, packet.view);
+               net.shadowmage.ancientwarfare.core.client.DiplomacyScreen.acceptDeal(packet.view);
             }
          });
          context.setPacketHandled(true);

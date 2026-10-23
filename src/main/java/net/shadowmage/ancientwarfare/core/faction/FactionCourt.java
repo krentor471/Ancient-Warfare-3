@@ -306,7 +306,8 @@ public final class FactionCourt extends SavedData {
       return Component.translatable(standing > 0 ? "supply.ancientwarfare.given" : "supply.ancientwarfare.given_tired", FactionNews.factionName(faction), SUPPLY_AMOUNT, goods, now);
    }
 
-   private static boolean takeItems(ServerPlayer player, net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tag, int count) {
+   /** How many of the tagged items the player carries. */
+   static int heldItems(ServerPlayer player, net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tag) {
       net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
       int held = 0;
       for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -315,7 +316,12 @@ public final class FactionCourt extends SavedData {
          }
       }
 
-      if (held < count) {
+      return held;
+   }
+
+   static boolean takeItems(ServerPlayer player, net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tag, int count) {
+      net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
+      if (heldItems(player, tag) < count) {
          return false;
       }
 

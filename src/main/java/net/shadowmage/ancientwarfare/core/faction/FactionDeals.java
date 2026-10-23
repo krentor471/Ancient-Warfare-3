@@ -33,6 +33,13 @@ public final class FactionDeals extends SavedData {
    private static final String DATA_NAME = "ancientwarfare_faction_deals";
    /** Steps of the gold buttons, in gold coins. */
    public static final int GOLD_STEP = 5;
+   /** Goods change hands in loads of this many items. */
+   public static final int GOODS_STEP = 16;
+   /** Wood, stone and iron. */
+   public static final int KINDS = 3;
+   public static final int GOODS = KINDS * 2;
+   /** What an item of each kind is worth in silver to a faction with middling stores. */
+   private static final double[] GOODS_PRICE = {0.5, 0.5, 2.0};
    public static final int TRIBUTE_STEP = 2;
    public static final int TRIBUTE_WEEKS = 4;
    private static final int WEEK_DAYS = 7;
@@ -64,12 +71,25 @@ public final class FactionDeals extends SavedData {
    private final List<Promise> promises = new ArrayList<>();
    private final Map<UUID, Integer> reliability = new HashMap<>();
 
-   /** What each side puts in: gold in gold coins, tribute in gold a week. */
-   public record Offer(int playerGold, int tribute, String playerWar, int factionGold, boolean treaty, boolean trade, String factionWar) {
-      public static final Offer EMPTY = new Offer(0, 0, "", 0, false, false, "");
+   /**
+    * What each side puts in: gold in gold coins, tribute in gold a week; goods are wood, stone and iron
+    * the player gives, then the same the faction gives, each counted in loads of GOODS_STEP.
+    */
+   public record Offer(int playerGold, int tribute, String playerWar, int factionGold, boolean treaty, boolean trade, String factionWar, int[] goods) {
+      public static final Offer EMPTY = new Offer(0, 0, "", 0, false, false, "", new int[GOODS]);
+
+      public Offer {
+         goods = java.util.Arrays.copyOf(goods, GOODS);
+      }
 
       boolean empty() {
-         return this.playerGold <= 0 && this.tribute <= 0 && this.playerWar.isEmpty() && this.factionGold <= 0 && !this.treaty && !this.trade && this.factionWar.isEmpty();
+         return this.playerGold <= 0 && this.tribute <= 0 && this.playerWar.isEmpty() && this.factionGold <= 0 && !this.treaty && !this.trade && this.factionWar.isEmpty()
+            && java.util.Arrays.stream(this.goods).allMatch(load -> load <= 0);
+      }
+
+      /** Items of a kind the player gives (mine) or the faction gives. */
+      public int items(int kind, boolean mine) {
+         return Math.max(0, this.goods[(mine ? 0 : KINDS) + kind]) * GOODS_STEP;
       }
 
       boolean promises() {
@@ -239,13 +259,26 @@ public final class FactionDeals extends SavedData {
          return refuse("deal.ancientwarfare.no_treaty", name);
       } else if (offer.treaty() && treaty == RelationState.PACT && !PlayerResearch.has(player, PlayerResearch.DIPLOMACY)) {
          return new Weighed(REFUSE, PlayerResearch.needs(PlayerResearch.DIPLOMACY));
+      } else if (shortOf(player, offer) >= 0) {
+         return new Weighed(REFUSE, Component.translatable("deal.ancientwarfare.no_goods", offer.items(shortOf(player, offer), true), goodsName(shortOf(player, offer))));
+      } else if (stingy(data, faction, offer)) {
+         return refuse("deal.ancientwarfare.no_spare_goods", name);
       } else if (offer.trade() && (standings.hasTrade(player.getUUID(), faction) || !PlayerResearch.has(player, "trade"))) {
          return refuse("deal.ancientwarfare.no_trade", name);
       }
 
       double trust = Mth.clamp(1.0 + 0.15 * word, 0.25, 1.5);
       double goldTaste = (trait == FactionRulers.Trait.GREEDY ? 1.5 : 1.0) * (FactionCourt.wantsGold(level, faction) ? 1.3 : 1.0) * (data.treasury(faction) < 200 ? 1.3 : 1.0);
+      double costs = 0.0;
       double gains = offer.playerGold() * 10 * goldTaste + offer.tribute() * 10 * TRIBUTE_WEEKS * goldTaste * trust;
+      int[] stores = data.stores(faction);
+      for (int kind = 0; kind < KINDS; kind++) {
+         // A faction short of a good pays more for it and parts with it less gladly.
+         double worth = GOODS_PRICE[kind] * Mth.clamp(300.0 / (stores[kind] + 100.0), 0.5, 2.0);
+         gains += offer.items(kind, true) * worth;
+         costs += offer.items(kind, false) * worth * 1.2;
+      }
+
       if (!offer.playerWar().isEmpty()) {
          gains += WAR_WORTH * trust * (FactionCourt.wantsWar(level, faction, offer.playerWar()) ? 2.0 : 1.0);
       }
@@ -253,7 +286,7 @@ public final class FactionDeals extends SavedData {
       // A friend's offer counts for more, a foe's for less.
       gains *= Mth.clamp(1.0 + standing / 200.0, 0.5, 1.5);
       int temper = trait.treatyStanding - FactionCourt.treatyBonus(level, faction, player.getUUID());
-      double costs = offer.factionGold() * 10 * (trait == FactionRulers.Trait.GREEDY ? 1.5 : 1.0);
+      costs += offer.factionGold() * 10 * (trait == FactionRulers.Trait.GREEDY ? 1.5 : 1.0);
       if (offer.treaty()) {
          int need = switch (treaty) {
             case WAR -> PlayerDiplomacy.PEACE_STANDING;
@@ -285,6 +318,45 @@ public final class FactionDeals extends SavedData {
       return refuse("deal.ancientwarfare.refuse", name);
    }
 
+   private static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item>[] GOODS_TAGS = goodsTags();
+   private static final net.minecraft.world.item.Item[] GOODS_ITEMS = {
+      net.minecraft.world.item.Items.OAK_LOG, net.minecraft.world.item.Items.COBBLESTONE, net.minecraft.world.item.Items.IRON_INGOT
+   };
+
+   @SuppressWarnings("unchecked")
+   private static net.minecraft.tags.TagKey<net.minecraft.world.item.Item>[] goodsTags() {
+      return new net.minecraft.tags.TagKey[]{
+         net.minecraft.tags.ItemTags.LOGS, net.minecraftforge.common.Tags.Items.COBBLESTONE, net.minecraftforge.common.Tags.Items.INGOTS_IRON
+      };
+   }
+
+   public static Component goodsName(int kind) {
+      return Component.translatable("supply.ancientwarfare.goods." + (kind == 0 ? "wood" : kind == 1 ? "stone" : "iron"));
+   }
+
+   /** The first kind of goods the player offers more of than they carry, or -1. */
+   private static int shortOf(ServerPlayer player, Offer offer) {
+      for (int kind = 0; kind < KINDS; kind++) {
+         if (!player.isCreative() && offer.items(kind, true) > FactionCourt.heldItems(player, GOODS_TAGS[kind])) {
+            return kind;
+         }
+      }
+
+      return -1;
+   }
+
+   /** Whether the faction is asked for more of a good than half its stores. */
+   private static boolean stingy(FactionWorldData data, String faction, Offer offer) {
+      int[] stores = data.stores(faction);
+      for (int kind = 0; kind < KINDS; kind++) {
+         if (offer.items(kind, false) > stores[kind] / 2) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
    private static Weighed refuse(String key, Component name) {
       return new Weighed(REFUSE, Component.translatable(key, name));
    }
@@ -296,6 +368,29 @@ public final class FactionDeals extends SavedData {
       FactionWorldData data = FactionWorldData.get(level);
       if (offer.playerGold() > 0 && !Coins.take(player, offer.playerGold() * 10)) {
          return Component.translatable("deal.ancientwarfare.no_gold", offer.playerGold());
+      }
+
+      if (shortOf(player, offer) >= 0) {
+         return Component.translatable("deal.ancientwarfare.no_goods", offer.items(shortOf(player, offer), true), goodsName(shortOf(player, offer)));
+      }
+
+      int[] stores = data.stores(faction);
+      for (int kind = 0; kind < KINDS; kind++) {
+         if (!player.isCreative()) {
+            FactionCourt.takeItems(player, GOODS_TAGS[kind], offer.items(kind, true));
+         }
+
+         stores[kind] += offer.items(kind, true) - offer.items(kind, false);
+         int given = offer.items(kind, false);
+         while (given > 0) {
+            int count = Math.min(64, given);
+            net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(GOODS_ITEMS[kind], count);
+            if (!player.getInventory().add(stack)) {
+               player.drop(stack, false);
+            }
+
+            given -= count;
+         }
       }
 
       data.setTreasury(faction, data.treasury(faction) + offer.playerGold() * 10 - offer.factionGold() * 10);
