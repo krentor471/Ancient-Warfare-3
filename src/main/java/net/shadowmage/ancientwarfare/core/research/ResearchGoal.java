@@ -19,6 +19,16 @@ public record ResearchGoal(String id, String displayName, int time, Set<String> 
       return completedResearch.containsAll(this.dependencies) && !completedResearch.contains(this.id);
    }
 
+   ResearchGoal withDependency(String dependency) {
+      Set<String> dependencies = new java.util.HashSet<>(this.dependencies);
+      dependencies.add(dependency);
+      return new ResearchGoal(this.id, this.displayName, this.time, Set.copyOf(dependencies), this.resourceRequirements, this.science);
+   }
+
+   public boolean isEra() {
+      return this.id.startsWith(ResearchRegistry.ERA_PREFIX);
+   }
+
    ResearchGoal withScience(int science) {
       return new ResearchGoal(this.id, this.displayName, this.time, this.dependencies, this.resourceRequirements, science);
    }

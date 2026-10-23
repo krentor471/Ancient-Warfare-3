@@ -171,6 +171,23 @@ public final class ResearchBookData {
       }
    }
 
+   /** How much dearer research is for this book's researcher, by the size of their country; kept up to date by the station. */
+   public static float getScienceScale(ItemStack stack) {
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("scienceScale") ? Math.max(1.0F, tag.getFloat("scienceScale")) : 1.0F;
+   }
+
+   public static void setScienceScale(ItemStack stack, float scale) {
+      if (Math.abs(scale - getScienceScale(stack)) > 0.001F) {
+         stack.getOrCreateTag().putFloat("scienceScale", scale);
+      }
+   }
+
+   /** The science a technology costs this book's researcher. */
+   public static int scienceCost(ItemStack stack, ResearchGoal goal) {
+      return Math.round(goal.science() * getScienceScale(stack));
+   }
+
    public static boolean takeScience(ItemStack stack, int amount) {
       int science = getScience(stack);
       if (science < amount) {

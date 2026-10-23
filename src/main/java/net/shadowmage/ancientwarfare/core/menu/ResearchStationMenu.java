@@ -87,7 +87,7 @@ public class ResearchStationMenu extends AbstractContainerMenu {
 
    public int getNeededScience() {
       ResearchGoal goal = this.getDisplayGoal();
-      return goal == null || goal == this.getCurrentGoal() ? 0 : goal.science();
+      return goal == null || goal == this.getCurrentGoal() ? 0 : net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.scienceCost(this.getResearchBook(), goal);
    }
 
    public List<ItemStack> getCurrentResearchResources() {

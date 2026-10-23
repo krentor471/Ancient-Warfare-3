@@ -49,6 +49,47 @@ public final class ResearchRegistry {
 
    /** Gives every technology without a set price the science its depth in the tree calls for. */
    private static final Map<String, Integer> DEPTHS = new java.util.HashMap<>();
+   /** Eras are technologies too: a big step everything past it waits on. */
+   public static final String ERA_PREFIX = "era_";
+   public static final String ERA_KINGDOM = "era_kingdom";
+   public static final String ERA_EMPIRE = "era_empire";
+
+   /**
+    * Opens an era: the era needs the named technologies, and every technology that was as deep in
+    * the tree as the era now is waits on the era as well.
+    */
+   private static void era(String id, int science, Set<String> needs, List<ResearchResource> resources) {
+      int depth = 0;
+      for (String need : needs) {
+         depth = Math.max(depth, depth(need) + 1);
+      }
+
+      List<String> waiting = new java.util.ArrayList<>();
+      for (ResearchGoal goal : GOALS.values()) {
+         if (depth(goal.id()) == depth) {
+            waiting.add(goal.id());
+         }
+      }
+
+      register(goal(id, 400, needs, resources, science));
+      for (String other : waiting) {
+         GOALS.put(other, GOALS.get(other).withDependency(id));
+      }
+
+      DEPTHS.clear();
+   }
+
+   /** The era a technology belongs to, by the last era on the way to it: null before the first. */
+   public static String eraOf(String id) {
+      ResearchGoal empire = GOALS.get(ERA_EMPIRE);
+      ResearchGoal kingdom = GOALS.get(ERA_KINGDOM);
+      int depth = depth(id);
+      if (empire != null && depth >= depth(ERA_EMPIRE)) {
+         return ERA_EMPIRE;
+      } else {
+         return kingdom != null && depth >= depth(ERA_KINGDOM) ? ERA_KINGDOM : null;
+      }
+   }
 
    /** How many steps of research lie before this one: 0 for the roots of the tree. */
    public static int depth(String id) {
@@ -376,5 +417,17 @@ public final class ResearchRegistry {
          )
       );
       priceScience();
+      era(
+         ERA_KINGDOM,
+         1000,
+         deps("construction", "mathematics", "trade", "tactics"),
+         res(stack(Items.GOLD_INGOT, 8), stack(Items.BOOK, 6), stack(Items.WHITE_BANNER, 1), stack(Items.IRON_INGOT, 16))
+      );
+      era(
+         ERA_EMPIRE,
+         2500,
+         deps("machinery", "refining", "navigation", PlayerResearch.ESPIONAGE),
+         res(stack(Items.GOLD_BLOCK, 2), stack(Items.BOOK, 12), stack(Items.EMERALD, 4), stack(Items.DIAMOND, 2))
+      );
    }
 }

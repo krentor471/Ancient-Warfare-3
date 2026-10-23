@@ -73,6 +73,7 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
 
             if (this.level.getGameTime() % 20L == 0L && this.level instanceof net.minecraft.server.level.ServerLevel server) {
                net.shadowmage.ancientwarfare.core.research.PlayerResearch.learn(server, ResearchBookItem.getResearcherName(book), ResearchBookItem.getCompletedResearch(book));
+               ResearchBookData.setScienceScale(book, net.shadowmage.ancientwarfare.core.research.PlayerResearch.scienceScale(server, ResearchBookItem.getResearcherName(book)));
             }
          }
       }
@@ -81,8 +82,8 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    private void startNextQueuedResearch(ItemStack book) {
       String nextId = ResearchBookItem.peekNextQueuedResearch(book);
       ResearchGoal next = nextId == null ? null : ResearchRegistry.get(nextId);
-      if (next != null && ResearchBookData.getScience(book) >= next.science() && this.consumeResearchResources(next)) {
-         ResearchBookData.takeScience(book, next.science());
+      if (next != null && ResearchBookData.getScience(book) >= ResearchBookData.scienceCost(book, next) && this.consumeResearchResources(next)) {
+         ResearchBookData.takeScience(book, ResearchBookData.scienceCost(book, next));
          ResearchBookItem.startNextQueuedResearch(book);
          this.setChanged();
       }

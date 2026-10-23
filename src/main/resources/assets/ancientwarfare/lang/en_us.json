@@ -2117,5 +2117,12 @@
   "guistrings.research.shelves": "Bookshelves nearby: +%s%% (6 or more make a scriptorium, +25%%)",
   "guistrings.research.scriptorium": "Scriptorium: +%s%% science",
   "guistrings.research.supplies": "They write on paper with ink (ink sac or black dye) from a chest beside the desk: one of each per %s science.",
-  "guistrings.research.quill_hint": "A better quill gathers more: stone ×1.25, iron ×1.5, gold ×2, diamond ×3."
+  "guistrings.research.quill_hint": "A better quill gathers more: stone ×1.25, iron ×1.5, gold ×2, diamond ×3.",
+  "research.ancientwarfare.era_tribe": "Age of Tribes",
+  "research.ancientwarfare.era_kingdom": "Age of Kingdoms",
+  "research.ancientwarfare.era_empire": "Age of Empires",
+  "research.ancientwarfare.era_kingdom.opens": "A new age: everything past it, and +5 standing with every faction you know",
+  "research.ancientwarfare.era_empire.opens": "A new age: everything past it, and +5 standing with every faction you know",
+  "news.ancientwarfare.era": "%s enters a new age: %s",
+  "gui.ancientwarfare.research_tree.scale": "+%s%% for the size of your country"
 }

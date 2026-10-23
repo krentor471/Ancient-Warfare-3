@@ -2117,5 +2117,12 @@
   "guistrings.research.shelves": "Книжные полки рядом: +%s%% (от 6 полок это скрипторий, ещё +25%%)",
   "guistrings.research.scriptorium": "Скрипторий: +%s%% к науке",
   "guistrings.research.supplies": "Пишут на бумаге чернилами (чернильный мешок или чёрный краситель) из сундука рядом со столом: по одному на %s науки.",
-  "guistrings.research.quill_hint": "Перо получше даёт больше: каменное ×1,25, железное ×1,5, золотое ×2, алмазное ×3."
+  "guistrings.research.quill_hint": "Перо получше даёт больше: каменное ×1,25, железное ×1,5, золотое ×2, алмазное ×3.",
+  "research.ancientwarfare.era_tribe": "Эпоха Племён",
+  "research.ancientwarfare.era_kingdom": "Эпоха Царств",
+  "research.ancientwarfare.era_empire": "Эпоха Империй",
+  "research.ancientwarfare.era_kingdom.opens": "Новая эпоха: всё, что дальше по дереву, и +5 к отношению со всеми известными фракциями",
+  "research.ancientwarfare.era_empire.opens": "Новая эпоха: всё, что дальше по дереву, и +5 к отношению со всеми известными фракциями",
+  "news.ancientwarfare.era": "%s вступает в новую эпоху: %s",
+  "gui.ancientwarfare.research_tree.scale": "+%s%% за размер страны"
 }

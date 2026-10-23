@@ -79,14 +79,14 @@ public final class ResearchTreeScreen extends AbstractContainerScreen<ResearchSt
          ordered.sort(Comparator.comparingDouble(goal -> goal.dependencies().stream().mapToDouble(dep -> rows.getOrDefault(dep, 0.0)).average().orElse(0.0)));
          for (int row = 0; row < ordered.size(); row++) {
             rows.put(ordered.get(row).id(), (double)row);
-            this.positions.put(ordered.get(row).id(), new int[]{MARGIN + depth * COLUMN, MARGIN + 14 + row * ROW});
+            this.positions.put(ordered.get(row).id(), new int[]{MARGIN + depth * COLUMN, MARGIN + 18 + row * ROW});
          }
 
          maxRows = Math.max(maxRows, ordered.size());
       }
 
       this.treeWidth = MARGIN * 2 + maxDepth * COLUMN + NODE_WIDTH;
-      this.treeHeight = MARGIN * 2 + 14 + maxRows * ROW;
+      this.treeHeight = MARGIN * 2 + 18 + maxRows * ROW;
    }
 
    @Override
@@ -162,10 +162,23 @@ public final class ResearchTreeScreen extends AbstractContainerScreen<ResearchSt
       int ox = this.originX();
       int oy = this.originY();
       int maxDepth = (this.treeWidth - MARGIN * 2 - NODE_WIDTH) / COLUMN;
+      int kingdom = ResearchRegistry.depth(ResearchRegistry.ERA_KINGDOM);
+      int empire = ResearchRegistry.depth(ResearchRegistry.ERA_EMPIRE);
       for (int depth = 0; depth <= maxDepth; depth++) {
          int x = ox + MARGIN + depth * COLUMN;
+         // Each era is a band of columns, from the column after its own era card.
+         int band = depth > empire ? 0x18C060FF : depth > kingdom ? 0x1060A0FF : 0;
+         if (band != 0) {
+            graphics.fill(x - 9, oy, x - 9 + COLUMN, oy + this.treeHeight, band);
+         }
+
+         if (depth == 0 || depth == kingdom + 1 || depth == empire + 1) {
+            String era = depth == 0 ? "era_tribe" : depth == kingdom + 1 ? ResearchRegistry.ERA_KINGDOM : ResearchRegistry.ERA_EMPIRE;
+            graphics.drawString(this.font, Component.translatable("research.ancientwarfare." + era).withStyle(ChatFormatting.BOLD), x, oy + 4, 0xFFE0C070, false);
+         }
+
          graphics.fill(x - 10, oy, x - 9, oy + this.treeHeight, 0xFF2C251C);
-         graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.research_tree.step", depth + 1), x, oy + MARGIN - 4, 0xFF8A7A60, false);
+         graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.research_tree.step", depth + 1), x, oy + MARGIN - 2, 0xFF8A7A60, false);
       }
 
       ItemStack book = this.menu.book();
@@ -236,6 +249,10 @@ public final class ResearchTreeScreen extends AbstractContainerScreen<ResearchSt
    private void node(GuiGraphics graphics, ResearchGoal goal, int x, int y, boolean over) {
       State state = this.state(goal);
       int border = color(state);
+      if (goal.isEra()) {
+         graphics.fill(x - 3, y - 3, x + NODE_WIDTH + 3, y + NODE_HEIGHT + 3, 0xFFE0B040);
+      }
+
       graphics.fill(x - 1, y - 1, x + NODE_WIDTH + 1, y + NODE_HEIGHT + 1, over ? 0xFFFFFFFF : border);
       graphics.fill(x, y, x + NODE_WIDTH, y + NODE_HEIGHT, state == State.LOCKED ? 0xFF221D17 : 0xFF3A3023);
       graphics.fill(x, y, x + 3, y + NODE_HEIGHT, border);
@@ -252,8 +269,9 @@ public final class ResearchTreeScreen extends AbstractContainerScreen<ResearchSt
          line += 9;
       }
 
-      Component cost = goal.science() > 0
-         ? Component.literal(goal.science() + "✦").withStyle(ChatFormatting.AQUA)
+      int science = ResearchBookData.scienceCost(this.menu.book(), goal);
+      Component cost = science > 0
+         ? Component.literal(science + "✦").withStyle(ChatFormatting.AQUA)
          : Component.translatable("gui.ancientwarfare.research_tree.free").withStyle(ChatFormatting.GRAY);
       graphics.drawString(this.font, cost, x + 24, name.size() > 1 ? y + 21 : y + 17, 0xFFFFFFFF, false);
       if (state == State.CURRENT) {
@@ -280,8 +298,13 @@ public final class ResearchTreeScreen extends AbstractContainerScreen<ResearchSt
          lines.add(needs);
       }
 
-      if (goal.science() > 0) {
-         lines.add(Component.translatable("gui.ancientwarfare.research_tree.science", goal.science()).withStyle(ChatFormatting.AQUA));
+      int science = ResearchBookData.scienceCost(this.menu.book(), goal);
+      if (science > 0) {
+         lines.add(Component.translatable("gui.ancientwarfare.research_tree.science", science).withStyle(ChatFormatting.AQUA));
+         float scale = ResearchBookData.getScienceScale(this.menu.book());
+         if (scale > 1.0F) {
+            lines.add(Component.translatable("gui.ancientwarfare.research_tree.scale", Math.round((scale - 1.0F) * 100.0F)).withStyle(ChatFormatting.DARK_AQUA));
+         }
       }
 
       lines.add(Component.translatable("gui.ancientwarfare.research_tree.resources").withStyle(ChatFormatting.YELLOW));

@@ -37,6 +37,8 @@ public final class PlayerResearch extends SavedData {
    public static final String DIPLOMACY = "diplomacy";
    /** Sends spies to factions. */
    public static final String ESPIONAGE = "espionage";
+   private static final float SCIENCE_PER_VILLAGE = 0.1F;
+   private static final float MAX_SCIENCE_SCALE = 2.0F;
    private final Map<String, Set<String>> known = new HashMap<>();
 
    public static PlayerResearch get(ServerLevel level) {
@@ -82,6 +84,13 @@ public final class PlayerResearch extends SavedData {
       known.addAll(completed);
       data.setDirty();
       ServerPlayer player = level.getServer().getPlayerList().getPlayerByName(researcher);
+      java.util.UUID owner = owner(level, researcher);
+      for (String research : fresh) {
+         if (owner != null && research.startsWith(ResearchRegistry.ERA_PREFIX)) {
+            net.shadowmage.ancientwarfare.core.faction.CountryEras.reached(level, owner, research);
+         }
+      }
+
       if (player != null) {
          for (String research : fresh) {
             player.sendSystemMessage(
@@ -91,6 +100,38 @@ public final class PlayerResearch extends SavedData {
 
          sync(player);
       }
+   }
+
+   /** The player a researcher's name belongs to, whether they are online or not. */
+   @org.jetbrains.annotations.Nullable
+   public static java.util.UUID owner(ServerLevel level, String researcher) {
+      ServerPlayer player = level.getServer().getPlayerList().getPlayerByName(researcher);
+      if (player != null) {
+         return player.getUUID();
+      }
+
+      net.minecraft.server.players.GameProfileCache cache = level.getServer().getProfileCache();
+      return cache == null ? null : cache.get(researcher).map(com.mojang.authlib.GameProfile::getId).orElse(null);
+   }
+
+   /**
+    * Research grows dearer as a country grows, as in Civilization: every village past the first adds
+    * a tenth to the science each technology costs, up to twice the price.
+    */
+   public static float scienceScale(ServerLevel level, String researcher) {
+      java.util.UUID owner = owner(level, researcher);
+      if (owner == null) {
+         return 1.0F;
+      }
+
+      int villages = 0;
+      for (java.util.UUID village : net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(level).villages().values()) {
+         if (owner.equals(village)) {
+            villages++;
+         }
+      }
+
+      return Math.min(MAX_SCIENCE_SCALE, 1.0F + SCIENCE_PER_VILLAGE * Math.max(0, villages - 1));
    }
 
    public static void sync(ServerPlayer player) {

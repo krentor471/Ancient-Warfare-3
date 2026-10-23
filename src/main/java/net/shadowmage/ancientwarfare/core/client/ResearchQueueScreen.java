@@ -70,7 +70,7 @@ public class ResearchQueueScreen extends AbstractContainerScreen<ResearchStation
       for (int index = 0; index < queued.size(); index++) {
          int y = 48 + row * 12 - this.queueScroll;
          ResearchGoal goal = ((ResearchStationMenu)this.menu).getQueuedGoal(index);
-         graphics.drawString(this.font, (Component)(goal == null ? Component.literal(queued.get(index)) : withScience(goal)), 8, y + 1, -1, false);
+         graphics.drawString(this.font, (Component)(goal == null ? Component.literal(queued.get(index)) : withScience(goal, ((ResearchStationMenu)this.menu).book())), 8, y + 1, -1, false);
          LegacyGuiStyle.buttonWithText(graphics, this.font, 0, 0, 168, y, 12, 12, Component.literal("-"), -1, -1);
          row++;
       }
@@ -88,10 +88,11 @@ public class ResearchQueueScreen extends AbstractContainerScreen<ResearchStation
    }
 
    /** The technology's name, with the science it costs when it costs any. */
-   static Component withScience(ResearchGoal goal) {
-      return goal.science() <= 0
+   static Component withScience(ResearchGoal goal, net.minecraft.world.item.ItemStack book) {
+      int science = net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.scienceCost(book, goal);
+      return science <= 0
          ? goal.translatedName()
-         : goal.translatedName().copy().append(Component.literal(" " + goal.science() + "\u2726").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
+         : goal.translatedName().copy().append(Component.literal(" " + science + "\u2726").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
    }
 
    private void drawLearnableRows(GuiGraphics graphics) {
@@ -100,7 +101,7 @@ public class ResearchQueueScreen extends AbstractContainerScreen<ResearchStation
 
       for (int index = 0; index < goals.size(); index++) {
          int y = 48 + index * 12 - this.selectionScroll;
-         graphics.drawString(this.font, withScience(goals.get(index)), 208, y + 1, -1, false);
+         graphics.drawString(this.font, withScience(goals.get(index), ((ResearchStationMenu)this.menu).book()), 208, y + 1, -1, false);
          LegacyGuiStyle.buttonWithText(graphics, this.font, 0, 0, 368, y, 12, 12, Component.literal("+"), -1, -1);
       }
 
