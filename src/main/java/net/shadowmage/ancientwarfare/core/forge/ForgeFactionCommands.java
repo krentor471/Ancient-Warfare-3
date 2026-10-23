@@ -118,6 +118,23 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("accept").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, true))))
                .then(Commands.literal("decline").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, false))))
          );
+      // Run by clicking the buttons under a caught spy in chat.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awspy")
+               .then(Commands.argument("verdict", StringArgumentType.word())
+                  .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("execute", "exchange", "turn"), builder))
+                  .then(Commands.argument("spy", IntegerArgumentType.integer()).executes(context -> {
+                     if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                        net.shadowmage.ancientwarfare.core.faction.FactionCounterSpies.judge(
+                           player, IntegerArgumentType.getInteger(context, "spy"), StringArgumentType.getString(context, "verdict")
+                        );
+                        return 1;
+                     }
+
+                     return 0;
+                  })))
+         );
       // Run by clicking the buttons of a besieger's ultimatum in chat.
       event.getDispatcher()
          .register(
@@ -296,6 +313,14 @@ public final class ForgeFactionCommands {
                   net.shadowmage.ancientwarfare.core.faction.FactionPorts.force(context.getSource().getLevel(), context.getSource().getPlayerOrException(), false);
                   return 1;
                }))
+               .then(Commands.literal("spyarrive").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+                  ServerPlayer player = context.getSource().getPlayerOrException();
+                  boolean arrived = net.shadowmage.ancientwarfare.core.faction.FactionCounterSpies.arrive(
+                     context.getSource().getLevel(), net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(context.getSource().getLevel()), player.getUUID(), StringArgumentType.getString(context, "faction")
+                  );
+                  context.getSource().sendSuccess(() -> Component.literal(arrived ? "Spy arrived" : "No village"), false);
+                  return 1;
+               })))
                .then(Commands.literal("port").requires(source -> source.hasPermission(2)).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.FactionPorts.force(context.getSource().getLevel(), context.getSource().getPlayerOrException(), true);
                   return 1;

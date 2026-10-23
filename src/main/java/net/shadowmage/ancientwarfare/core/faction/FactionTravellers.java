@@ -311,6 +311,11 @@ public final class FactionTravellers {
          }
 
          List<Long> points = route.points();
+         if (this.index < 0 || this.index >= points.size()) {
+            // Arrived while a player watched: they wait at the road's end until out of sight.
+            return level.getNearestPlayer(lead, HIDDEN_RANGE) != null;
+         }
+
          boolean next = false;
          if (distance(lead, points.get(this.index)) < 3.0) {
             this.index += this.direction;

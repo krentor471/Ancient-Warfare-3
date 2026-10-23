@@ -2308,5 +2308,15 @@
   "intrigue.ancientwarfare.rumour.done": "Rumours spread through the towns of %s (%s).",
   "intrigue.ancientwarfare.forgery.no_friend": "%s have no friend to quarrel with.",
   "intrigue.ancientwarfare.forgery.done": "A forged letter sets %s against %s.",
-  "news.ancientwarfare.agent_caught": "%s caught an agent at work (%s). They say %s sent them."
+  "news.ancientwarfare.agent_caught": "%s caught an agent at work (%s). They say %s sent them.",
+  "counterspy.ancientwarfare.unrest": "Unrest in your village near %s, %s: someone is stirring people up. Foreign hands, perhaps.",
+  "counterspy.ancientwarfare.caught": "The watch of your village near %s, %s caught a spy of %s. What is to be done with them?",
+  "counterspy.ancientwarfare.execute": "Execute",
+  "counterspy.ancientwarfare.exchange": "Ransom",
+  "counterspy.ancientwarfare.turn": "Turn",
+  "counterspy.ancientwarfare.gone": "That spy is no longer in your hands.",
+  "counterspy.ancientwarfare.executed": "The spy of %s is executed. They will think twice: no spies from them for %s days, though they think worse of you.",
+  "counterspy.ancientwarfare.exchanged": "%s paid a ransom of %s silver for their spy and are grateful.",
+  "counterspy.ancientwarfare.turned": "The spy of %s now works for you: for %s days you will know where their armies march.",
+  "counterspy.ancientwarfare.escaped": "The spy of %s would not be turned and slipped away."
 }

@@ -2308,5 +2308,15 @@
   "intrigue.ancientwarfare.rumour.done": "Слухи расползлись по поселениям фракции %s (%s).",
   "intrigue.ancientwarfare.forgery.no_friend": "Фракции %s не с кем ссориться.",
   "intrigue.ancientwarfare.forgery.done": "Поддельное письмо поссорило фракции %s и %s.",
-  "news.ancientwarfare.agent_caught": "Пойман агент (%2$s) у фракции %1$s. Говорят, его послал %3$s."
+  "news.ancientwarfare.agent_caught": "Пойман агент (%2$s) у фракции %1$s. Говорят, его послал %3$s.",
+  "counterspy.ancientwarfare.unrest": "В твоей деревне у %s, %s неспокойно: кто-то подбивает людей. Похоже на чужие руки.",
+  "counterspy.ancientwarfare.caught": "Стража деревни у %s, %s поймала шпиона фракции %s. Что с ним делать?",
+  "counterspy.ancientwarfare.execute": "Казнить",
+  "counterspy.ancientwarfare.exchange": "Выкуп",
+  "counterspy.ancientwarfare.turn": "Перевербовать",
+  "counterspy.ancientwarfare.gone": "Этого шпиона у тебя уже нет.",
+  "counterspy.ancientwarfare.executed": "Шпион фракции %s казнён. Там задумаются: %s дней новых шпионов не будет, но мнение о тебе упало.",
+  "counterspy.ancientwarfare.exchanged": "Фракция %s выкупила своего шпиона за %s сер. и благодарна тебе.",
+  "counterspy.ancientwarfare.turned": "Шпион фракции %s теперь работает на тебя: %s дней ты будешь знать, куда идут её войска.",
+  "counterspy.ancientwarfare.escaped": "Шпион фракции %s не поддался и сбежал."
 }
