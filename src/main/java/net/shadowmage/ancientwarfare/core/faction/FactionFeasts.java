@@ -98,7 +98,7 @@ public final class FactionFeasts extends SavedData {
    // ---------------------------------------------------------------- rulers
 
    /** Whether two characters draw together, push apart, or neither. */
-   private static int affinity(int one, int two) {
+   static int affinity(int one, int two) {
       int score = 0;
       for (FactionPeople.Character mine : FactionPeople.traits(one)) {
          for (FactionPeople.Character theirs : FactionPeople.traits(two)) {
@@ -163,6 +163,11 @@ public final class FactionFeasts extends SavedData {
       this.setDirty();
    }
 
+   /** Makes the player the ruler's friend or rival. */
+   static void befriend(ServerLevel level, UUID player, String faction, int kind) {
+      get(level).setPlayerBond(level, player, faction, kind);
+   }
+
    /** The overview's lines: the ruler's friends and rivals among rulers, and his bond with the player. */
    static List<Component> lines(ServerLevel level, UUID player, String faction) {
       FactionFeasts feasts = get(level);
@@ -220,11 +225,11 @@ public final class FactionFeasts extends SavedData {
       return joined;
    }
 
-   private static FactionWorldData.Settlement capital(FactionWorldData data, String faction) {
+   static FactionWorldData.Settlement capital(FactionWorldData data, String faction) {
       return data.settlements().stream().filter(settlement -> settlement.faction().equals(faction) && FactionTowns.CAPITAL.equals(settlement.kind())).findFirst().orElse(null);
    }
 
-   private static Component capitalName(ServerLevel level, String faction) {
+   static Component capitalName(ServerLevel level, String faction) {
       FactionWorldData.Settlement capital = capital(FactionWorldData.get(level), faction);
       return capital == null || capital.name().isEmpty() ? FactionNews.factionName(faction) : capital.nameComponent();
    }
@@ -296,7 +301,7 @@ public final class FactionFeasts extends SavedData {
       });
       // A rich ruler proclaims a feast for tomorrow.
       for (String faction : factions) {
-         if (!feasts.feasts.containsKey(faction) && data.treasury(faction) >= FEAST_GOLD && capital(data, faction) != null && random.nextDouble() < FEAST_CHANCE) {
+         if (!feasts.feasts.containsKey(faction) && !FactionPastimes.away(level, faction) && data.treasury(faction) >= FEAST_GOLD && capital(data, faction) != null && random.nextDouble() < FEAST_CHANCE) {
             feasts.proclaim(level, data, faction, day + 1);
          }
       }

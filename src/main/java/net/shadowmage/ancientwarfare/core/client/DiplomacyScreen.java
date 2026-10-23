@@ -876,10 +876,14 @@ public class DiplomacyScreen extends Screen {
             }
          }
 
-         y += 25;
+         y += this.roomy() ? 25 : 22;
       }
 
-      y = this.section(graphics, Component.translatable("gui.ancientwarfare.diplomacy.section.affairs"), x, y, width);
+      // Headings only where there is room for them.
+      if (this.roomy()) {
+         y = this.section(graphics, Component.translatable("gui.ancientwarfare.diplomacy.section.affairs"), x, y, width);
+      }
+
       Component trade = entry.trade()
          ? Component.translatable("gui.ancientwarfare.diplomacy.trade", entry.routes())
          : Component.translatable("gui.ancientwarfare.diplomacy.trade_none");
@@ -944,8 +948,11 @@ public class DiplomacyScreen extends Screen {
       }
 
       // Bonds of blood, feasts and grudges, as many as fit above the actions.
-      if (!entry.bonds().isEmpty() && y + 22 < actions) {
+      if (!entry.bonds().isEmpty() && this.roomy() && y + 22 < actions) {
          y = this.section(graphics, Component.translatable("gui.ancientwarfare.diplomacy.section.bonds"), x, y + 2, width);
+      }
+
+      if (!entry.bonds().isEmpty()) {
          for (Component bond : entry.bonds()) {
             int lines = this.font.split(bond, width - 8).size();
             if (y + lines * this.font.lineHeight > actions - 3) {

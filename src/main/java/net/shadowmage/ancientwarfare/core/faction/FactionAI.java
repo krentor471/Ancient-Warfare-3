@@ -122,7 +122,8 @@ public final class FactionAI {
       double warChance = WAR_CHANCE * Math.max(myRuler.warChance, theirRuler.warChance)
          * Math.max(FactionCourt.warFactor(level, faction), FactionCourt.warFactor(level, other))
          * Math.max(FactionRulers.character(data, faction, random, c -> c.factionWar), FactionRulers.character(data, other, random, c -> c.factionWar))
-         * FactionFeasts.warFactor(level, faction, other);
+         * FactionFeasts.warFactor(level, faction, other)
+         * FactionPastimes.warFactor(level, faction, other);
       int warOpinion = WAR_OPINION + Math.max(myRuler.warTemper, theirRuler.warTemper);
       switch (relation.state()) {
          case NEUTRAL -> {

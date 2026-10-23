@@ -125,6 +125,23 @@ public final class ForgeFactionCommands {
             return 1;
          })));
       event.getDispatcher()
+         .register(Commands.literal("awhunt").then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+            net.shadowmage.ancientwarfare.core.faction.FactionPastimes.accept(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
+            return 1;
+         })));
+      event.getDispatcher()
+         .register(Commands.literal("awpilgrim").then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+            net.shadowmage.ancientwarfare.core.faction.FactionPastimes.give(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
+            return 1;
+         })));
+      event.getDispatcher()
+         .register(Commands.literal("awquarrel").then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("role", IntegerArgumentType.integer()).executes(context -> {
+            net.shadowmage.ancientwarfare.core.faction.FactionPastimes.side(
+               context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"), IntegerArgumentType.getInteger(context, "role")
+            );
+            return 1;
+         }))));
+      event.getDispatcher()
          .register(Commands.literal("awfamily").executes(context -> {
             ServerPlayer player = context.getSource().getPlayerOrException();
             net.shadowmage.ancientwarfare.core.faction.FactionFamilies.describe(player.serverLevel(), player.getUUID()).forEach(line -> player.sendSystemMessage(line));
@@ -445,6 +462,13 @@ public final class ForgeFactionCommands {
                   context.getSource().sendSuccess(() -> Component.literal(opened ? "Incident opened" : "No incident"), false);
                   return 1;
                })))
+               .then(Commands.literal("pastime").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word()).executes(context -> {
+                  String result = net.shadowmage.ancientwarfare.core.faction.FactionPastimes.debug(
+                     context.getSource().getLevel(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what")
+                  );
+                  context.getSource().sendSuccess(() -> Component.literal(result), false);
+                  return 1;
+               }))))
                .then(Commands.literal("plot").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
                   boolean offered = net.shadowmage.ancientwarfare.core.faction.FactionPlots.forcePlot(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
                   context.getSource().sendSuccess(() -> Component.literal(offered ? "Plot offered" : "No courtier"), false);

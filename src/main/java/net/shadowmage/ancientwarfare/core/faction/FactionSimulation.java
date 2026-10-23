@@ -89,6 +89,7 @@ public final class FactionSimulation {
       FactionIntrigue.tick(level, data);
       FactionIncidents.tick(level, data);
       FactionFeasts.tick(level, data);
+      FactionPastimes.tick(level, data);
       FactionTournaments.tick(level);
       FactionCampaigns.tick(level, data);
       FactionRoads.tick(level, data);
@@ -167,6 +168,7 @@ public final class FactionSimulation {
       FactionRulers.simulateDay(level, data);
       FactionFamilies.simulateDay(level, data);
       FactionFeasts.simulateDay(level, data);
+      FactionPastimes.simulateDay(level, data);
       FactionCourt.simulateDay(level, data);
       FactionDeals.simulateDay(level, data);
       FactionCounterSpies.simulateDay(level, data);

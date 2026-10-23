@@ -239,8 +239,9 @@ public final class PlayerDiplomacy {
       return Coins.take(player, count);
    }
 
+   /** Whether the faction's leader stands near the player; never while the ruler is away on pilgrimage. */
    public static boolean leaderNear(ServerPlayer player, String faction) {
-      return !player.serverLevel()
+      return !FactionPastimes.away(player.serverLevel(), faction) && !player.serverLevel()
          .getEntitiesOfClass(
             FactionNpcEntity.class, player.getBoundingBox().inflate(LEADER_RANGE), npc -> npc.isAlive() && isLeader(npc) && npc.getFactionName().equals(faction)
          )
@@ -324,6 +325,7 @@ public final class PlayerDiplomacy {
       }
 
       lines.addAll(FactionFeasts.lines(player.serverLevel(), player.getUUID(), faction));
+      lines.addAll(FactionPastimes.lines(player.serverLevel(), player.getUUID(), faction));
       Component bond = FactionVassals.line(player.serverLevel(), player.getUUID(), faction);
       if (bond != null) {
          lines.add(bond);

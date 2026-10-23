@@ -136,6 +136,16 @@ public final class ForgeFactionEvents {
       }
    }
 
+   /** A beast a player kills may count toward a ruler's hunt. */
+   @SubscribeEvent
+   public static void onBeastDeath(LivingDeathEvent event) {
+      if (event.getEntity() instanceof net.minecraft.world.entity.animal.Animal
+         && event.getEntity().level() instanceof ServerLevel serverLevel
+         && event.getSource().getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+         net.shadowmage.ancientwarfare.core.faction.FactionPastimes.onBeastKilled(serverLevel, player);
+      }
+   }
+
    @SubscribeEvent
    public static void onFactionNpcDeath(LivingDeathEvent event) {
       if (event.getEntity() instanceof FactionNpcEntity npc && npc.level() instanceof ServerLevel serverLevel) {
