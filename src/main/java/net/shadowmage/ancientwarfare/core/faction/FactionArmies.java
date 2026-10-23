@@ -35,6 +35,7 @@ import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSiegeEngineerNpcEntity;
 import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
 import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
+import net.shadowmage.ancientwarfare.core.research.PlayerResearch;
 import net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity;
 
 /**
@@ -99,6 +100,8 @@ public final class FactionArmies {
    private static final double SIEGE_SHARE = 0.6;
    /** Time the player has to answer the ultimatum before the army sets out. */
    public static final long ULTIMATUM_TICKS = 6000L;
+   /** With post stations the player hears of an army this many times as early. */
+   private static final long POST_WARNING = 2L;
    private static final int MIN_TRIBUTE = 16;
    private static final int MAX_TRIBUTE = 128;
    private static final int TRIBUTE_STANDING = 10;
@@ -147,6 +150,11 @@ public final class FactionArmies {
       }
 
       data.setLastRaid(village, data.lastSimulatedDay());
+      if (PlayerResearch.has(level, owner, PlayerResearch.POST_STATIONS)) {
+         // The post rides ahead of the raiders: the warning comes while they are still gathering.
+         delay *= POST_WARNING;
+      }
+
       FactionNews.tellPlayer(
          level, owner, Component.translatable("news.ancientwarfare.raid_warning", FactionNews.factionName(faction), taken, village.getX(), village.getZ())
       );
@@ -164,7 +172,8 @@ public final class FactionArmies {
       }
 
       data.setLastRaid(village, data.lastSimulatedDay());
-      FactionWorldData.Army army = data.addArmy(faction, "", 0, owner, village, taken, level.getGameTime() + ULTIMATUM_TICKS);
+      long ultimatum = PlayerResearch.has(level, owner, PlayerResearch.POST_STATIONS) ? ULTIMATUM_TICKS * POST_WARNING : ULTIMATUM_TICKS;
+      FactionWorldData.Army army = data.addArmy(faction, "", 0, owner, village, taken, level.getGameTime() + ultimatum);
       army.siege = true;
       army.tribute = Mth.clamp((int)Math.round(taken * 2 * FactionRulers.trait(data, faction, level.getRandom()).tribute), MIN_TRIBUTE, MAX_TRIBUTE);
       data.setDirty();

@@ -2152,5 +2152,16 @@
   "research.ancientwarfare.chronicles": "Chronicles",
   "research.ancientwarfare.chronicles.opens": "Your soldiers gain experience from kills half as fast again",
   "research.ancientwarfare.missionaries": "Missionaries",
-  "research.ancientwarfare.missionaries.opens": "No friction along your country's borders"
+  "research.ancientwarfare.missionaries.opens": "No friction along your country's borders",
+  "construction.ancientwarfare.kind.bridge": "Bridge",
+  "research.ancientwarfare.bridges": "Bridges",
+  "research.ancientwarfare.bridges.opens": "The Bridge work of the builder's wand: a deck level with the bank, built out from the shore, on piers down to the bed",
+  "research.ancientwarfare.post_stations": "Post Stations",
+  "research.ancientwarfare.post_stations.opens": "Warnings of raids come twice as early, an ultimatum gives twice the time, and armies marching on your villages show on the world map",
+  "research.ancientwarfare.sea_charts": "Sea Charts",
+  "research.ancientwarfare.sea_charts.opens": "Every fleet at sea shows on the world map",
+  "research.ancientwarfare.landing": "Landing Parties",
+  "research.ancientwarfare.landing.opens": "Your own fleet: take the helm of a boat and soldiers nearby man the empty boats, sail behind you in formation and go ashore when you do",
+  "fleet.ancientwarfare.boarded": "%s soldiers boarded, %s boats in your fleet",
+  "fleet.ancientwarfare.landed": "Landing: %s soldiers go ashore"
 }

@@ -294,7 +294,7 @@ final class BuilderGoal extends Goal {
       }
 
       List<BlockPos> spots = new ArrayList<>();
-      int above = job.kind() == ConstructionJobs.Kind.FILL ? FILL_REACH_DOWN : 4;
+      int above = job.kind() == ConstructionJobs.Kind.FILL || job.kind() == ConstructionJobs.Kind.BRIDGE ? FILL_REACH_DOWN : 4;
       int below = job.kind() == ConstructionJobs.Kind.TEMPLATE ? TEMPLATE_REACH_UP + 2 : 4;
       for (int dy = -below; dy <= above; dy++) {
          for (int dx = -3; dx <= 3; dx++) {
@@ -374,7 +374,8 @@ final class BuilderGoal extends Goal {
       double dx = x - (pos.getX() + 0.5);
       double dy = eyeY - (pos.getY() + 0.5);
       double dz = z - (pos.getZ() + 0.5);
-      if (job.kind() == ConstructionJobs.Kind.FILL && dy > 0.0 && dy <= FILL_REACH_DOWN + 2) {
+      // A bridge's piers are let down from the deck in the same way.
+      if ((job.kind() == ConstructionJobs.Kind.FILL || job.kind() == ConstructionJobs.Kind.BRIDGE) && dy > 0.0 && dy <= FILL_REACH_DOWN + 2) {
          dy = Math.min(dy, 1.5);
       }
 

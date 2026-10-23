@@ -2152,5 +2152,16 @@
   "research.ancientwarfare.chronicles": "Летописи",
   "research.ancientwarfare.chronicles.opens": "Бойцы набираются опыта от побед в полтора раза быстрее",
   "research.ancientwarfare.missionaries": "Миссионеры",
-  "research.ancientwarfare.missionaries.opens": "Нет трений на границах страны"
+  "research.ancientwarfare.missionaries.opens": "Нет трений на границах страны",
+  "construction.ancientwarfare.kind.bridge": "Мост",
+  "research.ancientwarfare.bridges": "Мосты",
+  "research.ancientwarfare.bridges.opens": "Работа «Мост» жезла строителя: настил вровень с берегом, строится от берега, с опорами до дна",
+  "research.ancientwarfare.post_stations": "Почтовые станции",
+  "research.ancientwarfare.post_stations.opens": "Весть о набеге приходит вдвое раньше, на ультиматум вдвое больше времени, а армии, идущие на твои деревни, видны на карте мира",
+  "research.ancientwarfare.sea_charts": "Морские карты",
+  "research.ancientwarfare.sea_charts.opens": "Карта мира показывает все флоты в море",
+  "research.ancientwarfare.landing": "Десант",
+  "research.ancientwarfare.landing.opens": "Свой флот: встань к рулю лодки, и бойцы рядом сядут в пустые лодки, пойдут за тобой строем и высадятся вместе с тобой",
+  "fleet.ancientwarfare.boarded": "На лодки сели бойцы: %s, лодок во флоте: %s",
+  "fleet.ancientwarfare.landed": "Высадка: на берег сошли бойцы: %s"
 }

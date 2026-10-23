@@ -353,7 +353,10 @@ public final class WorldMap {
          int x = (int)Math.floor(campaign.x());
          int z = (int)Math.floor(campaign.z());
          // Only armies the player can see from where he stands, or that his spies report.
-         if (!all && !FactionSpies.knows(level, data, player, campaign.faction()) && !sees(level, data, player, x, z)) {
+         if (!all
+            && !FactionSpies.knows(level, data, player, campaign.faction())
+            && !sees(level, data, player, x, z)
+            && !(campaign.naval() && net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(player, net.shadowmage.ancientwarfare.core.research.PlayerResearch.SEA_CHARTS))) {
             continue;
          }
 
@@ -370,7 +373,11 @@ public final class WorldMap {
 
       // Assaults, raids and sieges being made ready, as the spies report them.
       for (FactionWorldData.Army army : data.armies()) {
-         if (!all && !FactionSpies.knows(level, data, player, army.faction())) {
+         // With post stations the player always hears of an army marching on their own village.
+         if (!all
+            && !FactionSpies.knows(level, data, player, army.faction())
+            && !(player.getUUID().equals(army.villageOwner())
+               && net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(player, net.shadowmage.ancientwarfare.core.research.PlayerResearch.POST_STATIONS))) {
             continue;
          }
 

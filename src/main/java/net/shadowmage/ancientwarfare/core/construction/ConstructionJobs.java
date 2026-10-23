@@ -47,6 +47,10 @@ public final class ConstructionJobs extends SavedData {
    private static final String DATA_NAME = "ancientwarfare_construction";
    public static final int MAX_JOBS = 8;
    public static final int MAX_VOLUME = 32 * 32 * 24;
+   /** How far a bridge's piers go down below its deck. */
+   public static final int BRIDGE_DEPTH = 8;
+   /** A bridge stands on a pair of piers every this many blocks along its span. */
+   private static final int PIER_SPACING = 4;
    public static final int SUPPLY_RANGE = 32;
    /** How far ahead of the first unfinished position a builder looks for one to take. */
    private static final int SCAN_AHEAD = 4096;
@@ -63,7 +67,9 @@ public final class ConstructionJobs extends SavedData {
       FILL,
       WALL,
       FLOOR,
-      TEMPLATE;
+      TEMPLATE,
+      /** A deck laid across water or a gap, built out from the shore, on piers down to the bed. */
+      BRIDGE;
 
       public boolean places() {
          return this != DIG;
@@ -150,6 +156,11 @@ public final class ConstructionJobs extends SavedData {
       }
 
       private void buildPlan() {
+         if (this.kind == Kind.BRIDGE) {
+            this.plan = this.bridgePlan();
+            return;
+         }
+
          AwsTemplatePlacer.PreviewData preview = AwsTemplatePlacer.preview(this.template, this.origin, this.facing);
          Map<Long, BlockState> placing = new HashMap<>();
          List<BlockPos> order = new ArrayList<>();
@@ -172,6 +183,41 @@ public final class ConstructionJobs extends SavedData {
          preview.blocks().forEach(block -> order.add(block.pos()));
          this.placing = placing;
          this.plan = order;
+      }
+
+      /**
+       * A bridge goes out from the shore it faces away from, a row of deck at a time; under every
+       * fourth row a pier goes down at each edge to the bed. Each row is laid from the one before it.
+       */
+      private List<BlockPos> bridgePlan() {
+         boolean alongX = this.facing.getAxis() == Direction.Axis.X;
+         boolean reverse = this.facing == Direction.WEST || this.facing == Direction.NORTH;
+         int span = alongX ? this.sizeX() : this.sizeZ();
+         int width = alongX ? this.sizeZ() : this.sizeX();
+         int deck = this.max.getY();
+         List<BlockPos> order = new ArrayList<>();
+         for (int step = 0; step < span; step++) {
+            int along = reverse ? span - 1 - step : step;
+            for (int across = 0; across < width; across++) {
+               order.add(this.bridgeAt(alongX, along, across, deck));
+            }
+
+            // The ends lie on the shore; piers stand between them.
+            if (along % PIER_SPACING == 0 && along > 0 && along < span - 1) {
+               for (int y = deck - 1; y >= this.min.getY(); y--) {
+                  order.add(this.bridgeAt(alongX, along, 0, y));
+                  if (width > 1) {
+                     order.add(this.bridgeAt(alongX, along, width - 1, y));
+                  }
+               }
+            }
+         }
+
+         return order;
+      }
+
+      private BlockPos bridgeAt(boolean alongX, int along, int across, int y) {
+         return alongX ? new BlockPos(this.min.getX() + along, y, this.min.getZ() + across) : new BlockPos(this.min.getX() + across, y, this.min.getZ() + along);
       }
 
       /** The block a building wants here, or null where it only wants the ground cleared. */
@@ -226,7 +272,7 @@ public final class ConstructionJobs extends SavedData {
       }
 
       public int total() {
-         if (this.kind == Kind.TEMPLATE) {
+         if (this.kind == Kind.TEMPLATE || this.kind == Kind.BRIDGE) {
             if (this.plan == null) {
                this.buildPlan();
             }
@@ -242,7 +288,7 @@ public final class ConstructionJobs extends SavedData {
       private int[] fillOrder;
 
       public BlockPos at(int index) {
-         if (this.kind == Kind.TEMPLATE) {
+         if (this.kind == Kind.TEMPLATE || this.kind == Kind.BRIDGE) {
             if (this.plan == null) {
                this.buildPlan();
             }
@@ -335,9 +381,9 @@ public final class ConstructionJobs extends SavedData {
          if (this.template != null) {
             tag.putString("Template", this.template);
             tag.putLong("Origin", this.origin.asLong());
-            tag.putInt("Facing", this.facing.get2DDataValue());
          }
 
+         tag.putInt("Facing", this.facing.get2DDataValue());
          return tag;
       }
 
@@ -357,6 +403,9 @@ public final class ConstructionJobs extends SavedData {
          if (tag.contains("Template")) {
             job.template = tag.getString("Template");
             job.origin = BlockPos.of(tag.getLong("Origin"));
+         }
+
+         if (tag.contains("Facing")) {
             job.facing = Direction.from2DDataValue(tag.getInt("Facing"));
          }
 
@@ -423,7 +472,8 @@ public final class ConstructionJobs extends SavedData {
    public static String research(Kind kind) {
       return kind == Kind.TEMPLATE
          ? net.shadowmage.ancientwarfare.core.research.PlayerResearch.ARCHITECTURE
-         : kind == Kind.FLOOR ? net.shadowmage.ancientwarfare.core.research.PlayerResearch.ROAD_BUILDING : null;
+         : kind == Kind.FLOOR ? net.shadowmage.ancientwarfare.core.research.PlayerResearch.ROAD_BUILDING
+         : kind == Kind.BRIDGE ? net.shadowmage.ancientwarfare.core.research.PlayerResearch.BRIDGES : null;
    }
 
    public static void create(ServerPlayer player, BlockPos a, BlockPos b, Kind kind, String template, Direction facing) {
@@ -454,6 +504,10 @@ public final class ConstructionJobs extends SavedData {
       if (data.jobsOf(player.getUUID()).size() >= MAX_JOBS) {
          refuse(player, "construction.ancientwarfare.too_many", MAX_JOBS);
          return;
+      }
+
+      if (kind == Kind.BRIDGE && max.getY() - min.getY() > BRIDGE_DEPTH) {
+         min = new BlockPos(min.getX(), max.getY() - BRIDGE_DEPTH, min.getZ());
       }
 
       if (volume > MAX_VOLUME && kind != Kind.TEMPLATE) {
@@ -487,6 +541,8 @@ public final class ConstructionJobs extends SavedData {
          job.template = template;
          job.origin = origin;
          job.facing = facing;
+      } else if (kind == Kind.BRIDGE) {
+         job.facing = bridgeFacing(level, min, max);
       }
 
       data.jobs.put(job.id, job);
@@ -504,6 +560,22 @@ public final class ConstructionJobs extends SavedData {
       );
       sync(player);
       AncientWarfareCore.LOG.info("{} posts construction job #{} {} {}..{}", player.getScoreboardName(), job.id, kind, min, max);
+   }
+
+   /** Which way a bridge is built: out from the end that has firm ground under its deck. */
+   private static Direction bridgeFacing(ServerLevel level, BlockPos min, BlockPos max) {
+      boolean alongX = max.getX() - min.getX() >= max.getZ() - min.getZ();
+      int midX = (min.getX() + max.getX()) / 2;
+      int midZ = (min.getZ() + max.getZ()) / 2;
+      BlockPos far = alongX ? new BlockPos(max.getX(), max.getY() - 1, midZ) : new BlockPos(midX, max.getY() - 1, max.getZ());
+      BlockPos near = alongX ? new BlockPos(min.getX(), max.getY() - 1, midZ) : new BlockPos(midX, max.getY() - 1, min.getZ());
+      boolean fromFar = firm(level, far) && !firm(level, near);
+      return alongX ? (fromFar ? Direction.WEST : Direction.EAST) : (fromFar ? Direction.NORTH : Direction.SOUTH);
+   }
+
+   private static boolean firm(ServerLevel level, BlockPos pos) {
+      BlockState state = level.getBlockState(pos);
+      return !state.canBeReplaced() && state.getFluidState().isEmpty();
    }
 
    public static void cancel(ServerPlayer player, int id) {

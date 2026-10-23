@@ -31,8 +31,9 @@ import net.shadowmage.ancientwarfare.core.structure.AwsTemplatePlacer;
  * player's jobs with their progress.
  */
 public final class ConstructionScreen extends Screen {
-   private static final String[] KINDS = {"dig", "fill", "wall", "floor", "template"};
+   private static final String[] KINDS = {"dig", "fill", "wall", "floor", "template", "bridge"};
    private static final int TEMPLATE = 4;
+   private static final int BRIDGE = 5;
    private static final int PAGE = 4;
    private static final Direction[] FACINGS = {Direction.SOUTH, Direction.WEST, Direction.NORTH, Direction.EAST};
    private static String template;
@@ -132,6 +133,8 @@ public final class ConstructionScreen extends Screen {
       return switch (kind) {
          case 0, 1 -> new BlockPos[]{new BlockPos(minX, Math.min(low, high - height + 1), minZ), new BlockPos(maxX, high, maxZ)};
          case 2 -> new BlockPos[]{new BlockPos(minX, low + 1, minZ), new BlockPos(maxX, low + height, maxZ)};
+         // A bridge's deck lies level with the higher bank; its piers go down as deep as chosen.
+         case BRIDGE -> new BlockPos[]{new BlockPos(minX, high - Math.min(height, ConstructionJobs.BRIDGE_DEPTH), minZ), new BlockPos(maxX, high, maxZ)};
          default -> new BlockPos[]{new BlockPos(minX, low, minZ), new BlockPos(maxX, low, maxZ)};
       };
    }
@@ -140,6 +143,13 @@ public final class ConstructionScreen extends Screen {
       int x = box[1].getX() - box[0].getX() + 1;
       int y = box[1].getY() - box[0].getY() + 1;
       int z = box[1].getZ() - box[0].getZ() + 1;
+      if (kind == BRIDGE) {
+         int span = Math.max(x, z);
+         int width = Math.min(x, z);
+         int piers = span > 2 ? (span - 2) / 4 : 0;
+         return span * width + piers * Math.min(width, 2) * (y - 1);
+      }
+
       if (kind == 2) {
          return (x <= 2 || z <= 2 ? x * z : 2 * (x + z) - 4) * y;
       }
@@ -161,13 +171,15 @@ public final class ConstructionScreen extends Screen {
          int sizeZ = Math.abs(this.first.getZ() - this.second.getZ()) + 1;
          this.line(Component.translatable("gui.ancientwarfare.construction.area", sizeX, sizeZ), 0xFFFFFF, x, y);
          y += 14;
-         int buttonWidth = (width - 16 - 12) / KINDS.length;
+         // Two rows of three, so the names fit.
+         int perRow = (KINDS.length + 1) / 2;
+         int buttonWidth = (width - 16 - 3 * (perRow - 1)) / perRow;
          for (int index = 0; index < KINDS.length; index++) {
             int chosen = index;
             Button button = Button.builder(Component.translatable("construction.ancientwarfare.kind." + KINDS[index]), b -> {
                kind = chosen;
                this.rebuildWidgets();
-            }).bounds(x + index * (buttonWidth + 3), y, buttonWidth, 20).build();
+            }).bounds(x + index % perRow * (buttonWidth + 3), y + index / perRow * 22, buttonWidth, 20).build();
             String research = net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.research(
                net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Kind.values()[index]
             );
@@ -180,7 +192,7 @@ public final class ConstructionScreen extends Screen {
             this.addRenderableWidget(button);
          }
 
-         y += 24;
+         y += 46;
          if (kind == TEMPLATE) {
             // The building picker takes the room; the job list is a right click away in the building view.
             this.bottom = this.templateRows(x, y, width) + 2;

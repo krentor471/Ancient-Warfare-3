@@ -65,6 +65,14 @@ public final class PlayerResearch extends SavedData {
    public static final String CHRONICLES = "chronicles";
    /** No friction along the country's borders. */
    public static final String MISSIONARIES = "missionaries";
+   /** Bridges over rivers: the bridge work of the builder's wand. */
+   public static final String BRIDGES = "bridges";
+   /** Warnings of raids and sieges come sooner, and armies marching on the player's villages show on the map. */
+   public static final String POST_STATIONS = "post_stations";
+   /** Every fleet at sea shows on the world map. */
+   public static final String SEA_CHARTS = "sea_charts";
+   /** The player's own fleet: soldiers man the boats and sail behind the player, then go ashore. */
+   public static final String LANDING = "landing";
    private static final float SCIENCE_PER_VILLAGE = 0.1F;
    private static final float MAX_SCIENCE_SCALE = 2.0F;
    private final Map<String, Set<String>> known = new HashMap<>();

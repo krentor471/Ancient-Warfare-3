@@ -431,6 +431,10 @@ public final class ResearchRegistry {
       register(goal(PlayerResearch.FESTIVALS, 200, deps(PlayerResearch.TEMPLES, PlayerResearch.CROP_ROTATION), res(stack(Items.CAKE, 2), stack(Items.WHITE_BANNER, 2), stack(Items.FIREWORK_ROCKET, 8), stack(Items.WHEAT, 32))));
       register(goal(PlayerResearch.CHRONICLES, 200, deps(PlayerResearch.TEMPLES, "tactics"), res(stack(Items.BOOK, 6), stack(Items.INK_SAC, 8), stack(Items.FEATHER, 4), stack(Items.PAPER, 16))));
       register(goal(PlayerResearch.MISSIONARIES, 200, deps(PlayerResearch.TEMPLES, PlayerResearch.DIPLOMACY), res(stack(Items.BOOK, 4), stack(Items.BREAD, 16), stack(Items.GOLD_INGOT, 4), stack(Items.CANDLE, 4))));
+      register(goal(PlayerResearch.BRIDGES, 200, deps(PlayerResearch.ROAD_BUILDING, "construction"), res(stack(Items.OAK_PLANKS, 48), stack(Items.STONE_BRICKS, 32), stack(Items.STRING, 16), stack(Items.IRON_INGOT, 4))));
+      register(goal(PlayerResearch.POST_STATIONS, 200, deps(PlayerResearch.COURIERS, "trade"), res(stack(Items.WRITABLE_BOOK, 2), stack(Items.PAPER, 24), stack(Items.BELL, 1), stack(Items.LEATHER, 8))));
+      register(goal(PlayerResearch.SEA_CHARTS, 200, deps(PlayerResearch.CARTOGRAPHY, "seafaring"), res(stack(Items.MAP, 6), stack(Items.COMPASS, 2), stack(Items.CLOCK, 1), stack(Items.INK_SAC, 8))));
+      register(goal(PlayerResearch.LANDING, 200, deps("naval_warfare", PlayerResearch.FIELD_COMMAND), res(stack("ancientwarfare:treated_wood", 16), stack(Items.LEAD, 4), stack(Items.IRON_SWORD, 2), stack(Items.PAPER, 8))));
       priceScience();
       era(
          ERA_KINGDOM,

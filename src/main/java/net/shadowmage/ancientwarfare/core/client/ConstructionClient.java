@@ -18,7 +18,7 @@ public final class ConstructionClient {
    public static record JobView(int id, int kind, BlockPos min, BlockPos max, int done, int total, Component block) {
    }
 
-   private static final float[][] COLORS = {{1.0F, 0.35F, 0.25F}, {1.0F, 0.85F, 0.2F}, {0.35F, 0.6F, 1.0F}, {0.4F, 1.0F, 0.45F}, {0.85F, 0.5F, 1.0F}};
+   private static final float[][] COLORS = {{1.0F, 0.35F, 0.25F}, {1.0F, 0.85F, 0.2F}, {0.35F, 0.6F, 1.0F}, {0.4F, 1.0F, 0.45F}, {0.85F, 0.5F, 1.0F}, {0.3F, 0.9F, 0.95F}};
    private static BlockPos corner;
    /** A box shown while it is being chosen: dragged in the building view or set in the work window. */
    private static BlockPos previewFrom;
