@@ -567,6 +567,16 @@ public final class FactionCourt extends SavedData {
       });
    }
 
+   /** Whether the faction has set its heart on beating the other, for revenge or for a town. */
+   static boolean wantsWar(ServerLevel level, String faction, String target) {
+      return get(level).goals.getOrDefault(faction, List.of()).stream().anyMatch(goal -> goal.kind != GoalKind.GOLD && goal.target.equals(target));
+   }
+
+   /** Whether the faction is out to fill its treasury. */
+   static boolean wantsGold(ServerLevel level, String faction) {
+      return get(level).goals.getOrDefault(faction, List.of()).stream().anyMatch(goal -> goal.kind == GoalKind.GOLD);
+   }
+
    /** A gift to the faction: a treasury in want takes it gladly. Returns the standing it is worth beyond the usual. */
    static int onGift(ServerPlayer player, String faction, int usual) {
       FactionCourt court = get(player.serverLevel());

@@ -81,6 +81,15 @@ public class DiplomacyScreen extends Screen {
                this.rebuildWidgets();
             }).bounds(left + PANEL_WIDTH - 70, top + 22, 62, 14).build()
          );
+         Button deal = Button.builder(Component.translatable("gui.ancientwarfare.diplomacy.deal"), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 0, net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer.EMPTY))
+            .bounds(left + PANEL_WIDTH - 134, top + 22, 62, 14)
+            .build();
+         deal.active = entry.leaderNear();
+         if (!entry.leaderNear()) {
+            deal.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.ancientwarfare.diplomacy.leader_away")));
+         }
+
+         this.addRenderableWidget(deal);
       }
 
       if (entry != null && courtView) {

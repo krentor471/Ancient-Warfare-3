@@ -279,6 +279,16 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.DiplomacyDataPacket::decode)
          .consumerMainThread(AWCoreNetwork.DiplomacyDataPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.DealPacket.class, 51, NetworkDirection.PLAY_TO_SERVER)
+         .encoder(AWCoreNetwork.DealPacket::encode)
+         .decoder(AWCoreNetwork.DealPacket::decode)
+         .consumerMainThread(AWCoreNetwork.DealPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.DealDataPacket.class, 52, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.DealDataPacket::encode)
+         .decoder(AWCoreNetwork.DealDataPacket::decode)
+         .consumerMainThread(AWCoreNetwork.DealDataPacket::handle)
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.WorldMapOpenPacket.class, 33, NetworkDirection.PLAY_TO_SERVER)
          .encoder(AWCoreNetwork.WorldMapOpenPacket::encode)
          .decoder(AWCoreNetwork.WorldMapOpenPacket::decode)
@@ -524,6 +534,14 @@ public final class AWCoreNetwork {
 
    public static void sendWorldMap(ServerPlayer player, WorldMap.Data data) {
       CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.WorldMapDataPacket(data));
+   }
+
+   public static void sendDeal(String faction, int mode, net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer offer) {
+      CHANNEL.sendToServer(new AWCoreNetwork.DealPacket(faction, mode, offer));
+   }
+
+   public static void sendDealData(ServerPlayer player, boolean open, net.shadowmage.ancientwarfare.core.faction.FactionDeals.View view) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.DealDataPacket(open, view));
    }
 
    public static void sendDiplomacyData(ServerPlayer player, String focus, boolean open, List<PlayerDiplomacy.Entry> entries) {
@@ -852,6 +870,113 @@ public final class AWCoreNetwork {
             ServerPlayer player = context.getSender();
             if (player != null) {
                PlayerDiplomacy.act(player, packet.faction, PlayerDiplomacy.Action.byId(packet.action));
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record DealPacket(String faction, int mode, net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer offer) {
+      private static void encode(AWCoreNetwork.DealPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeUtf(packet.faction, 64);
+         buffer.writeVarInt(packet.mode);
+         writeOffer(buffer, packet.offer);
+      }
+
+      private static AWCoreNetwork.DealPacket decode(FriendlyByteBuf buffer) {
+         return new AWCoreNetwork.DealPacket(buffer.readUtf(64), buffer.readVarInt(), readOffer(buffer));
+      }
+
+      private static void handle(AWCoreNetwork.DealPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+               net.shadowmage.ancientwarfare.core.faction.FactionDeals.handle(player, packet.faction, packet.mode, packet.offer);
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   private static void writeOffer(FriendlyByteBuf buffer, net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer offer) {
+      buffer.writeVarInt(offer.playerGold());
+      buffer.writeVarInt(offer.tribute());
+      buffer.writeUtf(offer.playerWar(), 64);
+      buffer.writeVarInt(offer.factionGold());
+      buffer.writeBoolean(offer.treaty());
+      buffer.writeBoolean(offer.trade());
+      buffer.writeUtf(offer.factionWar(), 64);
+   }
+
+   private static net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer readOffer(FriendlyByteBuf buffer) {
+      return new net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer(
+         Math.max(0, Math.min(10000, buffer.readVarInt())), Math.max(0, Math.min(1000, buffer.readVarInt())), buffer.readUtf(64),
+         Math.max(0, Math.min(10000, buffer.readVarInt())), buffer.readBoolean(), buffer.readBoolean(), buffer.readUtf(64)
+      );
+   }
+
+   private static void writeNames(FriendlyByteBuf buffer, List<String> names) {
+      buffer.writeVarInt(Math.min(32, names.size()));
+      names.stream().limit(32).forEach(name -> buffer.writeUtf(name, 64));
+   }
+
+   private static List<String> readNames(FriendlyByteBuf buffer) {
+      int count = Math.min(32, buffer.readVarInt());
+      List<String> names = new ArrayList<>();
+      for (int i = 0; i < count; i++) {
+         names.add(buffer.readUtf(64));
+      }
+
+      return names;
+   }
+
+   public static record DealDataPacket(boolean open, net.shadowmage.ancientwarfare.core.faction.FactionDeals.View view) {
+      private static void encode(AWCoreNetwork.DealDataPacket packet, FriendlyByteBuf buffer) {
+         net.shadowmage.ancientwarfare.core.faction.FactionDeals.View view = packet.view;
+         buffer.writeBoolean(packet.open);
+         buffer.writeUtf(view.faction(), 64);
+         buffer.writeVarInt(view.treaty().ordinal());
+         buffer.writeBoolean(view.trade());
+         buffer.writeVarInt(view.reliability());
+         writeNames(buffer, view.playerTargets());
+         writeNames(buffer, view.factionTargets());
+         buffer.writeVarInt(Math.min(8, view.promises().size()));
+         view.promises().stream().limit(8).forEach(buffer::writeComponent);
+         buffer.writeVarInt(view.verdict());
+         buffer.writeComponent(view.answer());
+         writeOffer(buffer, view.offer());
+      }
+
+      private static AWCoreNetwork.DealDataPacket decode(FriendlyByteBuf buffer) {
+         boolean open = buffer.readBoolean();
+         String faction = buffer.readUtf(64);
+         RelationState treaty = RelationState.values()[Math.floorMod(buffer.readVarInt(), RelationState.values().length)];
+         boolean trade = buffer.readBoolean();
+         int reliability = buffer.readVarInt();
+         List<String> playerTargets = readNames(buffer);
+         List<String> factionTargets = readNames(buffer);
+         int count = Math.min(8, buffer.readVarInt());
+         List<net.minecraft.network.chat.Component> promises = new ArrayList<>();
+         for (int i = 0; i < count; i++) {
+            promises.add(buffer.readComponent());
+         }
+
+         int verdict = buffer.readVarInt();
+         net.minecraft.network.chat.Component answer = buffer.readComponent();
+         return new AWCoreNetwork.DealDataPacket(
+            open,
+            new net.shadowmage.ancientwarfare.core.faction.FactionDeals.View(
+               faction, treaty, trade, reliability, playerTargets, factionTargets, promises, verdict, answer, readOffer(buffer)
+            )
+         );
+      }
+
+      private static void handle(AWCoreNetwork.DealDataPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               net.shadowmage.ancientwarfare.core.client.DealScreen.accept(packet.open, packet.view);
             }
          });
          context.setPacketHandled(true);
