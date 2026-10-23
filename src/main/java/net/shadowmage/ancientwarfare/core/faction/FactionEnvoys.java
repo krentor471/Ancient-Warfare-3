@@ -77,8 +77,17 @@ public final class FactionEnvoys {
       /** Hand over a fugitive hiding in one of the player's villages. */
       FUGITIVE,
       /** A trade league against a rival: trade with the faction, none with the rival. */
-      LEAGUE
+      LEAGUE,
+      /** Give back a village taken from the faction, or face war. */
+      CEDE
    }
+
+   private static final int CEDE_SETTLEMENTS = 8;
+   private static final int CEDE_MAX_STANDING = 20;
+   private static final int CEDED_STANDING = 25;
+   private static final int CEDE_REFUSED_STANDING = -15;
+   /** A faction this large goes to war over a refused demand. */
+   private static final int CEDE_WAR_SETTLEMENTS = 10;
 
    private static final int JOIN_WAR_GOLD = 200;
    private static final int JOIN_WAR_STANDING = 10;
@@ -229,6 +238,17 @@ public final class FactionEnvoys {
             }
          }
 
+         if (settlements >= CEDE_SETTLEMENTS && standing < CEDE_MAX_STANDING && treaty != RelationState.ALLIANCE && treaty != RelationState.PACT
+            && (wanted == null || wanted == Kind.CEDE)) {
+            // A village the player took from it: the faction wants it back.
+            data.villages().forEach((pos, owner) -> {
+               FactionWorldData.VillageState state = owner.equals(id) ? data.villageState(pos) : null;
+               if (state != null && state.from.equals(faction)) {
+                  offers.add(new Offer(nextId++, id, faction, Kind.CEDE, Long.toString(pos.asLong()), now));
+               }
+            });
+         }
+
          if (questFree && !standings.isHostile(id, faction) && (wanted == null || wanted == Kind.WAR_HELP)) {
             for (String enemy : new TreeSet<>(FactionRegistry.factionNames())) {
                RelationState withEnemy = standings.getTreaty(id, enemy);
@@ -367,6 +387,10 @@ public final class FactionEnvoys {
          case TRIBUTE -> Component.translatable("envoy.ancientwarfare.offer." + key, faction, TRIBUTE);
          case JOIN_WAR -> Component.translatable("envoy.ancientwarfare.offer." + key, faction, FactionNews.factionName(offer.enemy), FactionDeals.WAR_PROMISE_DAYS, JOIN_WAR_GOLD / 10);
          case LEAGUE -> Component.translatable("envoy.ancientwarfare.offer." + key, faction, FactionNews.factionName(offer.enemy));
+         case CEDE -> {
+            BlockPos hall = BlockPos.of(Long.parseLong(offer.enemy));
+            yield Component.translatable("envoy.ancientwarfare.offer." + key, faction, hall.getX(), hall.getZ());
+         }
          default -> Component.translatable("envoy.ancientwarfare.offer." + key, faction);
       };
       player.sendSystemMessage(Component.translatable("envoy.ancientwarfare.says", faction).withStyle(ChatFormatting.AQUA).append(speech.copy().withStyle(ChatFormatting.WHITE)));
@@ -428,6 +452,15 @@ public final class FactionEnvoys {
             FactionNews.tell(level, Component.translatable("news.ancientwarfare.fugitive_kept", player.getDisplayName(), faction));
          } else if (offer.kind == Kind.JOIN_WAR || offer.kind == Kind.LEAGUE) {
             standings.adjustStanding(id, offer.faction, DECLINED_STANDING);
+         } else if (offer.kind == Kind.CEDE) {
+            standings.adjustStanding(id, offer.faction, CEDE_REFUSED_STANDING);
+            long settlements = FactionWorldData.get(level).settlements().stream().filter(settlement -> settlement.faction().equals(offer.faction)).count();
+            if (settlements >= CEDE_WAR_SETTLEMENTS && standings.getTreaty(id, offer.faction) != RelationState.WAR) {
+               standings.setTreaty(id, offer.faction, RelationState.WAR);
+               FactionNews.tell(level, Component.translatable("news.ancientwarfare.cede_refused", faction, player.getDisplayName()));
+               CountryDiplomacy.warDeclaredOn(level, id, offer.faction);
+               return;
+            }
          }
 
          player.sendSystemMessage(Component.translatable("envoy.ancientwarfare.declined." + (offer.kind == Kind.TRIBUTE ? "tribute" : "any"), faction));
@@ -465,6 +498,23 @@ public final class FactionEnvoys {
                }
             });
             data.setDirty();
+         }
+         case CEDE -> {
+            FactionWorldData data = FactionWorldData.get(level);
+            BlockPos hall = BlockPos.of(Long.parseLong(offer.enemy));
+            FactionWorldData.VillageState state = id.equals(data.villages().get(hall)) ? data.villageState(hall) : null;
+            if (state == null) {
+               player.sendSystemMessage(Component.translatable("envoy.ancientwarfare.gone"));
+               return;
+            }
+
+            FactionWorldData.Settlement settlement = FactionLife.handOver(level, data, hall, state, offer.faction);
+            if (standings.getTreaty(id, offer.faction) == RelationState.WAR) {
+               standings.setTreaty(id, offer.faction, RelationState.NEUTRAL);
+            }
+
+            standings.adjustStanding(id, offer.faction, CEDED_STANDING);
+            FactionNews.tell(level, Component.translatable("news.ancientwarfare.ceded_village", player.getDisplayName(), faction, FactionNews.named(settlement)));
          }
          case LEAGUE -> {
             standings.setTrade(id, offer.faction, true);

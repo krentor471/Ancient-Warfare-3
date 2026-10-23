@@ -380,9 +380,18 @@ public final class FactionLife {
    /** The village throws the player out and goes back to the faction it was taken from. */
    private static void revolt(ServerLevel level, FactionWorldData data, BlockPos hall, FactionWorldData.VillageState state, UUID owner) {
       String from = FactionRegions.OUTLAWS.contains(state.from) || state.from.isEmpty() ? "brigand" : state.from;
+      FactionWorldData.Settlement settlement = handOver(level, data, hall, state, from);
+      FactionNews.tellPlayer(
+         level, owner, Component.translatable("village.ancientwarfare.revolt", hall.getX(), hall.getZ(), FactionNews.factionName(from)).withStyle(ChatFormatting.RED)
+      );
+      FactionNews.tell(level, Component.translatable("news.ancientwarfare.village_revolt", FactionNews.factionName(from), FactionNews.named(settlement)));
+   }
+
+   /** The village leaves the player and becomes the faction's settlement again; returns the settlement. */
+   static FactionWorldData.Settlement handOver(ServerLevel level, FactionWorldData data, BlockPos hall, FactionWorldData.VillageState state, String from) {
       data.setVillage(hall, null);
       if (level.getBlockEntity(hall) instanceof TownHallBlockEntity townHall) {
-         // The rebels empty the treasury before anything else.
+         // The new masters empty the treasury before anything else.
          townHall.clearContent();
       }
 
@@ -394,10 +403,7 @@ public final class FactionLife {
       );
       settlement.manned = true;
       settlement.loyalty = 80;
-      FactionNews.tellPlayer(
-         level, owner, Component.translatable("village.ancientwarfare.revolt", hall.getX(), hall.getZ(), FactionNews.factionName(from)).withStyle(ChatFormatting.RED)
-      );
-      FactionNews.tell(level, Component.translatable("news.ancientwarfare.village_revolt", FactionNews.factionName(from), FactionNews.named(settlement)));
+      return settlement;
    }
 
    /** A player right-clicks a faction's person with food: if their settlement is going short, it is aid. */

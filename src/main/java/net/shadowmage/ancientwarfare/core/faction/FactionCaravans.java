@@ -203,6 +203,14 @@ public final class FactionCaravans {
       }
    }
 
+   /** Outlaws killed a caravan's trader: if it was near a player's village, the faction holds them answerable. */
+   public static void onKilledByOutlaws(ServerLevel level, FactionNpcEntity npc) {
+      Caravan caravan = ACTIVE.get(caravanId(npc));
+      if (caravan != null && npc instanceof FactionTraderNpcEntity && !FactionDiplomacy.isOutlaw(caravan.faction)) {
+         FactionIncidents.onCaravanRobbed(level, caravan.faction, npc.getX(), npc.getZ());
+      }
+   }
+
    /** Killing the trader or breaking open a cart: the faction turns on the robber. */
    private static void robbed(ServerLevel level, Caravan caravan, Player robber) {
       if (FactionDiplomacy.isOutlaw(caravan.faction)) {

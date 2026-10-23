@@ -2433,5 +2433,18 @@
   "secret.ancientwarfare.line": "Компромат на правителя: %s",
   "secret.ancientwarfare.line.held": "Вы шантажируете правителя: %s",
   "news.ancientwarfare.secret_published": "Скандал (%s): %s. Огласку устроил %s",
-  "news.ancientwarfare.ruler_disgraced": "Опозоренный %2$s (%1$s) отрекается от трона; теперь правит %3$s (%4$s)"
+  "news.ancientwarfare.ruler_disgraced": "Опозоренный %2$s (%1$s) отрекается от трона; теперь правит %3$s (%4$s)",
+  "envoy.ancientwarfare.offer.cede": "Фракция %s требует вернуть деревню, которую вы у неё отняли (у %s, %s). Откажете, и она этого так не оставит.",
+  "envoy.ancientwarfare.accepted.cede": "Деревня возвращена (%s), правитель доволен.",
+  "news.ancientwarfare.ceded_village": "%s вернул(а) деревню%3$s фракции %2$s",
+  "news.ancientwarfare.cede_refused": "Война: фракция %s объявила войну игроку %s, который отказался вернуть отнятую деревню",
+  "incident.ancientwarfare.pay.killing": "Заплатить виру",
+  "incident.ancientwarfare.pay.caravan": "Возместить убыток",
+  "incident.ancientwarfare.pay.border": "Извиниться",
+  "incident.ancientwarfare.demand.caravan": "%s: разбойники ограбили наш караван на вашей земле у %s, %s. Дороги там ваши: возместите убыток.",
+  "incident.ancientwarfare.demand.border": "%s: ваши бойцы (%s) без спроса стоят в нашем поселении. Извинитесь и заплатите, иначе мы это запомним.",
+  "incident.ancientwarfare.border_warning": "Ваши бойцы (%1$s) стоят в поселении%3$s (%2$s) без договора. Уведите их поскорее, иначе будет инцидент.",
+  "news.ancientwarfare.incident_refused.killing": "Фракция %s затаила обиду: %s отказал ей в ответе за убийство",
+  "news.ancientwarfare.incident_refused.caravan": "Фракция %s затаила обиду: %s отказался возместить караван, ограбленный на его земле",
+  "news.ancientwarfare.incident_refused.border": "Фракция %s затаила обиду: %s не извинился за войска на её земле"
 }

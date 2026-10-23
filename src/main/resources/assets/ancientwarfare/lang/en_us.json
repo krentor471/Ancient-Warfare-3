@@ -2433,5 +2433,18 @@
   "secret.ancientwarfare.line": "Their ruler's secret: %s",
   "secret.ancientwarfare.line.held": "You blackmail their ruler: %s",
   "news.ancientwarfare.secret_published": "Scandal in %s: %s. %s made it public",
-  "news.ancientwarfare.ruler_disgraced": "Disgraced, %2$s of %1$s gives up the throne; %3$s rules now (%4$s)"
+  "news.ancientwarfare.ruler_disgraced": "Disgraced, %2$s of %1$s gives up the throne; %3$s rules now (%4$s)",
+  "envoy.ancientwarfare.offer.cede": "%s demands back the village you took from it at %s, %s. Refuse, and it will not stay quiet.",
+  "envoy.ancientwarfare.accepted.cede": "The village goes back to %s; its ruler is satisfied.",
+  "news.ancientwarfare.ceded_village": "%s gave the village%3$s back to %2$s",
+  "news.ancientwarfare.cede_refused": "War: %s goes to war with %s, who refused to give back a taken village",
+  "incident.ancientwarfare.pay.killing": "Pay blood money",
+  "incident.ancientwarfare.pay.caravan": "Make good the loss",
+  "incident.ancientwarfare.pay.border": "Apologise",
+  "incident.ancientwarfare.demand.caravan": "%s: outlaws robbed our caravan on your land near %s, %s. You keep the roads there: make good our loss.",
+  "incident.ancientwarfare.demand.border": "%s: %s of your soldiers stand in our town without leave. Apologise and pay, or we will remember it.",
+  "incident.ancientwarfare.border_warning": "%1$s of your soldiers stand in the town%3$s of %2$s without a treaty. Lead them out soon, or there will be an incident.",
+  "news.ancientwarfare.incident_refused.killing": "%s bears a grudge: %s refused to answer for a killing",
+  "news.ancientwarfare.incident_refused.caravan": "%s bears a grudge: %s refused to answer for a caravan robbed on their land",
+  "news.ancientwarfare.incident_refused.border": "%s bears a grudge: %s refused to apologise for troops over its border"
 }

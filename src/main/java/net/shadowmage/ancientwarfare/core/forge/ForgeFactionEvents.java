@@ -159,6 +159,10 @@ public final class ForgeFactionEvents {
          } else if (event.getSource().getEntity() instanceof net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity soldier && soldier.getOwner().isPresent()) {
             net.shadowmage.ancientwarfare.core.faction.FactionIncidents.onKilled(serverLevel, soldier.getOwner().get(), npc, soldier);
          } else if (event.getSource().getEntity() instanceof FactionNpcEntity killer) {
+            if (FactionDiplomacy.isOutlaw(killer.getFactionName())) {
+               FactionCaravans.onKilledByOutlaws(serverLevel, npc);
+            }
+
             FactionDiplomacy.adjustOpinion(serverLevel, npc.getFactionName(), killer.getFactionName(), FactionDiplomacy.KILL_OPINION);
          }
 

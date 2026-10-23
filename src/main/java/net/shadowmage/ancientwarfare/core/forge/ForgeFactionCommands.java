@@ -415,6 +415,25 @@ public final class ForgeFactionCommands {
                   context.getSource().sendSuccess(() -> Component.literal(arrived ? "Spy arrived" : "No village"), false);
                   return 1;
                })))
+               .then(Commands.literal("taken").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+                  // Marks the player's nearest village as taken from the faction.
+                  ServerPlayer player = context.getSource().getPlayerOrException();
+                  net.shadowmage.ancientwarfare.core.faction.FactionWorldData data = net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(context.getSource().getLevel());
+                  net.minecraft.core.BlockPos nearest = data.villages().entrySet().stream().filter(entry -> entry.getValue().equals(player.getUUID())).map(java.util.Map.Entry::getKey)
+                     .min(java.util.Comparator.comparingDouble(pos -> pos.distSqr(player.blockPosition()))).orElse(null);
+                  if (nearest != null) {
+                     data.setVillageState(nearest, new net.shadowmage.ancientwarfare.core.faction.FactionWorldData.VillageState(StringArgumentType.getString(context, "faction"), 20, 40, 45));
+                  }
+
+                  context.getSource().sendSuccess(() -> Component.literal(nearest == null ? "No village" : "Taken: " + nearest.toShortString()), false);
+                  return 1;
+               })))
+               .then(Commands.literal("caravanrobbed").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+                  ServerPlayer player = context.getSource().getPlayerOrException();
+                  boolean opened = net.shadowmage.ancientwarfare.core.faction.FactionIncidents.onCaravanRobbed(context.getSource().getLevel(), StringArgumentType.getString(context, "faction"), player.getX(), player.getZ());
+                  context.getSource().sendSuccess(() -> Component.literal(opened ? "Incident opened" : "No incident"), false);
+                  return 1;
+               })))
                .then(Commands.literal("plot").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
                   boolean offered = net.shadowmage.ancientwarfare.core.faction.FactionPlots.forcePlot(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
                   context.getSource().sendSuccess(() -> Component.literal(offered ? "Plot offered" : "No courtier"), false);
