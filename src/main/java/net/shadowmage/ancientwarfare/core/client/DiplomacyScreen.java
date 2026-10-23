@@ -19,7 +19,7 @@ import net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork;
 /** The player's relations with the factions they have met, and the offers they can make. */
 public class DiplomacyScreen extends Screen {
    private static final int PANEL_WIDTH = 340;
-   private static final int PANEL_HEIGHT = 232;
+   private static final int PANEL_HEIGHT = 254;
    private static final int LIST_WIDTH = 110;
    private static final int ROW_HEIGHT = 20;
    private static final int VISIBLE_ROWS = 9;
@@ -90,7 +90,7 @@ public class DiplomacyScreen extends Screen {
          for (int i = 0; i < gifts.length && i * 3 + 2 < entry.court().length; i++) {
             PlayerDiplomacy.Action action = gifts[i];
             Button button = Button.builder(
-                  Component.translatable("gui.ancientwarfare.diplomacy.court_gift", net.shadowmage.ancientwarfare.core.faction.FactionCourt.COURTIER_GIFT),
+                  Component.translatable("gui.ancientwarfare.diplomacy.court_gift", net.shadowmage.ancientwarfare.core.faction.FactionCourt.COURTIER_GIFT / 10),
                   ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)
                )
                .bounds(left + PANEL_WIDTH - 70, top + 44 + i * COURT_ROW, 62, 18)
@@ -104,7 +104,7 @@ public class DiplomacyScreen extends Screen {
          }
       } else if (entry != null) {
          int x = left + LIST_WIDTH + 10;
-         int y = top + PANEL_HEIGHT - 78;
+         int y = top + PANEL_HEIGHT - 100;
          int width = (PANEL_WIDTH - LIST_WIDTH - 24) / 3;
          this.addAction(entry, PlayerDiplomacy.Action.PEACE, x, y, width, entry.treaty() == RelationState.WAR);
          this.addAction(entry, PlayerDiplomacy.Action.PACT, x + width + 2, y, width, entry.treaty() == RelationState.NEUTRAL);
@@ -115,6 +115,8 @@ public class DiplomacyScreen extends Screen {
          int half = (width * 3 + 2) / 2;
          this.addAction(entry, PlayerDiplomacy.Action.SPY, x, y + 44, half, true);
          this.addAction(entry, PlayerDiplomacy.Action.TOURNAMENT, x + half + 2, y + 44, half, entry.treaty() != RelationState.WAR);
+         this.addAction(entry, PlayerDiplomacy.Action.SUPPLY, x, y + 66, half, entry.treaty() != RelationState.WAR);
+         this.addAction(entry, PlayerDiplomacy.Action.MEDIATE, x + half + 2, y + 66, half, entry.treaty() != RelationState.WAR && !entry.wars().isEmpty());
       }
    }
 
@@ -125,10 +127,12 @@ public class DiplomacyScreen extends Screen {
       }
 
       Component label = action == PlayerDiplomacy.Action.GIFT
-         ? Component.translatable(key, PlayerDiplomacy.GIFT_EMERALDS)
+         ? Component.translatable(key, PlayerDiplomacy.GIFT_EMERALDS / 10)
          : action == PlayerDiplomacy.Action.SPY
             ? Component.translatable(key, FactionSpies.SPY_EMERALDS)
-            : action == PlayerDiplomacy.Action.TOURNAMENT ? Component.translatable(key, FactionTournaments.ENTRY_EMERALDS) : Component.translatable(key);
+            : action == PlayerDiplomacy.Action.TOURNAMENT
+               ? Component.translatable(key, FactionTournaments.ENTRY_EMERALDS)
+               : action == PlayerDiplomacy.Action.SUPPLY ? Component.translatable(key, net.shadowmage.ancientwarfare.core.faction.FactionCourt.SUPPLY_AMOUNT) : Component.translatable(key);
       Button button = Button.builder(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 20).build();
       boolean anywhere = action == PlayerDiplomacy.Action.WAR || action == PlayerDiplomacy.Action.SPY || action == PlayerDiplomacy.Action.TRADE && entry.trade();
       String research = PlayerDiplomacy.research(action);
@@ -136,6 +140,8 @@ public class DiplomacyScreen extends Screen {
       button.active = applicable && known && (anywhere || entry.leaderNear());
       if (!known) {
          button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(net.shadowmage.ancientwarfare.core.research.PlayerResearch.needs(research)));
+      } else if (action == PlayerDiplomacy.Action.SUPPLY || action == PlayerDiplomacy.Action.MEDIATE || action == PlayerDiplomacy.Action.GIFT) {
+         button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable(key + ".tip")));
       }
 
       this.addRenderableWidget(button);
@@ -204,7 +210,7 @@ public class DiplomacyScreen extends Screen {
       }
 
       graphics.drawWordWrap(this.font, wars, x, y, width, MUTED_COLOR);
-      y = this.top() + PANEL_HEIGHT - 92;
+      y = this.top() + PANEL_HEIGHT - 114;
       Component leader = Component.translatable(entry.leaderNear() ? "gui.ancientwarfare.diplomacy.leader_here" : "gui.ancientwarfare.diplomacy.leader_away");
       graphics.drawString(this.font, leader, x, y, entry.leaderNear() ? 0xFF80FF80 : MUTED_COLOR);
    }

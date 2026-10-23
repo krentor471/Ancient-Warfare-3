@@ -25,7 +25,8 @@ public final class PlayerDiplomacy {
    public static final int PACT_STANDING = 30;
    public static final int ALLIANCE_STANDING = 60;
    public static final int TRADE_STANDING = 0;
-   public static final int GIFT_EMERALDS = 5;
+   /** A gift to the ruler: ten gold. */
+   public static final int GIFT_EMERALDS = 100;
    public static final int GIFT_STANDING = 10;
    public static final int MAX_GIFT_STANDING = 100;
    public static final int WAR_STANDING = -30;
@@ -49,6 +50,10 @@ public final class PlayerDiplomacy {
       SPY,
       /** Enters one of the player's soldiers against the faction's champion. */
       TOURNAMENT,
+      /** Brings the faction a load of what its stores lack most. */
+      SUPPLY,
+      /** Offers to make peace between the faction and an enemy. */
+      MEDIATE,
       /** A gift to one of the court: the heir, the marshal, the treasurer or the priest. */
       COURT_HEIR,
       COURT_MARSHAL,
@@ -167,15 +172,25 @@ public final class PlayerDiplomacy {
          case TOURNAMENT -> {
             return FactionTournaments.enter(player, faction);
          }
+         case SUPPLY -> {
+            return FactionCourt.supply(player, faction);
+         }
+         case MEDIATE -> {
+            return FactionCourt.mediate(player, faction);
+         }
          case GIFT -> {
-            if (!takeEmeralds(player, GIFT_EMERALDS)) {
+            if (FactionCourt.recent(player.serverLevel(), player.getUUID(), faction, "gift") >= FactionCourt.TIRED) {
+               return Component.translatable("diplomacy.ancientwarfare.gift_tired", name);
+            } else if (!takeEmeralds(player, GIFT_EMERALDS)) {
                return Component.translatable("diplomacy.ancientwarfare.gift_missing", GIFT_EMERALDS);
             }
 
             // A greedy ruler is swayed more by a gift.
             int gift = FactionRulers.trait(player.serverLevel(), faction) == FactionRulers.Trait.GREEDY ? GIFT_STANDING * 3 / 2 : GIFT_STANDING;
-            // A treasury in want of gold takes it the more gladly.
+            // A treasury in want of gold takes it the more gladly; gift after gift is worth less and less.
             gift += FactionCourt.onGift(player, faction, gift);
+            gift = FactionCourt.weigh(player.serverLevel(), player.getUUID(), faction, "gift", gift);
+
             int raised = Math.max(standing, Math.min(MAX_GIFT_STANDING, standing + gift));
             standings.setStanding(player.getUUID(), faction, raised);
             return Component.translatable("diplomacy.ancientwarfare.gift", name, raised);

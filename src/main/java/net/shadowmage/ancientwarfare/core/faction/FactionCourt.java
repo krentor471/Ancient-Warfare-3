@@ -60,8 +60,25 @@ public final class FactionCourt extends SavedData {
       }
    }
 
-   /** Silver a gift to a courtier costs. */
-   public static final int COURTIER_GIFT = 5;
+   /** Silver a gift to a courtier costs: five gold. */
+   public static final int COURTIER_GIFT = 50;
+   /**
+    * How much a gift is worth after so many recent ones of the same kind: a court soon tires of
+    * presents. A gift's weight wears off one step a day.
+    */
+   private static final int[] WEARINESS = {100, 50, 25, 0};
+   /** After this many recent gifts of a kind, another is refused before any coin changes hands. */
+   static final int TIRED = WEARINESS.length - 1;
+   /** Standing for each soldier of the faction's enemy a player kills, and at most so much a day. */
+   private static final int AID_KILL_STANDING = 1;
+   private static final int MAX_AID_A_DAY = 8;
+   /** A supply of what the faction lacks most. */
+   public static final int SUPPLY_AMOUNT = 32;
+   private static final int SUPPLY_STANDING = 6;
+   /** Peace brought about between two factions: what the player needs with each, and what it brings. */
+   public static final int MEDIATE_STANDING = 20;
+   private static final int MEDIATED_STANDING = 10;
+   private static final int MEDIATE_FAILED_STANDING = -3;
    private static final int GIFT_FAVOR = 10;
    private static final int MAX_FAVOR = 50;
    private static final int MIN_FAVOR = -50;
@@ -82,6 +99,10 @@ public final class FactionCourt extends SavedData {
    private static final FactionRulers.Trait[] TRAITS = FactionRulers.Trait.values();
    private final Map<String, Courtier[]> courts = new HashMap<>();
    private final Map<String, List<Goal>> goals = new HashMap<>();
+   /** Recent favors of each kind, by player, faction and kind: their weight, falling by one each day. */
+   private final Map<String, Integer> recent = new HashMap<>();
+   /** Days the recent weights were last worn down; not saved, the next day simply wears them again. */
+   private long woreDay = -1L;
 
    static final class Courtier {
       int name;
@@ -212,18 +233,158 @@ public final class FactionCourt extends SavedData {
          return Component.empty();
       }
 
-      if (!PlayerDiplomacy.takeEmeralds(player, COURTIER_GIFT)) {
+      if (recent(player.serverLevel(), player.getUUID(), faction, "courtier" + index) >= TIRED) {
+         return Component.translatable("court.ancientwarfare.tired", roleName(Role.values()[index]), FactionRulers.name(court[index].name));
+      } else if (!PlayerDiplomacy.takeEmeralds(player, COURTIER_GIFT)) {
          return Component.translatable("diplomacy.ancientwarfare.gift_missing", COURTIER_GIFT);
       }
 
       Courtier courtier = court[index];
-      int gift = courtier.trait() == FactionRulers.Trait.GREEDY ? GIFT_FAVOR * 3 / 2 : GIFT_FAVOR;
+      int gift = weigh(player.serverLevel(), player.getUUID(), faction, "courtier" + index, courtier.trait() == FactionRulers.Trait.GREEDY ? GIFT_FAVOR * 3 / 2 : GIFT_FAVOR);
       int favor = Math.min(MAX_FAVOR, courtier.favor(player.getUUID()) + gift);
       courtier.favor.put(player.getUUID(), favor);
       get(player.serverLevel()).setDirty();
       return Component.translatable(
          "court.ancientwarfare.gift", roleName(Role.values()[index]), FactionRulers.name(courtier.name), FactionNews.factionName(faction), favor
       );
+   }
+
+   /** What a favor of this kind is worth now, given how many came lately; counts this one. */
+   static int weigh(ServerLevel level, UUID player, String faction, String kind, int full) {
+      FactionCourt data = get(level);
+      String key = player + "|" + faction + "|" + kind;
+      int recent = data.recent.getOrDefault(key, 0);
+      data.recent.put(key, recent + 1);
+      data.setDirty();
+      return full * WEARINESS[Math.min(recent, WEARINESS.length - 1)] / 100;
+   }
+
+   /** How many favors of this kind came lately, without counting a new one. */
+   static int recent(ServerLevel level, UUID player, String faction, String kind) {
+      return get(level).recent.getOrDefault(player + "|" + faction + "|" + kind, 0);
+   }
+
+   private void wear(long day) {
+      if (day == this.woreDay) {
+         return;
+      }
+
+      this.woreDay = day;
+      this.recent.replaceAll((key, value) -> value - 1);
+      this.recent.values().removeIf(value -> value <= 0);
+      this.setDirty();
+   }
+
+   /**
+    * A player brings the faction what its stores lack most: iron, stone or timber. Returns the
+    * message; nothing is taken when the player has too little.
+    */
+   static Component supply(ServerPlayer player, String faction) {
+      FactionWorldData data = FactionWorldData.get(player.serverLevel());
+      int[] stores = data.stores(faction);
+      int need = FactionResources.IRON;
+      for (int kind : new int[]{FactionResources.WOOD, FactionResources.STONE, FactionResources.IRON}) {
+         if (stores[kind] < stores[need]) {
+            need = kind;
+         }
+      }
+
+      net.minecraft.tags.TagKey<net.minecraft.world.item.Item> wanted = need == FactionResources.IRON
+         ? net.minecraftforge.common.Tags.Items.INGOTS_IRON
+         : need == FactionResources.STONE ? net.minecraftforge.common.Tags.Items.COBBLESTONE : net.minecraft.tags.ItemTags.LOGS;
+      Component goods = Component.translatable("supply.ancientwarfare.goods." + (need == FactionResources.IRON ? "iron" : need == FactionResources.STONE ? "stone" : "wood"));
+      if (recent(player.serverLevel(), player.getUUID(), faction, "supply") >= TIRED) {
+         return Component.translatable("supply.ancientwarfare.tired", FactionNews.factionName(faction));
+      } else if (!player.isCreative() && !takeItems(player, wanted, SUPPLY_AMOUNT)) {
+         return Component.translatable("supply.ancientwarfare.missing", SUPPLY_AMOUNT, goods);
+      }
+
+      stores[need] += SUPPLY_AMOUNT;
+      data.setDirty();
+      int standing = weigh(player.serverLevel(), player.getUUID(), faction, "supply", SUPPLY_STANDING);
+      int now = FactionStandingData.get(player.serverLevel()).adjustStanding(player.getUUID(), faction, standing);
+      return Component.translatable(standing > 0 ? "supply.ancientwarfare.given" : "supply.ancientwarfare.given_tired", FactionNews.factionName(faction), SUPPLY_AMOUNT, goods, now);
+   }
+
+   private static boolean takeItems(ServerPlayer player, net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tag, int count) {
+      net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
+      int held = 0;
+      for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+         if (inventory.getItem(slot).is(tag)) {
+            held += inventory.getItem(slot).getCount();
+         }
+      }
+
+      if (held < count) {
+         return false;
+      }
+
+      int owed = count;
+      for (int slot = 0; slot < inventory.getContainerSize() && owed > 0; slot++) {
+         net.minecraft.world.item.ItemStack stack = inventory.getItem(slot);
+         if (stack.is(tag)) {
+            int taken = Math.min(owed, stack.getCount());
+            stack.shrink(taken);
+            owed -= taken;
+         }
+      }
+
+      return true;
+   }
+
+   /**
+    * The player offers to make peace between the faction and the enemy it is at war with that thinks
+    * best of the player. Both must think well enough of them; the longer the war, the readier they are.
+    */
+   static Component mediate(ServerPlayer player, String faction) {
+      ServerLevel level = player.serverLevel();
+      FactionStandingData standings = FactionStandingData.get(level);
+      FactionWorldData data = FactionWorldData.get(level);
+      String best = null;
+      for (String other : FactionRegistry.factionNames()) {
+         if (!other.equals(faction) && !FactionDiplomacy.isOutlaw(other) && FactionDiplomacy.relation(level, faction, other).state() == RelationState.WAR
+            && standings.knownFactions(player.getUUID()).contains(other)
+            && (best == null || standings.getStanding(player.getUUID(), other) > standings.getStanding(player.getUUID(), best))) {
+            best = other;
+         }
+      }
+
+      Component name = FactionNews.factionName(faction);
+      if (best == null) {
+         return Component.translatable("mediate.ancientwarfare.no_war", name);
+      }
+
+      Component otherName = FactionNews.factionName(best);
+      int mine = standings.getStanding(player.getUUID(), faction);
+      int theirs = standings.getStanding(player.getUUID(), best);
+      if (standings.getTreaty(player.getUUID(), faction) == RelationState.WAR || standings.getTreaty(player.getUUID(), best) == RelationState.WAR
+         || Math.min(mine, theirs) < MEDIATE_STANDING) {
+         return Component.translatable("mediate.ancientwarfare.not_trusted", name, otherName, MEDIATE_STANDING);
+      }
+
+      if (recent(level, player.getUUID(), faction, "mediate") > 0) {
+         return Component.translatable("mediate.ancientwarfare.too_soon", name);
+      }
+
+      weigh(level, player.getUUID(), faction, "mediate", 0);
+      weigh(level, player.getUUID(), faction, "mediate", 0);
+      weigh(level, player.getUUID(), faction, "mediate", 0);
+      long days = Math.max(0L, data.lastSimulatedDay() - FactionDiplomacy.relation(level, faction, best).since());
+      double chance = Mth.clamp(0.2 + Math.min(mine, theirs) / 200.0 + days * 0.03, 0.0, 0.9) * Math.min(peaceFactor(level, faction), peaceFactor(level, best));
+      if (level.getRandom().nextDouble() >= chance) {
+         standings.adjustStanding(player.getUUID(), faction, MEDIATE_FAILED_STANDING);
+         standings.adjustStanding(player.getUUID(), best, MEDIATE_FAILED_STANDING);
+         return Component.translatable("mediate.ancientwarfare.failed", name, otherName);
+      }
+
+      if (FactionDiplomacy.setState(level, faction, best, RelationState.NEUTRAL)) {
+         FactionBorders.settlePeace(level, data, faction, best);
+         FactionNews.relationChanged(level, faction, best, RelationState.NEUTRAL, "mediated", player.getDisplayName());
+      }
+
+      standings.adjustStanding(player.getUUID(), faction, MEDIATED_STANDING);
+      standings.adjustStanding(player.getUUID(), best, MEDIATED_STANDING);
+      return Component.translatable("mediate.ancientwarfare.done", name, otherName, MEDIATED_STANDING);
    }
 
    /** The player declared war: the whole court takes it ill. */
@@ -254,6 +415,7 @@ public final class FactionCourt extends SavedData {
    static void simulateDay(ServerLevel level, FactionWorldData data) {
       FactionCourt court = get(level);
       long day = Math.max(0L, data.lastSimulatedDay());
+      court.wear(day);
       Set<String> factions = new HashSet<>();
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          if (!FactionDiplomacy.isOutlaw(settlement.faction())) {
@@ -379,10 +541,23 @@ public final class FactionCourt extends SavedData {
       return null;
    }
 
-   /** A player killed one of the victim faction's people: whoever wants it humbled thinks better of them. */
+   /**
+    * A player killed one of the victim faction's people: whoever wants it humbled thinks better of
+    * them, and so, a little and only so often a day, does every faction at war with it.
+    */
    public static void onKill(ServerLevel level, ServerPlayer player, String victim) {
       FactionCourt court = get(level);
       FactionStandingData standings = FactionStandingData.get(level);
+      if (!FactionDiplomacy.isOutlaw(victim)) {
+         for (String ally : standings.knownFactions(player.getUUID())) {
+            if (!ally.equals(victim) && FactionDiplomacy.relation(level, ally, victim).state() == RelationState.WAR
+               && recent(level, player.getUUID(), ally, "aid") < MAX_AID_A_DAY) {
+               weigh(level, player.getUUID(), ally, "aid", 0);
+               standings.adjustStanding(player.getUUID(), ally, AID_KILL_STANDING);
+            }
+         }
+      }
+
       court.goals.forEach((faction, goals) -> {
          for (Goal goal : goals) {
             if (!faction.equals(victim) && goal.target.equals(victim) && goal.kind != GoalKind.GOLD) {
@@ -518,6 +693,11 @@ public final class FactionCourt extends SavedData {
          data.goals.put(faction, list);
       }
 
+      CompoundTag recent = tag.getCompound("Recent");
+      for (String key : recent.getAllKeys()) {
+         data.recent.put(key, recent.getInt(key));
+      }
+
       return data;
    }
 
@@ -558,6 +738,9 @@ public final class FactionCourt extends SavedData {
          goals.put(faction, entries);
       });
       tag.put("Goals", goals);
+      CompoundTag recent = new CompoundTag();
+      this.recent.forEach(recent::putInt);
+      tag.put("Recent", recent);
       return tag;
    }
 }
