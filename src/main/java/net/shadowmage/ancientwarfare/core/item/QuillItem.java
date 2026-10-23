@@ -24,12 +24,26 @@ import org.jetbrains.annotations.Nullable;
 
 public class QuillItem extends Item implements NpcProfessionTool {
    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
+   /** How much science a scribe gathers with this quill, against a wooden one. */
+   private final float science;
 
    public QuillItem(Tier tier) {
       super(new Properties().durability(tier.getUses()));
+      this.science = tier == net.minecraft.world.item.Tiers.WOOD
+         ? 1.0F
+         : tier == net.minecraft.world.item.Tiers.STONE
+            ? 1.25F
+            : tier == net.minecraft.world.item.Tiers.IRON
+               ? 1.5F
+               : tier == net.minecraft.world.item.Tiers.GOLD ? 2.0F : tier == net.minecraft.world.item.Tiers.DIAMOND ? 3.0F : 3.5F;
       Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
       builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Tool modifier", 1.0 + (double)tier.getAttackDamageBonus(), Operation.ADDITION));
       this.defaultModifiers = builder.build();
+   }
+
+   /** The science a scribe holding this stack gathers, against a wooden quill; 1 for anything that is not a quill. */
+   public static float scienceMultiplier(ItemStack stack) {
+      return stack.getItem() instanceof QuillItem quill ? quill.science : 1.0F;
    }
 
    @Override
@@ -60,6 +74,7 @@ public class QuillItem extends Item implements NpcProfessionTool {
 
    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
       tooltip.add(Component.translatable("tooltip.ancientwarfare.quill.work_mode"));
-      tooltip.add(Component.translatable("tooltip.ancientwarfare.quill.porting_note"));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.quill.science", net.minecraft.util.Mth.floor(this.science * 100.0F) / 100.0F)
+         .withStyle(net.minecraft.ChatFormatting.AQUA));
    }
 }

@@ -32,9 +32,23 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    public static final int BOOK_SLOT = 0;
    public static final int RESOURCE_SLOT_START = 1;
    public static final int SLOT_COUNT = 10;
-   /** Science a scribe gathers with each stretch of work at the desk. */
-   public static final int SCIENCE_PER_EFFORT = 1;
+   /** Science a scribe gathers with each stretch of work at the desk, with a wooden quill and no shelves about. */
+   public static final float SCIENCE_PER_EFFORT = 1.0F;
+   /** Science one sheet of paper and one ink sac from a chest beside the desk are good for. */
+   public static final int SCIENCE_PER_SUPPLY = 20;
+   /** Shelves counted within this many blocks of the desk; this many or more make the room a scriptorium. */
+   private static final int SHELF_RANGE = 4;
+   private static final int SCRIPTORIUM_SHELVES = 6;
+   private static final int MAX_SHELVES = 20;
+   private static final float SCRIPTORIUM_BONUS = 0.25F;
+   private static final float SHELF_BONUS = 0.03F;
+   private static final int SUPPLY_RANGE = 2;
    private final NonNullList<ItemStack> items = NonNullList.withSize(10, ItemStack.EMPTY);
+   /** Science paid for with paper and ink but not yet gathered. */
+   private int supplied;
+   private float scienceFraction;
+   private float roomBonus = -1.0F;
+   private long roomCheckedAt;
 
    public ResearchStationBlockEntity(BlockPos pos, BlockState state) {
       super(AWCoreRegistryAccess.blockEntityType(AWCoreIds.RESEARCH_STATION), pos, state);
@@ -131,10 +145,98 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
                ResearchBookItem.addProgress(book, effort);
             }
 
-            ResearchBookData.addScience(book, effort * SCIENCE_PER_EFFORT);
+            this.gatherScience(book, worker, effort);
             this.setChanged();
          }
       }
+   }
+
+   /**
+    * The scribe writes: the science he gathers grows with his quill and with the shelves about the
+    * desk, and he writes on paper with ink from a chest beside it. Without them he gathers nothing,
+    * and the book says so.
+    */
+   private void gatherScience(ItemStack book, WorkerAccess worker, int effort) {
+      float quill = worker instanceof net.minecraft.world.entity.LivingEntity scribe
+         ? net.shadowmage.ancientwarfare.core.item.QuillItem.scienceMultiplier(scribe.getMainHandItem())
+         : 1.0F;
+      if (this.roomBonus < 0.0F || this.level.getGameTime() - this.roomCheckedAt > 200L) {
+         this.roomBonus = roomBonus(this.level, this.worldPosition);
+         this.roomCheckedAt = this.level.getGameTime();
+      }
+
+      this.scienceFraction += effort * SCIENCE_PER_EFFORT * quill * (1.0F + this.roomBonus);
+      int whole = (int)this.scienceFraction;
+      if (whole <= 0) {
+         return;
+      }
+
+      if (this.supplied < whole && !this.takeSupplies()) {
+         ResearchBookData.setStarved(book, true);
+         this.scienceFraction = Math.min(this.scienceFraction, 1.0F);
+         return;
+      }
+
+      this.scienceFraction -= whole;
+      this.supplied -= whole;
+      ResearchBookData.setStarved(book, false);
+      ResearchBookData.addScience(book, whole);
+   }
+
+   private boolean takeSupplies() {
+      Container paper = null;
+      int paperSlot = -1;
+      Container ink = null;
+      int inkSlot = -1;
+      for (BlockPos pos : BlockPos.betweenClosed(this.worldPosition.offset(-SUPPLY_RANGE, -1, -SUPPLY_RANGE), this.worldPosition.offset(SUPPLY_RANGE, 1, SUPPLY_RANGE))) {
+         if (pos.equals(this.worldPosition) || !(this.level.getBlockEntity(pos) instanceof Container container)) {
+            continue;
+         }
+
+         for (int slot = 0; slot < container.getContainerSize() && (paper == null || ink == null); slot++) {
+            ItemStack stack = container.getItem(slot);
+            if (paper == null && stack.is(net.minecraft.world.item.Items.PAPER)) {
+               paper = container;
+               paperSlot = slot;
+            } else if (ink == null && (stack.is(net.minecraft.world.item.Items.INK_SAC) || stack.is(net.minecraft.world.item.Items.BLACK_DYE))) {
+               ink = container;
+               inkSlot = slot;
+            }
+         }
+
+         if (paper != null && ink != null) {
+            paper.removeItem(paperSlot, 1);
+            ink.removeItem(inkSlot, 1);
+            paper.setChanged();
+            ink.setChanged();
+            this.supplied += SCIENCE_PER_SUPPLY;
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   /** The bonus the room gives the scribes: a little for every bookshelf near the desk, and more when there are enough to call it a scriptorium. */
+   public static float roomBonus(Level level, BlockPos desk) {
+      int shelves = shelves(level, desk);
+      return (shelves >= SCRIPTORIUM_SHELVES ? SCRIPTORIUM_BONUS : 0.0F) + SHELF_BONUS * Math.min(shelves, MAX_SHELVES);
+   }
+
+   public static boolean isScriptorium(Level level, BlockPos desk) {
+      return shelves(level, desk) >= SCRIPTORIUM_SHELVES;
+   }
+
+   private static int shelves(Level level, BlockPos desk) {
+      int shelves = 0;
+      for (BlockPos pos : BlockPos.betweenClosed(desk.offset(-SHELF_RANGE, -1, -SHELF_RANGE), desk.offset(SHELF_RANGE, 3, SHELF_RANGE))) {
+         BlockState state = level.getBlockState(pos);
+         if (state.is(net.minecraft.world.level.block.Blocks.BOOKSHELF) || state.is(net.minecraft.world.level.block.Blocks.CHISELED_BOOKSHELF)) {
+            shelves++;
+         }
+      }
+
+      return shelves;
    }
 
    @Override
@@ -145,11 +247,13 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    protected void saveAdditional(CompoundTag tag) {
       super.saveAdditional(tag);
       ContainerHelper.saveAllItems(tag, this.items);
+      tag.putInt("ScienceSupplied", this.supplied);
    }
 
    public void load(CompoundTag tag) {
       super.load(tag);
       ContainerHelper.loadAllItems(tag, this.items);
+      this.supplied = tag.getInt("ScienceSupplied");
       this.updateBookState();
    }
 

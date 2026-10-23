@@ -155,6 +155,22 @@ public final class ResearchBookData {
       stack.getOrCreateTag().putInt(SCIENCE_TAG, getScience(stack) + Math.max(0, amount));
    }
 
+   /** Set when the scribes last found no paper and ink beside the desk, so the station can say why no science comes. */
+   public static boolean isStarved(ItemStack stack) {
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.getBoolean("scienceStarved");
+   }
+
+   public static void setStarved(ItemStack stack, boolean starved) {
+      if (starved != isStarved(stack)) {
+         if (starved) {
+            stack.getOrCreateTag().putBoolean("scienceStarved", true);
+         } else {
+            stack.getOrCreateTag().remove("scienceStarved");
+         }
+      }
+   }
+
    public static boolean takeScience(ItemStack stack, int amount) {
       int science = getScience(stack);
       if (science < amount) {

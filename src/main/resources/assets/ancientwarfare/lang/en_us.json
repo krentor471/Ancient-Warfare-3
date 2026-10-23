@@ -2110,5 +2110,12 @@
   "research.ancientwarfare.field_command.opens": "Top-down command view for soldiers",
   "research.ancientwarfare.diplomacy.opens": "Offering alliances to factions",
   "research.ancientwarfare.espionage.opens": "Sending spies to factions",
-  "research.ancientwarfare.trade.opens": "Trade agreements with factions"
+  "research.ancientwarfare.trade.opens": "Trade agreements with factions",
+  "tooltip.ancientwarfare.quill.science": "A scribe with it gathers science ×%s",
+  "guistrings.research.no_supplies_short": "No ink!",
+  "guistrings.research.science_hint": "Scribes at this desk gather science into the book.",
+  "guistrings.research.shelves": "Bookshelves nearby: +%s%% (6 or more make a scriptorium, +25%%)",
+  "guistrings.research.scriptorium": "Scriptorium: +%s%% science",
+  "guistrings.research.supplies": "They write on paper with ink (ink sac or black dye) from a chest beside the desk: one of each per %s science.",
+  "guistrings.research.quill_hint": "A better quill gathers more: stone ×1.25, iron ×1.5, gold ×2, diamond ×3."
 }

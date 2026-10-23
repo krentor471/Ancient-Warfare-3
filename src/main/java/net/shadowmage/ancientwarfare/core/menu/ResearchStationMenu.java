@@ -81,6 +81,10 @@ public class ResearchStationMenu extends AbstractContainerMenu {
       return net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.getScience(this.getResearchBook());
    }
 
+   public BlockPos pos() {
+      return this.pos;
+   }
+
    public int getNeededScience() {
       ResearchGoal goal = this.getDisplayGoal();
       return goal == null || goal == this.getCurrentGoal() ? 0 : goal.science();

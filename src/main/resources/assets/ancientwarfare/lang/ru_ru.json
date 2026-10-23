@@ -2110,5 +2110,12 @@
   "research.ancientwarfare.field_command.opens": "Командный обзор сверху для бойцов",
   "research.ancientwarfare.diplomacy.opens": "Предложение союза фракциям",
   "research.ancientwarfare.espionage.opens": "Отправка шпионов",
-  "research.ancientwarfare.trade.opens": "Торговые договоры с фракциями"
+  "research.ancientwarfare.trade.opens": "Торговые договоры с фракциями",
+  "tooltip.ancientwarfare.quill.science": "Писец с этим пером собирает науку ×%s",
+  "guistrings.research.no_supplies_short": "Нет чернил!",
+  "guistrings.research.science_hint": "Писцы за этим столом собирают науку в книгу.",
+  "guistrings.research.shelves": "Книжные полки рядом: +%s%% (от 6 полок это скрипторий, ещё +25%%)",
+  "guistrings.research.scriptorium": "Скрипторий: +%s%% к науке",
+  "guistrings.research.supplies": "Пишут на бумаге чернилами (чернильный мешок или чёрный краситель) из сундука рядом со столом: по одному на %s науки.",
+  "guistrings.research.quill_hint": "Перо получше даёт больше: каменное ×1,25, железное ×1,5, золотое ×2, алмазное ×3."
 }

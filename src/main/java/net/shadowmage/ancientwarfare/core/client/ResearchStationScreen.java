@@ -80,8 +80,47 @@ public class ResearchStationScreen extends LegacyContainerScreen<ResearchStation
          needed > science ? 0xFF7070 : 0xA0E0FF,
          false
       );
+      if (net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.isStarved(((ResearchStationMenu)this.menu).book())) {
+         graphics.drawString(this.font, Component.translatable("guistrings.research.no_supplies_short"), 120, 71, 0xFF6060, false);
+      } else {
+         float bonus = net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity.roomBonus(this.minecraft.level, ((ResearchStationMenu)this.menu).pos());
+         if (bonus > 0.0F) {
+            graphics.drawString(this.font, Component.literal("+" + Math.round(bonus * 100.0F) + "%"), 140, 71, 0x80FF80, false);
+         }
+      }
       graphics.drawString(this.font, Component.translatable("guistrings.research.input"), 26, 84, 16777215, false);
       graphics.drawString(this.font, Component.translatable("guistrings.research.needed"), 98, 84, 16777215, false);
+   }
+
+   @Override
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      super.render(graphics, mouseX, mouseY, partialTick);
+      if (mouseX >= this.leftPos + 8 && mouseX < this.leftPos + 170 && mouseY >= this.topPos + 69 && mouseY < this.topPos + 81) {
+         graphics.renderComponentTooltip(this.font, this.scienceTooltip(), mouseX, mouseY);
+      }
+   }
+
+   /** How the scribes are doing: the room's bonus, whether it is a scriptorium, and what they write with. */
+   private List<Component> scienceTooltip() {
+      ResearchStationMenu menu = (ResearchStationMenu)this.menu;
+      float bonus = net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity.roomBonus(this.minecraft.level, menu.pos());
+      boolean scriptorium = net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity.isScriptorium(this.minecraft.level, menu.pos());
+      List<Component> lines = new java.util.ArrayList<>();
+      lines.add(Component.translatable("guistrings.research.science_hint"));
+      lines.add(
+         Component.translatable(scriptorium ? "guistrings.research.scriptorium" : "guistrings.research.shelves", Math.round(bonus * 100.0F))
+            .withStyle(scriptorium ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.GRAY)
+      );
+      lines.add(
+         Component.translatable(
+               "guistrings.research.supplies", net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity.SCIENCE_PER_SUPPLY
+            )
+            .withStyle(
+               net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.isStarved(menu.book()) ? net.minecraft.ChatFormatting.RED : net.minecraft.ChatFormatting.GRAY
+            )
+      );
+      lines.add(Component.translatable("guistrings.research.quill_hint").withStyle(net.minecraft.ChatFormatting.GRAY));
+      return lines;
    }
 
    private void drawNeededResources(GuiGraphics graphics) {
