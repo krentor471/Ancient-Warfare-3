@@ -656,6 +656,14 @@ public final class FactionWorldData extends SavedData {
          entry.putBoolean("Raid", campaign.raid);
          entry.putBoolean("Relief", campaign.relief);
          entry.putInt("Hunt", campaign.hunt);
+         if (campaign.led) {
+            entry.putBoolean("Led", true);
+            entry.putInt("Archers", campaign.archers);
+            entry.putInt("Horse", campaign.horse);
+            entry.putInt("Arms", campaign.arms);
+            entry.putBoolean("Hungry", campaign.hungry);
+         }
+
          if (campaign.naval) {
             entry.putBoolean("Naval", true);
             entry.putDouble("LandX", campaign.landX);
@@ -891,6 +899,11 @@ public final class FactionWorldData extends SavedData {
          campaign.naval = entry.getBoolean("Naval");
          campaign.landX = entry.getDouble("LandX");
          campaign.landZ = entry.getDouble("LandZ");
+         campaign.led = entry.getBoolean("Led");
+         campaign.archers = entry.getInt("Archers");
+         campaign.horse = entry.getInt("Horse");
+         campaign.arms = entry.getInt("Arms");
+         campaign.hungry = entry.getBoolean("Hungry");
          data.campaigns.add(campaign);
          data.nextArmyId = Math.max(data.nextArmyId, campaign.id + 1);
       }
@@ -1190,6 +1203,15 @@ public final class FactionWorldData extends SavedData {
       boolean relief;
       /** The enemy army (campaign id) this one marches out to cut off; 0 for none. */
       int hunt;
+      /** A mustered host, led by the faction's marshal; see FactionMusters. */
+      boolean led;
+      /** Percent of the host that are archers, and that ride. */
+      int archers;
+      int horse;
+      /** Its armour, a FactionArmament tier. */
+      int arms;
+      /** Its granaries are empty: it goes hungry and its soldiers slip away. */
+      boolean hungry;
 
       Campaign(int id, String faction, String defender, int targetSettlement, double x, double z, int size, long since) {
          this.id = id;
@@ -1248,6 +1270,26 @@ public final class FactionWorldData extends SavedData {
 
       public int hunt() {
          return this.hunt;
+      }
+
+      public boolean led() {
+         return this.led;
+      }
+
+      public int archers() {
+         return this.archers;
+      }
+
+      public int horse() {
+         return this.horse;
+      }
+
+      public int arms() {
+         return this.arms;
+      }
+
+      public boolean hungry() {
+         return this.hungry;
       }
 
       public double landX() {

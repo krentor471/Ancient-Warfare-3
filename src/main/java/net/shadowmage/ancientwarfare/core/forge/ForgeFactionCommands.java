@@ -469,6 +469,13 @@ public final class ForgeFactionCommands {
                   context.getSource().sendSuccess(() -> Component.literal(result), false);
                   return 1;
                }))))
+               .then(Commands.literal("muster").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word()).executes(context -> {
+                  String result = net.shadowmage.ancientwarfare.core.faction.FactionMusters.debug(
+                     context.getSource().getLevel(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what")
+                  );
+                  context.getSource().sendSuccess(() -> Component.literal(result), false);
+                  return 1;
+               }))))
                .then(Commands.literal("plot").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
                   boolean offered = net.shadowmage.ancientwarfare.core.faction.FactionPlots.forcePlot(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
                   context.getSource().sendSuccess(() -> Component.literal(offered ? "Plot offered" : "No courtier"), false);

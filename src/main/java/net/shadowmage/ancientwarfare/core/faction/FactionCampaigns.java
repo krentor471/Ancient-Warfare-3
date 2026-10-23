@@ -141,6 +141,11 @@ public final class FactionCampaigns {
       return start(level, data, home, target, taken);
    }
 
+   /** A mustered host, already gathered at home, sets out against the target. */
+   static FactionWorldData.Campaign launchMustered(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement home, FactionWorldData.Settlement target, int taken) {
+      return start(level, data, home, target, taken);
+   }
+
    private static FactionWorldData.Campaign start(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement home, FactionWorldData.Settlement target, int taken) {
       String attacker = home.faction();
       FactionWorldData.Campaign campaign = data.addCampaign(
@@ -356,7 +361,7 @@ public final class FactionCampaigns {
       }
 
       if (distance > 0.0) {
-         double step = Math.min(distance, SPEED * FactionSeasons.march(level) * TICK_INTERVAL / 20.0);
+         double step = Math.min(distance, SPEED * FactionSeasons.march(level) * FactionMusters.pace(level, campaign) * TICK_INTERVAL / 20.0);
          campaign.x += dx / distance * step;
          campaign.z += dz / distance * step;
          data.setDirty();
@@ -419,7 +424,7 @@ public final class FactionCampaigns {
             }
 
             campaign.walking++;
-            FactionNpcEntity npc = FactionSimulation.spawnSoldier(level, campaign.faction(), x, z);
+            FactionNpcEntity npc = FactionSimulation.spawnSoldier(level, campaign.faction(), x, z, null, campaign.led() ? campaign.archers() / 100.0 : 1.0 / 3.0);
             if (npc == null) {
                campaign.walking--;
             } else {
@@ -479,13 +484,27 @@ public final class FactionCampaigns {
             return false;
          }
 
+         // A careful marshal facing a far stronger army falls back home without a battle.
+         if (FactionMusters.avoidsBattle(level, campaign, other)) {
+            end(level, data, campaign, List.of(), campaign.size);
+            return true;
+         }
+
+         if (FactionMusters.avoidsBattle(level, other, campaign)) {
+            end(level, data, other, List.of(), other.size);
+            return false;
+         }
+
          RandomSource random = level.getRandom();
          int mine = campaign.size;
          int theirs = other.size;
-         campaign.size -= Math.min(mine, (int)Math.round(theirs * (0.4 + random.nextDouble() * 0.4)));
-         other.size -= Math.min(theirs, (int)Math.round(mine * (0.4 + random.nextDouble() * 0.4)));
-         FactionWorldData.Campaign loser = campaign.size * theirs < other.size * mine ? campaign : other;
+         double myMight = FactionMusters.might(level, campaign, true);
+         double theirMight = FactionMusters.might(level, other, true);
+         campaign.size -= Math.min(mine, (int)Math.round(theirs * theirMight / myMight * (0.4 + random.nextDouble() * 0.4)));
+         other.size -= Math.min(theirs, (int)Math.round(mine * myMight / theirMight * (0.4 + random.nextDouble() * 0.4)));
+         FactionWorldData.Campaign loser = campaign.size * myMight * theirs < other.size * theirMight * mine ? campaign : other;
          FactionWorldData.Campaign winner = loser == campaign ? other : campaign;
+         FactionMusters.defeated(level, data, loser);
          FactionNews.tell(
             level,
             Component.translatable(
@@ -542,10 +561,21 @@ public final class FactionCampaigns {
 
       walkers.forEach(FactionNpcEntity::discard);
       campaign.walking = 0;
+      if (FactionMusters.shunsWalls(level, campaign, target, FactionAI.walls(target))) {
+         end(level, data, campaign, List.of(), campaign.size);
+         return;
+      }
+
       boolean bandits = FactionDiplomacy.isOutlaw(campaign.faction());
       boolean hunt = FactionDiplomacy.isOutlaw(target.faction());
       // Bandits do not hold what they raid: they plunder it and go. Nor does anyone keep a bandit lair: it is scattered.
-      int survivors = FactionAI.siege(level, data, level.getRandom(), campaign.faction(), target, campaign.size, !bandits && !hunt && !campaign.raid);
+      int survivors = FactionAI.siege(
+         level, data, level.getRandom(), campaign.faction(), target, campaign.size, !bandits && !hunt && !campaign.raid, FactionMusters.might(level, campaign, false)
+      );
+      if (target.faction().equals(campaign.faction())) {
+         FactionMusters.took(level, data, campaign, target);
+      }
+
       if (campaign.raid && target.garrison <= 0 && survivors > 0) {
          FactionRaids.plunder(level, data, campaign.faction(), target);
       } else if (bandits && target.garrison <= 0 && survivors > 0) {

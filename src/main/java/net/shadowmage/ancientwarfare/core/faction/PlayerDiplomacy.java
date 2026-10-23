@@ -313,7 +313,8 @@ public final class PlayerDiplomacy {
                bonds(player, faction),
                FactionRulers.person(data, faction, player.getRandom()),
                FactionFamilies.view(player.serverLevel(), faction),
-               FactionFamilies.tips(player.serverLevel(), faction)
+               FactionFamilies.tips(player.serverLevel(), faction),
+               FactionMusters.lines(player.serverLevel(), faction)
             )
          );
       }
@@ -352,7 +353,7 @@ public final class PlayerDiplomacy {
    public static record Entry(
       String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores,
       int[] court, List<Component> goals, int pending, List<String> ties, int[] tieData, List<Component> bonds, int[] person,
-      int[] family, List<Component> familyTips
+      int[] family, List<Component> familyTips, List<Component> hosts
    ) {
    }
 }

@@ -890,6 +890,8 @@ public class DiplomacyScreen extends Screen {
                   if (stores.length == FactionDeals.KINDS + 2) {
                      tip.add(armamentLine(stores));
                   }
+
+                  tip.addAll(entry.hosts());
                }
 
                this.headerTip = tip;
@@ -942,6 +944,11 @@ public class DiplomacyScreen extends Screen {
          if (stores.length == FactionDeals.KINDS + 2) {
             y += 12;
             graphics.drawString(this.font, Component.literal("◆ ").append(armamentLine(stores)), x, y, TEXT_COLOR);
+         }
+
+         for (Component host : entry.hosts()) {
+            y += 12;
+            graphics.drawString(this.font, Component.literal("◆ ").append(host), x, y, TEXT_COLOR);
          }
       }
 

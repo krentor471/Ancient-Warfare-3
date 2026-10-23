@@ -2632,5 +2632,21 @@
   "gui.ancientwarfare.diplomacy.armament.1": "в кожаных доспехах",
   "gui.ancientwarfare.diplomacy.armament.2": "в кольчугах и шлемах",
   "gui.ancientwarfare.diplomacy.action.supply.tip_now": "Привезти фракции %1$s %2$s: этого ей сейчас не хватает больше всего.",
-  "gui.ancientwarfare.diplomacy.action.supply.tip": "Привезти фракции 32 штуки того, чего ей больше всего не хватает."
+  "gui.ancientwarfare.diplomacy.action.supply.tip": "Привезти фракции 32 штуки того, чего ей больше всего не хватает.",
+  "news.ancientwarfare.muster": "%1$s: войско собирается против %3$s, место сбора: %2$s. Поведёт его военачальник %4$s.",
+  "news.ancientwarfare.host_set_out": "%1$s: войско в %2$s воинов выступило на %3$s, ведёт военачальник %4$s (%5$s).",
+  "host.ancientwarfare.makeup": "лучников %1$s%%, конницы %2$s%%, %3$s",
+  "host.ancientwarfare.arms.0": "без доспехов",
+  "host.ancientwarfare.arms.1": "в коже",
+  "host.ancientwarfare.arms.2": "в кольчугах",
+  "news.ancientwarfare.host_hungry": "У войска %1$s кончилось зерно, воины разбегаются.",
+  "news.ancientwarfare.host_avoids": "Военачальник %1$s (%2$s) не решился на бой с войском %3$s и отступил.",
+  "news.ancientwarfare.host_shuns": "%3$s: военачальник %1$s (%2$s) счёл стены слишком крепкими и повернул домой.",
+  "news.ancientwarfare.marshal_fell": "Военачальник %1$s (%2$s) пал в бою.",
+  "news.ancientwarfare.town_sacked": "%2$s: военачальник %1$s отдал город на разграбление.",
+  "news.ancientwarfare.town_spared": "%2$s: военачальник %1$s пощадил город и его жителей.",
+  "host.ancientwarfare.line.muster": "Собирает войско против %1$s: %2$s из %3$s",
+  "host.ancientwarfare.line.march": "Войско идёт на %1$s: %2$s воинов, %3$s",
+  "host.ancientwarfare.line.hungry": "Голодное войско идёт на %1$s: %2$s воинов, %3$s",
+  "host.ancientwarfare.line.many": "Войска в походе: %1$s (%2$s воинов), собираются: %3$s"
 }

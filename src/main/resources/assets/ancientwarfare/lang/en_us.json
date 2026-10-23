@@ -2632,5 +2632,21 @@
   "gui.ancientwarfare.diplomacy.armament.1": "leather armour",
   "gui.ancientwarfare.diplomacy.armament.2": "mail and helms",
   "gui.ancientwarfare.diplomacy.action.supply.tip_now": "Bring the faction %1$s %2$s: what it lacks most now.",
-  "gui.ancientwarfare.diplomacy.action.supply.tip": "Bring the faction 32 of what it lacks most."
+  "gui.ancientwarfare.diplomacy.action.supply.tip": "Bring the faction 32 of what it lacks most.",
+  "news.ancientwarfare.muster": "%1$s is mustering a host at %2$s against %3$s; marshal %4$s will lead it.",
+  "news.ancientwarfare.host_set_out": "%1$s: a host of %2$s soldiers under marshal %4$s marches on %3$s (%5$s).",
+  "host.ancientwarfare.makeup": "%1$s%% archers, %2$s%% horse, %3$s",
+  "host.ancientwarfare.arms.0": "unarmoured",
+  "host.ancientwarfare.arms.1": "in leather",
+  "host.ancientwarfare.arms.2": "in mail",
+  "news.ancientwarfare.host_hungry": "The host of %1$s has run out of grain; its soldiers are deserting.",
+  "news.ancientwarfare.host_avoids": "Marshal %1$s of %2$s will not face the army of %3$s and falls back.",
+  "news.ancientwarfare.host_shuns": "%3$s: marshal %1$s of %2$s finds the walls too strong and turns for home.",
+  "news.ancientwarfare.marshal_fell": "Marshal %1$s of %2$s has fallen in battle.",
+  "news.ancientwarfare.town_sacked": "%2$s: marshal %1$s has given the town over to plunder.",
+  "news.ancientwarfare.town_spared": "%2$s: marshal %1$s has spared the town and its people.",
+  "host.ancientwarfare.line.muster": "Mustering a host against %1$s: %2$s of %3$s",
+  "host.ancientwarfare.line.march": "Host marching on %1$s: %2$s soldiers, %3$s",
+  "host.ancientwarfare.line.hungry": "Hungry host marching on %1$s: %2$s soldiers, %3$s",
+  "host.ancientwarfare.line.many": "Hosts on the march: %1$s (%2$s soldiers), mustering: %3$s"
 }

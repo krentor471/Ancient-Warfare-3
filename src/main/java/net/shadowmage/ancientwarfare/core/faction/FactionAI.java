@@ -35,7 +35,7 @@ public final class FactionAI {
    /** Walls make a fort's garrison count for more in a battle fought out of sight. */
    private static final double FORT_DEFENCE = 1.5;
    private static final double CAPITAL_DEFENCE = 2.0;
-   private static final int MAX_ARMY = 100;
+   static final int MAX_ARMY = 100;
    /** Days a newly taken settlement cannot be attacked, so it is not traded back and forth daily. */
    private static final long HOLD_DAYS = 6L;
    /** Day each settlement was last taken; not saved, a restart only shortens the respite. */
@@ -233,8 +233,13 @@ public final class FactionAI {
       int force = Math.min(MAX_ARMY, (int)Math.ceil(strength.getOrDefault(attacker, 0) * ATTACK_SHARE));
       if (!FactionHistory.running()) {
          // An army sets out and must march there; one at a time against each enemy.
-         if (!FactionCampaigns.marchingAgainst(data, attacker, defender) && FactionCampaigns.launch(level, data, attacker, target, force)) {
-            strength.merge(attacker, -force, Integer::sum);
+         // Against another faction a host is mustered first, under the marshal; outlaws just go.
+         boolean outlaws = FactionDiplomacy.isOutlaw(attacker) || FactionDiplomacy.isOutlaw(defender);
+         if (!FactionCampaigns.marchingAgainst(data, attacker, defender) && !FactionMusters.mustering(level, attacker, defender)) {
+            boolean went = outlaws ? FactionCampaigns.launch(level, data, attacker, target, force) : FactionMusters.muster(level, data, attacker, target, force);
+            if (went) {
+               strength.merge(attacker, -force, Integer::sum);
+            }
          }
 
          // Beside the main army, small bands go looting behind the enemy's border.
@@ -257,11 +262,15 @@ public final class FactionAI {
     * of the army go home.
     */
    static int siege(ServerLevel level, FactionWorldData data, RandomSource random, String attacker, FactionWorldData.Settlement target, int force, boolean takes) {
+      return siege(level, data, random, attacker, target, force, takes, 1.0);
+   }
+
+   /** As siege, for an army that hits might times as hard as its numbers. */
+   static int siege(ServerLevel level, FactionWorldData data, RandomSource random, String attacker, FactionWorldData.Settlement target, int force, boolean takes, double might) {
       String defender = target.faction();
-      double walls = isFort(target) ? FORT_DEFENCE : FactionTowns.CAPITAL.equals(target.kind()) ? CAPITAL_DEFENCE : 1.0;
-      int defence = (int)Math.round(target.garrison * walls);
-      int attackerLosses = Math.min(force, (int)Math.round(defence * (0.3 + random.nextDouble() * 0.4)));
-      int defenderLosses = Math.min(target.garrison, (int)Math.round(force * (0.3 + random.nextDouble() * 0.4)));
+      int defence = (int)Math.round(target.garrison * walls(target));
+      int attackerLosses = Math.min(force, (int)Math.round(defence * (0.3 + random.nextDouble() * 0.4) / might));
+      int defenderLosses = Math.min(target.garrison, (int)Math.round(force * might * (0.3 + random.nextDouble() * 0.4)));
       target.garrison -= defenderLosses;
       FactionDiplomacy.adjustOpinion(level, attacker, defender, -2);
       int survivors = force - attackerLosses;
@@ -273,6 +282,11 @@ public final class FactionAI {
       }
 
       return survivors;
+   }
+
+   /** Times the garrison's worth its walls make it. */
+   static double walls(FactionWorldData.Settlement target) {
+      return isFort(target) ? FORT_DEFENCE : FactionTowns.CAPITAL.equals(target.kind()) ? CAPITAL_DEFENCE : 1.0;
    }
 
    /** The settlement passes to the attacker, with the given garrison, together with its province. */
@@ -336,7 +350,7 @@ public final class FactionAI {
     * by it, so the front moves as one line instead of cutting holes, then the weakest. While
     * the defender holds a fort on that border, the attacker must take the fort first.
     */
-   private static FactionWorldData.Settlement borderSettlement(FactionWorldData data, String attacker, String defender, long day) {
+   static FactionWorldData.Settlement borderSettlement(FactionWorldData data, String attacker, String defender, long day) {
       Set<Long> attackerLand = new HashSet<>(data.provincesOf(attacker));
       FactionWorldData.Settlement best = null;
 

@@ -114,6 +114,7 @@ public final class FactionSimulation {
       FactionLife.simulateDay(level, data);
       FactionResources.simulateDay(data);
       FactionMarkets.simulateDay(level, data);
+      FactionMusters.simulateDay(level, data);
       Map<String, Integer> recruited = new HashMap<>();
       Map<String, Integer> settlements = new HashMap<>();
       data.settlements().forEach(settlement -> settlements.merge(settlement.faction(), 1, Integer::sum));
@@ -431,6 +432,11 @@ public final class FactionSimulation {
 
    /** As spawnSoldier, tagged before it joins the world (so an army's soldier is known as one when it does). */
    static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z, String tag) {
+      return spawnSoldier(level, faction, x, z, tag, 1.0 / 3.0);
+   }
+
+   /** As spawnSoldier, an archer with the given chance. */
+   static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z, String tag, double archers) {
       RandomSource random = level.getRandom();
       int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
       BlockPos pos = new BlockPos(x, y, z);
@@ -440,7 +446,7 @@ public final class FactionSimulation {
          return null;
       }
 
-      EntityType<? extends FactionNpcEntity> type = random.nextInt(3) == 0 ? AWCoreEntityTypes.FACTION_ARCHER_NPC.get() : AWCoreEntityTypes.FACTION_SOLDIER_NPC.get();
+      EntityType<? extends FactionNpcEntity> type = random.nextDouble() < archers ? AWCoreEntityTypes.FACTION_ARCHER_NPC.get() : AWCoreEntityTypes.FACTION_SOLDIER_NPC.get();
       FactionNpcEntity npc = type.create(level);
       if (npc == null) {
          return null;
