@@ -150,6 +150,7 @@ public final class ForgeFactionEvents {
             net.shadowmage.ancientwarfare.core.faction.FactionQuests.onNpcKilled(serverLevel, npc, player);
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                FactionEnvoys.onKill(serverPlayer, npc);
+               net.shadowmage.ancientwarfare.core.faction.FactionCourt.onKill(serverLevel, serverPlayer, npc.getFactionName());
             }
 
             String faction = npc.getFactionName();

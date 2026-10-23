@@ -118,7 +118,9 @@ public final class FactionAI {
       FactionRulers.Trait myRuler = FactionRulers.trait(data, faction, random);
       FactionRulers.Trait theirRuler = FactionRulers.trait(data, other, random);
       // The fiercer of the two rulers sets how soon it comes to war; each needs his own edge in strength.
-      double warChance = WAR_CHANCE * Math.max(myRuler.warChance, theirRuler.warChance);
+      // Each court's marshal urges the war on or holds it back.
+      double warChance = WAR_CHANCE * Math.max(myRuler.warChance, theirRuler.warChance)
+         * Math.max(FactionCourt.warFactor(level, faction), FactionCourt.warFactor(level, other));
       int warOpinion = WAR_OPINION + Math.max(myRuler.warTemper, theirRuler.warTemper);
       switch (relation.state()) {
          case NEUTRAL -> {
@@ -140,7 +142,8 @@ public final class FactionAI {
          case WAR -> {
             long days = day - relation.since();
             boolean beaten = mine == 0 || theirs == 0;
-            double peaceChance = PEACE_CHANCE_PER_DAY * Math.min(myRuler.peaceChance, theirRuler.peaceChance) * (days - MIN_WAR_DAYS + 1);
+            double peaceChance = PEACE_CHANCE_PER_DAY * Math.min(myRuler.peaceChance, theirRuler.peaceChance) * (days - MIN_WAR_DAYS + 1)
+               * Math.min(FactionCourt.peaceFactor(level, faction), FactionCourt.peaceFactor(level, other));
             if (beaten || days >= MIN_WAR_DAYS && random.nextDouble() < peaceChance) {
                if (FactionDiplomacy.setState(level, faction, other, RelationState.NEUTRAL)) {
                   FactionBorders.settlePeace(level, data, faction, other);

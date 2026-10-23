@@ -157,9 +157,11 @@ public final class FactionRulers {
       String faction = leader.getFactionName();
       RandomSource random = level.getRandom();
       FactionWorldData.Ruler old = ruler(data, faction, random);
-      int name = (old.name() + 1 + random.nextInt(NAMES - 1)) % NAMES;
-      int trait = random.nextInt(4) == 0 ? old.trait() : (old.trait() + 1 + random.nextInt(TRAITS.length - 1)) % TRAITS.length;
-      data.setRuler(faction, new FactionWorldData.Ruler(name, trait, Math.max(0L, data.lastSimulatedDay())));
+      // The heir of the court takes the throne, with their own mind and their own friends.
+      FactionWorldData.Ruler successor = FactionCourt.succession(level, faction, Math.max(0L, data.lastSimulatedDay()));
+      int name = successor.name();
+      int trait = successor.trait();
+      data.setRuler(faction, successor);
       FactionNews.tell(
          level, Component.translatable("news.ancientwarfare.ruler_fell", FactionNews.factionName(faction), name(old.name()), name(name), traitName(trait))
       );
@@ -192,7 +194,7 @@ public final class FactionRulers {
    public static List<FactionTradeListRegistry.FactionTradeEntry> price(
       ServerLevel level, String faction, List<FactionTradeListRegistry.FactionTradeEntry> trades, double extra
    ) {
-      double factor = trait(level, faction).prices * extra;
+      double factor = trait(level, faction).prices * FactionCourt.priceFactor(level, faction) * extra;
       if (factor == 1.0) {
          return trades;
       }

@@ -268,7 +268,7 @@ public final class FactionArmies {
             if (treaty == RelationState.NEUTRAL
                && day >= FIRST_WAR_DAY
                && standings.getStanding(owner, faction) <= PLAYER_WAR_STANDING + ruler.warTemper
-               && random.nextDouble() < PLAYER_WAR_CHANCE * ruler.warChance) {
+               && random.nextDouble() < PLAYER_WAR_CHANCE * ruler.warChance * FactionCourt.playerWarFactor(level, faction, owner)) {
                standings.setTreaty(owner, faction, RelationState.WAR);
                standings.discover(owner, faction);
                FactionNews.tellPlayer(level, owner, Component.translatable("news.ancientwarfare.war_on_you", FactionNews.factionName(faction)));

@@ -28,6 +28,9 @@ public class DiplomacyScreen extends Screen {
    private List<PlayerDiplomacy.Entry> entries;
    private String selected;
    private int scroll;
+   /** Showing the court and what the faction wants instead of its treaties. */
+   private static boolean courtView;
+   private static final int COURT_ROW = 26;
 
    private DiplomacyScreen(String focus, List<PlayerDiplomacy.Entry> entries) {
       super(Component.translatable("gui.ancientwarfare.diplomacy.title"));
@@ -72,6 +75,34 @@ public class DiplomacyScreen extends Screen {
 
       PlayerDiplomacy.Entry entry = this.selectedEntry();
       if (entry != null) {
+         this.addRenderableWidget(
+            Button.builder(Component.translatable(courtView ? "gui.ancientwarfare.diplomacy.treaties" : "gui.ancientwarfare.diplomacy.court"), ignored -> {
+               courtView = !courtView;
+               this.rebuildWidgets();
+            }).bounds(left + PANEL_WIDTH - 70, top + 22, 62, 14).build()
+         );
+      }
+
+      if (entry != null && courtView) {
+         PlayerDiplomacy.Action[] gifts = {
+            PlayerDiplomacy.Action.COURT_HEIR, PlayerDiplomacy.Action.COURT_MARSHAL, PlayerDiplomacy.Action.COURT_TREASURER, PlayerDiplomacy.Action.COURT_PRIEST
+         };
+         for (int i = 0; i < gifts.length && i * 3 + 2 < entry.court().length; i++) {
+            PlayerDiplomacy.Action action = gifts[i];
+            Button button = Button.builder(
+                  Component.translatable("gui.ancientwarfare.diplomacy.court_gift", net.shadowmage.ancientwarfare.core.faction.FactionCourt.COURTIER_GIFT),
+                  ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)
+               )
+               .bounds(left + PANEL_WIDTH - 70, top + 44 + i * COURT_ROW, 62, 18)
+               .build();
+            button.active = entry.leaderNear();
+            if (!entry.leaderNear()) {
+               button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.ancientwarfare.diplomacy.leader_away")));
+            }
+
+            this.addRenderableWidget(button);
+         }
+      } else if (entry != null) {
          int x = left + LIST_WIDTH + 10;
          int y = top + PANEL_HEIGHT - 78;
          int width = (PANEL_WIDTH - LIST_WIDTH - 24) / 3;
@@ -125,7 +156,9 @@ public class DiplomacyScreen extends Screen {
       }
 
       PlayerDiplomacy.Entry entry = this.selectedEntry();
-      if (entry != null) {
+      if (entry != null && courtView) {
+         this.renderCourt(graphics, entry, left + LIST_WIDTH + 10, top + 26);
+      } else if (entry != null) {
          this.renderDetails(graphics, entry, left + LIST_WIDTH + 10, top + 26);
       }
 
@@ -174,6 +207,43 @@ public class DiplomacyScreen extends Screen {
       y = this.top() + PANEL_HEIGHT - 92;
       Component leader = Component.translatable(entry.leaderNear() ? "gui.ancientwarfare.diplomacy.leader_here" : "gui.ancientwarfare.diplomacy.leader_away");
       graphics.drawString(this.font, leader, x, y, entry.leaderNear() ? 0xFF80FF80 : MUTED_COLOR);
+   }
+
+   /** The court: each courtier's role, name and mind and how they think of the player; then the faction's goals. */
+   private void renderCourt(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int x, int y) {
+      int width = PANEL_WIDTH - LIST_WIDTH - 20;
+      graphics.drawString(this.font, factionName(entry.faction()).copy().withStyle(ChatFormatting.BOLD), x, y, TEXT_COLOR);
+      y += 18;
+      net.shadowmage.ancientwarfare.core.faction.FactionCourt.Role[] roles = net.shadowmage.ancientwarfare.core.faction.FactionCourt.Role.values();
+      int[] court = entry.court();
+      for (int i = 0; i < roles.length && i * 3 + 2 < court.length; i++) {
+         graphics.drawString(
+            this.font,
+            Component.translatable(
+               "gui.ancientwarfare.diplomacy.courtier",
+               net.shadowmage.ancientwarfare.core.faction.FactionCourt.roleName(roles[i]),
+               FactionRulers.name(court[i * 3])
+            ),
+            x,
+            y,
+            0xFFFFD27F
+         );
+         graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.favor", FactionRulers.traitName(court[i * 3 + 1]), standingText(court[i * 3 + 2])), x, y + 10, MUTED_COLOR);
+         y += COURT_ROW;
+      }
+
+      y += 2;
+      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.goals"), x, y, TEXT_COLOR);
+      y += 11;
+      if (entry.goals().isEmpty()) {
+         graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.goals_none"), x, y, MUTED_COLOR);
+      }
+
+      for (Component goal : entry.goals()) {
+         Component line = Component.literal("• ").append(goal);
+         graphics.drawWordWrap(this.font, line, x, y, width, 0xFF9FD7FF);
+         y += this.font.split(line, width).size() * this.font.lineHeight + 2;
+      }
    }
 
    @Override

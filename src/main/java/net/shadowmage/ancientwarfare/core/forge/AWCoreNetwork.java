@@ -1071,6 +1071,9 @@ public final class AWCoreNetwork {
             buffer.writeVarInt(entry.ruler());
             buffer.writeVarInt(entry.trait());
             buffer.writeVarIntArray(entry.stores());
+            buffer.writeVarIntArray(entry.court());
+            buffer.writeVarInt(Math.min(4, entry.goals().size()));
+            entry.goals().stream().limit(4).forEach(buffer::writeComponent);
          }
       }
 
@@ -1094,12 +1097,22 @@ public final class AWCoreNetwork {
             entries.add(
                new PlayerDiplomacy.Entry(
                   faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                  buffer.readVarIntArray(8)
+                  buffer.readVarIntArray(8), buffer.readVarIntArray(16), readGoals(buffer)
                )
             );
          }
 
          return new AWCoreNetwork.DiplomacyDataPacket(focus, open, entries);
+      }
+
+      private static List<net.minecraft.network.chat.Component> readGoals(FriendlyByteBuf buffer) {
+         int count = Math.min(4, buffer.readVarInt());
+         List<net.minecraft.network.chat.Component> goals = new ArrayList<>();
+         for (int i = 0; i < count; i++) {
+            goals.add(buffer.readComponent());
+         }
+
+         return goals;
       }
 
       private static void handle(AWCoreNetwork.DiplomacyDataPacket packet, Supplier<Context> supplier) {

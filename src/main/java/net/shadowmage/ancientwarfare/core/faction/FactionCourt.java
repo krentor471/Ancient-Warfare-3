@@ -1,0 +1,563 @@
+package net.shadowmage.ancientwarfare.core.faction;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
+import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
+import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
+
+/**
+ * The people about a ruler, and what a faction wants. Each faction's court holds an heir, a marshal,
+ * a treasurer and a priest, each of a mind of their own and each thinking well or ill of every
+ * player. The marshal pulls the ruler toward war or away from it, the treasurer sets the prices, the
+ * priest speaks for peace, and when the ruler dies the heir takes the throne and remembers who
+ * courted them. A player wins a courtier over with gifts; their good word makes treaties easier.
+ *
+ * Every faction also wants one or two things: revenge on a rival, gold for its treasury, or a town
+ * that belongs to someone else. A player who helps rises in its esteem; its goals are learned from
+ * spies, or told to a player bound to it by a pact or an alliance.
+ */
+public final class FactionCourt extends SavedData {
+   private static final String DATA_NAME = "ancientwarfare_faction_court";
+
+   public enum Role {
+      HEIR,
+      MARSHAL,
+      TREASURER,
+      PRIEST;
+
+      public String key() {
+         return this.name().toLowerCase(java.util.Locale.ROOT);
+      }
+   }
+
+   public enum GoalKind {
+      /** Wants a rival faction humbled: its soldiers killed, its towns taken. */
+      REVENGE,
+      /** Wants gold: gifts count for more until enough have come. */
+      GOLD,
+      /** Wants a town that another faction holds. */
+      CONQUEST;
+
+      public String key() {
+         return this.name().toLowerCase(java.util.Locale.ROOT);
+      }
+   }
+
+   /** Silver a gift to a courtier costs. */
+   public static final int COURTIER_GIFT = 5;
+   private static final int GIFT_FAVOR = 10;
+   private static final int MAX_FAVOR = 50;
+   private static final int MIN_FAVOR = -50;
+   /** Favor every courtier loses when the player declares war on their faction. */
+   private static final int WAR_FAVOR = -15;
+   /** The favor at which a courtier's word counts: a marshal keeps the peace, the court eases treaties. */
+   private static final int FRIEND_FAVOR = 20;
+   /** At most this much off the standing a treaty needs, for a court that thinks well of the player. */
+   private static final int MAX_TREATY_BONUS = 15;
+   private static final int GOALS = 2;
+   private static final int GOAL_DAYS = 20;
+   private static final int GOLD_GIFTS = 3;
+   private static final int GOAL_DONE_STANDING = 10;
+   private static final int REVENGE_KILL_STANDING = 2;
+   private static final int CONQUEST_KILL_STANDING = 1;
+   /** A town within this distance of the faction's own is one it may covet. */
+   private static final double CONQUEST_RANGE = 1600.0;
+   private static final FactionRulers.Trait[] TRAITS = FactionRulers.Trait.values();
+   private final Map<String, Courtier[]> courts = new HashMap<>();
+   private final Map<String, List<Goal>> goals = new HashMap<>();
+
+   static final class Courtier {
+      int name;
+      int trait;
+      final Map<UUID, Integer> favor = new HashMap<>();
+
+      Courtier(int name, int trait) {
+         this.name = name;
+         this.trait = trait;
+      }
+
+      FactionRulers.Trait trait() {
+         return TRAITS[Mth.clamp(this.trait, 0, TRAITS.length - 1)];
+      }
+
+      int favor(UUID player) {
+         return this.favor.getOrDefault(player, 0);
+      }
+   }
+
+   static final class Goal {
+      final GoalKind kind;
+      /** The rival faction, or the owner of the coveted town. */
+      final String target;
+      final int settlement;
+      final long since;
+      int progress;
+      final Set<UUID> known = new HashSet<>();
+
+      Goal(GoalKind kind, String target, int settlement, long since) {
+         this.kind = kind;
+         this.target = target;
+         this.settlement = settlement;
+         this.since = since;
+      }
+   }
+
+   public static FactionCourt get(ServerLevel level) {
+      return level.getServer().overworld().getDataStorage().computeIfAbsent(FactionCourt::load, FactionCourt::new, DATA_NAME);
+   }
+
+   /** The faction's court, gathered the first time anyone asks. */
+   static Courtier[] court(ServerLevel level, String faction) {
+      FactionCourt data = get(level);
+      Courtier[] court = data.courts.get(faction);
+      if (court == null) {
+         RandomSource random = level.getRandom();
+         int ruler = FactionRulers.ruler(FactionWorldData.get(level), faction, random).name();
+         court = new Courtier[Role.values().length];
+         for (int i = 0; i < court.length; i++) {
+            court[i] = new Courtier(freshName(court, ruler, random), random.nextInt(TRAITS.length));
+         }
+
+         data.courts.put(faction, court);
+         data.setDirty();
+      }
+
+      return court;
+   }
+
+   private static int freshName(Courtier[] court, int ruler, RandomSource random) {
+      for (int tries = 0; tries < 16; tries++) {
+         int name = random.nextInt(FactionRulers.NAMES);
+         boolean taken = name == ruler;
+         for (Courtier courtier : court) {
+            taken |= courtier != null && courtier.name == name;
+         }
+
+         if (!taken) {
+            return name;
+         }
+      }
+
+      return random.nextInt(FactionRulers.NAMES);
+   }
+
+   private static Courtier courtier(ServerLevel level, String faction, Role role) {
+      return court(level, faction)[role.ordinal()];
+   }
+
+   /** Times the usual chance this faction goes to war with another: a fierce marshal urges it on. */
+   static double warFactor(ServerLevel level, String faction) {
+      return switch (courtier(level, faction, Role.MARSHAL).trait()) {
+         case WARLIKE -> 1.3;
+         case CAUTIOUS -> 0.7;
+         default -> 1.0;
+      };
+   }
+
+   /** Times the usual chance this faction makes peace: the priest speaks for it, or against. */
+   static double peaceFactor(ServerLevel level, String faction) {
+      return switch (courtier(level, faction, Role.PRIEST).trait()) {
+         case GENEROUS, CAUTIOUS -> 1.3;
+         case WARLIKE -> 0.8;
+         default -> 1.0;
+      };
+   }
+
+   /** Times the usual chance this faction goes to war with the player: a marshal who likes them holds it back. */
+   static double playerWarFactor(ServerLevel level, String faction, UUID player) {
+      int favor = courtier(level, faction, Role.MARSHAL).favor(player);
+      return warFactor(level, faction) * (favor >= FRIEND_FAVOR ? 0.5 : favor <= -FRIEND_FAVOR ? 1.5 : 1.0);
+   }
+
+   /** Times the usual prices: the treasurer's hand. */
+   static double priceFactor(ServerLevel level, String faction) {
+      return switch (courtier(level, faction, Role.TREASURER).trait()) {
+         case GREEDY -> 1.1;
+         case GENEROUS -> 0.9;
+         default -> 1.0;
+      };
+   }
+
+   /** Taken off the standing a treaty needs (or added, for a court that dislikes the player). */
+   static int treatyBonus(ServerLevel level, String faction, UUID player) {
+      int sum = 0;
+      for (Courtier courtier : court(level, faction)) {
+         sum += courtier.favor(player);
+      }
+
+      return Mth.clamp(sum / 4, -MAX_TREATY_BONUS, MAX_TREATY_BONUS);
+   }
+
+   /** A gift to one of the court: a greedy courtier is swayed more. */
+   static Component gift(ServerPlayer player, String faction, int index) {
+      Courtier[] court = court(player.serverLevel(), faction);
+      if (index < 0 || index >= court.length) {
+         return Component.empty();
+      }
+
+      if (!PlayerDiplomacy.takeEmeralds(player, COURTIER_GIFT)) {
+         return Component.translatable("diplomacy.ancientwarfare.gift_missing", COURTIER_GIFT);
+      }
+
+      Courtier courtier = court[index];
+      int gift = courtier.trait() == FactionRulers.Trait.GREEDY ? GIFT_FAVOR * 3 / 2 : GIFT_FAVOR;
+      int favor = Math.min(MAX_FAVOR, courtier.favor(player.getUUID()) + gift);
+      courtier.favor.put(player.getUUID(), favor);
+      get(player.serverLevel()).setDirty();
+      return Component.translatable(
+         "court.ancientwarfare.gift", roleName(Role.values()[index]), FactionRulers.name(courtier.name), FactionNews.factionName(faction), favor
+      );
+   }
+
+   /** The player declared war: the whole court takes it ill. */
+   static void warDeclared(ServerLevel level, UUID player, String faction) {
+      for (Courtier courtier : court(level, faction)) {
+         courtier.favor.put(player, Math.max(MIN_FAVOR, courtier.favor(player) + WAR_FAVOR));
+      }
+
+      get(level).setDirty();
+   }
+
+   /**
+    * The ruler died: the heir takes the throne with their own mind, and each player stands with the
+    * new ruler as well as they stood with the heir. A new heir is named.
+    */
+   static FactionWorldData.Ruler succession(ServerLevel level, String faction, long day) {
+      FactionCourt data = get(level);
+      Courtier[] court = court(level, faction);
+      Courtier heir = court[Role.HEIR.ordinal()];
+      FactionStandingData standings = FactionStandingData.get(level);
+      heir.favor.forEach((player, favor) -> standings.adjustStanding(player, faction, favor / 2));
+      court[Role.HEIR.ordinal()] = new Courtier(freshName(court, heir.name, level.getRandom()), level.getRandom().nextInt(TRAITS.length));
+      data.setDirty();
+      return new FactionWorldData.Ruler(heir.name, heir.trait, day);
+   }
+
+   /** Daily: goals are set, fulfilled, or given up after a while. */
+   static void simulateDay(ServerLevel level, FactionWorldData data) {
+      FactionCourt court = get(level);
+      long day = Math.max(0L, data.lastSimulatedDay());
+      Set<String> factions = new HashSet<>();
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (!FactionDiplomacy.isOutlaw(settlement.faction())) {
+            factions.add(settlement.faction());
+         }
+      }
+
+      for (String faction : factions) {
+         List<Goal> goals = court.goals.computeIfAbsent(faction, ignored -> new ArrayList<>());
+         goals.removeIf(goal -> {
+            if (fulfilled(data, faction, goal)) {
+               tellKnown(level, goal, Component.translatable("goal.ancientwarfare.done", FactionNews.factionName(faction), goalText(data, goal)));
+               return true;
+            }
+
+            return day - goal.since >= GOAL_DAYS || goal.kind != GoalKind.GOLD && !factions.contains(goal.target);
+         });
+         while (goals.size() < GOALS) {
+            Goal goal = newGoal(level, data, faction, goals, day);
+            if (goal == null) {
+               break;
+            }
+
+            goals.add(goal);
+         }
+      }
+
+      court.goals.keySet().retainAll(factions);
+      court.setDirty();
+   }
+
+   private static boolean fulfilled(FactionWorldData data, String faction, Goal goal) {
+      if (goal.kind == GoalKind.GOLD) {
+         return goal.progress >= GOLD_GIFTS;
+      } else if (goal.kind == GoalKind.CONQUEST) {
+         FactionWorldData.Settlement town = settlement(data, goal.settlement);
+         return town == null || town.faction().equals(faction);
+      }
+
+      return false;
+   }
+
+   private static Goal newGoal(ServerLevel level, FactionWorldData data, String faction, List<Goal> goals, long day) {
+      RandomSource random = level.getRandom();
+      List<GoalKind> kinds = new ArrayList<>(List.of(GoalKind.values()));
+      goals.forEach(goal -> kinds.remove(goal.kind));
+      java.util.Collections.shuffle(kinds, new java.util.Random(random.nextLong()));
+      for (GoalKind kind : kinds) {
+         switch (kind) {
+            case GOLD -> {
+               return new Goal(kind, "", 0, day);
+            }
+            case REVENGE -> {
+               String rival = rival(level, data, faction);
+               if (rival != null) {
+                  return new Goal(kind, rival, 0, day);
+               }
+            }
+            case CONQUEST -> {
+               FactionWorldData.Settlement town = coveted(level, data, faction);
+               if (town != null) {
+                  return new Goal(kind, town.faction(), town.id(), day);
+               }
+            }
+         }
+      }
+
+      return null;
+   }
+
+   /** The faction it is at war with, or else the one it thinks worst of. */
+   private static String rival(ServerLevel level, FactionWorldData data, String faction) {
+      String worst = null;
+      int worstOpinion = 0;
+      for (String other : FactionRegistry.factionNames()) {
+         if (other.equals(faction) || FactionDiplomacy.isOutlaw(other) || data.settlements().stream().noneMatch(settlement -> settlement.faction().equals(other))) {
+            continue;
+         }
+
+         FactionDiplomacy.Relation relation = FactionDiplomacy.relation(level, faction, other);
+         int score = relation.state() == RelationState.WAR ? -1000 + relation.opinion() : relation.opinion();
+         if (score < worstOpinion) {
+            worst = other;
+            worstOpinion = score;
+         }
+      }
+
+      return worst;
+   }
+
+   /** A town of another faction near its own, a capital never; the nearest of its rival's first. */
+   private static FactionWorldData.Settlement coveted(ServerLevel level, FactionWorldData data, String faction) {
+      String rival = rival(level, data, faction);
+      FactionWorldData.Settlement best = null;
+      double bestScore = Double.MAX_VALUE;
+      for (FactionWorldData.Settlement town : data.settlements()) {
+         if (town.faction().equals(faction) || FactionDiplomacy.isOutlaw(town.faction()) || FactionTowns.CAPITAL.equals(town.kind()) || !town.built()) {
+            continue;
+         }
+
+         for (FactionWorldData.Settlement own : data.settlements()) {
+            if (own.faction().equals(faction)) {
+               double distance = own.horizontalDistanceSquared(town.center().getX(), town.center().getZ());
+               double score = town.faction().equals(rival) ? distance / 4.0 : distance;
+               if (distance <= CONQUEST_RANGE * CONQUEST_RANGE && score < bestScore) {
+                  best = town;
+                  bestScore = score;
+               }
+            }
+         }
+      }
+
+      return best;
+   }
+
+   private static FactionWorldData.Settlement settlement(FactionWorldData data, int id) {
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.id() == id) {
+            return settlement;
+         }
+      }
+
+      return null;
+   }
+
+   /** A player killed one of the victim faction's people: whoever wants it humbled thinks better of them. */
+   public static void onKill(ServerLevel level, ServerPlayer player, String victim) {
+      FactionCourt court = get(level);
+      FactionStandingData standings = FactionStandingData.get(level);
+      court.goals.forEach((faction, goals) -> {
+         for (Goal goal : goals) {
+            if (!faction.equals(victim) && goal.target.equals(victim) && goal.kind != GoalKind.GOLD) {
+               standings.adjustStanding(player.getUUID(), faction, goal.kind == GoalKind.REVENGE ? REVENGE_KILL_STANDING : CONQUEST_KILL_STANDING);
+            }
+         }
+      });
+   }
+
+   /** A gift to the faction: a treasury in want takes it gladly. Returns the standing it is worth beyond the usual. */
+   static int onGift(ServerPlayer player, String faction, int usual) {
+      FactionCourt court = get(player.serverLevel());
+      for (Goal goal : court.goals.getOrDefault(faction, List.of())) {
+         if (goal.kind == GoalKind.GOLD) {
+            goal.progress++;
+            court.setDirty();
+            if (goal.progress >= GOLD_GIFTS) {
+               player.sendSystemMessage(Component.translatable("goal.ancientwarfare.gold_met", FactionNews.factionName(faction)).withStyle(ChatFormatting.GREEN));
+               return usual + GOAL_DONE_STANDING;
+            }
+
+            return usual;
+         }
+      }
+
+      return 0;
+   }
+
+   /** What the faction wants, as far as the player knows it. */
+   static List<Component> goalLines(ServerPlayer player, String faction) {
+      ServerLevel level = player.serverLevel();
+      FactionWorldData data = FactionWorldData.get(level);
+      FactionCourt court = get(level);
+      List<Goal> goals = court.goals.getOrDefault(faction, List.of());
+      RelationState treaty = FactionStandingData.get(level).getTreaty(player.getUUID(), faction);
+      boolean told = FactionSpies.knows(level, data, player, faction) || treaty == RelationState.PACT || treaty == RelationState.ALLIANCE;
+      List<Component> lines = new ArrayList<>();
+      for (Goal goal : goals) {
+         if (told && goal.known.add(player.getUUID())) {
+            court.setDirty();
+         }
+
+         if (goal.known.contains(player.getUUID())) {
+            lines.add(goalText(data, goal));
+         }
+      }
+
+      if (lines.isEmpty() && !goals.isEmpty()) {
+         lines.add(Component.translatable("goal.ancientwarfare.unknown"));
+      }
+
+      return lines;
+   }
+
+   private static Component goalText(FactionWorldData data, Goal goal) {
+      return switch (goal.kind) {
+         case REVENGE -> Component.translatable("goal.ancientwarfare.revenge", FactionNews.factionName(goal.target));
+         case GOLD -> Component.translatable("goal.ancientwarfare.gold", goal.progress, GOLD_GIFTS);
+         case CONQUEST -> {
+            FactionWorldData.Settlement town = settlement(data, goal.settlement);
+            yield Component.translatable(
+               "goal.ancientwarfare.conquest", town == null ? Component.literal("?") : town.name().isEmpty() ? Component.literal("#" + town.id()) : town.nameComponent(), FactionNews.factionName(goal.target)
+            );
+         }
+      };
+   }
+
+   private static void tellKnown(ServerLevel level, Goal goal, Component message) {
+      for (UUID id : goal.known) {
+         ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
+         if (player != null) {
+            player.sendSystemMessage(message.copy().withStyle(ChatFormatting.GRAY));
+         }
+      }
+   }
+
+   /** The court for the diplomacy screen: role, name, trait and this player's favor for each courtier. */
+   static int[] courtView(ServerLevel level, String faction, UUID player) {
+      Courtier[] court = court(level, faction);
+      int[] view = new int[court.length * 3];
+      for (int i = 0; i < court.length; i++) {
+         view[i * 3] = court[i].name;
+         view[i * 3 + 1] = court[i].trait;
+         view[i * 3 + 2] = court[i].favor(player);
+      }
+
+      return view;
+   }
+
+   public static Component roleName(Role role) {
+      return Component.translatable("court.ancientwarfare.role." + role.key());
+   }
+
+   private static FactionCourt load(CompoundTag tag) {
+      FactionCourt data = new FactionCourt();
+      CompoundTag courts = tag.getCompound("Courts");
+      for (String faction : courts.getAllKeys()) {
+         ListTag list = courts.getList(faction, Tag.TAG_COMPOUND);
+         Courtier[] court = new Courtier[Role.values().length];
+         for (int i = 0; i < court.length; i++) {
+            CompoundTag entry = i < list.size() ? list.getCompound(i) : new CompoundTag();
+            court[i] = new Courtier(entry.getInt("Name"), entry.getInt("Trait"));
+            CompoundTag favor = entry.getCompound("Favor");
+            for (String player : favor.getAllKeys()) {
+               try {
+                  court[i].favor.put(UUID.fromString(player), favor.getInt(player));
+               } catch (IllegalArgumentException ignored) {
+               }
+            }
+         }
+
+         data.courts.put(faction, court);
+      }
+
+      CompoundTag goals = tag.getCompound("Goals");
+      for (String faction : goals.getAllKeys()) {
+         List<Goal> list = new ArrayList<>();
+         for (Tag element : goals.getList(faction, Tag.TAG_COMPOUND)) {
+            CompoundTag entry = (CompoundTag)element;
+            try {
+               Goal goal = new Goal(GoalKind.valueOf(entry.getString("Kind")), entry.getString("Target"), entry.getInt("Settlement"), entry.getLong("Since"));
+               goal.progress = entry.getInt("Progress");
+               for (Tag known : entry.getList("Known", Tag.TAG_INT_ARRAY)) {
+                  goal.known.add(net.minecraft.nbt.NbtUtils.loadUUID(known));
+               }
+
+               list.add(goal);
+            } catch (IllegalArgumentException e) {
+               AncientWarfareCore.LOG.warn("Dropping unknown faction goal {}", entry);
+            }
+         }
+
+         data.goals.put(faction, list);
+      }
+
+      return data;
+   }
+
+   @Override
+   public CompoundTag save(CompoundTag tag) {
+      CompoundTag courts = new CompoundTag();
+      this.courts.forEach((faction, court) -> {
+         ListTag list = new ListTag();
+         for (Courtier courtier : court) {
+            CompoundTag entry = new CompoundTag();
+            entry.putInt("Name", courtier.name);
+            entry.putInt("Trait", courtier.trait);
+            CompoundTag favor = new CompoundTag();
+            courtier.favor.forEach((player, value) -> favor.putInt(player.toString(), value));
+            entry.put("Favor", favor);
+            list.add(entry);
+         }
+
+         courts.put(faction, list);
+      });
+      tag.put("Courts", courts);
+      CompoundTag goals = new CompoundTag();
+      this.goals.forEach((faction, list) -> {
+         ListTag entries = new ListTag();
+         for (Goal goal : list) {
+            CompoundTag entry = new CompoundTag();
+            entry.putString("Kind", goal.kind.name());
+            entry.putString("Target", goal.target);
+            entry.putInt("Settlement", goal.settlement);
+            entry.putLong("Since", goal.since);
+            entry.putInt("Progress", goal.progress);
+            ListTag known = new ListTag();
+            goal.known.forEach(id -> known.add(net.minecraft.nbt.NbtUtils.createUUID(id)));
+            entry.put("Known", known);
+            entries.add(entry);
+         }
+
+         goals.put(faction, entries);
+      });
+      tag.put("Goals", goals);
+      return tag;
+   }
+}

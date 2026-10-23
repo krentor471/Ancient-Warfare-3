@@ -48,7 +48,16 @@ public final class PlayerDiplomacy {
       /** Sends a spy to learn where the faction's armies are bound. */
       SPY,
       /** Enters one of the player's soldiers against the faction's champion. */
-      TOURNAMENT;
+      TOURNAMENT,
+      /** A gift to one of the court: the heir, the marshal, the treasurer or the priest. */
+      COURT_HEIR,
+      COURT_MARSHAL,
+      COURT_TREASURER,
+      COURT_PRIEST;
+
+      public boolean court() {
+         return this.ordinal() >= COURT_HEIR.ordinal();
+      }
 
       public static Action byId(int id) {
          return id >= 0 && id < values().length ? values()[id] : null;
@@ -101,7 +110,12 @@ public final class PlayerDiplomacy {
       Component name = FactionNews.factionName(faction);
       RelationState treaty = standings.getTreaty(player.getUUID(), faction);
       int standing = standings.getStanding(player.getUUID(), faction);
-      int temper = FactionRulers.trait(player.serverLevel(), faction).treatyStanding;
+      // The court's good word, or ill, moves what the ruler asks.
+      int temper = FactionRulers.trait(player.serverLevel(), faction).treatyStanding - FactionCourt.treatyBonus(player.serverLevel(), faction, player.getUUID());
+      if (action.court()) {
+         return FactionCourt.gift(player, faction, action.ordinal() - Action.COURT_HEIR.ordinal());
+      }
+
       switch (action) {
          case PEACE -> {
             if (treaty != RelationState.WAR) {
@@ -160,6 +174,8 @@ public final class PlayerDiplomacy {
 
             // A greedy ruler is swayed more by a gift.
             int gift = FactionRulers.trait(player.serverLevel(), faction) == FactionRulers.Trait.GREEDY ? GIFT_STANDING * 3 / 2 : GIFT_STANDING;
+            // A treasury in want of gold takes it the more gladly.
+            gift += FactionCourt.onGift(player, faction, gift);
             int raised = Math.max(standing, Math.min(MAX_GIFT_STANDING, standing + gift));
             standings.setStanding(player.getUUID(), faction, raised);
             return Component.translatable("diplomacy.ancientwarfare.gift", name, raised);
@@ -173,6 +189,7 @@ public final class PlayerDiplomacy {
             standings.setTreaty(player.getUUID(), faction, RelationState.WAR);
             standings.setStanding(player.getUUID(), faction, Math.min(standing, 0) + WAR_STANDING + (betrayal ? BETRAYAL_STANDING : 0));
             CountryDiplomacy.warDeclaredBy(player, faction);
+            FactionCourt.warDeclared(player.serverLevel(), player.getUUID(), faction);
             return Component.translatable(betrayal ? "diplomacy.ancientwarfare.betrayal" : "diplomacy.ancientwarfare.war", name);
          }
       }
@@ -224,7 +241,9 @@ public final class PlayerDiplomacy {
                FactionTrade.playerRoutes(data, player.getUUID(), faction),
                FactionRulers.ruler(data, faction, player.getRandom()).name(),
                FactionRulers.ruler(data, faction, player.getRandom()).trait(),
-               new int[]{data.treasury(faction), data.stores(faction)[FactionResources.WOOD], data.stores(faction)[FactionResources.STONE], data.stores(faction)[FactionResources.IRON]}
+               new int[]{data.treasury(faction), data.stores(faction)[FactionResources.WOOD], data.stores(faction)[FactionResources.STONE], data.stores(faction)[FactionResources.IRON]},
+               FactionCourt.courtView(player.serverLevel(), faction, player.getUUID()),
+               FactionCourt.goalLines(player, faction)
             )
          );
       }
@@ -233,7 +252,8 @@ public final class PlayerDiplomacy {
    }
 
    public static record Entry(
-      String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores
+      String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores,
+      int[] court, List<Component> goals
    ) {
    }
 }
