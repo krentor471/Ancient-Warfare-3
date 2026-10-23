@@ -31,6 +31,28 @@ public final class WorldMap {
    public static final int TELEPORT_Y = 90;
    /** How far off a marching army can be seen without spies. */
    private static final double SIGHT_RANGE = 160.0;
+   /** With cartography: how far the player sees armies, from where they stand and from each of their villages. */
+   private static final double SURVEYED_RANGE = 480.0;
+
+   private static boolean sees(ServerLevel level, FactionWorldData data, ServerPlayer player, int x, int z) {
+      if (player.distanceToSqr(x, player.getY(), z) <= SIGHT_RANGE * SIGHT_RANGE) {
+         return true;
+      } else if (!net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(player, net.shadowmage.ancientwarfare.core.research.PlayerResearch.CARTOGRAPHY)) {
+         return false;
+      }
+
+      if (player.distanceToSqr(x, player.getY(), z) <= SURVEYED_RANGE * SURVEYED_RANGE) {
+         return true;
+      }
+
+      for (Map.Entry<BlockPos, java.util.UUID> village : data.villages().entrySet()) {
+         if (player.getUUID().equals(village.getValue()) && village.getKey().distToCenterSqr(x, village.getKey().getY(), z) <= SURVEYED_RANGE * SURVEYED_RANGE) {
+            return true;
+         }
+      }
+
+      return false;
+   }
    private static final int ROAD_POINT_STRIDE = 4;
    private static final List<String> MINE_WORDS = List.of("mine", "quarry", "smelt", "forge", "dig");
    private static final List<String> FARM_WORDS = List.of("farm", "field", "barn", "pig", "granary", "mill", "orchard", "coop", "coup", "ranch", "pasture", "stable");
@@ -331,7 +353,7 @@ public final class WorldMap {
          int x = (int)Math.floor(campaign.x());
          int z = (int)Math.floor(campaign.z());
          // Only armies the player can see from where he stands, or that his spies report.
-         if (!all && !FactionSpies.knows(level, data, player, campaign.faction()) && player.distanceToSqr(x, player.getY(), z) > SIGHT_RANGE * SIGHT_RANGE) {
+         if (!all && !FactionSpies.knows(level, data, player, campaign.faction()) && !sees(level, data, player, x, z)) {
             continue;
          }
 

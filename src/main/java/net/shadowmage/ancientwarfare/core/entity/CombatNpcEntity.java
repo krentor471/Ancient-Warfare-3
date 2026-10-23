@@ -147,6 +147,8 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    private static final float CAMP_HEAL = 1.0F;
    /** Whether a camp fire is near; not saved. */
    private boolean atCamp;
+   /** Whether the owner has learned field camps; not saved. */
+   private boolean campBetter;
 
    public CombatNpcEntity(EntityType<? extends CombatNpcEntity> entityType, Level level) {
       super(entityType, level);
@@ -167,7 +169,8 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    /** A kill counts as much as ten blows towards the next rank. */
    public void onKill(LivingEntity victim) {
       this.kills++;
-      this.addCombatExperience(KILL_EXPERIENCE);
+      // Where deeds are written down, soldiers learn from them half as fast again.
+      this.addCombatExperience(this.ownerKnows(net.shadowmage.ancientwarfare.core.research.PlayerResearch.CHRONICLES) ? KILL_EXPERIENCE * 3 / 2 : KILL_EXPERIENCE);
    }
 
    /** Beat a champion in the lists. */
@@ -331,10 +334,21 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
     * A camp is a lit fire near the soldier: there his spirit comes back three times as fast. With a
     * field tent by it as well he rests and his wounds heal, as long as no enemy is in sight.
     */
+   /** Whether the soldier's owner has learned the research. */
+   private boolean ownerKnows(String research) {
+      return this.level() instanceof ServerLevel serverLevel && net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(serverLevel, this.getOwner().orElse(null), research);
+   }
+
    private void tickCamp() {
       this.atCamp = false;
       if (this.getOwner().isEmpty()) {
          return;
+      }
+
+      this.campBetter = this.ownerKnows(net.shadowmage.ancientwarfare.core.research.PlayerResearch.FIELD_CAMPS);
+      if (this.ownerKnows(net.shadowmage.ancientwarfare.core.research.PlayerResearch.COURIERS) && isRoad(this.level().getBlockState(this.getBlockPosBelowThatAffectsMyMovement()))) {
+         // Messengers and remounts along the roads: the march goes quicker.
+         this.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, CAMP_CHECK_TICKS + 10, 0, false, false));
       }
 
       boolean fire = false;
@@ -355,11 +369,19 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       this.atCamp = fire;
       if (fire && tent && this.getTarget() == null && this.getHealth() < this.getMaxHealth()) {
-         this.heal(CAMP_HEAL);
+         this.heal(this.campBetter ? CAMP_HEAL * 2.0F : CAMP_HEAL);
          if (this.level() instanceof ServerLevel serverLevel && this.random.nextInt(3) == 0) {
             serverLevel.sendParticles(ParticleTypes.HEART, this.getX(), this.getEyeY() + 0.4, this.getZ(), 1, 0.2, 0.1, 0.2, 0.0);
          }
       }
+   }
+
+   private static boolean isRoad(BlockState state) {
+      return state.is(net.minecraft.world.level.block.Blocks.DIRT_PATH)
+         || state.is(net.minecraft.world.level.block.Blocks.GRAVEL)
+         || state.is(net.minecraft.world.level.block.Blocks.COBBLESTONE)
+         || state.is(net.minecraft.world.level.block.Blocks.STONE_BRICKS)
+         || state.is(net.minecraft.world.level.block.Blocks.COARSE_DIRT);
    }
 
    private static boolean isCampFire(BlockState state) {
@@ -377,7 +399,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
    @Override
    protected float moraleRegenFactor() {
-      return this.atCamp ? CAMP_MORALE_FACTOR : 1.0F;
+      return this.atCamp ? (this.campBetter ? CAMP_MORALE_FACTOR * 5.0F / 3.0F : CAMP_MORALE_FACTOR) : 1.0F;
    }
 
    public boolean isStandardBearer() {

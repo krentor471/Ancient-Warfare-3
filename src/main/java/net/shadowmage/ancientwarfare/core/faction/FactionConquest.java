@@ -248,14 +248,48 @@ public final class FactionConquest {
       );
    }
 
+   private static final double CROP_ROTATION_TAX = 1.15;
+   /** Silver a day each trade agreement brings a country that has markets. */
+   private static final int MARKET_SILVER = 2;
+
+   /** Daily, with markets: each trade agreement brings silver into the country's treasury. */
+   private static void markets(ServerLevel level, FactionWorldData data) {
+      net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData standings = net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level);
+      for (Map.Entry<UUID, FactionWorldData.Country> entry : data.countries().entrySet()) {
+         if (!net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, entry.getKey(), net.shadowmage.ancientwarfare.core.research.PlayerResearch.MARKETS)) {
+            continue;
+         }
+
+         int partners = 0;
+         for (String faction : standings.knownFactions(entry.getKey())) {
+            if (standings.hasTrade(entry.getKey(), faction)) {
+               partners++;
+            }
+         }
+
+         if (partners > 0) {
+            entry.getValue().pending += partners * MARKET_SILVER;
+            entry.getValue().income += partners * MARKET_SILVER;
+            data.setDirty();
+         }
+      }
+   }
+
    /** Daily: villages taken from factions pay their tax into the town hall, or a country's into its treasury. */
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       for (Map.Entry<BlockPos, UUID> village : data.villages().entrySet()) {
          int tax = FactionLife.villageTax(data, village.getKey());
+         if (tax > 0 && net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, village.getValue(), net.shadowmage.ancientwarfare.core.research.PlayerResearch.CROP_ROTATION)) {
+            // Fields rested in turn feed more and pay more.
+            tax = (int)Math.round(tax * CROP_ROTATION_TAX);
+         }
+
          if (tax > 0 && !PlayerCountry.collect(data, village.getKey(), village.getValue(), tax) && level.getBlockEntity(village.getKey()) instanceof TownHallBlockEntity hall) {
             Coins.store(hall, tax);
             hall.setChanged();
          }
       }
+
+      markets(level, data);
    }
 }

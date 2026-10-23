@@ -837,9 +837,19 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
       return tag != null && tag.contains(FORMATION_TAG) ? NpcFormation.byName(tag.getString(FORMATION_TAG)) : NpcFormation.SQUARE;
    }
 
+   public static boolean needsDrill(NpcFormation formation) {
+      return formation == NpcFormation.SHIELD_WALL || formation == NpcFormation.WEDGE;
+   }
+
    public static void cycleFormation(ItemStack stack, Player player) {
       if (stack.getItem() instanceof CommandBatonItem) {
          NpcFormation formation = getFormation(stack).next();
+         // The shield wall and the wedge want drilled men.
+         while (needsDrill(formation)
+            && !(player instanceof ServerPlayer serverPlayer && net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(serverPlayer, net.shadowmage.ancientwarfare.core.research.PlayerResearch.DRILL))) {
+            formation = formation.next();
+         }
+
          stack.getOrCreateTag().putString(FORMATION_TAG, formation.serializedName());
          player.displayClientMessage(Component.translatable("guistrings.npc.baton.formation_changed", new Object[]{Component.translatable(formation.translationKey())}), true);
       }

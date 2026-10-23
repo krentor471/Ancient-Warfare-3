@@ -77,7 +77,8 @@ public final class CountryDiplomacy {
             boolean friendly = treaty == RelationState.PACT || treaty == RelationState.ALLIANCE || standings.hasTrade(owner, faction);
             if (friendly && standing < FRIENDSHIP_CEILING) {
                standings.setStanding(owner, faction, Math.min(FRIENDSHIP_CEILING, standing + FRIENDSHIP_DRIFT));
-            } else if (!friendly && treaty != RelationState.WAR && standing > FRICTION_FLOOR) {
+            } else if (!friendly && treaty != RelationState.WAR && standing > FRICTION_FLOOR
+               && !net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, owner, net.shadowmage.ancientwarfare.core.research.PlayerResearch.MISSIONARIES)) {
                // Herds stray, woodcutters cross the line, each side blames the other.
                standings.setStanding(owner, faction, Math.max(FRICTION_FLOOR, standing - BORDER_FRICTION));
             }

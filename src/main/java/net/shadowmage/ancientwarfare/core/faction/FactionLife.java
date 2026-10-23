@@ -55,6 +55,8 @@ public final class FactionLife {
    private static final double[] TAX_SHARE = {0.5, 1.0, 1.75};
    private static final int[] TAX_ORDER = {10, 0, -20};
    private static final int[] TAX_LOYALTY = {3, 1, -3};
+   private static final int GRANARY_ORDER = 8;
+   private static final int FESTIVAL_ORDER = 5;
    /** Settlements that went hungry on the last day; not saved, so a restart may tell of it once more. */
    private static final Set<Integer> HUNGRY = new HashSet<>();
 
@@ -356,8 +358,12 @@ public final class FactionLife {
       }
 
       int tax = Mth.clamp(state.taxLevel, 0, 2);
-      state.order = drift(state.order, Mth.clamp(40 + guardOrder(state.guards, state.people) + TAX_ORDER[tax], 0, 100));
-      int change = TAX_LOYALTY[tax] + (state.order >= 50 ? 1 : state.order < 30 ? -2 : 0);
+      // What the owner has learned: garrison drill makes every guard count twice, granaries and festivals keep the peace, temples win hearts.
+      int guards = net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, owner, net.shadowmage.ancientwarfare.core.research.PlayerResearch.GARRISONS) ? state.guards * 2 : state.guards;
+      int calm = (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, owner, net.shadowmage.ancientwarfare.core.research.PlayerResearch.GRANARIES) ? GRANARY_ORDER : 0)
+         + (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, owner, net.shadowmage.ancientwarfare.core.research.PlayerResearch.FESTIVALS) ? (FactionSeasons.season(level) == FactionSeasons.Season.AUTUMN ? FESTIVAL_ORDER * 2 : FESTIVAL_ORDER) : 0);
+      state.order = drift(state.order, Mth.clamp(40 + guardOrder(guards, state.people) + TAX_ORDER[tax] + calm, 0, 100));
+      int change = TAX_LOYALTY[tax] + (state.order >= 50 ? 1 : state.order < 30 ? -2 : 0) + (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, owner, net.shadowmage.ancientwarfare.core.research.PlayerResearch.TEMPLES) ? 1 : 0);
       state.loyalty = Mth.clamp(state.loyalty + change, 0, 100);
 
       if (state.loyalty < VILLAGE_REVOLT_LOYALTY && state.order < REVOLT_ORDER && !playerNear(level, hall) && random.nextDouble() < REVOLT_CHANCE) {

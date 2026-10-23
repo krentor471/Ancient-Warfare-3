@@ -37,6 +37,34 @@ public final class PlayerResearch extends SavedData {
    public static final String DIPLOMACY = "diplomacy";
    /** Sends spies to factions. */
    public static final String ESPIONAGE = "espionage";
+   /** Villages pay more tax. */
+   public static final String CROP_ROTATION = "crop_rotation";
+   /** Villages keep better order. */
+   public static final String GRANARIES = "granaries";
+   /** Each trade agreement brings silver into the treasury every day. */
+   public static final String MARKETS = "markets";
+   /** The player's soldiers march faster along roads. */
+   public static final String COURIERS = "couriers";
+   /** The world map shows armies much farther from the player and around their villages. */
+   public static final String CARTOGRAPHY = "cartography";
+   /** The shield wall and the wedge. */
+   public static final String DRILL = "drill";
+   /** Camps restore spirit and heal faster. */
+   public static final String FIELD_CAMPS = "field_camps";
+   /** Soldiers near a hall keep twice the order. */
+   public static final String GARRISONS = "garrisons";
+   /** Spies' reports last twice as long. */
+   public static final String CIPHERS = "ciphers";
+   /** Spies are caught far less often. */
+   public static final String SECRET_SERVICE = "secret_service";
+   /** Villages grow more loyal. */
+   public static final String TEMPLES = "temples";
+   /** Villages keep better order, and more so at harvest time. */
+   public static final String FESTIVALS = "festivals";
+   /** Soldiers gain experience half as fast again. */
+   public static final String CHRONICLES = "chronicles";
+   /** No friction along the country's borders. */
+   public static final String MISSIONARIES = "missionaries";
    private static final float SCIENCE_PER_VILLAGE = 0.1F;
    private static final float MAX_SCIENCE_SCALE = 2.0F;
    private final Map<String, Set<String>> known = new HashMap<>();
@@ -55,6 +83,22 @@ public final class PlayerResearch extends SavedData {
 
    public static boolean has(ServerPlayer player, String research) {
       return player.isCreative() || known(player).contains(research);
+   }
+
+   /** Whether the player with this id knows the research, online or not. */
+   public static boolean has(ServerLevel level, @org.jetbrains.annotations.Nullable java.util.UUID owner, String research) {
+      if (owner == null) {
+         return false;
+      }
+
+      ServerPlayer player = level.getServer().getPlayerList().getPlayer(owner);
+      if (player != null) {
+         return has(player, research);
+      }
+
+      net.minecraft.server.players.GameProfileCache cache = level.getServer().getProfileCache();
+      return cache != null
+         && cache.get(owner).map(profile -> get(level).known.getOrDefault(key(profile.getName()), Set.of()).contains(research)).orElse(false);
    }
 
    /** Whether the player knows the research; if not, tells them which one they need. */

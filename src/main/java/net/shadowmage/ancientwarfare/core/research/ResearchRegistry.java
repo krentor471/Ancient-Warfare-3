@@ -416,6 +416,21 @@ public final class ResearchRegistry {
             res(stack(Items.PAPER, 12), stack(Items.INK_SAC, 8), stack(Items.LEATHER, 6), stack(Items.MAP, 1))
          )
       );
+      // Branches: economy, roads, maps, war, the secret service, faith and culture.
+      register(goal(PlayerResearch.CROP_ROTATION, 200, deps("farming", "animal_husbandry"), res(stack(Items.WHEAT_SEEDS, 32), stack(Items.BONE_MEAL, 16), stack(Items.IRON_HOE, 1), stack(Items.WHEAT, 32))));
+      register(goal(PlayerResearch.GRANARIES, 200, deps(PlayerResearch.CROP_ROTATION, "construction"), res(stack(Items.OAK_PLANKS, 48), stack(Items.HAY_BLOCK, 8), stack(Items.CHEST, 2), stack(Items.IRON_INGOT, 4))));
+      register(goal(PlayerResearch.MARKETS, 200, deps("trade", PlayerResearch.CROP_ROTATION), res(stack(Items.GOLD_INGOT, 6), stack(Items.EMERALD, 2), stack(Items.CHEST, 2), stack(Items.PAPER, 8))));
+      register(goal(PlayerResearch.COURIERS, 200, deps(PlayerResearch.ROAD_BUILDING, "animal_husbandry"), res(stack(Items.SADDLE, 1), stack(Items.LEATHER, 8), stack(Items.PAPER, 8), stack(Items.GOLD_INGOT, 2))));
+      register(goal(PlayerResearch.CARTOGRAPHY, 200, deps(PlayerResearch.SURVEYING, "navigation"), res(stack(Items.MAP, 4), stack(Items.COMPASS, 2), stack(Items.PAPER, 24), stack(Items.INK_SAC, 8))));
+      register(goal(PlayerResearch.DRILL, 200, deps("tactics", "conscription"), res(stack(Items.IRON_SWORD, 2), stack(Items.SHIELD, 2), stack(Items.PAPER, 8), stack(Items.LEATHER, 4))));
+      register(goal(PlayerResearch.FIELD_CAMPS, 200, deps(PlayerResearch.DRILL, "construction"), res(stack(Items.CAMPFIRE, 2), tag("minecraft:wool", 12), stack(Items.LEATHER, 8), stack(Items.TORCH, 8))));
+      register(goal(PlayerResearch.GARRISONS, 200, deps(PlayerResearch.DRILL, PlayerResearch.GRANARIES), res(stack(Items.IRON_CHESTPLATE, 1), stack(Items.SHIELD, 4), stack(Items.BREAD, 16), stack(Items.STONE_BRICKS, 32))));
+      register(goal(PlayerResearch.CIPHERS, 200, deps(PlayerResearch.ESPIONAGE, "mathematics"), res(stack(Items.BOOK, 4), stack(Items.INK_SAC, 8), stack(Items.PAPER, 16), stack(Items.REDSTONE, 8))));
+      register(goal(PlayerResearch.SECRET_SERVICE, 200, deps(PlayerResearch.CIPHERS), res(stack(Items.GOLD_INGOT, 12), stack(Items.ENDER_PEARL, 2), stack(Items.PAPER, 16), stack(Items.BLACK_DYE, 8))));
+      register(goal(PlayerResearch.TEMPLES, 200, deps("leadership", "construction"), res(stack(Items.STONE_BRICKS, 32), stack(Items.GOLD_INGOT, 4), stack(Items.CANDLE, 4), stack(Items.BOOK, 2))));
+      register(goal(PlayerResearch.FESTIVALS, 200, deps(PlayerResearch.TEMPLES, PlayerResearch.CROP_ROTATION), res(stack(Items.CAKE, 2), stack(Items.WHITE_BANNER, 2), stack(Items.FIREWORK_ROCKET, 8), stack(Items.WHEAT, 32))));
+      register(goal(PlayerResearch.CHRONICLES, 200, deps(PlayerResearch.TEMPLES, "tactics"), res(stack(Items.BOOK, 6), stack(Items.INK_SAC, 8), stack(Items.FEATHER, 4), stack(Items.PAPER, 16))));
+      register(goal(PlayerResearch.MISSIONARIES, 200, deps(PlayerResearch.TEMPLES, PlayerResearch.DIPLOMACY), res(stack(Items.BOOK, 4), stack(Items.BREAD, 16), stack(Items.GOLD_INGOT, 4), stack(Items.CANDLE, 4))));
       priceScience();
       era(
          ERA_KINGDOM,

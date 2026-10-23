@@ -62,14 +62,15 @@ public final class FactionSpies {
          data.spies().remove(spy);
          data.setDirty();
          Component name = FactionNews.factionName(spy.faction());
-         double caught = CAUGHT_CHANCE * (FactionRulers.trait(data, spy.faction(), level.getRandom()) == FactionRulers.Trait.CAUTIOUS ? 2.0 : 1.0);
+         double caught = CAUGHT_CHANCE * (FactionRulers.trait(data, spy.faction(), level.getRandom()) == FactionRulers.Trait.CAUTIOUS ? 2.0 : 1.0)
+            * (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, spy.player(), net.shadowmage.ancientwarfare.core.research.PlayerResearch.SECRET_SERVICE) ? 0.25 : 1.0);
          if (level.getRandom().nextDouble() < caught) {
             FactionStandingData.get(level).adjustStanding(spy.player(), spy.faction(), CAUGHT_STANDING);
             FactionNews.tellPlayer(level, spy.player(), Component.translatable("spy.ancientwarfare.caught", name).withStyle(ChatFormatting.RED));
             continue;
          }
 
-         data.setIntel(spy.player(), spy.faction(), now + INTEL_TICKS);
+         data.setIntel(spy.player(), spy.faction(), now + (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, spy.player(), net.shadowmage.ancientwarfare.core.research.PlayerResearch.CIPHERS) ? INTEL_TICKS * 2L : INTEL_TICKS));
          ServerPlayer player = level.getServer().getPlayerList().getPlayer(spy.player());
          for (Component line : report(data, spy, level)) {
             if (player != null) {
