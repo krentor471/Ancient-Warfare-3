@@ -188,7 +188,7 @@ public final class FactionTownLife {
       FactionWorldData data = FactionWorldData.get(level);
       FactionWorldData.Settlement settlement = FactionSimulation.settlementAt(data, faction, x, z, 24);
       Event event = settlement == null ? null : eventAt(level, data, settlement);
-      return (event == Event.FESTIVAL ? FESTIVAL_PRICES : event == Event.MARKET ? MARKET_PRICES : 1.0) * FactionSeasons.prices(level, settlement);
+      return (event == Event.FESTIVAL ? FESTIVAL_PRICES : event == Event.MARKET ? MARKET_PRICES : 1.0) * FactionSeasons.prices(level, settlement) * FactionCouncil.tolls(level);
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {

@@ -118,6 +118,23 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("accept").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, true))))
                .then(Commands.literal("decline").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, false))))
          );
+      // Shows the sitting council of factions; "yes" and "no" are run by its buttons.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awcouncil")
+               .executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionCouncil.show(context.getSource().getPlayerOrException());
+                  return 1;
+               })
+               .then(Commands.literal("yes").executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionCouncil.cast(context.getSource().getPlayerOrException(), true);
+                  return 1;
+               }))
+               .then(Commands.literal("no").executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionCouncil.cast(context.getSource().getPlayerOrException(), false);
+                  return 1;
+               }))
+         );
       // Lists the player's vassals and overlord; "release" and "renounce" are run by its buttons.
       event.getDispatcher()
          .register(
@@ -368,6 +385,13 @@ public final class ForgeFactionCommands {
                   context.getSource().sendSuccess(() -> Component.literal(arrived ? "Spy arrived" : "No village"), false);
                   return 1;
                })))
+               .then(Commands.literal("council").requires(source -> source.hasPermission(2))
+                  .executes(context -> callCouncil(context.getSource(), ""))
+                  .then(Commands.literal("call").then(Commands.argument("matter", StringArgumentType.word()).executes(context -> callCouncil(context.getSource(), StringArgumentType.getString(context, "matter")))))
+                  .then(Commands.literal("resolve").executes(context -> {
+                     net.shadowmage.ancientwarfare.core.faction.FactionCouncil.forceResolve(context.getSource().getLevel());
+                     return 1;
+                  })))
                .then(Commands.literal("discontent").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("value", IntegerArgumentType.integer(0, 100)).executes(context -> {
                   boolean set = net.shadowmage.ancientwarfare.core.faction.FactionVassals.setDiscontent(
                      context.getSource().getLevel(), context.getSource().getPlayerOrException().getUUID(), StringArgumentType.getString(context, "faction"), IntegerArgumentType.getInteger(context, "value")
@@ -1104,4 +1128,12 @@ public final class ForgeFactionCommands {
       player.sendSystemMessage(Component.literal("Faction " + faction + " standing is now " + standing));
       return standing;
    }
+
+   private static int callCouncil(net.minecraft.commands.CommandSourceStack source, String matter) {
+      boolean called = net.shadowmage.ancientwarfare.core.faction.FactionCouncil.forceConvene(source.getLevel(), matter);
+      net.minecraft.core.BlockPos hall = net.shadowmage.ancientwarfare.core.faction.FactionCouncil.hall(source.getLevel());
+      source.sendSuccess(() -> Component.literal(called ? "Council at " + hall.toShortString() : "No council"), false);
+      return 1;
+   }
+
 }

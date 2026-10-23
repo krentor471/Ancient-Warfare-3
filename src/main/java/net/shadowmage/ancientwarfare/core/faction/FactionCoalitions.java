@@ -52,6 +52,8 @@ public final class FactionCoalitions extends SavedData {
       final Set<String> members = new LinkedHashSet<>();
       long warDay;
       boolean atWar;
+      /** Called by the council of factions: it does not calm down when the player stops growing. */
+      boolean proclaimed;
    }
 
    private final Map<UUID, Coalition> coalitions = new HashMap<>();
@@ -104,10 +106,10 @@ public final class FactionCoalitions extends SavedData {
          int threat = threat(level, data, player);
          if (coalition == null) {
             if (threat >= THREAT_LIMIT && day >= coalitions.cooldown.getOrDefault(player, 0L)) {
-               coalitions.form(level, player, day);
+               coalitions.form(level, player, day, null);
             }
          } else if (!coalition.atWar) {
-            if (threat < THREAT_LIMIT * 7 / 10) {
+            if (threat < THREAT_LIMIT * 7 / 10 && !coalition.proclaimed) {
                coalitions.dissolve(level, player, "calmed");
             } else if (day >= coalition.warDay) {
                coalitions.declare(level, player, coalition);
@@ -126,10 +128,35 @@ public final class FactionCoalitions extends SavedData {
       coalitions.setDirty();
    }
 
-   private void form(ServerLevel level, UUID player, long day) {
+   /** The council of factions named the player the common enemy: those who voted for it band together. */
+   static void proclaim(ServerLevel level, UUID player, Set<String> members) {
+      FactionCoalitions coalitions = get(level);
+      Coalition coalition = coalitions.coalitions.get(player);
+      if (coalition != null) {
+         coalition.members.addAll(members);
+         coalition.proclaimed = true;
+         coalitions.setDirty();
+         if (coalition.atWar) {
+            // The newcomers go to war at once.
+            coalitions.declare(level, player, coalition);
+         } else {
+            ServerPlayer online = level.getServer().getPlayerList().getPlayer(player);
+            FactionNews.tell(level, Component.translatable("news.ancientwarfare.coalition_formed", names(coalition.members), online != null ? online.getDisplayName() : Component.literal("?")));
+         }
+      } else {
+         coalitions.form(level, player, FactionWorldData.get(level).lastSimulatedDay(), members);
+      }
+   }
+
+   private void form(ServerLevel level, UUID player, long day, Set<String> preset) {
       FactionStandingData standings = FactionStandingData.get(level);
       Coalition coalition = new Coalition();
-      for (String faction : standings.knownFactions(player)) {
+      coalition.proclaimed = preset != null;
+      if (preset != null) {
+         coalition.members.addAll(preset);
+      }
+
+      for (String faction : preset != null ? List.<String>of() : standings.knownFactions(player)) {
          RelationState treaty = standings.getTreaty(player, faction);
          if (FactionDiplomacy.isOutlaw(faction) || treaty == RelationState.ALLIANCE || treaty == RelationState.PACT) {
             continue;
@@ -309,6 +336,7 @@ public final class FactionCoalitions extends SavedData {
          entry.getList("Members", Tag.TAG_STRING).forEach(member -> coalition.members.add(member.getAsString()));
          coalition.warDay = entry.getLong("WarDay");
          coalition.atWar = entry.getBoolean("AtWar");
+         coalition.proclaimed = entry.getBoolean("Proclaimed");
          coalitions.coalitions.put(entry.getUUID("Player"), coalition);
       }
 
@@ -341,6 +369,7 @@ public final class FactionCoalitions extends SavedData {
          entry.put("Members", members);
          entry.putLong("WarDay", coalition.warDay);
          entry.putBoolean("AtWar", coalition.atWar);
+         entry.putBoolean("Proclaimed", coalition.proclaimed);
          list.add(entry);
       });
       tag.put("Coalitions", list);
