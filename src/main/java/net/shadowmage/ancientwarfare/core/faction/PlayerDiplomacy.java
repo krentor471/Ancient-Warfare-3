@@ -209,7 +209,7 @@ public final class PlayerDiplomacy {
             int gift = FactionRulers.trait(player.serverLevel(), faction) == FactionRulers.Trait.GREEDY ? GIFT_STANDING * 3 / 2 : GIFT_STANDING;
             // A treasury in want of gold takes it the more gladly; gift after gift is worth less and less.
             // A pious ruler takes a gift as a sign of grace.
-            gift = (int)Math.round(gift * FactionRulers.character(player.serverLevel(), faction, c -> c.gift));
+            gift = (int)Math.round(gift * FactionRulers.character(player.serverLevel(), faction, c -> c.gift) * FactionFeasts.giftFactor(player.serverLevel(), player.getUUID(), faction));
             gift += FactionCourt.onGift(player, faction, gift);
             gift = FactionCourt.weigh(player.serverLevel(), player.getUUID(), faction, "gift", gift);
             FactionVassals.onGift(player.serverLevel(), player.getUUID(), faction);
@@ -323,6 +323,7 @@ public final class PlayerDiplomacy {
          lines.add(wife);
       }
 
+      lines.addAll(FactionFeasts.lines(player.serverLevel(), player.getUUID(), faction));
       Component bond = FactionVassals.line(player.serverLevel(), player.getUUID(), faction);
       if (bond != null) {
          lines.add(bond);

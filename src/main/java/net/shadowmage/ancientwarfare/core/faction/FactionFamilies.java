@@ -124,7 +124,7 @@ public final class FactionFamilies extends SavedData {
    }
 
    private static String key(FactionWorldData.Ruler ruler) {
-      return ruler.name() + ":" + ruler.born();
+      return FactionRulers.key(ruler);
    }
 
    /** The household of the faction's present ruler; a new ruler starts with an empty one. */

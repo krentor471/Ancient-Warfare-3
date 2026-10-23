@@ -1205,8 +1205,8 @@ public final class AWCoreNetwork {
             buffer.writeInt(entry.pending());
             writeNames(buffer, entry.ties());
             buffer.writeVarIntArray(entry.tieData());
-            buffer.writeVarInt(Math.min(4, entry.bonds().size()));
-            entry.bonds().stream().limit(4).forEach(buffer::writeComponent);
+            buffer.writeVarInt(Math.min(6, entry.bonds().size()));
+            entry.bonds().stream().limit(6).forEach(buffer::writeComponent);
             buffer.writeVarIntArray(entry.person());
             buffer.writeVarIntArray(entry.family());
             buffer.writeVarInt(Math.min(8, entry.familyTips().size()));
@@ -1234,7 +1234,7 @@ public final class AWCoreNetwork {
             entries.add(
                new PlayerDiplomacy.Entry(
                   faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                  buffer.readVarIntArray(8), buffer.readVarIntArray(32), readGoals(buffer), buffer.readInt(), readNames(buffer), buffer.readVarIntArray(64), readGoals(buffer), buffer.readVarIntArray(8),
+                  buffer.readVarIntArray(8), buffer.readVarIntArray(32), readGoals(buffer), buffer.readInt(), readNames(buffer), buffer.readVarIntArray(64), readLines(buffer, 6), buffer.readVarIntArray(8),
                   buffer.readVarIntArray(32), readLines(buffer, 8)
                )
             );

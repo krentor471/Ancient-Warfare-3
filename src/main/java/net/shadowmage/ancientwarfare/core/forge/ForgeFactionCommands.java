@@ -120,6 +120,11 @@ public final class ForgeFactionCommands {
          );
       // Run by the buttons under a courtier's plot.
       event.getDispatcher()
+         .register(Commands.literal("awfeast").then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+            net.shadowmage.ancientwarfare.core.faction.FactionFeasts.accept(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
+            return 1;
+         })));
+      event.getDispatcher()
          .register(Commands.literal("awfamily").executes(context -> {
             ServerPlayer player = context.getSource().getPlayerOrException();
             net.shadowmage.ancientwarfare.core.faction.FactionFamilies.describe(player.serverLevel(), player.getUUID()).forEach(line -> player.sendSystemMessage(line));
@@ -449,6 +454,10 @@ public final class ForgeFactionCommands {
                   .executes(context -> family(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), 0))
                   .then(Commands.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 200))
                      .executes(context -> family(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "value")))))))
+               .then(Commands.literal("feast").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word())
+                  .executes(context -> feast(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), ""))
+                  .then(Commands.argument("other", StringArgumentType.word())
+                     .executes(context -> feast(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), StringArgumentType.getString(context, "other")))))))
                .then(Commands.literal("rulerlife").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("what", StringArgumentType.word())
                   .executes(context -> rulerLife(context.getSource(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "what"), 0))
                   .then(Commands.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 200))
@@ -1211,6 +1220,12 @@ public final class ForgeFactionCommands {
 
    private static int family(CommandSourceStack source, String faction, String what, int value) {
       String result = net.shadowmage.ancientwarfare.core.faction.FactionFamilies.debug(source.getLevel(), faction, what, value);
+      source.sendSuccess(() -> Component.literal(result), false);
+      return 1;
+   }
+
+   private static int feast(CommandSourceStack source, String faction, String what, String other) {
+      String result = net.shadowmage.ancientwarfare.core.faction.FactionFeasts.debug(source.getLevel(), faction, what, other);
       source.sendSuccess(() -> Component.literal(result), false);
       return 1;
    }

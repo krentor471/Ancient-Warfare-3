@@ -251,6 +251,12 @@ public final class FactionPlots extends SavedData {
       }
    }
 
+   /** Over the wine at a feast, a guest overhears the ruler's secret. */
+   static void overhear(ServerLevel level, ServerPlayer player, String faction) {
+      player.sendSystemMessage(Component.translatable("feast.ancientwarfare.overheard").withStyle(ChatFormatting.GRAY));
+      get(level).find(level, player, faction, Math.max(0L, FactionWorldData.get(level).lastSimulatedDay()));
+   }
+
    private void find(ServerLevel level, ServerPlayer player, String faction, long day) {
       Dirt dirt = new Dirt();
       dirt.found = day;

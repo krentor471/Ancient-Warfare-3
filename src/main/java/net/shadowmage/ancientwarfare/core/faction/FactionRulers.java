@@ -77,6 +77,11 @@ public final class FactionRulers {
       return ruler;
    }
 
+   /** Who the ruler is, by name and day of birth: what outlives him does not carry over to his heir. */
+   static String key(FactionWorldData.Ruler ruler) {
+      return ruler.name() + ":" + ruler.born();
+   }
+
    /** How the ruler's character weighs on one of his chances; see FactionPeople.Character. */
    static double character(FactionWorldData data, String faction, RandomSource random, java.util.function.ToDoubleFunction<FactionPeople.Character> effect) {
       return FactionPeople.factor(ruler(data, faction, random).character(), effect);
