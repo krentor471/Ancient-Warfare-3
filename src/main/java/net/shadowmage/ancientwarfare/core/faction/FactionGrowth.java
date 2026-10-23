@@ -34,6 +34,8 @@ public final class FactionGrowth {
    static final int ROOM_PER_PIECE = 4;
    private static final int MAX_PENDING = 6;
    private static final int MAX_GROWN = 12;
+   /** Each rank a town rises lets it build this many pieces more. */
+   private static final int GROWN_PER_RANK = 6;
    private static final long TICK_INTERVAL = 200L;
    private static final double NEAR = 160.0;
    private static final double TOO_CLOSE = 24.0;
@@ -54,7 +56,9 @@ public final class FactionGrowth {
       WELL(3, 3, 5),
       STALL(3, 3, 4),
       LAMP(1, 1, 5),
-      GARDEN(5, 5, 2);
+      GARDEN(5, 5, 2),
+      /** A stone watchtower: only a town that has become a city builds them. */
+      TOWER(3, 3, 9);
 
       final int width;
       final int depth;
@@ -106,7 +110,7 @@ public final class FactionGrowth {
    /** Daily: a town that is nearly full, fed and orderly gets a piece more to build. */
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         if (thriving(data, settlement) && settlement.growth < MAX_PENDING && settlement.grown + settlement.growth < MAX_GROWN) {
+         if (thriving(data, settlement) && settlement.growth < MAX_PENDING && settlement.grown + settlement.growth < MAX_GROWN + GROWN_PER_RANK * settlement.tier()) {
             settlement.growth++;
             data.setDirty();
          }
@@ -147,7 +151,8 @@ public final class FactionGrowth {
 
    /** Builds the town's next piece, if a fitting spot is found. */
    private static boolean grow(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, boolean watched) {
-      Piece piece = ORDER[settlement.grown % ORDER.length];
+      // A city puts up a watchtower every fourth piece.
+      Piece piece = settlement.tier() >= FactionPorts.CITY && settlement.grown % 4 == 3 ? Piece.TOWER : ORDER[settlement.grown % ORDER.length];
       RandomSource random = level.getRandom();
       BlockPos site = site(level, data, settlement, piece, random, watched);
       if (site == null) {
@@ -164,6 +169,7 @@ public final class FactionGrowth {
          case STALL -> stall(level, site, palette, random);
          case LAMP -> lamp(level, site, palette);
          case GARDEN -> garden(level, site, palette, random);
+         case TOWER -> tower(level, site, palette);
       };
       path(level, settlement, door.relative(front), center);
       settlement.extend(site, site.offset(piece.width - 1, piece.height, piece.depth - 1));
@@ -451,6 +457,40 @@ public final class FactionGrowth {
       }
 
       return site.offset(2, 0, 2);
+   }
+
+   /** A stone watchtower with a ladder up the inside, a lookout with low walls and a lantern on top. */
+   private static BlockPos tower(ServerLevel level, BlockPos site, Palette palette) {
+      BlockState stone = Blocks.STONE_BRICKS.defaultBlockState();
+      for (int dx = 0; dx < 3; dx++) {
+         for (int dz = 0; dz < 3; dz++) {
+            boolean middle = dx == 1 && dz == 1;
+            set(level, site.offset(dx, 0, dz), stone);
+            for (int dy = 1; dy <= 6; dy++) {
+               if (!middle) {
+                  boolean slit = dy == 4 && (dx == 1 || dz == 1);
+                  set(level, site.offset(dx, dy, dz), slit ? Blocks.AIR.defaultBlockState() : stone);
+               }
+            }
+
+            set(level, site.offset(dx, 7, dz), middle ? Blocks.AIR.defaultBlockState() : stone);
+            if (!middle) {
+               set(level, site.offset(dx, 8, dz), Blocks.STONE_BRICK_WALL.defaultBlockState());
+            }
+         }
+      }
+
+      // The way in faces south; a ladder goes up the middle to the lookout.
+      set(level, site.offset(1, 1, 2), Blocks.AIR.defaultBlockState());
+      set(level, site.offset(1, 2, 2), Blocks.AIR.defaultBlockState());
+      BlockState ladder = Blocks.LADDER.defaultBlockState().setValue(net.minecraft.world.level.block.LadderBlock.FACING, Direction.SOUTH);
+      for (int dy = 1; dy <= 7; dy++) {
+         set(level, site.offset(1, dy, 1), ladder);
+      }
+
+      set(level, site.offset(0, 9, 0), Blocks.LANTERN.defaultBlockState());
+      set(level, site.offset(2, 9, 2), Blocks.LANTERN.defaultBlockState());
+      return site.offset(1, 0, 3);
    }
 
    /** A trodden path from the new piece toward the middle, until it meets the town. */

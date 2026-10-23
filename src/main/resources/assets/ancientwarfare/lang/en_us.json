@@ -2163,5 +2163,18 @@
   "research.ancientwarfare.landing": "Landing Parties",
   "research.ancientwarfare.landing.opens": "Your own fleet: take the helm of a boat and soldiers nearby man the empty boats, sail behind you in formation and go ashore when you do",
   "fleet.ancientwarfare.boarded": "%s soldiers boarded, %s boats in your fleet",
-  "fleet.ancientwarfare.landed": "Landing: %s soldiers go ashore"
+  "fleet.ancientwarfare.landed": "Landing: %s soldiers go ashore",
+  "town.ancientwarfare.rank.0": "Village",
+  "town.ancientwarfare.rank.1": "Large village",
+  "town.ancientwarfare.rank.2": "City",
+  "town.ancientwarfare.rank.3": "Great city",
+  "gui.ancientwarfare.world_map.rank_port": "%s with a port",
+  "news.ancientwarfare.town_rank": "%s has grown: it is now a %s (%s)",
+  "town.ancientwarfare.port_built": "%s: a port has been built, a pier with a boat tied up",
+  "research.ancientwarfare.written_law": "Written Law",
+  "research.ancientwarfare.written_law.opens": "Your villages keep better order",
+  "research.ancientwarfare.tax_census": "Tax Census",
+  "research.ancientwarfare.tax_census.opens": "Your villages pay 15% more tax",
+  "research.ancientwarfare.capital_court": "Capital Court",
+  "research.ancientwarfare.capital_court.opens": "Every three days your standing rises with each faction you are not at war with"
 }

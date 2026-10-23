@@ -227,17 +227,18 @@ public final class WorldMap {
    }
 
    /** Indices into Marker.life, and the flags in its last entry; see life(). */
-   public static final int LIFE_PEOPLE = 0, LIFE_GARRISON = 1, LIFE_FOOD_DAYS = 2, LIFE_HEALTH = 3, LIFE_ORDER = 4, LIFE_LOYALTY = 5, LIFE_FLAGS = 6;
-   public static final int FLAG_FAMINE = 1, FLAG_PLAGUE = 2, FLAG_HUNGRY = 4, FLAG_TAKEN = 8;
+   public static final int LIFE_PEOPLE = 0, LIFE_GARRISON = 1, LIFE_FOOD_DAYS = 2, LIFE_HEALTH = 3, LIFE_ORDER = 4, LIFE_LOYALTY = 5, LIFE_FLAGS = 6, LIFE_RANK = 7;
+   public static final int FLAG_FAMINE = 1, FLAG_PLAGUE = 2, FLAG_HUNGRY = 4, FLAG_TAKEN = 8, FLAG_PORT = 16;
 
    private static int[] life(FactionWorldData.Settlement settlement) {
       int mouths = Math.max(1, settlement.population() + settlement.garrison());
       int flags = (settlement.famine() > 0 ? FLAG_FAMINE : 0)
          | (settlement.plague() > 0 ? FLAG_PLAGUE : 0)
          | (settlement.food() == 0 ? FLAG_HUNGRY : 0)
-         | (settlement.capturedFrom().isEmpty() ? 0 : FLAG_TAKEN);
+         | (settlement.capturedFrom().isEmpty() ? 0 : FLAG_TAKEN)
+         | (settlement.port() == null ? 0 : FLAG_PORT);
       return new int[]{
-         settlement.population(), settlement.garrison(), settlement.food() / mouths, settlement.health(), settlement.order(), settlement.loyalty(), flags
+         settlement.population(), settlement.garrison(), settlement.food() / mouths, settlement.health(), settlement.order(), settlement.loyalty(), flags, FactionPorts.rank(settlement)
       };
    }
 

@@ -435,6 +435,10 @@ public final class ResearchRegistry {
       register(goal(PlayerResearch.POST_STATIONS, 200, deps(PlayerResearch.COURIERS, "trade"), res(stack(Items.WRITABLE_BOOK, 2), stack(Items.PAPER, 24), stack(Items.BELL, 1), stack(Items.LEATHER, 8))));
       register(goal(PlayerResearch.SEA_CHARTS, 200, deps(PlayerResearch.CARTOGRAPHY, "seafaring"), res(stack(Items.MAP, 6), stack(Items.COMPASS, 2), stack(Items.CLOCK, 1), stack(Items.INK_SAC, 8))));
       register(goal(PlayerResearch.LANDING, 200, deps("naval_warfare", PlayerResearch.FIELD_COMMAND), res(stack("ancientwarfare:treated_wood", 16), stack(Items.LEAD, 4), stack(Items.IRON_SWORD, 2), stack(Items.PAPER, 8))));
+      // The state: law, the census and the court at the capital.
+      register(goal(PlayerResearch.WRITTEN_LAW, 200, deps("leadership", "mathematics"), res(stack(Items.BOOK, 4), stack(Items.INK_SAC, 8), stack(Items.PAPER, 16), stack(Items.IRON_INGOT, 4))));
+      register(goal(PlayerResearch.TAX_CENSUS, 200, deps(PlayerResearch.WRITTEN_LAW, "trade"), res(stack(Items.WRITABLE_BOOK, 2), stack(Items.PAPER, 24), stack(Items.GOLD_INGOT, 6), stack(Items.CHEST, 2))));
+      register(goal(PlayerResearch.CAPITAL_COURT, 200, deps(PlayerResearch.TAX_CENSUS, PlayerResearch.DIPLOMACY), res(stack(Items.GOLD_BLOCK, 1), stack(Items.BOOK, 6), stack(Items.RED_BANNER, 2), stack(Items.EMERALD, 4))));
       priceScience();
       era(
          ERA_KINGDOM,

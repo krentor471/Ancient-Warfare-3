@@ -94,6 +94,7 @@ public final class FactionSimulation {
       FactionRumours.tick(level, data);
       FactionTownLife.tick(level, data);
       FactionGrowth.tick(level, data);
+      FactionPorts.tick(level, data);
       FactionQuests.tick(level, data);
       FactionChatter.tick(level, data);
       FactionMercenaries.tick(level, data);
@@ -143,6 +144,7 @@ public final class FactionSimulation {
             FactionResources.spend(data, faction, FactionResources.tierCost(settlement.tier));
             settlement.tier++;
             gold -= tierCost;
+            FactionPorts.rankRose(level, settlement);
          }
 
          data.setTreasury(faction, gold);
@@ -158,6 +160,7 @@ public final class FactionSimulation {
       PlayerCountry.startTaxDay(data);
       FactionTownLife.simulateDay(level, data);
       FactionGrowth.simulateDay(level, data);
+      FactionPorts.simulateDay(data);
       FactionQuests.simulateDay(level, data);
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);

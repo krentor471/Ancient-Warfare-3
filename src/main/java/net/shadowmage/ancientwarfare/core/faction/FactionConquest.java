@@ -249,6 +249,9 @@ public final class FactionConquest {
    }
 
    private static final double CROP_ROTATION_TAX = 1.15;
+   private static final double CENSUS_TAX = 1.15;
+   /** Every this many days the court at a country's capital wins a little standing with each faction at peace. */
+   private static final int COURT_DAYS = 3;
    /** Silver a day each trade agreement brings a country that has markets. */
    private static final int MARKET_SILVER = 2;
 
@@ -284,6 +287,11 @@ public final class FactionConquest {
             tax = (int)Math.round(tax * CROP_ROTATION_TAX);
          }
 
+         if (tax > 0 && net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, village.getValue(), net.shadowmage.ancientwarfare.core.research.PlayerResearch.TAX_CENSUS)) {
+            // Every hearth on the rolls: nobody slips the collector.
+            tax = (int)Math.round(tax * CENSUS_TAX);
+         }
+
          if (tax > 0 && !PlayerCountry.collect(data, village.getKey(), village.getValue(), tax) && level.getBlockEntity(village.getKey()) instanceof TownHallBlockEntity hall) {
             Coins.store(hall, tax);
             hall.setChanged();
@@ -291,5 +299,26 @@ public final class FactionConquest {
       }
 
       markets(level, data);
+      court(level, data);
+   }
+
+   /** The court at a country's capital sends gifts and letters: standing rises with every faction not at war. */
+   private static void court(ServerLevel level, FactionWorldData data) {
+      if (data.lastSimulatedDay() % COURT_DAYS != 0L) {
+         return;
+      }
+
+      net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData standings = net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level);
+      for (UUID owner : data.countries().keySet()) {
+         if (!net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(level, owner, net.shadowmage.ancientwarfare.core.research.PlayerResearch.CAPITAL_COURT)) {
+            continue;
+         }
+
+         for (String faction : standings.knownFactions(owner)) {
+            if (standings.getTreaty(owner, faction) != RelationState.WAR) {
+               standings.adjustStanding(owner, faction, 1);
+            }
+         }
+      }
    }
 }

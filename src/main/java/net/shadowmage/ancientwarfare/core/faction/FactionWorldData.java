@@ -507,6 +507,9 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Population", settlement.population);
          entry.putInt("Garrison", settlement.garrison);
          entry.putInt("Tier", settlement.tier);
+         if (settlement.port != null) {
+            entry.putLong("Port", settlement.port.asLong());
+         }
          entry.putBoolean("Manned", settlement.manned);
          entry.putString("CapturedFrom", settlement.capturedFrom);
          entry.putBoolean("Built", settlement.built);
@@ -735,6 +738,7 @@ public final class FactionWorldData extends SavedData {
          settlement.population = entry.getInt("Population");
          settlement.garrison = entry.getInt("Garrison");
          settlement.tier = entry.getInt("Tier");
+         settlement.port = entry.contains("Port") ? BlockPos.of(entry.getLong("Port")) : null;
          settlement.manned = entry.getBoolean("Manned");
          settlement.capturedFrom = entry.getString("CapturedFrom");
          settlement.built = !entry.contains("Built") || entry.getBoolean("Built");
@@ -1358,6 +1362,8 @@ public final class FactionWorldData extends SavedData {
       int population;
       int garrison;
       int tier;
+      /** The end of the town's pier, once its port is built; null for none. */
+      BlockPos port;
       /** Set once the template's own spawners have fired, so respawns do not double them. */
       boolean manned;
       /** The faction this settlement was taken from; its NPCs found here when the land loads are gone. */
@@ -1451,6 +1457,10 @@ public final class FactionWorldData extends SavedData {
       public void extend(BlockPos a, BlockPos b) {
          this.min = new BlockPos(Math.min(this.min.getX(), Math.min(a.getX(), b.getX())), Math.min(this.min.getY(), Math.min(a.getY(), b.getY())), Math.min(this.min.getZ(), Math.min(a.getZ(), b.getZ())));
          this.max = new BlockPos(Math.max(this.max.getX(), Math.max(a.getX(), b.getX())), Math.max(this.max.getY(), Math.max(a.getY(), b.getY())), Math.max(this.max.getZ(), Math.max(a.getZ(), b.getZ())));
+      }
+
+      public BlockPos port() {
+         return this.port;
       }
 
       public int grown() {

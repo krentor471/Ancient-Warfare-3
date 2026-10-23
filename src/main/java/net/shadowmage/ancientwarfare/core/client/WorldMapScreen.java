@@ -440,6 +440,11 @@ public class WorldMapScreen extends Screen {
       }
 
       int flags = life[WorldMap.LIFE_FLAGS];
+      if (life.length > WorldMap.LIFE_RANK && life[WorldMap.LIFE_RANK] >= 0) {
+         Component rank = net.shadowmage.ancientwarfare.core.faction.FactionPorts.rankName(life[WorldMap.LIFE_RANK]);
+         lines.add(((flags & WorldMap.FLAG_PORT) != 0 ? Component.translatable("gui.ancientwarfare.world_map.rank_port", rank) : rank.copy()).withStyle(net.minecraft.ChatFormatting.AQUA));
+      }
+
       lines.add(Component.translatable("gui.ancientwarfare.world_map.people", life[WorldMap.LIFE_PEOPLE], life[WorldMap.LIFE_GARRISON]));
       if (life[WorldMap.LIFE_FOOD_DAYS] >= 0) {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.stores", life[WorldMap.LIFE_FOOD_DAYS], life[WorldMap.LIFE_HEALTH]));

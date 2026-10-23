@@ -109,10 +109,12 @@ public final class FactionFleets {
             continue;
          }
 
-         int crew = Math.min(MAX_CREW, bestHome.garrison() / 2);
+         // A port fits out a bigger fleet, and the fleet puts out from its pier.
+         BlockPos port = bestHome.port();
+         int crew = Math.min(MAX_CREW + (port == null ? 0 : FactionPorts.PORT_CREW), bestHome.garrison() / 2);
          data.setTreasury(faction, data.treasury(faction) - SHIP_COST);
          FactionResources.spend(data, faction, FactionResources.SHIP_COST);
-         FactionCampaigns.sail(level, data, bestHome, bestTarget, crew, coast(level, bestHome), coast(level, bestTarget), true);
+         FactionCampaigns.sail(level, data, bestHome, bestTarget, crew, port == null ? coast(level, bestHome) : port, coast(level, bestTarget), true);
       }
    }
 

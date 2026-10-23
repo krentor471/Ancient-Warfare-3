@@ -2163,5 +2163,18 @@
   "research.ancientwarfare.landing": "Десант",
   "research.ancientwarfare.landing.opens": "Свой флот: встань к рулю лодки, и бойцы рядом сядут в пустые лодки, пойдут за тобой строем и высадятся вместе с тобой",
   "fleet.ancientwarfare.boarded": "На лодки сели бойцы: %s, лодок во флоте: %s",
-  "fleet.ancientwarfare.landed": "Высадка: на берег сошли бойцы: %s"
+  "fleet.ancientwarfare.landed": "Высадка: на берег сошли бойцы: %s",
+  "town.ancientwarfare.rank.0": "Деревня",
+  "town.ancientwarfare.rank.1": "Село",
+  "town.ancientwarfare.rank.2": "Город",
+  "town.ancientwarfare.rank.3": "Большой город",
+  "gui.ancientwarfare.world_map.rank_port": "%s с портом",
+  "news.ancientwarfare.town_rank": "%s выросло, теперь это %s (%s)",
+  "town.ancientwarfare.port_built": "%s: построен порт, пристань с лодкой у причала",
+  "research.ancientwarfare.written_law": "Писаное право",
+  "research.ancientwarfare.written_law.opens": "Порядок в твоих деревнях выше",
+  "research.ancientwarfare.tax_census": "Налоговая перепись",
+  "research.ancientwarfare.tax_census.opens": "Твои деревни платят на 15% больше налога",
+  "research.ancientwarfare.capital_court": "Столичный двор",
+  "research.ancientwarfare.capital_court.opens": "Раз в три дня отношение всех фракций, с которыми нет войны, растёт"
 }
