@@ -317,6 +317,11 @@ public final class PlayerDiplomacy {
          lines.add(bond);
       }
 
+      Component intrigue = FactionPlots.line(player.serverLevel(), player.getUUID(), faction);
+      if (intrigue != null) {
+         lines.add(intrigue);
+      }
+
       return lines;
    }
 

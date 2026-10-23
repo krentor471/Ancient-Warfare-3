@@ -118,6 +118,36 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("accept").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, true))))
                .then(Commands.literal("decline").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, false))))
          );
+      // Run by the buttons under a courtier's plot.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awplot")
+               .then(Commands.argument("answer", StringArgumentType.word())
+                  .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("back", "warn", "ignore"), builder))
+                  .then(Commands.argument("plot", IntegerArgumentType.integer()).executes(context -> {
+                     net.shadowmage.ancientwarfare.core.faction.FactionPlots.answer(
+                        context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "plot"), StringArgumentType.getString(context, "answer")
+                     );
+                     return 1;
+                  })))
+         );
+      // Lists the rulers' secrets the player holds; "blackmail" and "publish" are run by its buttons.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awsecret")
+               .executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPlots.show(context.getSource().getPlayerOrException());
+                  return 1;
+               })
+               .then(Commands.argument("use", StringArgumentType.word())
+                  .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("blackmail", "publish"), builder))
+                  .then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+                     net.shadowmage.ancientwarfare.core.faction.FactionPlots.use(
+                        context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"), StringArgumentType.getString(context, "use")
+                     );
+                     return 1;
+                  })))
+         );
       // Shows the sitting council of factions; "yes" and "no" are run by its buttons.
       event.getDispatcher()
          .register(
@@ -383,6 +413,15 @@ public final class ForgeFactionCommands {
                      context.getSource().getLevel(), net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(context.getSource().getLevel()), player.getUUID(), StringArgumentType.getString(context, "faction")
                   );
                   context.getSource().sendSuccess(() -> Component.literal(arrived ? "Spy arrived" : "No village"), false);
+                  return 1;
+               })))
+               .then(Commands.literal("plot").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+                  boolean offered = net.shadowmage.ancientwarfare.core.faction.FactionPlots.forcePlot(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
+                  context.getSource().sendSuccess(() -> Component.literal(offered ? "Plot offered" : "No courtier"), false);
+                  return 1;
+               })))
+               .then(Commands.literal("secret").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPlots.forceSecret(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
                   return 1;
                })))
                .then(Commands.literal("council").requires(source -> source.hasPermission(2))

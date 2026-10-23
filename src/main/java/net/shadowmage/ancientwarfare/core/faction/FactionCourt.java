@@ -417,6 +417,39 @@ public final class FactionCourt extends SavedData {
       return new FactionWorldData.Ruler(heir.name, heir.trait, day);
    }
 
+   /** The courtier most fond of the player, if fond enough to plot with them; null if none is. */
+   static Role plotter(ServerLevel level, String faction, UUID player, int minFavor) {
+      Courtier[] court = court(level, faction);
+      Role best = null;
+      for (Role role : Role.values()) {
+         int favor = court[role.ordinal()].favor(player);
+         if (favor >= minFavor && (best == null || favor > court[best.ordinal()].favor(player))) {
+            best = role;
+         }
+      }
+
+      return best;
+   }
+
+   static Component courtierName(ServerLevel level, String faction, Role role) {
+      return FactionRulers.name(courtier(level, faction, role).name);
+   }
+
+   static void adjustFavor(ServerLevel level, String faction, Role role, UUID player, int change) {
+      Courtier courtier = courtier(level, faction, role);
+      courtier.favor.put(player, Mth.clamp(courtier.favor(player) + change, -MAX_FAVOR, MAX_FAVOR));
+      get(level).setDirty();
+   }
+
+   /** A courtier takes the throne; a newcomer fills their place at court. */
+   static FactionWorldData.Ruler crown(ServerLevel level, String faction, Role role, long day) {
+      Courtier[] court = court(level, faction);
+      Courtier usurper = court[role.ordinal()];
+      court[role.ordinal()] = new Courtier(freshName(court, usurper.name, level.getRandom()), level.getRandom().nextInt(TRAITS.length));
+      get(level).setDirty();
+      return new FactionWorldData.Ruler(usurper.name, usurper.trait, day);
+   }
+
    /** Daily: goals are set, fulfilled, or given up after a while. */
    static void simulateDay(ServerLevel level, FactionWorldData data) {
       FactionCourt court = get(level);

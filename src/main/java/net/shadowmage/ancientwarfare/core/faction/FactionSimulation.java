@@ -169,6 +169,7 @@ public final class FactionSimulation {
       FactionCoalitions.simulateDay(level, data);
       FactionVassals.simulateDay(level, data);
       FactionCouncil.simulateDay(level, data);
+      FactionPlots.simulateDay(level, data);
       FactionQuests.simulateDay(level, data);
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);

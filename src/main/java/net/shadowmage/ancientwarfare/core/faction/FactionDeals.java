@@ -304,6 +304,11 @@ public final class FactionDeals extends SavedData {
          gains += WAR_WORTH * trust * (FactionCourt.wantsWar(level, faction, offer.playerWar()) ? 2.0 : 1.0);
       }
 
+      if (FactionPlots.leverage(level, player.getUUID(), faction)) {
+         // The ruler's secret weighs on the scales.
+         gains += FactionPlots.LEVERAGE;
+      }
+
       // A friend's offer counts for more, a foe's for less.
       gains *= Mth.clamp(1.0 + standing / 200.0, 0.5, 1.5);
       int temper = trait.treatyStanding - FactionCourt.treatyBonus(level, faction, player.getUUID());
@@ -468,6 +473,7 @@ public final class FactionDeals extends SavedData {
 
       deals.setDirty();
       data.setDirty();
+      FactionPlots.spendLeverage(level, player.getUUID(), faction);
       standings.adjustStanding(player.getUUID(), faction, FactionCourt.weigh(level, player.getUUID(), faction, "deal", DEAL_STANDING));
       AncientWarfareCore.LOG.info("{} strikes a deal with {}: {}", player.getName().getString(), faction, offer);
       return null;

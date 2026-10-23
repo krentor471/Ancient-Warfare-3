@@ -175,6 +175,16 @@ public final class FactionRulers {
       }
    }
 
+   /** A new ruler takes the throne by other means than death: the ruler NPCs about take their name. */
+   static void enthrone(ServerLevel level, String faction, FactionWorldData.Ruler ruler) {
+      FactionWorldData.get(level).setRuler(faction, ruler);
+      for (net.minecraft.world.entity.Entity entity : level.getAllEntities()) {
+         if (entity instanceof FactionNpcEntity npc && faction.equals(npc.getFactionName()) && isRuler(npc)) {
+            nameLeader(level, npc);
+         }
+      }
+   }
+
    /** The ruler bears his name and epithet. */
    private static void nameLeader(ServerLevel level, FactionNpcEntity leader) {
       FactionWorldData.Ruler ruler = ruler(FactionWorldData.get(level), leader.getFactionName(), level.getRandom());
