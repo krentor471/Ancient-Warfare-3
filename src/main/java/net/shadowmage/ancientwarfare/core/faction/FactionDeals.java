@@ -67,6 +67,15 @@ public final class FactionDeals extends SavedData {
    public static final int MORE = 1;
    public static final int REFUSE = 2;
    public static final int DONE = 3;
+   /** Bonds a deal can make: none, the faction becomes the player's vassal, or the player swears fealty to it. */
+   public static final int NO_BOND = 0;
+   public static final int VASSAL = 1;
+   public static final int FEALTY = 2;
+   /** What a vassal's submission costs it, in silver: per settlement it holds, and per soldier. */
+   private static final int VASSAL_SETTLEMENT_PRICE = 150;
+   private static final int VASSAL_SOLDIER_PRICE = 3;
+   /** What a sworn player is worth to an overlord, tribute and prestige together. */
+   private static final int FEALTY_WORTH = 400;
 
    private final List<Promise> promises = new ArrayList<>();
    private final Map<UUID, Integer> reliability = new HashMap<>();
@@ -75,15 +84,15 @@ public final class FactionDeals extends SavedData {
     * What each side puts in: gold in gold coins, tribute in gold a week; goods are wood, stone and iron
     * the player gives, then the same the faction gives, each counted in loads of GOODS_STEP.
     */
-   public record Offer(int playerGold, int tribute, String playerWar, int factionGold, boolean treaty, boolean trade, String factionWar, int[] goods) {
-      public static final Offer EMPTY = new Offer(0, 0, "", 0, false, false, "", new int[GOODS]);
+   public record Offer(int playerGold, int tribute, String playerWar, int factionGold, boolean treaty, boolean trade, String factionWar, int[] goods, int bond) {
+      public static final Offer EMPTY = new Offer(0, 0, "", 0, false, false, "", new int[GOODS], NO_BOND);
 
       public Offer {
          goods = java.util.Arrays.copyOf(goods, GOODS);
       }
 
       boolean empty() {
-         return this.playerGold <= 0 && this.tribute <= 0 && this.playerWar.isEmpty() && this.factionGold <= 0 && !this.treaty && !this.trade && this.factionWar.isEmpty()
+         return this.playerGold <= 0 && this.tribute <= 0 && this.playerWar.isEmpty() && this.factionGold <= 0 && !this.treaty && !this.trade && this.factionWar.isEmpty() && this.bond == NO_BOND
             && java.util.Arrays.stream(this.goods).allMatch(load -> load <= 0);
       }
 
@@ -246,7 +255,7 @@ public final class FactionDeals extends SavedData {
          return refuse("deal.ancientwarfare.empty", name);
       } else if (offer.promises() && word <= NO_TRUST) {
          return refuse("deal.ancientwarfare.no_trust", name);
-      } else if (treaty == RelationState.WAR && !offer.treaty()) {
+      } else if (treaty == RelationState.WAR && !offer.treaty() && offer.bond() == NO_BOND) {
          return refuse("deal.ancientwarfare.at_war", name);
       } else if (!offer.playerWar().isEmpty() && !playerTargets(player, faction).contains(offer.playerWar())
          || !offer.factionWar().isEmpty() && !factionTargets(player, faction).contains(offer.factionWar())) {
@@ -263,6 +272,18 @@ public final class FactionDeals extends SavedData {
          return new Weighed(REFUSE, Component.translatable("deal.ancientwarfare.no_goods", offer.items(shortOf(player, offer), true), goodsName(shortOf(player, offer))));
       } else if (stingy(data, faction, offer)) {
          return refuse("deal.ancientwarfare.no_spare_goods", name);
+      } else if (offer.bond() != NO_BOND && offer.treaty()) {
+         return refuse("deal.ancientwarfare.bond_and_treaty", name);
+      } else if (offer.bond() == VASSAL && (FactionVassals.isVassal(level, player.getUUID(), faction) || faction.equals(FactionVassals.overlord(level, player.getUUID())))) {
+         return refuse("deal.ancientwarfare.already_bound", name);
+      } else if (offer.bond() == VASSAL && settlements(data, faction) >= FactionVassals.PROUD_SETTLEMENTS) {
+         return refuse("deal.ancientwarfare.too_proud", name);
+      } else if (offer.bond() == VASSAL && data.villages().values().stream().filter(player.getUUID()::equals).count() < FactionVassals.LORD_VILLAGES) {
+         return new Weighed(REFUSE, Component.translatable("deal.ancientwarfare.too_small_lord", name, FactionVassals.LORD_VILLAGES));
+      } else if (offer.bond() == FEALTY && (FactionVassals.overlord(level, player.getUUID()) != null || FactionVassals.isVassal(level, player.getUUID(), faction))) {
+         return refuse("deal.ancientwarfare.already_bound", name);
+      } else if (offer.bond() == FEALTY && settlements(data, faction) < FactionVassals.PROTECTOR_SETTLEMENTS) {
+         return new Weighed(REFUSE, Component.translatable("deal.ancientwarfare.too_weak_protector", name, FactionVassals.PROTECTOR_SETTLEMENTS));
       } else if (offer.trade() && (standings.hasTrade(player.getUUID(), faction) || !PlayerResearch.has(player, "trade"))) {
          return refuse("deal.ancientwarfare.no_trade", name);
       }
@@ -294,6 +315,16 @@ public final class FactionDeals extends SavedData {
             default -> PlayerDiplomacy.ALLIANCE_STANDING;
          } + temper;
          costs += Math.max(0, need - standing) * STANDING_PRICE + (treaty == RelationState.WAR ? 0 : TREATY_PRICE);
+      }
+
+      if (offer.bond() == VASSAL) {
+         int soldiers = data.settlements().stream().filter(settlement -> settlement.faction().equals(faction)).mapToInt(settlement -> settlement.garrison).sum();
+         double price = settlements(data, faction) * VASSAL_SETTLEMENT_PRICE + soldiers * VASSAL_SOLDIER_PRICE;
+         // A beaten foe bows sooner; a proud ruler later.
+         costs += price * (treaty == RelationState.WAR ? 0.6 : 1.0) * (trait == FactionRulers.Trait.WARLIKE ? 1.3 : 1.0) + Math.max(0, -standing) * STANDING_PRICE / 2.0;
+      } else if (offer.bond() == FEALTY) {
+         gains += FEALTY_WORTH;
+         costs += Math.max(0, -standing) * STANDING_PRICE;
       }
 
       if (offer.trade()) {
@@ -357,6 +388,10 @@ public final class FactionDeals extends SavedData {
       return false;
    }
 
+   private static int settlements(FactionWorldData data, String faction) {
+      return (int)data.settlements().stream().filter(settlement -> settlement.faction().equals(faction)).count();
+   }
+
    private static Weighed refuse(String key, Component name) {
       return new Weighed(REFUSE, Component.translatable(key, name));
    }
@@ -409,6 +444,12 @@ public final class FactionDeals extends SavedData {
 
       if (offer.trade()) {
          standings.setTrade(player.getUUID(), faction, true);
+      }
+
+      if (offer.bond() == VASSAL) {
+         FactionVassals.addVassal(level, player, faction);
+      } else if (offer.bond() == FEALTY) {
+         FactionVassals.swear(level, player, faction);
       }
 
       if (!offer.factionWar().isEmpty() && FactionDiplomacy.setState(level, faction, offer.factionWar(), RelationState.WAR)) {

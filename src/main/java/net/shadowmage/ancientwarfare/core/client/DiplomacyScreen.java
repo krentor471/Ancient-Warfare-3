@@ -67,6 +67,7 @@ public class DiplomacyScreen extends Screen {
    private String playerWar = "";
    private int factionGold;
    private boolean treaty;
+   private int bond;
    private boolean trade;
    private String factionWar = "";
    private int[] goods = new int[FactionDeals.GOODS];
@@ -105,6 +106,7 @@ public class DiplomacyScreen extends Screen {
          screen.playerWar = offer.playerWar();
          screen.factionGold = offer.factionGold();
          screen.treaty = offer.treaty();
+         screen.bond = offer.bond();
          screen.trade = offer.trade();
          screen.factionWar = offer.factionWar();
          screen.goods = offer.goods().clone();
@@ -130,6 +132,7 @@ public class DiplomacyScreen extends Screen {
       this.playerWar = "";
       this.factionGold = 0;
       this.treaty = false;
+      this.bond = FactionDeals.NO_BOND;
       this.trade = false;
       this.factionWar = "";
       this.goods = new int[FactionDeals.GOODS];
@@ -144,7 +147,7 @@ public class DiplomacyScreen extends Screen {
    }
 
    private FactionDeals.Offer offer() {
-      return new FactionDeals.Offer(this.playerGold, this.tribute, this.playerWar, this.factionGold, this.treaty, this.trade, this.factionWar, this.goods);
+      return new FactionDeals.Offer(this.playerGold, this.tribute, this.playerWar, this.factionGold, this.treaty, this.trade, this.factionWar, this.goods, this.bond);
    }
 
    /** The offer changed: the last answer no longer holds. */
@@ -304,11 +307,32 @@ public class DiplomacyScreen extends Screen {
 
       this.cycle(mine, y + DEAL_ROW * 5, column, this.deal.playerTargets(), this.playerWar, next -> this.playerWar = next, "gui.ancientwarfare.deal.war_mine.tip");
       RelationState state = this.deal.treaty();
-      Button treatyButton = Button.builder(check(this.treaty, Component.translatable("gui.ancientwarfare.deal.treaty." + state.serializedName())), ignored -> {
-         this.treaty = !this.treaty;
+      // One button cycles through what binds the sides: the next treaty, vassalage, or the player's fealty.
+      boolean canTreaty = state != RelationState.ALLIANCE;
+      Component bondLabel = this.treaty
+         ? check(true, Component.translatable("gui.ancientwarfare.deal.treaty." + state.serializedName()))
+         : this.bond == FactionDeals.VASSAL
+            ? check(true, Component.translatable("gui.ancientwarfare.deal.vassal"))
+            : this.bond == FactionDeals.FEALTY
+               ? check(true, Component.translatable("gui.ancientwarfare.deal.fealty"))
+               : check(false, canTreaty ? Component.translatable("gui.ancientwarfare.deal.treaty." + state.serializedName()) : Component.translatable("gui.ancientwarfare.deal.bond"));
+      Button treatyButton = Button.builder(bondLabel, ignored -> {
+         if (this.treaty) {
+            this.treaty = false;
+            this.bond = FactionDeals.VASSAL;
+         } else if (this.bond == FactionDeals.VASSAL) {
+            this.bond = FactionDeals.FEALTY;
+         } else if (this.bond == FactionDeals.FEALTY) {
+            this.bond = FactionDeals.NO_BOND;
+         } else if (canTreaty) {
+            this.treaty = true;
+         } else {
+            this.bond = FactionDeals.VASSAL;
+         }
+
          this.changed();
       }).bounds(theirs, y + DEAL_ROW * 4, column, 16).build();
-      treatyButton.active = state != RelationState.ALLIANCE;
+      treatyButton.setTooltip(Tooltip.create(Component.translatable("gui.ancientwarfare.deal.bond.tip")));
       this.addRenderableWidget(treatyButton);
       Button tradeButton = Button.builder(check(this.trade, Component.translatable("gui.ancientwarfare.deal.trade")), ignored -> {
          this.trade = !this.trade;
@@ -706,6 +730,13 @@ public class DiplomacyScreen extends Screen {
       }
    }
 
+   private void renderOverviewBonds(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int x, int y) {
+      for (Component bond : entry.bonds()) {
+         graphics.drawWordWrap(this.font, bond, x, y, this.contentWidth(), TEXT_COLOR);
+         y += this.font.split(bond, this.contentWidth()).size() * this.font.lineHeight + 2;
+      }
+   }
+
    private void renderOverview(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int mouseX, int mouseY) {
       int x = this.contentX();
       int y = this.contentY();
@@ -744,6 +775,7 @@ public class DiplomacyScreen extends Screen {
 
       if (entry.wars().isEmpty()) {
          graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.wars_none"), x, y, MUTED_COLOR);
+         this.renderOverviewBonds(graphics, entry, x, y + 13);
       } else {
          Component label = Component.translatable("gui.ancientwarfare.diplomacy.wars_label");
          graphics.drawString(this.font, label, x, y, BAD_COLOR);
@@ -761,6 +793,8 @@ public class DiplomacyScreen extends Screen {
             graphics.drawString(this.font, name, wx + 8, wy, TEXT_COLOR);
             wx += w + 4;
          }
+
+         this.renderOverviewBonds(graphics, entry, x, wy + 13);
       }
    }
 

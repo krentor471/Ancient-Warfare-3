@@ -908,13 +908,14 @@ public final class AWCoreNetwork {
       buffer.writeBoolean(offer.trade());
       buffer.writeUtf(offer.factionWar(), 64);
       buffer.writeVarIntArray(offer.goods());
+      buffer.writeVarInt(offer.bond());
    }
 
    private static net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer readOffer(FriendlyByteBuf buffer) {
       return new net.shadowmage.ancientwarfare.core.faction.FactionDeals.Offer(
          Math.max(0, Math.min(10000, buffer.readVarInt())), Math.max(0, Math.min(1000, buffer.readVarInt())), buffer.readUtf(64),
          Math.max(0, Math.min(10000, buffer.readVarInt())), buffer.readBoolean(), buffer.readBoolean(), buffer.readUtf(64),
-         java.util.Arrays.stream(buffer.readVarIntArray(8)).map(load -> Math.max(0, Math.min(1000, load))).toArray()
+         java.util.Arrays.stream(buffer.readVarIntArray(8)).map(load -> Math.max(0, Math.min(1000, load))).toArray(), Math.max(0, Math.min(2, buffer.readVarInt()))
       );
    }
 
@@ -1204,6 +1205,8 @@ public final class AWCoreNetwork {
             buffer.writeInt(entry.pending());
             writeNames(buffer, entry.ties());
             buffer.writeVarIntArray(entry.tieData());
+            buffer.writeVarInt(Math.min(4, entry.bonds().size()));
+            entry.bonds().stream().limit(4).forEach(buffer::writeComponent);
          }
       }
 
@@ -1227,7 +1230,7 @@ public final class AWCoreNetwork {
             entries.add(
                new PlayerDiplomacy.Entry(
                   faction, standing, treaty, wars, buffer.readVarInt(), buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                  buffer.readVarIntArray(8), buffer.readVarIntArray(16), readGoals(buffer), buffer.readInt(), readNames(buffer), buffer.readVarIntArray(64)
+                  buffer.readVarIntArray(8), buffer.readVarIntArray(16), readGoals(buffer), buffer.readInt(), readNames(buffer), buffer.readVarIntArray(64), readGoals(buffer)
                )
             );
          }

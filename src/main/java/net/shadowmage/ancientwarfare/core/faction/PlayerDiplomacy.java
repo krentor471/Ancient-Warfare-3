@@ -210,6 +210,7 @@ public final class PlayerDiplomacy {
             // A treasury in want of gold takes it the more gladly; gift after gift is worth less and less.
             gift += FactionCourt.onGift(player, faction, gift);
             gift = FactionCourt.weigh(player.serverLevel(), player.getUUID(), faction, "gift", gift);
+            FactionVassals.onGift(player.serverLevel(), player.getUUID(), faction);
 
             int raised = Math.max(standing, Math.min(MAX_GIFT_STANDING, standing + gift));
             standings.setStanding(player.getUUID(), faction, raised);
@@ -290,11 +291,12 @@ public final class PlayerDiplomacy {
                FactionRulers.ruler(data, faction, player.getRandom()).trait(),
                new int[]{data.treasury(faction), data.stores(faction)[FactionResources.WOOD], data.stores(faction)[FactionResources.STONE], data.stores(faction)[FactionResources.IRON]},
                FactionCourt.courtView(player.serverLevel(), faction, player.getUUID()),
-               coalitionAndGoals(player, faction),
+               FactionCourt.goalLines(player, faction),
                FactionIntrigue.pendingMask(player.serverLevel(), player.getUUID(), faction)
                   | (data.spies().stream().anyMatch(spy -> spy.player().equals(player.getUUID()) && spy.faction().equals(faction)) ? SPY_PENDING : 0),
                ties,
-               tieData.stream().mapToInt(Integer::intValue).toArray()
+               tieData.stream().mapToInt(Integer::intValue).toArray(),
+               bonds(player, faction)
             )
          );
       }
@@ -302,20 +304,25 @@ public final class PlayerDiplomacy {
       return entries;
    }
 
-   private static List<Component> coalitionAndGoals(ServerPlayer player, String faction) {
+   /** Coalitions and oaths between the player and the faction. */
+   private static List<Component> bonds(ServerPlayer player, String faction) {
       List<Component> lines = new ArrayList<>();
       Component coalition = FactionCoalitions.line(player.serverLevel(), player.getUUID(), faction);
       if (coalition != null) {
          lines.add(coalition.copy().withStyle(ChatFormatting.RED));
       }
 
-      lines.addAll(FactionCourt.goalLines(player, faction));
+      Component bond = FactionVassals.line(player.serverLevel(), player.getUUID(), faction);
+      if (bond != null) {
+         lines.add(bond);
+      }
+
       return lines;
    }
 
    public static record Entry(
       String faction, int standing, RelationState treaty, List<String> wars, int settlements, boolean leaderNear, boolean trade, int routes, int ruler, int trait, int[] stores,
-      int[] court, List<Component> goals, int pending, List<String> ties, int[] tieData
+      int[] court, List<Component> goals, int pending, List<String> ties, int[] tieData, List<Component> bonds
    ) {
    }
 }

@@ -268,7 +268,7 @@ public final class FactionArmies {
             if (treaty == RelationState.NEUTRAL
                && day >= FIRST_WAR_DAY
                && standings.getStanding(owner, faction) <= PLAYER_WAR_STANDING + ruler.warTemper
-               && random.nextDouble() < PLAYER_WAR_CHANCE * ruler.warChance * FactionCourt.playerWarFactor(level, faction, owner)) {
+               && random.nextDouble() < PLAYER_WAR_CHANCE * ruler.warChance * FactionCourt.playerWarFactor(level, faction, owner) * protection(level, owner, faction)) {
                standings.setTreaty(owner, faction, RelationState.WAR);
                standings.discover(owner, faction);
                FactionNews.tellPlayer(level, owner, Component.translatable("news.ancientwarfare.war_on_you", FactionNews.factionName(faction)));
@@ -290,6 +290,12 @@ public final class FactionArmies {
             }
          }
       }
+   }
+
+   /** A player under another faction's protection is attacked less readily. */
+   private static double protection(ServerLevel level, UUID owner, String faction) {
+      String overlord = FactionVassals.overlord(level, owner);
+      return overlord != null && !overlord.equals(faction) ? FactionVassals.PROTECTION : 1.0;
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {

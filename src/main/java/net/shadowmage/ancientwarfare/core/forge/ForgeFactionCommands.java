@@ -118,6 +118,23 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("accept").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, true))))
                .then(Commands.literal("decline").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, false))))
          );
+      // Lists the player's vassals and overlord; "release" and "renounce" are run by its buttons.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awvassal")
+               .executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionVassals.show(context.getSource().getPlayerOrException());
+                  return 1;
+               })
+               .then(Commands.literal("release").then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionVassals.release(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
+                  return 1;
+               })))
+               .then(Commands.literal("renounce").executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionVassals.renounce(context.getSource().getPlayerOrException());
+                  return 1;
+               }))
+         );
       // Shows the coalition against the player; "bribe" is run by its buttons.
       event.getDispatcher()
          .register(
@@ -351,6 +368,13 @@ public final class ForgeFactionCommands {
                   context.getSource().sendSuccess(() -> Component.literal(arrived ? "Spy arrived" : "No village"), false);
                   return 1;
                })))
+               .then(Commands.literal("discontent").requires(source -> source.hasPermission(2)).then(Commands.argument("faction", StringArgumentType.word()).then(Commands.argument("value", IntegerArgumentType.integer(0, 100)).executes(context -> {
+                  boolean set = net.shadowmage.ancientwarfare.core.faction.FactionVassals.setDiscontent(
+                     context.getSource().getLevel(), context.getSource().getPlayerOrException().getUUID(), StringArgumentType.getString(context, "faction"), IntegerArgumentType.getInteger(context, "value")
+                  );
+                  context.getSource().sendSuccess(() -> Component.literal(set ? "Discontent set" : "Not a vassal"), false);
+                  return 1;
+               }))))
                .then(Commands.literal("conquests").requires(source -> source.hasPermission(2)).then(Commands.argument("count", IntegerArgumentType.integer(1, 20)).executes(context -> {
                   ServerPlayer player = context.getSource().getPlayerOrException();
                   net.shadowmage.ancientwarfare.core.faction.FactionCoalitions.forceConquests(context.getSource().getLevel(), player.getUUID(), IntegerArgumentType.getInteger(context, "count"));

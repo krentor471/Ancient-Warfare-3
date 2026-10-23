@@ -128,7 +128,7 @@ public final class CountryDiplomacy {
          RelationState withTarget = FactionDiplomacy.relation(level, ally, target).state();
          if (withTarget == RelationState.WAR) {
             player.sendSystemMessage(Component.translatable("diplomacy.ancientwarfare.ally_already", allyName).withStyle(ChatFormatting.GREEN));
-         } else if (withTarget == RelationState.ALLIANCE || standings.getStanding(owner, ally) < JOIN_WAR_STANDING) {
+         } else if (withTarget == RelationState.ALLIANCE || standings.getStanding(owner, ally) < JOIN_WAR_STANDING && !FactionVassals.isVassal(level, owner, ally)) {
             // Bound to the other side, or not fond enough of the player to bleed for them.
             player.sendSystemMessage(
                Component.translatable("diplomacy.ancientwarfare.ally_declined", allyName, standings.getStanding(owner, ally), JOIN_WAR_STANDING)
