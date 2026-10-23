@@ -113,6 +113,7 @@ public final class FactionSimulation {
       FactionSeasons.simulateDay(level);
       FactionLife.simulateDay(level, data);
       FactionResources.simulateDay(data);
+      FactionMarkets.simulateDay(level, data);
       Map<String, Integer> recruited = new HashMap<>();
       Map<String, Integer> settlements = new HashMap<>();
       data.settlements().forEach(settlement -> settlements.merge(settlement.faction(), 1, Integer::sum));
@@ -136,6 +137,7 @@ public final class FactionSimulation {
             i++
          ) {
             FactionResources.spendIron(data, faction);
+            FactionArmament.recruit(data, faction);
             settlement.garrison++;
             settlement.population--;
             gold -= RECRUIT_COST;

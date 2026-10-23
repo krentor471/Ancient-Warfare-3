@@ -2197,7 +2197,6 @@
   "goal.ancientwarfare.gold_met": "The treasury of %s is full again: they will remember your gifts",
   "gui.ancientwarfare.diplomacy.action.gift.tip": "A gift to the ruler. Gift after gift is worth less: the second half, the third a quarter, then none until a few days pass.",
   "gui.ancientwarfare.diplomacy.action.supply": "Supplies (%s)",
-  "gui.ancientwarfare.diplomacy.action.supply.tip": "Bring the faction 32 of what its stores lack most: iron ingots, cobblestone or logs.",
   "gui.ancientwarfare.diplomacy.action.mediate": "Mediate peace",
   "gui.ancientwarfare.diplomacy.action.mediate.tip": "Offer to make peace between this faction and an enemy of theirs. Both must think well of you (+20). Success wins standing with both.",
   "diplomacy.ancientwarfare.gift_tired": "%s have had enough gifts for now. Come back in a few days.",
@@ -2625,5 +2624,13 @@
   "gui.ancientwarfare.deal.goods_store": "In the faction's stores: %s",
   "gui.ancientwarfare.deal.goods_specialty": "The faction is known for this good: it has plenty and sells it cheaper",
   "gui.ancientwarfare.deal.goods_hint": "Left click +%1$s, right click -%1$s, with Shift by %2$s",
-  "gui.ancientwarfare.diplomacy.stat.goods": "Goods for trade (★ the faction's own):"
+  "gui.ancientwarfare.diplomacy.stat.goods": "Goods for trade (★ the faction's own):",
+  "news.ancientwarfare.cold": "%s: the winter bites and there is no wool to be had. People freeze in their homes, sicken and grumble.",
+  "news.ancientwarfare.market": "%1$s bought %2$s %3$s from %4$s.",
+  "gui.ancientwarfare.diplomacy.armament": "Soldiers: %s",
+  "gui.ancientwarfare.diplomacy.armament.0": "no armour (short of leather)",
+  "gui.ancientwarfare.diplomacy.armament.1": "leather armour",
+  "gui.ancientwarfare.diplomacy.armament.2": "mail and helms",
+  "gui.ancientwarfare.diplomacy.action.supply.tip_now": "Bring the faction %1$s %2$s: what it lacks most now.",
+  "gui.ancientwarfare.diplomacy.action.supply.tip": "Bring the faction 32 of what it lacks most."
 }

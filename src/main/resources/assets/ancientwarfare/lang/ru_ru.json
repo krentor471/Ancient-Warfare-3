@@ -2197,7 +2197,6 @@
   "goal.ancientwarfare.gold_met": "Казна %s снова полна: твои дары запомнят",
   "gui.ancientwarfare.diplomacy.action.gift.tip": "Подарок правителю. Каждый следующий ценится меньше: второй вдвое, третий вчетверо, потом подарки не берут, пока не пройдёт несколько дней.",
   "gui.ancientwarfare.diplomacy.action.supply": "Поставка (%s)",
-  "gui.ancientwarfare.diplomacy.action.supply.tip": "Привезти фракции 32 штуки того, чего ей больше всего не хватает: железных слитков, булыжника или брёвен.",
   "gui.ancientwarfare.diplomacy.action.mediate": "Помирить",
   "gui.ancientwarfare.diplomacy.action.mediate.tip": "Предложить мир между этой фракцией и её врагом. Обе должны хорошо к тебе относиться (+20). Удача поднимает отношение с обеими.",
   "diplomacy.ancientwarfare.gift_tired": "%s пока хватит подарков. Приходи через несколько дней.",
@@ -2625,5 +2624,13 @@
   "gui.ancientwarfare.deal.goods_store": "В запасах фракции: %s",
   "gui.ancientwarfare.deal.goods_specialty": "Этим товаром славится фракция: его много, и отдают его дешевле",
   "gui.ancientwarfare.deal.goods_hint": "ЛКМ +%1$s, ПКМ −%1$s, с Shift по %2$s",
-  "gui.ancientwarfare.diplomacy.stat.goods": "Товары для торговли (★ свой товар фракции):"
+  "gui.ancientwarfare.diplomacy.stat.goods": "Товары для торговли (★ свой товар фракции):",
+  "news.ancientwarfare.cold": "%s: зима лютует, а шерсти нет. Люди мёрзнут в домах, болеют и ропщут.",
+  "news.ancientwarfare.market": "%1$s: куплено %2$s %3$s у фракции %4$s.",
+  "gui.ancientwarfare.diplomacy.armament": "Солдаты: %s",
+  "gui.ancientwarfare.diplomacy.armament.0": "без доспехов (не хватает кожи)",
+  "gui.ancientwarfare.diplomacy.armament.1": "в кожаных доспехах",
+  "gui.ancientwarfare.diplomacy.armament.2": "в кольчугах и шлемах",
+  "gui.ancientwarfare.diplomacy.action.supply.tip_now": "Привезти фракции %1$s %2$s: этого ей сейчас не хватает больше всего.",
+  "gui.ancientwarfare.diplomacy.action.supply.tip": "Привезти фракции 32 штуки того, чего ей больше всего не хватает."
 }

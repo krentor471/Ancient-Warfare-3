@@ -136,6 +136,14 @@ public final class ForgeFactionEvents {
       }
    }
 
+   /** A faction's soldier coming into the world is armed as his faction's stores allow. */
+   @SubscribeEvent
+   public static void onFactionSoldierJoin(EntityJoinLevelEvent event) {
+      if (event.getEntity() instanceof FactionNpcEntity npc && event.getLevel() instanceof ServerLevel serverLevel && !event.loadedFromDisk()) {
+         net.shadowmage.ancientwarfare.core.faction.FactionArmament.equip(serverLevel, npc);
+      }
+   }
+
    /** A beast a player kills may count toward a ruler's hunt. */
    @SubscribeEvent
    public static void onBeastDeath(LivingDeathEvent event) {

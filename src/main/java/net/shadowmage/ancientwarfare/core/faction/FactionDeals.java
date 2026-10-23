@@ -39,7 +39,7 @@ public final class FactionDeals extends SavedData {
    public static final int KINDS = FactionResources.KINDS;
    public static final int GOODS = KINDS * 2;
    /** What an item of each kind is worth in silver to a faction with middling stores. */
-   private static final double[] GOODS_PRICE = {0.5, 0.5, 2.0, 0.3, 1.5, 1.0, 0.8, 1.2};
+   private static final double[] GOODS_PRICE = FactionResources.PRICE;
    public static final int TRIBUTE_STEP = 2;
    public static final int TRIBUTE_WEEKS = 4;
    private static final int WEEK_DAYS = 7;
@@ -370,7 +370,7 @@ public final class FactionDeals extends SavedData {
       return refuse("deal.ancientwarfare.refuse", name);
    }
 
-   private static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item>[] GOODS_TAGS = goodsTags();
+   static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item>[] GOODS_TAGS = goodsTags();
    private static final net.minecraft.world.item.Item[] GOODS_ITEMS = {
       net.minecraft.world.item.Items.OAK_LOG, net.minecraft.world.item.Items.COBBLESTONE, net.minecraft.world.item.Items.IRON_INGOT,
       net.minecraft.world.item.Items.WHEAT, net.minecraft.world.item.Items.LEATHER, net.minecraft.world.item.Items.WHITE_WOOL,

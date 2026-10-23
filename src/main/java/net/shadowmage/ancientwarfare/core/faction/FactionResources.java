@@ -25,6 +25,10 @@ public final class FactionResources {
    /** The first of the goods made for trade. */
    private static final int TRADE_GOODS = GRAIN;
    public static final String[] NAMES = {"wood", "stone", "iron", "grain", "leather", "wool", "coal", "copper"};
+   /** What an item of each kind is worth in silver to a faction with middling stores. */
+   public static final double[] PRICE = {0.5, 0.5, 2.0, 0.3, 1.5, 1.0, 0.8, 1.2};
+   /** Stores of each kind below which a faction feels the want of it. */
+   public static final int[] NEED = {300, 300, 300, 400, 120, 120, 120, 80};
    /** The share of each trade good used up a day. */
    private static final double USE = 0.02;
    /** No store grows past this; what more comes in goes to waste. */

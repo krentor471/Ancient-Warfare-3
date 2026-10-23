@@ -60,6 +60,14 @@ public final class FactionLife {
    private static final int LAW_ORDER = 6;
    /** Settlements that went hungry on the last day; not saved, so a restart may tell of it once more. */
    private static final Set<Integer> HUNGRY = new HashSet<>();
+   /** Rations a load of grain from the faction's granary makes. */
+   private static final int GRAIN_RATIONS = 2;
+   /** In winter one bale of wool a day keeps this many people warm. */
+   private static final int PEOPLE_PER_WOOL = 15;
+   private static final int COLD_ORDER = 10;
+   /** Settlements without wool this winter day, and factions told of it this winter; not saved. */
+   private static final Set<Integer> COLD = new HashSet<>();
+   private static final Set<String> COLD_FACTIONS = new HashSet<>();
 
    private FactionLife() {
    }
@@ -77,10 +85,19 @@ public final class FactionLife {
          byFaction.computeIfAbsent(settlement.faction(), faction -> new ArrayList<>()).add(settlement);
       }
 
-      byFaction.values().forEach(FactionLife::share);
+      byFaction.forEach((faction, list) -> share(data, faction, list));
+      boolean winter = FactionSeasons.season(level) == FactionSeasons.Season.WINTER;
+      if (!winter) {
+         COLD.clear();
+         COLD_FACTIONS.clear();
+      }
 
       for (FactionWorldData.Settlement settlement : settlements) {
          hunger(level, settlement);
+         if (winter) {
+            cold(level, data, settlement);
+         }
+
          disease(level, settlements, settlement, random);
          order(settlement);
          loyalty(settlement);
@@ -136,8 +153,11 @@ public final class FactionLife {
       };
    }
 
-   /** A faction carts food from settlements with plenty to those going short. */
-   private static void share(List<FactionWorldData.Settlement> settlements) {
+   /**
+    * A faction carts food from settlements with plenty to those going short; where none has any to
+    * spare, it opens its granary.
+    */
+   private static void share(FactionWorldData data, String faction, List<FactionWorldData.Settlement> settlements) {
       for (FactionWorldData.Settlement needy : settlements) {
          for (FactionWorldData.Settlement rich : settlements) {
             if (needy.food >= 0) {
@@ -153,9 +173,47 @@ public final class FactionLife {
          }
       }
 
+      int[] stores = data.stores(faction);
+      for (FactionWorldData.Settlement needy : settlements) {
+         if (needy.food < 0 && stores[FactionResources.GRAIN] > 0) {
+            int grain = Math.min(stores[FactionResources.GRAIN], Mth.positiveCeilDiv(-needy.food, GRAIN_RATIONS));
+            stores[FactionResources.GRAIN] -= grain;
+            needy.food = Math.min(0, needy.food + grain * GRAIN_RATIONS);
+         }
+      }
+
       for (FactionWorldData.Settlement settlement : settlements) {
          settlement.food = Math.min(settlement.food, (settlement.population + settlement.garrison) * STORE_DAYS);
       }
+   }
+
+   /** In winter the people burn through wool; without it they freeze, sicken and grumble. */
+   private static void cold(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement) {
+      // A fort's soldiers have their cloaks; a hamlet of a few souls gets by.
+      int need = (settlement.population + PEOPLE_PER_WOOL / 2) / PEOPLE_PER_WOOL;
+      if (FactionDiplomacy.isOutlaw(settlement.faction()) || FactionAI.isFort(settlement) || need == 0) {
+         COLD.remove(settlement.id());
+         return;
+      }
+
+      int[] stores = data.stores(settlement.faction());
+      if (stores[FactionResources.WOOL] >= need) {
+         stores[FactionResources.WOOL] -= need;
+         COLD.remove(settlement.id());
+         return;
+      }
+
+      stores[FactionResources.WOOL] = 0;
+      COLD.add(settlement.id());
+      settlement.health = Math.max(0, settlement.health - 2);
+      if (COLD_FACTIONS.add(settlement.faction())) {
+         FactionNews.tell(level, Component.translatable("news.ancientwarfare.cold", FactionNews.factionName(settlement.faction())));
+      }
+   }
+
+   /** Whether the faction's people are freezing for want of wool. */
+   public static boolean cold(String faction) {
+      return COLD_FACTIONS.contains(faction);
    }
 
    /** What could not be eaten is missed: people starve or leave, soldiers desert. */
@@ -243,6 +301,10 @@ public final class FactionLife {
       int target = 50 + guardOrder(settlement.garrison, settlement.population);
       if (HUNGRY.contains(settlement.id())) {
          target -= 30;
+      }
+
+      if (COLD.contains(settlement.id())) {
+         target -= COLD_ORDER;
       }
 
       if (settlement.famine > 0) {

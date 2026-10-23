@@ -305,17 +305,9 @@ public final class FactionCourt extends SavedData {
    static Component supply(ServerPlayer player, String faction) {
       FactionWorldData data = FactionWorldData.get(player.serverLevel());
       int[] stores = data.stores(faction);
-      int need = FactionResources.IRON;
-      for (int kind : new int[]{FactionResources.WOOD, FactionResources.STONE, FactionResources.IRON}) {
-         if (stores[kind] < stores[need]) {
-            need = kind;
-         }
-      }
-
-      net.minecraft.tags.TagKey<net.minecraft.world.item.Item> wanted = need == FactionResources.IRON
-         ? net.minecraftforge.common.Tags.Items.INGOTS_IRON
-         : need == FactionResources.STONE ? net.minecraftforge.common.Tags.Items.COBBLESTONE : net.minecraft.tags.ItemTags.LOGS;
-      Component goods = Component.translatable("supply.ancientwarfare.goods." + (need == FactionResources.IRON ? "iron" : need == FactionResources.STONE ? "stone" : "wood"));
+      int need = wanted(stores);
+      net.minecraft.tags.TagKey<net.minecraft.world.item.Item> wanted = FactionDeals.GOODS_TAGS[need];
+      Component goods = FactionDeals.goodsName(need);
       if (recent(player.serverLevel(), player.getUUID(), faction, "supply") >= TIRED) {
          return Component.translatable("supply.ancientwarfare.tired", FactionNews.factionName(faction));
       } else if (!player.isCreative() && !takeItems(player, wanted, SUPPLY_AMOUNT)) {
@@ -327,6 +319,18 @@ public final class FactionCourt extends SavedData {
       int standing = weigh(player.serverLevel(), player.getUUID(), faction, "supply", SUPPLY_STANDING);
       int now = FactionStandingData.get(player.serverLevel()).adjustStanding(player.getUUID(), faction, standing);
       return Component.translatable(standing > 0 ? "supply.ancientwarfare.given" : "supply.ancientwarfare.given_tired", FactionNews.factionName(faction), SUPPLY_AMOUNT, goods, now);
+   }
+
+   /** The kind the faction lacks most, measured against what it needs of each. */
+   public static int wanted(int[] stores) {
+      int need = FactionResources.IRON;
+      for (int kind = 0; kind < Math.min(stores.length, FactionResources.KINDS); kind++) {
+         if (stores[kind] / (double)FactionResources.NEED[kind] < stores[need] / (double)FactionResources.NEED[need]) {
+            need = kind;
+         }
+      }
+
+      return need;
    }
 
    /** How many of the tagged items the player carries. */
