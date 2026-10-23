@@ -154,7 +154,10 @@ public final class ForgeFactionEvents {
             }
 
             String faction = npc.getFactionName();
+            net.shadowmage.ancientwarfare.core.faction.FactionIncidents.onKilled(serverLevel, player.getUUID(), npc, null);
             FactionStandingData.get(serverLevel).adjustStanding(player.getUUID(), faction, FactionRegistry.get(faction).killStandingChange());
+         } else if (event.getSource().getEntity() instanceof net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity soldier && soldier.getOwner().isPresent()) {
+            net.shadowmage.ancientwarfare.core.faction.FactionIncidents.onKilled(serverLevel, soldier.getOwner().get(), npc, soldier);
          } else if (event.getSource().getEntity() instanceof FactionNpcEntity killer) {
             FactionDiplomacy.adjustOpinion(serverLevel, npc.getFactionName(), killer.getFactionName(), FactionDiplomacy.KILL_OPINION);
          }

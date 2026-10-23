@@ -432,6 +432,13 @@ public final class FactionDeals extends SavedData {
       return null;
    }
 
+   /** A promise of war given outside a deal, as to an envoy. */
+   static void promiseWar(ServerLevel level, UUID player, String faction, String target) {
+      FactionDeals deals = get(level);
+      deals.promises.add(new Promise(player, faction, Kind.WAR, target, 0, FactionWorldData.get(level).lastSimulatedDay() + WAR_PROMISE_DAYS, 1));
+      deals.setDirty();
+   }
+
    /** Daily: promises fall due, and are kept or broken. */
    static void simulateDay(ServerLevel level, FactionWorldData data) {
       FactionDeals deals = get(level);

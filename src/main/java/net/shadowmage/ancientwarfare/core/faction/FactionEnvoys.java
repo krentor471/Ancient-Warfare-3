@@ -71,8 +71,24 @@ public final class FactionEnvoys {
       TRADE,
       WAR_HELP,
       BANDITS,
-      TRIBUTE
+      TRIBUTE,
+      /** Gold now for a promise to go to war against the faction's enemy. */
+      JOIN_WAR,
+      /** Hand over a fugitive hiding in one of the player's villages. */
+      FUGITIVE,
+      /** A trade league against a rival: trade with the faction, none with the rival. */
+      LEAGUE
    }
+
+   private static final int JOIN_WAR_GOLD = 200;
+   private static final int JOIN_WAR_STANDING = 10;
+   private static final int DECLINED_STANDING = -5;
+   private static final int FUGITIVE_STANDING = 10;
+   private static final int FUGITIVE_REFUSED_STANDING = -10;
+   private static final int FUGITIVE_ORDER = 8;
+   private static final int LEAGUE_STANDING = 5;
+   private static final int LEAGUE_RIVAL_STANDING = -10;
+   private static final double FUGITIVE_CHANCE = 0.3;
 
    private static final class Offer {
       final int id;
@@ -201,6 +217,10 @@ public final class FactionEnvoys {
             if (questFree && !standings.isHostile(id, faction) && banditsNear(data, faction)) {
                kinds.add(Kind.BANDITS);
             }
+
+            if (Math.abs(standing) <= 40 && data.villages().containsValue(id) && level.getRandom().nextDouble() < FUGITIVE_CHANCE) {
+               kinds.add(Kind.FUGITIVE);
+            }
          }
 
          for (Kind kind : kinds) {
@@ -218,6 +238,21 @@ public final class FactionEnvoys {
                   && withEnemy != RelationState.ALLIANCE
                   && FactionDiplomacy.relation(level, faction, enemy).state() == RelationState.WAR) {
                   offers.add(new Offer(nextId++, id, faction, Kind.WAR_HELP, enemy, now));
+               }
+            }
+         }
+
+         if (treaty != RelationState.WAR && standing >= JOIN_WAR_STANDING && FactionDeals.reliability(level, id) > FactionDeals.NO_TRUST) {
+            for (String enemy : new TreeSet<>(standings.knownFactions(id))) {
+               RelationState withEnemy = standings.getTreaty(id, enemy);
+               if (!enemy.equals(faction) && !FactionDiplomacy.isOutlaw(enemy) && withEnemy == RelationState.NEUTRAL
+                  && FactionDiplomacy.relation(level, faction, enemy).state() == RelationState.WAR && (wanted == null || wanted == Kind.JOIN_WAR)) {
+                  offers.add(new Offer(nextId++, id, faction, Kind.JOIN_WAR, enemy, now));
+               }
+
+               if (!enemy.equals(faction) && !FactionDiplomacy.isOutlaw(enemy) && standing >= PlayerDiplomacy.TRADE_STANDING
+                  && FactionDiplomacy.relation(level, faction, enemy).opinion() < -30 && (wanted == null || wanted == Kind.LEAGUE)) {
+                  offers.add(new Offer(nextId++, id, faction, Kind.LEAGUE, enemy, now));
                }
             }
          }
@@ -330,6 +365,8 @@ public final class FactionEnvoys {
          case WAR_HELP -> Component.translatable("envoy.ancientwarfare.offer." + key, faction, FactionNews.factionName(offer.enemy), WAR_HELP_KILLS, WAR_HELP_REWARD);
          case BANDITS -> Component.translatable("envoy.ancientwarfare.offer." + key, faction, BANDIT_KILLS, BANDIT_REWARD);
          case TRIBUTE -> Component.translatable("envoy.ancientwarfare.offer." + key, faction, TRIBUTE);
+         case JOIN_WAR -> Component.translatable("envoy.ancientwarfare.offer." + key, faction, FactionNews.factionName(offer.enemy), FactionDeals.WAR_PROMISE_DAYS, JOIN_WAR_GOLD / 10);
+         case LEAGUE -> Component.translatable("envoy.ancientwarfare.offer." + key, faction, FactionNews.factionName(offer.enemy));
          default -> Component.translatable("envoy.ancientwarfare.offer." + key, faction);
       };
       player.sendSystemMessage(Component.translatable("envoy.ancientwarfare.says", faction).withStyle(ChatFormatting.AQUA).append(speech.copy().withStyle(ChatFormatting.WHITE)));
@@ -386,6 +423,13 @@ public final class FactionEnvoys {
             }
          }
 
+         if (offer.kind == Kind.FUGITIVE) {
+            standings.adjustStanding(id, offer.faction, FUGITIVE_REFUSED_STANDING);
+            FactionNews.tell(level, Component.translatable("news.ancientwarfare.fugitive_kept", player.getDisplayName(), faction));
+         } else if (offer.kind == Kind.JOIN_WAR || offer.kind == Kind.LEAGUE) {
+            standings.adjustStanding(id, offer.faction, DECLINED_STANDING);
+         }
+
          player.sendSystemMessage(Component.translatable("envoy.ancientwarfare.declined." + (offer.kind == Kind.TRIBUTE ? "tribute" : "any"), faction));
          return;
       }
@@ -406,6 +450,28 @@ public final class FactionEnvoys {
             }
 
             standings.adjustStanding(id, offer.faction, TRIBUTE_STANDING);
+         }
+         case JOIN_WAR -> {
+            Coins.give(player, JOIN_WAR_GOLD);
+            FactionDeals.promiseWar(level, id, offer.faction, offer.enemy);
+         }
+         case FUGITIVE -> {
+            standings.adjustStanding(id, offer.faction, FUGITIVE_STANDING);
+            FactionWorldData data = FactionWorldData.get(level);
+            data.villages().forEach((pos, owner) -> {
+               FactionWorldData.VillageState state = owner.equals(id) ? data.villageState(pos) : null;
+               if (state != null) {
+                  state.order = Math.max(0, state.order - FUGITIVE_ORDER);
+               }
+            });
+            data.setDirty();
+         }
+         case LEAGUE -> {
+            standings.setTrade(id, offer.faction, true);
+            standings.setTrade(id, offer.enemy, false);
+            standings.adjustStanding(id, offer.faction, LEAGUE_STANDING);
+            standings.adjustStanding(id, offer.enemy, LEAGUE_RIVAL_STANDING);
+            FactionNews.tell(level, Component.translatable("news.ancientwarfare.league", player.getDisplayName(), faction, FactionNews.factionName(offer.enemy)));
          }
          case WAR_HELP, BANDITS -> {
             CompoundTag quest = new CompoundTag();

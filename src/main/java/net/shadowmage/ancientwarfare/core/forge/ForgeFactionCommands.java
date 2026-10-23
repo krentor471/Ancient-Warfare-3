@@ -118,6 +118,23 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("accept").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, true))))
                .then(Commands.literal("decline").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, false))))
          );
+      // Run by clicking the buttons under a faction's demand after an incident.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awincident")
+               .then(Commands.argument("answer", StringArgumentType.word())
+                  .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("pay", "surrender", "refuse"), builder))
+                  .then(Commands.argument("incident", IntegerArgumentType.integer()).executes(context -> {
+                     if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                        net.shadowmage.ancientwarfare.core.faction.FactionIncidents.answer(
+                           player, IntegerArgumentType.getInteger(context, "incident"), StringArgumentType.getString(context, "answer")
+                        );
+                        return 1;
+                     }
+
+                     return 0;
+                  })))
+         );
       // Run by clicking the buttons under a caught spy in chat.
       event.getDispatcher()
          .register(
