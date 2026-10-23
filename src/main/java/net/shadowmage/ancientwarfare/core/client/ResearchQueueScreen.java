@@ -70,7 +70,7 @@ public class ResearchQueueScreen extends AbstractContainerScreen<ResearchStation
       for (int index = 0; index < queued.size(); index++) {
          int y = 48 + row * 12 - this.queueScroll;
          ResearchGoal goal = ((ResearchStationMenu)this.menu).getQueuedGoal(index);
-         graphics.drawString(this.font, (Component)(goal == null ? Component.literal(queued.get(index)) : goal.translatedName()), 8, y + 1, -1, false);
+         graphics.drawString(this.font, (Component)(goal == null ? Component.literal(queued.get(index)) : withScience(goal)), 8, y + 1, -1, false);
          LegacyGuiStyle.buttonWithText(graphics, this.font, 0, 0, 168, y, 12, 12, Component.literal("-"), -1, -1);
          row++;
       }
@@ -87,13 +87,20 @@ public class ResearchQueueScreen extends AbstractContainerScreen<ResearchStation
       graphics.pose().popPose();
    }
 
+   /** The technology's name, with the science it costs when it costs any. */
+   static Component withScience(ResearchGoal goal) {
+      return goal.science() <= 0
+         ? goal.translatedName()
+         : goal.translatedName().copy().append(Component.literal(" " + goal.science() + "\u2726").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
+   }
+
    private void drawLearnableRows(GuiGraphics graphics) {
       List<ResearchGoal> goals = ((ResearchStationMenu)this.menu).getLearnableResearch();
       graphics.enableScissor(this.leftPos + 200, this.topPos + 40, this.leftPos + this.imageWidth, this.topPos + this.imageHeight);
 
       for (int index = 0; index < goals.size(); index++) {
          int y = 48 + index * 12 - this.selectionScroll;
-         graphics.drawString(this.font, goals.get(index).translatedName(), 208, y + 1, -1, false);
+         graphics.drawString(this.font, withScience(goals.get(index)), 208, y + 1, -1, false);
          LegacyGuiStyle.buttonWithText(graphics, this.font, 0, 0, 368, y, 12, 12, Component.literal("+"), -1, -1);
       }
 

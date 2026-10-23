@@ -100,7 +100,13 @@ public class DiplomacyScreen extends Screen {
             : action == PlayerDiplomacy.Action.TOURNAMENT ? Component.translatable(key, FactionTournaments.ENTRY_EMERALDS) : Component.translatable(key);
       Button button = Button.builder(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 20).build();
       boolean anywhere = action == PlayerDiplomacy.Action.WAR || action == PlayerDiplomacy.Action.SPY || action == PlayerDiplomacy.Action.TRADE && entry.trade();
-      button.active = applicable && (anywhere || entry.leaderNear());
+      String research = PlayerDiplomacy.research(action);
+      boolean known = research == null || ClientResearch.has(research);
+      button.active = applicable && known && (anywhere || entry.leaderNear());
+      if (!known) {
+         button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(net.shadowmage.ancientwarfare.core.research.PlayerResearch.needs(research)));
+      }
+
       this.addRenderableWidget(button);
    }
 

@@ -66,9 +66,24 @@ public final class PlayerDiplomacy {
       AWCoreNetwork.sendDiplomacyData(player, focus, true, entries(player));
    }
 
+   /** The research an action needs, or null: alliances want diplomacy, trade agreements trade, spies espionage. */
+   public static String research(Action action) {
+      return switch (action) {
+         case ALLIANCE -> net.shadowmage.ancientwarfare.core.research.PlayerResearch.DIPLOMACY;
+         case TRADE -> "trade";
+         case SPY -> net.shadowmage.ancientwarfare.core.research.PlayerResearch.ESPIONAGE;
+         default -> null;
+      };
+   }
+
    public static void act(ServerPlayer player, String faction, Action action) {
       FactionStandingData standings = FactionStandingData.get(player.serverLevel());
       if (!standings.knownFactions(player.getUUID()).contains(faction) || action == null) {
+         return;
+      }
+
+      String research = research(action);
+      if (research != null && !net.shadowmage.ancientwarfare.core.research.PlayerResearch.require(player, research)) {
          return;
       }
 

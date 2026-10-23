@@ -221,6 +221,10 @@ public class ConstructionViewScreen extends Screen {
    }
 
    static void open(Minecraft minecraft, KeyMapping toggleKey) {
+      if (!net.shadowmage.ancientwarfare.core.client.ClientResearch.require(net.shadowmage.ancientwarfare.core.research.PlayerResearch.SURVEYING)) {
+         return;
+      }
+
       minecraft.setScreen(new ConstructionViewScreen(toggleKey));
    }
 }

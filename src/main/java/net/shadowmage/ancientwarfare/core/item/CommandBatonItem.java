@@ -195,7 +195,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    /** Selection made in the command view: the client sends the NPCs inside the box or under the cursor. */
    public static void commandViewSelect(ItemStack stack, ServerPlayer player, int[] entityIds, boolean add) {
-      if (isAdvanced(stack)) {
+      if (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(player, net.shadowmage.ancientwarfare.core.research.PlayerResearch.FIELD_COMMAND) && isAdvanced(stack)) {
          List<UUID> selected = add ? getSelectedNpcs(stack) : new ArrayList<>();
 
          for (int id : entityIds) {
@@ -221,7 +221,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
    public static void commandViewOrder(
       ItemStack stack, ServerPlayer player, CommandBatonItem.ViewOrder order, BlockPos pos, BlockPos end, int entityId, boolean queued
    ) {
-      if (isAdvanced(stack)) {
+      if (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(player, net.shadowmage.ancientwarfare.core.research.PlayerResearch.FIELD_COMMAND) && isAdvanced(stack)) {
          ServerLevel level = player.serverLevel();
          switch (order) {
             case MOVE -> {
@@ -779,7 +779,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    /** Line or loop drawn in the command view; a nearly straight stroke is a front for the chosen formation. */
    public static void commandViewShape(ItemStack stack, ServerPlayer player, List<BlockPos> points, boolean queued) {
-      if (isAdvanced(stack) && points.size() >= 2) {
+      if (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(player, net.shadowmage.ancientwarfare.core.research.PlayerResearch.FIELD_COMMAND) && isAdvanced(stack) && points.size() >= 2) {
          for (BlockPos point : points) {
             if (player.distanceToSqr(Vec3.atCenterOf(point)) > COMMAND_VIEW_RANGE_SQ) {
                return;
@@ -798,7 +798,7 @@ public class CommandBatonItem extends Item implements NpcProfessionTool {
 
    /** The selection turns to face the point, all the same way, and holds where it stands or is going. */
    public static void commandViewFace(ItemStack stack, ServerPlayer player, BlockPos point) {
-      if (isAdvanced(stack)) {
+      if (net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(player, net.shadowmage.ancientwarfare.core.research.PlayerResearch.FIELD_COMMAND) && isAdvanced(stack)) {
          ServerLevel level = player.serverLevel();
          List<PlayerOwnedNpcEntity> npcs = new ArrayList<>();
          double x = 0.0;

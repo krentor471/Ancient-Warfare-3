@@ -76,6 +76,16 @@ public class ResearchStationMenu extends AbstractContainerMenu {
       return total <= 0 ? 0.0F : Math.min(1.0F, (float)this.getCurrentProgress() / (float)total);
    }
 
+   /** Science gathered in the book, and what the technology on the desk costs (0 when it is being studied already). */
+   public int getScience() {
+      return net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.getScience(this.getResearchBook());
+   }
+
+   public int getNeededScience() {
+      ResearchGoal goal = this.getDisplayGoal();
+      return goal == null || goal == this.getCurrentGoal() ? 0 : goal.science();
+   }
+
    public List<ItemStack> getCurrentResearchResources() {
       ResearchGoal goal = this.getDisplayGoal();
       return goal == null ? List.of() : goal.resources();

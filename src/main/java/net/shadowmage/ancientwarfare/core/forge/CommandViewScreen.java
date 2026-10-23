@@ -495,6 +495,10 @@ public class CommandViewScreen extends Screen {
    }
 
    static void open(Minecraft minecraft, KeyMapping toggleKey) {
+      if (!net.shadowmage.ancientwarfare.core.client.ClientResearch.require(net.shadowmage.ancientwarfare.core.research.PlayerResearch.FIELD_COMMAND)) {
+         return;
+      }
+
       minecraft.setScreen(new CommandViewScreen(toggleKey));
    }
 }

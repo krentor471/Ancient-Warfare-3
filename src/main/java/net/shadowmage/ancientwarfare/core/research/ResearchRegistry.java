@@ -16,8 +16,46 @@ public final class ResearchRegistry {
    private ResearchRegistry() {
    }
 
+   /** Science a technology costs by how deep in the tree it lies; the first two steps cost none. */
+   private static final int[] SCIENCE_BY_DEPTH = {0, 0, 300, 500, 800, 1200, 1600, 2000};
+   private static final int AUTO_SCIENCE = -1;
+
    private static ResearchGoal goal(String id, int time, Set<String> dependencies, List<ResearchResource> resources) {
-      return new ResearchGoal(id, title(id), time, dependencies, resources);
+      return goal(id, time, dependencies, resources, AUTO_SCIENCE);
+   }
+
+   private static ResearchGoal goal(String id, int time, Set<String> dependencies, List<ResearchResource> resources, int science) {
+      return new ResearchGoal(id, title(id), time, dependencies, resources, science);
+   }
+
+   private static int depth(String id, Map<String, Integer> depths) {
+      Integer known = depths.get(id);
+      if (known != null) {
+         return known;
+      }
+
+      depths.put(id, 0);
+      ResearchGoal goal = GOALS.get(id);
+      int depth = 0;
+      if (goal != null) {
+         for (String dependency : goal.dependencies()) {
+            depth = Math.max(depth, depth(dependency, depths) + 1);
+         }
+      }
+
+      depths.put(id, depth);
+      return depth;
+   }
+
+   /** Gives every technology without a set price the science its depth in the tree calls for. */
+   private static void priceScience() {
+      Map<String, Integer> depths = new java.util.HashMap<>();
+      for (Map.Entry<String, ResearchGoal> entry : GOALS.entrySet()) {
+         if (entry.getValue().science() == AUTO_SCIENCE) {
+            int depth = depth(entry.getKey(), depths);
+            entry.setValue(entry.getValue().withScience(SCIENCE_BY_DEPTH[Math.min(depth, SCIENCE_BY_DEPTH.length - 1)]));
+         }
+      }
    }
 
    private static Set<String> deps(String... ids) {
@@ -280,5 +318,56 @@ public final class ResearchRegistry {
             )
          )
       );
+      // The age of states: planning works, roads, commanding from above, treaties and spies.
+      register(
+         goal(
+            PlayerResearch.SURVEYING,
+            200,
+            deps("construction", "mathematics"),
+            res(stack(Items.PAPER, 12), stack(Items.STRING, 16), stack(Items.STICK, 16), stack(Items.COMPASS, 1))
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.ARCHITECTURE,
+            200,
+            deps(PlayerResearch.SURVEYING, "the_wheel"),
+            res(stack(Items.BOOK, 4), stack(Items.STONE_BRICKS, 32), stack(Items.OAK_PLANKS, 32), stack(Items.IRON_INGOT, 6))
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.ROAD_BUILDING,
+            200,
+            deps(PlayerResearch.SURVEYING, "the_wheel"),
+            res(stack(Items.GRAVEL, 32), stack(Items.COBBLESTONE, 32), stack(Items.IRON_SHOVEL, 1), stack(Items.STICK, 12)),
+            600
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.FIELD_COMMAND,
+            200,
+            deps("tactics"),
+            res(stack(Items.MAP, 1), stack(Items.PAPER, 16), stack(Items.BLACK_DYE, 4), stack(Items.GOLD_INGOT, 2))
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.DIPLOMACY,
+            200,
+            deps("leadership", "trade"),
+            res(stack(Items.WRITABLE_BOOK, 1), stack(Items.PAPER, 16), stack(Items.GOLD_INGOT, 4), stack(Items.RED_DYE, 4))
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.ESPIONAGE,
+            200,
+            deps(PlayerResearch.DIPLOMACY, "tactics"),
+            res(stack(Items.PAPER, 12), stack(Items.INK_SAC, 8), stack(Items.LEATHER, 6), stack(Items.MAP, 1))
+         )
+      );
+      priceScience();
    }
 }

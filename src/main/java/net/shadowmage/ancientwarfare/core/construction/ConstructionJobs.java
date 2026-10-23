@@ -419,7 +419,20 @@ public final class ConstructionJobs extends SavedData {
       return probe.offset(minX - min.getX(), 0, minZ - min.getZ());
    }
 
+   /** The research a kind of work needs beyond surveying, or null. */
+   public static String research(Kind kind) {
+      return kind == Kind.TEMPLATE
+         ? net.shadowmage.ancientwarfare.core.research.PlayerResearch.ARCHITECTURE
+         : kind == Kind.FLOOR ? net.shadowmage.ancientwarfare.core.research.PlayerResearch.ROAD_BUILDING : null;
+   }
+
    public static void create(ServerPlayer player, BlockPos a, BlockPos b, Kind kind, String template, Direction facing) {
+      String research = research(kind);
+      if (!net.shadowmage.ancientwarfare.core.research.PlayerResearch.require(player, net.shadowmage.ancientwarfare.core.research.PlayerResearch.SURVEYING)
+         || research != null && !net.shadowmage.ancientwarfare.core.research.PlayerResearch.require(player, research)) {
+         return;
+      }
+
       ServerLevel level = player.serverLevel();
       ConstructionJobs data = get(level);
       BlockPos origin = null;

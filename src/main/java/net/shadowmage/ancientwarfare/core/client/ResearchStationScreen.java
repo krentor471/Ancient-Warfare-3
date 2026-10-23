@@ -59,6 +59,16 @@ public class ResearchStationScreen extends LegacyContainerScreen<ResearchStation
          false
       );
       graphics.drawString(this.font, Component.translatable("guistrings.research.progress"), 8, 57, 16777215, false);
+      int science = ((ResearchStationMenu)this.menu).getScience();
+      int needed = ((ResearchStationMenu)this.menu).getNeededScience();
+      graphics.drawString(
+         this.font,
+         needed > 0 ? Component.translatable("guistrings.research.science_needed", science, needed) : Component.translatable("guistrings.research.science", science),
+         8,
+         71,
+         needed > science ? 0xFF7070 : 0xA0E0FF,
+         false
+      );
       graphics.drawString(this.font, Component.translatable("guistrings.research.input"), 26, 84, 16777215, false);
       graphics.drawString(this.font, Component.translatable("guistrings.research.needed"), 98, 84, 16777215, false);
    }

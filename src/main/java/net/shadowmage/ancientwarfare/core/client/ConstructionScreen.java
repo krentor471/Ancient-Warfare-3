@@ -168,7 +168,15 @@ public final class ConstructionScreen extends Screen {
                kind = chosen;
                this.rebuildWidgets();
             }).bounds(x + index * (buttonWidth + 3), y, buttonWidth, 20).build();
-            button.active = kind != index;
+            String research = net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.research(
+               net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.Kind.values()[index]
+            );
+            boolean known = research == null || ClientResearch.has(research);
+            button.active = kind != index && known;
+            if (!known) {
+               button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(net.shadowmage.ancientwarfare.core.research.PlayerResearch.needs(research)));
+            }
+
             this.addRenderableWidget(button);
          }
 

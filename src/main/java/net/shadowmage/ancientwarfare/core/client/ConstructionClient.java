@@ -50,6 +50,10 @@ public final class ConstructionClient {
 
    public static void click(BlockPos pos, boolean shift) {
       Minecraft minecraft = Minecraft.getInstance();
+      if (!ClientResearch.require(net.shadowmage.ancientwarfare.core.research.PlayerResearch.SURVEYING)) {
+         return;
+      }
+
       if (shift) {
          corner = null;
          minecraft.player.displayClientMessage(Component.translatable("construction.ancientwarfare.cleared"), true);
@@ -64,6 +68,10 @@ public final class ConstructionClient {
    }
 
    public static void clickAir(boolean shift) {
+      if (!ClientResearch.require(net.shadowmage.ancientwarfare.core.research.PlayerResearch.SURVEYING)) {
+         return;
+      }
+
       if (shift || corner != null) {
          corner = null;
          Minecraft.getInstance().player.displayClientMessage(Component.translatable("construction.ancientwarfare.cleared"), true);

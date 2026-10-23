@@ -137,6 +137,9 @@ public class ResearchBookItem extends Item {
             Component.translatable("tooltip.ancientwarfare.research_book.queued", new Object[]{getQueuedResearch(stack).size()}).withStyle(ChatFormatting.GRAY)
          );
          tooltip.add(
+            Component.translatable("guistrings.research.science", ResearchBookData.getScience(stack)).withStyle(ChatFormatting.AQUA)
+         );
+         tooltip.add(
             Component.translatable("tooltip.ancientwarfare.research_book.completed", new Object[]{getCompletedResearch(stack).size()})
                .withStyle(ChatFormatting.GRAY)
          );

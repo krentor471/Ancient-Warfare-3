@@ -102,6 +102,7 @@ public final class ForgeFactionEvents {
    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
       if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
          FactionArmies.onLogin(player);
+         net.shadowmage.ancientwarfare.core.research.PlayerResearch.sync(player);
       }
    }
 

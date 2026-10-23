@@ -18,6 +18,7 @@ import net.shadowmage.ancientwarfare.core.block.ResearchStationBlock;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcWorkType;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
+import net.shadowmage.ancientwarfare.core.common.research.ResearchBookData;
 import net.shadowmage.ancientwarfare.core.common.research.ResearchResource;
 import net.shadowmage.ancientwarfare.core.common.worksite.WorkSite;
 import net.shadowmage.ancientwarfare.core.common.worksite.WorkerAccess;
@@ -31,6 +32,8 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    public static final int BOOK_SLOT = 0;
    public static final int RESOURCE_SLOT_START = 1;
    public static final int SLOT_COUNT = 10;
+   /** Science a scribe gathers with each stretch of work at the desk. */
+   public static final int SCIENCE_PER_EFFORT = 1;
    private final NonNullList<ItemStack> items = NonNullList.withSize(10, ItemStack.EMPTY);
 
    public ResearchStationBlockEntity(BlockPos pos, BlockState state) {
@@ -53,6 +56,10 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
                ResearchBookItem.addProgress(book, 1);
                this.setChanged();
             }
+
+            if (this.level.getGameTime() % 20L == 0L && this.level instanceof net.minecraft.server.level.ServerLevel server) {
+               net.shadowmage.ancientwarfare.core.research.PlayerResearch.learn(server, ResearchBookItem.getResearcherName(book), ResearchBookItem.getCompletedResearch(book));
+            }
          }
       }
    }
@@ -60,7 +67,8 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    private void startNextQueuedResearch(ItemStack book) {
       String nextId = ResearchBookItem.peekNextQueuedResearch(book);
       ResearchGoal next = nextId == null ? null : ResearchRegistry.get(nextId);
-      if (next != null && this.consumeResearchResources(next)) {
+      if (next != null && ResearchBookData.getScience(book) >= next.science() && this.consumeResearchResources(next)) {
+         ResearchBookData.takeScience(book, next.science());
          ResearchBookItem.startNextQueuedResearch(book);
          this.setChanged();
       }
@@ -102,12 +110,11 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
       return true;
    }
 
+   /** A scribe always has work at a desk with a named book: when there is nothing to study, he gathers science. */
    @Override
    public boolean hasWork() {
       ItemStack book = (ItemStack)this.items.get(0);
-      return !book.isEmpty() && ResearchBookItem.getResearcherName(book) != null
-         ? ResearchBookItem.getCurrentResearch(book) != null || ResearchBookItem.peekNextQueuedResearch(book) != null
-         : false;
+      return !book.isEmpty() && ResearchBookItem.getResearcherName(book) != null;
    }
 
    @Override
@@ -119,10 +126,13 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
                this.startNextQueuedResearch(book);
             }
 
+            int effort = Math.max(1, Math.round(worker.getWorkEffectiveness(this.getWorkType())));
             if (ResearchBookItem.getCurrentResearch(book) != null) {
-               ResearchBookItem.addProgress(book, Math.max(1, Math.round(worker.getWorkEffectiveness(this.getWorkType()))));
-               this.setChanged();
+               ResearchBookItem.addProgress(book, effort);
             }
+
+            ResearchBookData.addScience(book, effort * SCIENCE_PER_EFFORT);
+            this.setChanged();
          }
       }
    }

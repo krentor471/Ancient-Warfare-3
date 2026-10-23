@@ -18,6 +18,8 @@ public final class ResearchBookData {
    public static final String CURRENT_PROGRESS_TAG = "currentProgress";
    public static final String COMPLETED_RESEARCH_TAG = "completedResearch";
    public static final String QUEUED_RESEARCH_TAG = "queuedResearch";
+   /** Science the scribes have gathered for this book and not yet spent. */
+   public static final String SCIENCE_TAG = "science";
    public static final int MAX_RESEARCHER_NAME_LENGTH = 32;
 
    private ResearchBookData() {
@@ -132,6 +134,25 @@ public final class ResearchBookData {
       } else {
          return null;
       }
+   }
+
+   public static int getScience(ItemStack stack) {
+      CompoundTag tag = stack.getTag();
+      return tag == null ? 0 : Math.max(0, tag.getInt(SCIENCE_TAG));
+   }
+
+   public static void addScience(ItemStack stack, int amount) {
+      stack.getOrCreateTag().putInt(SCIENCE_TAG, getScience(stack) + Math.max(0, amount));
+   }
+
+   public static boolean takeScience(ItemStack stack, int amount) {
+      int science = getScience(stack);
+      if (science < amount) {
+         return false;
+      }
+
+      stack.getOrCreateTag().putInt(SCIENCE_TAG, science - amount);
+      return true;
    }
 
    public static int getCurrentProgress(ItemStack stack) {

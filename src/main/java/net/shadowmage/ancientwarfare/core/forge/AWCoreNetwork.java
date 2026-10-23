@@ -75,7 +75,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseInterfaceBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.WarehouseStockViewerBlockEntity;
 
 public final class AWCoreNetwork {
-   private static final String PROTOCOL_VERSION = "14";
+   private static final String PROTOCOL_VERSION = "15";
    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
       new ResourceLocation("ancientwarfare", "main"), () -> "9", "9"::equals, "9"::equals
    );
@@ -238,6 +238,11 @@ public final class AWCoreNetwork {
          .encoder(AWCoreNetwork.CountryOpenPacket::encode)
          .decoder(AWCoreNetwork.CountryOpenPacket::decode)
          .consumerMainThread(AWCoreNetwork.CountryOpenPacket::handle)
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.ResearchKnownPacket.class, 50, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.ResearchKnownPacket::encode)
+         .decoder(AWCoreNetwork.ResearchKnownPacket::decode)
+         .consumerMainThread(AWCoreNetwork.ResearchKnownPacket::handle)
          .add();
       CHANNEL.messageBuilder(AWCoreNetwork.CountryDataPacket.class, 49, NetworkDirection.PLAY_TO_CLIENT)
          .encoder(AWCoreNetwork.CountryDataPacket::encode)
@@ -474,6 +479,10 @@ public final class AWCoreNetwork {
 
    public static void sendCountryOpen() {
       CHANNEL.sendToServer(new AWCoreNetwork.CountryOpenPacket());
+   }
+
+   public static void sendResearchKnown(ServerPlayer player, java.util.Set<String> known) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new AWCoreNetwork.ResearchKnownPacket(List.copyOf(known)));
    }
 
    public static void sendCountryData(ServerPlayer player, net.shadowmage.ancientwarfare.core.faction.PlayerCountry.CountryView view) {
@@ -1333,6 +1342,33 @@ public final class AWCoreNetwork {
                } else if (packet.action == CANCEL) {
                   net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.cancel(player, packet.argument);
                }
+            }
+         });
+         context.setPacketHandled(true);
+      }
+   }
+
+   public static record ResearchKnownPacket(List<String> known) {
+      private static void encode(AWCoreNetwork.ResearchKnownPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarInt(packet.known.size());
+         packet.known.forEach(research -> buffer.writeUtf(research, 64));
+      }
+
+      private static AWCoreNetwork.ResearchKnownPacket decode(FriendlyByteBuf buffer) {
+         int count = Math.min(512, buffer.readVarInt());
+         List<String> known = new ArrayList<>();
+         for (int index = 0; index < count; index++) {
+            known.add(buffer.readUtf(64));
+         }
+
+         return new AWCoreNetwork.ResearchKnownPacket(known);
+      }
+
+      private static void handle(AWCoreNetwork.ResearchKnownPacket packet, Supplier<Context> supplier) {
+         Context context = supplier.get();
+         context.enqueueWork(() -> {
+            if (context.getSender() == null) {
+               net.shadowmage.ancientwarfare.core.client.ClientResearch.set(java.util.Set.copyOf(packet.known));
             }
          });
          context.setPacketHandled(true);
