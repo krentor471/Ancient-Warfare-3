@@ -3,6 +3,7 @@ package net.shadowmage.ancientwarfare.core.faction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -149,6 +150,7 @@ public final class PlayerDiplomacy {
 
             standings.setTreaty(player.getUUID(), faction, RelationState.NEUTRAL);
             standings.setStanding(player.getUUID(), faction, Math.max(standing, PEACE_RESTORED_STANDING));
+            FactionCoalitions.peace(player.serverLevel(), player.getUUID(), faction);
             return Component.translatable("diplomacy.ancientwarfare.peace", name);
          }
          case PACT -> {
@@ -288,7 +290,7 @@ public final class PlayerDiplomacy {
                FactionRulers.ruler(data, faction, player.getRandom()).trait(),
                new int[]{data.treasury(faction), data.stores(faction)[FactionResources.WOOD], data.stores(faction)[FactionResources.STONE], data.stores(faction)[FactionResources.IRON]},
                FactionCourt.courtView(player.serverLevel(), faction, player.getUUID()),
-               FactionCourt.goalLines(player, faction),
+               coalitionAndGoals(player, faction),
                FactionIntrigue.pendingMask(player.serverLevel(), player.getUUID(), faction)
                   | (data.spies().stream().anyMatch(spy -> spy.player().equals(player.getUUID()) && spy.faction().equals(faction)) ? SPY_PENDING : 0),
                ties,
@@ -298,6 +300,17 @@ public final class PlayerDiplomacy {
       }
 
       return entries;
+   }
+
+   private static List<Component> coalitionAndGoals(ServerPlayer player, String faction) {
+      List<Component> lines = new ArrayList<>();
+      Component coalition = FactionCoalitions.line(player.serverLevel(), player.getUUID(), faction);
+      if (coalition != null) {
+         lines.add(coalition.copy().withStyle(ChatFormatting.RED));
+      }
+
+      lines.addAll(FactionCourt.goalLines(player, faction));
+      return lines;
    }
 
    public static record Entry(

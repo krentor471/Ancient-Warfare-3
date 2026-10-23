@@ -2341,5 +2341,21 @@
   "incident.ancientwarfare.surrendered": "The culprit is handed over to %s. The matter is closed.",
   "news.ancientwarfare.incident_refused": "%s bear a grudge: %s refused them satisfaction for a killing",
   "gui.ancientwarfare.diplomacy.tab.ties": "Ties",
-  "gui.ancientwarfare.diplomacy.ties_of": "Opinion of others"
+  "gui.ancientwarfare.diplomacy.ties_of": "Opinion of others",
+  "coalition.ancientwarfare.line.warning": "In a coalition of %s against you: war in %s days",
+  "coalition.ancientwarfare.line.war": "At war with you in a coalition of %s",
+  "coalition.ancientwarfare.formed": "Your neighbours fear your growth: %s have formed a coalition against you. In %s days they go to war together. Buy off its members, sow discord among them with a forged letter, or stop growing.",
+  "coalition.ancientwarfare.bribe": "Buy off (%s gold)",
+  "coalition.ancientwarfare.bribe.hint": "Pay the faction to leave the coalition; once at war, it also makes peace",
+  "coalition.ancientwarfare.hint": "A coalition with fewer than two members falls apart. /awcoalition shows it again.",
+  "coalition.ancientwarfare.none": "No coalition stands against you. Threat %s of %s: two per village, three per settlement taken in the last 20 days.",
+  "coalition.ancientwarfare.not_member": "That faction is not in a coalition against you.",
+  "coalition.ancientwarfare.no_money": "You need %s gold.",
+  "coalition.ancientwarfare.bribed": "%s took the gold and left the coalition.",
+  "coalition.ancientwarfare.discord": "The forged letter did its work: %s quarrelled with its allies and left the coalition.",
+  "coalition.ancientwarfare.dissolved.calmed": "Your neighbours have calmed down: the coalition against you has dissolved.",
+  "coalition.ancientwarfare.dissolved.broken": "The coalition against you has fallen apart.",
+  "coalition.ancientwarfare.dissolved.tired": "The coalition against you is tired of war and has fallen apart.",
+  "news.ancientwarfare.coalition_formed": "%s have formed a coalition against %s",
+  "news.ancientwarfare.coalition_war": "The coalition of %s has gone to war against %s"
 }

@@ -186,6 +186,7 @@ public final class FactionIntrigue extends SavedData {
             FactionDiplomacy.adjustOpinion(level, faction, friend, FORGED_OPINION);
             FactionDiplomacy.adjustOpinion(level, friend, faction, FORGED_OPINION);
             FactionNews.tension(level, faction, friend);
+            FactionCoalitions.discord(level, entry.player, faction);
             return Component.translatable("intrigue.ancientwarfare.forgery.done", name, FactionNews.factionName(friend));
          }
       }

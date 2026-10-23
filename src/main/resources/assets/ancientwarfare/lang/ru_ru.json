@@ -2341,5 +2341,21 @@
   "incident.ancientwarfare.surrendered": "Виновный выдан фракции %s. Дело закрыто.",
   "news.ancientwarfare.incident_refused": "Фракция %s затаила обиду: %s отказал ей в ответе за убийство",
   "gui.ancientwarfare.diplomacy.tab.ties": "Связи",
-  "gui.ancientwarfare.diplomacy.ties_of": "Мнение о других"
+  "gui.ancientwarfare.diplomacy.ties_of": "Мнение о других",
+  "coalition.ancientwarfare.line.warning": "В коалиции против вас (участников: %s): война через %s дн.",
+  "coalition.ancientwarfare.line.war": "Воюет против вас в коалиции (участников: %s)",
+  "coalition.ancientwarfare.formed": "Соседи боятся вашего роста: %s собрали против вас коалицию. Через %s дн. они вместе объявят войну. Выкупите участников, рассорьте их подложным письмом или перестаньте расти.",
+  "coalition.ancientwarfare.bribe": "Выкупить (%s зол.)",
+  "coalition.ancientwarfare.bribe.hint": "Заплатить фракции, чтобы она вышла из коалиции; если война уже идёт, она ещё и заключит мир",
+  "coalition.ancientwarfare.hint": "Коалиция, где осталось меньше двух участников, распадается. Показать её снова: /awcoalition",
+  "coalition.ancientwarfare.none": "Против вас нет коалиции. Угроза %s из %s: по 2 за деревню и по 3 за каждое поселение, взятое за последние 20 дней.",
+  "coalition.ancientwarfare.not_member": "Эта фракция не состоит в коалиции против вас.",
+  "coalition.ancientwarfare.no_money": "Нужно %s зол.",
+  "coalition.ancientwarfare.bribed": "Фракция %s взяла золото и вышла из коалиции.",
+  "coalition.ancientwarfare.discord": "Подложное письмо сработало: фракция %s рассорилась с союзниками и вышла из коалиции.",
+  "coalition.ancientwarfare.dissolved.calmed": "Соседи успокоились: коалиция против вас распалась.",
+  "coalition.ancientwarfare.dissolved.broken": "Коалиция против вас развалилась.",
+  "coalition.ancientwarfare.dissolved.tired": "Коалиция против вас устала от войны и распалась.",
+  "news.ancientwarfare.coalition_formed": "Против %2$s собрана коалиция: %1$s",
+  "news.ancientwarfare.coalition_war": "Коалиция (%1$s) объявила войну: %2$s"
 }

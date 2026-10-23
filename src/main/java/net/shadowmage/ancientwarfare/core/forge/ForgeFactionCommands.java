@@ -118,6 +118,19 @@ public final class ForgeFactionCommands {
                .then(Commands.literal("accept").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, true))))
                .then(Commands.literal("decline").then(Commands.argument("offer", IntegerArgumentType.integer()).executes(context -> answerEnvoy(context, false))))
          );
+      // Shows the coalition against the player; "bribe" is run by its buttons.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awcoalition")
+               .executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionCoalitions.show(context.getSource().getPlayerOrException());
+                  return 1;
+               })
+               .then(Commands.literal("bribe").then(Commands.argument("faction", StringArgumentType.word()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionCoalitions.bribe(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "faction"));
+                  return 1;
+               })))
+         );
       // Run by clicking the buttons under a faction's demand after an incident.
       event.getDispatcher()
          .register(
@@ -336,6 +349,15 @@ public final class ForgeFactionCommands {
                      context.getSource().getLevel(), net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(context.getSource().getLevel()), player.getUUID(), StringArgumentType.getString(context, "faction")
                   );
                   context.getSource().sendSuccess(() -> Component.literal(arrived ? "Spy arrived" : "No village"), false);
+                  return 1;
+               })))
+               .then(Commands.literal("conquests").requires(source -> source.hasPermission(2)).then(Commands.argument("count", IntegerArgumentType.integer(1, 20)).executes(context -> {
+                  ServerPlayer player = context.getSource().getPlayerOrException();
+                  net.shadowmage.ancientwarfare.core.faction.FactionCoalitions.forceConquests(context.getSource().getLevel(), player.getUUID(), IntegerArgumentType.getInteger(context, "count"));
+                  int threat = net.shadowmage.ancientwarfare.core.faction.FactionCoalitions.threat(
+                     context.getSource().getLevel(), net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(context.getSource().getLevel()), player.getUUID()
+                  );
+                  context.getSource().sendSuccess(() -> Component.literal("Threat " + threat), false);
                   return 1;
                })))
                .then(Commands.literal("port").requires(source -> source.hasPermission(2)).executes(context -> {

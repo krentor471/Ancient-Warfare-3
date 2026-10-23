@@ -143,6 +143,7 @@ public final class FactionConquest {
       FactionStandingData standings = FactionStandingData.get(level);
       UUID id = player.getUUID();
       DECIDED.put(settlement.id(), level.getGameTime());
+      FactionCoalitions.onConquest(level, id);
       switch (choice) {
          case ANNEX -> {
             BlockPos hall = annex(level, data, player, settlement, offer.tax());
