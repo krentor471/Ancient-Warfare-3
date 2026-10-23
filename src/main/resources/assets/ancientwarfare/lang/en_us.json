@@ -2556,5 +2556,8 @@
   "feast.ancientwarfare.brawl_rival": "A brawl breaks out, and you strike %s's favourite. He will not forget it: he is your rival now.",
   "feast.ancientwarfare.overheard": "Over the wine, someone talks too much...",
   "feast.ancientwarfare.line.rivals_only": "Rivals of: %s",
-  "feast.ancientwarfare.line.came": "A feast is held in %s, and you are among the guests."
+  "feast.ancientwarfare.line.came": "A feast is held in %s, and you are among the guests.",
+  "gui.ancientwarfare.diplomacy.section.affairs": "Affairs",
+  "gui.ancientwarfare.diplomacy.section.bonds": "Bonds and grudges",
+  "gui.ancientwarfare.diplomacy.section.ruler": "The ruler"
 }

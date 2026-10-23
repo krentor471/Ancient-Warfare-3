@@ -35,16 +35,16 @@ import net.shadowmage.ancientwarfare.core.research.PlayerResearch;
  * overview with what the player can do, its court and what it wants, and a deal with its ruler.
  */
 public class DiplomacyScreen extends Screen {
-   private static final int PANEL_WIDTH = 420;
-   private static final int MAX_HEIGHT = 272;
+   private static final int MAX_WIDTH = 560;
+   private static final int MAX_HEIGHT = 340;
+   /** Below this height the header is a single line, without the large portrait. */
+   private static final int ROOMY_HEIGHT = 300;
    private static final int DEAL_ROW = 17;
    /** The height of the ruler's card above the court, with the gap below it. */
    private static final int RULER_CARD = 50;
    /** The height of a courtier's card, with the gap below it. */
    private static final int COURT_CARD = 42;
-   private static final int LIST_WIDTH = 124;
-   private static final int ROW_HEIGHT = 22;
-   private static final int VISIBLE_ROWS = 10;
+   private static final int ROW_HEIGHT = 26;
    private static final int TEXT_COLOR = 0xFFF2E8D5;
    private static final int MUTED_COLOR = 0xFFA89F8E;
    private static final int GOLD_COLOR = 0xFFE8C15A;
@@ -75,6 +75,8 @@ public class DiplomacyScreen extends Screen {
    private int bond;
    /** A tooltip found while drawing the court, drawn last so nothing covers it. */
    private List<Component> courtTip;
+   /** The same for the ruler's portrait in the header. */
+   private List<Component> headerTip;
    private boolean trade;
    private String factionWar = "";
    private int[] goods = new int[FactionDeals.GOODS];
@@ -166,12 +168,37 @@ public class DiplomacyScreen extends Screen {
 
    // ---------------------------------------------------------------- layout
 
+   private int panelWidth() {
+      return Math.min(MAX_WIDTH, this.width - 8);
+   }
+
    private int left() {
-      return (this.width - PANEL_WIDTH) / 2;
+      return (this.width - this.panelWidth()) / 2;
    }
 
    private int panelHeight() {
       return Math.min(MAX_HEIGHT, this.height - 4);
+   }
+
+   /** Whether there is room for the large header with the ruler's portrait. */
+   private boolean roomy() {
+      return this.panelHeight() >= ROOMY_HEIGHT;
+   }
+
+   private int listWidth() {
+      return this.panelWidth() >= 500 ? 156 : 132;
+   }
+
+   private int listTop() {
+      return this.top() + 26;
+   }
+
+   private int visibleRows() {
+      return Math.max(1, (this.top() + this.panelHeight() - 8 - this.listTop()) / ROW_HEIGHT);
+   }
+
+   private int tabY() {
+      return this.top() + (this.roomy() ? 74 : 52);
    }
 
    private int top() {
@@ -179,16 +206,16 @@ public class DiplomacyScreen extends Screen {
    }
 
    private int contentX() {
-      return this.left() + LIST_WIDTH + 14;
+      return this.left() + this.listWidth() + 14;
    }
 
    private int contentWidth() {
-      return PANEL_WIDTH - LIST_WIDTH - 22;
+      return this.panelWidth() - this.listWidth() - 22;
    }
 
    /** Where a tab's own content begins, below the faction's header and the tabs. */
    private int contentY() {
-      return this.top() + 66;
+      return this.tabY() + 21;
    }
 
    @Override
@@ -197,7 +224,7 @@ public class DiplomacyScreen extends Screen {
          this.selected = this.entries.get(0).faction();
       }
 
-      this.scroll = Math.max(0, Math.min(this.scroll, this.entries.size() - VISIBLE_ROWS));
+      this.scroll = Math.max(0, Math.min(this.scroll, this.entries.size() - this.visibleRows()));
       PlayerDiplomacy.Entry entry = this.selectedEntry();
       if (entry == null) {
          return;
@@ -434,8 +461,8 @@ public class DiplomacyScreen extends Screen {
    private int[] node(int index) {
       // Room below for the legend.
       int height = this.top() + this.panelHeight() - 22 - this.contentY();
-      int radius = Math.max(30, Math.min(52, height / 2 - 12));
-      int cx = this.contentX() + radius + 34;
+      int radius = Math.max(30, Math.min(72, height / 2 - 12));
+      int cx = this.contentX() + Math.max(radius + 34, (this.contentWidth() - 104) / 2);
       int cy = this.contentY() + height / 2;
       double angle = -Math.PI / 2 + Math.PI * 2 * index / Math.max(1, this.entries.size());
       return new int[]{cx + (int)Math.round(Math.cos(angle) * radius), cy + (int)Math.round(Math.sin(angle) * radius)};
@@ -567,9 +594,9 @@ public class DiplomacyScreen extends Screen {
    public boolean mouseClicked(double mouseX, double mouseY, int button) {
       int left = this.left();
       int top = this.top();
-      if (button == 0 && mouseX >= left + 6 && mouseX < left + LIST_WIDTH + 4 && mouseY >= top + 26) {
-         int row = (int)((mouseY - top - 26) / ROW_HEIGHT);
-         if (row < VISIBLE_ROWS && this.scroll + row < this.entries.size()) {
+      if (button == 0 && mouseX >= left + 6 && mouseX < left + this.listWidth() + 4 && mouseY >= this.listTop()) {
+         int row = (int)((mouseY - this.listTop()) / ROW_HEIGHT);
+         if (row < this.visibleRows() && this.scroll + row < this.entries.size()) {
             String faction = this.entries.get(this.scroll + row).faction();
             if (!faction.equals(this.selected)) {
                this.playClick();
@@ -595,8 +622,8 @@ public class DiplomacyScreen extends Screen {
          }
       }
 
-      int tabY = this.top() + 48;
-      if (button == 0 && mouseY >= tabY && mouseY < tabY + 14 && this.selectedEntry() != null) {
+      int tabY = this.tabY();
+      if (button == 0 && mouseY >= tabY && mouseY < tabY + 16 && this.selectedEntry() != null) {
          for (int i = 0; i < TABS.length; i++) {
             int x = this.tabX(i);
             if (mouseX >= x && mouseX < x + this.tabWidth(i)) {
@@ -622,7 +649,7 @@ public class DiplomacyScreen extends Screen {
 
    @Override
    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-      int max = Math.max(0, this.entries.size() - VISIBLE_ROWS);
+      int max = Math.max(0, this.entries.size() - this.visibleRows());
       int next = Math.max(0, Math.min(max, this.scroll - (int)Math.signum(delta)));
       if (next != this.scroll) {
          this.scroll = next;
@@ -631,17 +658,13 @@ public class DiplomacyScreen extends Screen {
       return true;
    }
 
+   /** The tabs share the width of the page evenly. */
    private int tabWidth(int i) {
-      return this.font.width(Component.translatable("gui.ancientwarfare.diplomacy.tab." + TABS[i])) + 16;
+      return (this.contentWidth() - 2 * (TABS.length - 1)) / TABS.length;
    }
 
    private int tabX(int i) {
-      int x = this.contentX();
-      for (int j = 0; j < i; j++) {
-         x += this.tabWidth(j) + 3;
-      }
-
-      return x;
+      return this.contentX() + i * (this.tabWidth(i) + 2);
    }
 
    // ---------------------------------------------------------------- drawing
@@ -651,14 +674,22 @@ public class DiplomacyScreen extends Screen {
       this.renderBackground(graphics);
       int left = this.left();
       int top = this.top();
+      int width = this.panelWidth();
+      int height = this.panelHeight();
       // A dark wooden board with a brass rim, a parchment-dark page inside.
-      graphics.fill(left - 2, top - 2, left + PANEL_WIDTH + 2, top + this.panelHeight() + 2, 0xFF0B0907);
-      graphics.fill(left - 1, top - 1, left + PANEL_WIDTH + 1, top + this.panelHeight() + 1, FRAME_COLOR);
-      graphics.fill(left, top, left + PANEL_WIDTH, top + this.panelHeight(), WOOD_COLOR);
-      graphics.fill(left + 4, top + 20, left + PANEL_WIDTH - 4, top + this.panelHeight() - 4, PAPER_COLOR);
-      graphics.fill(left + 4, top + 19, left + PANEL_WIDTH - 4, top + 20, FRAME_COLOR);
-      graphics.drawCenteredString(this.font, this.title.copy().withStyle(ChatFormatting.BOLD), left + PANEL_WIDTH / 2, top + 6, GOLD_COLOR);
-      graphics.fill(left + LIST_WIDTH + 6, top + 24, left + LIST_WIDTH + 7, top + this.panelHeight() - 8, 0xFF4A3B26);
+      graphics.fill(left - 3, top - 3, left + width + 3, top + height + 3, 0xFF0B0907);
+      graphics.fill(left - 2, top - 2, left + width + 2, top + height + 2, FRAME_COLOR);
+      graphics.fill(left - 1, top - 1, left + width + 1, top + height + 1, 0xFF4A3B26);
+      graphics.fill(left, top, left + width, top + height, WOOD_COLOR);
+      graphics.fill(left + 4, top + 20, left + width - 4, top + height - 4, PAPER_COLOR);
+      graphics.fill(left + 4, top + 19, left + width - 4, top + 20, FRAME_COLOR);
+      Component title = this.title.copy().withStyle(ChatFormatting.BOLD);
+      int titleWidth = this.font.width(title);
+      graphics.drawCenteredString(this.font, title, left + width / 2, top + 6, GOLD_COLOR);
+      // Brass rules on either side of the title.
+      graphics.fill(left + 10, top + 9, left + width / 2 - titleWidth / 2 - 8, top + 10, 0xFF6A5330);
+      graphics.fill(left + width / 2 + titleWidth / 2 + 8, top + 9, left + width - 10, top + 10, 0xFF6A5330);
+      graphics.fill(left + this.listWidth() + 6, top + 24, left + this.listWidth() + 7, top + height - 8, 0xFF4A3B26);
       this.renderList(graphics, mouseX, mouseY);
       PlayerDiplomacy.Entry entry = this.selectedEntry();
       if (this.entries.isEmpty()) {
@@ -675,141 +706,256 @@ public class DiplomacyScreen extends Screen {
       }
 
       super.render(graphics, mouseX, mouseY, partialTick);
+      if (this.headerTip != null) {
+         graphics.renderComponentTooltip(this.font, this.headerTip, mouseX, mouseY);
+         this.headerTip = null;
+      }
    }
 
+   /** Each faction a card: its ruler's face, its name and treaty, and what it thinks of the player. */
    private void renderList(GuiGraphics graphics, int mouseX, int mouseY) {
       int x = this.left() + 8;
-      int y = this.top() + 26;
-      int width = LIST_WIDTH - 4;
-      for (int i = 0; i < VISIBLE_ROWS && this.scroll + i < this.entries.size(); i++) {
+      int y = this.listTop();
+      int width = this.listWidth() - 4;
+      int rows = this.visibleRows();
+      for (int i = 0; i < rows && this.scroll + i < this.entries.size(); i++) {
          PlayerDiplomacy.Entry entry = this.entries.get(this.scroll + i);
          int rowY = y + i * ROW_HEIGHT;
+         int rowHeight = ROW_HEIGHT - 2;
          int color = 0xFF000000 | FactionColors.color(entry.faction());
          boolean chosen = entry.faction().equals(this.selected);
-         boolean hover = mouseX >= x && mouseX < x + width && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT - 2;
-         graphics.fill(x, rowY, x + width, rowY + ROW_HEIGHT - 2, chosen ? 0xFF3A2E1E : hover ? 0xFF2C241A : CARD_COLOR);
-         if (chosen) {
-            outline(graphics, x, rowY, width, ROW_HEIGHT - 2, GOLD_COLOR);
+         boolean hover = mouseX >= x && mouseX < x + width && mouseY >= rowY && mouseY < rowY + rowHeight;
+         int background = chosen ? 0xFF3A2E1E : hover ? 0xFF2C241A : CARD_COLOR;
+         if (entry.treaty() == RelationState.WAR && !chosen) {
+            background = hover ? 0xFF3A2020 : 0xFF2A1A18;
          }
 
-         graphics.fill(x + 2, rowY + 2, x + 6, rowY + ROW_HEIGHT - 4, color);
-         graphics.drawString(this.font, factionName(entry.faction()), x + 10, rowY + 2, chosen ? GOLD_COLOR : TEXT_COLOR);
-         graphics.drawString(this.font, stateName(entry.treaty()), x + 10, rowY + 11, MUTED_COLOR);
+         graphics.fill(x, rowY, x + width, rowY + rowHeight, background);
+         graphics.fill(x, rowY, x + 3, rowY + rowHeight, color);
+         if (chosen) {
+            outline(graphics, x, rowY, width, rowHeight, GOLD_COLOR);
+         }
+
+         int[] person = entry.person();
+         if (person.length >= 4) {
+            PersonPortrait.draw(graphics, entry.faction(), person[0], person[1], person[3] != 0, PersonPortrait.NOBLE, 2, x + 6, rowY + 3, 18);
+         }
+
+         int textX = x + 28;
+         graphics.drawString(this.font, factionName(entry.faction()), textX, rowY + 3, chosen ? GOLD_COLOR : TEXT_COLOR);
+         graphics.drawString(this.font, stateName(entry.treaty()), textX, rowY + 13, MUTED_COLOR);
          Component standing = standingText(entry.standing());
-         graphics.drawString(this.font, standing, x + width - 3 - this.font.width(standing), rowY + 6, TEXT_COLOR);
+         graphics.drawString(this.font, standing, x + width - 3 - this.font.width(standing), rowY + 3, TEXT_COLOR);
+         this.standingBar(graphics, x + width - 27, rowY + 16, 24, 2, entry.standing());
       }
 
-      if (this.entries.size() > VISIBLE_ROWS) {
-         int track = VISIBLE_ROWS * ROW_HEIGHT - 2;
-         int thumb = Math.max(12, track * VISIBLE_ROWS / this.entries.size());
-         int at = (track - thumb) * this.scroll / Math.max(1, this.entries.size() - VISIBLE_ROWS);
+      if (this.entries.size() > rows) {
+         int track = rows * ROW_HEIGHT - 2;
+         int thumb = Math.max(12, track * rows / this.entries.size());
+         int at = (track - thumb) * this.scroll / Math.max(1, this.entries.size() - rows);
+         graphics.fill(x + width + 1, y, x + width + 3, y + track, 0xFF2C241A);
          graphics.fill(x + width + 1, y + at, x + width + 3, y + at + thumb, FRAME_COLOR);
       }
    }
 
-   /** The faction's name large in its colours, its ruler, and the tabs. */
+   /**
+    * The faction's name large in its colours beside its ruler's crowned portrait, who rules it, the
+    * treaty and what it thinks of the player; then the tabs.
+    */
    private void renderHeader(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int mouseX, int mouseY) {
       int x = this.contentX();
       int y = this.top() + 24;
+      int right = this.contentX() + this.contentWidth();
+      boolean roomy = this.roomy();
+      int portrait = roomy ? 42 : 24;
       int color = 0xFF000000 | FactionColors.color(entry.faction());
-      graphics.fill(x - 4, y - 1, x - 2, y + 20, color);
+      int[] person = entry.person();
+      if (person.length >= 4) {
+         PersonPortrait.draw(graphics, entry.faction(), person[0], person[1], person[3] != 0, PersonPortrait.NOBLE, 2, x, y + 1, portrait);
+         if (mouseX >= x && mouseX < x + portrait && mouseY >= y && mouseY < y + portrait && person.length >= 5) {
+            List<Component> lines = new ArrayList<>(characterTip(person[4]));
+            lines.add(0, FactionRulers.name(entry.ruler()).copy().withStyle(ChatFormatting.GOLD));
+            lines.add(1, Component.translatable("gui.ancientwarfare.diplomacy.age", person[1]).append(" · ").append(Component.translatable("gui.ancientwarfare.diplomacy.reign", person[2])).withStyle(ChatFormatting.GRAY));
+            this.headerTip = lines;
+         }
+      } else {
+         graphics.fill(x, y + 1, x + portrait, y + 1 + portrait, color);
+      }
+
+      int textX = x + portrait + 6;
       graphics.pose().pushPose();
-      graphics.pose().translate(x, y, 0.0F);
+      graphics.pose().translate(textX, y + 1, 0.0F);
       graphics.pose().scale(1.5F, 1.5F, 1.0F);
       graphics.drawString(this.font, factionName(entry.faction()), 0, 0, TEXT_COLOR);
       graphics.pose().popPose();
-      graphics.drawString(
-         this.font,
-         Component.translatable("gui.ancientwarfare.diplomacy.ruler", FactionRulers.name(entry.ruler()), FactionRulers.traitName(entry.trait())),
-         x,
-         y + 14,
-         GOLD_COLOR
-      );
+      Component ruler = Component.translatable("gui.ancientwarfare.diplomacy.ruler", FactionRulers.name(entry.ruler()), FactionRulers.traitName(entry.trait()));
+      graphics.drawString(this.font, ruler, textX, y + 15, GOLD_COLOR);
+      // Whether the leader is near, or on the deal tab how far the player's word is taken, at the top right.
       Component leader = Component.translatable(entry.leaderNear() ? "gui.ancientwarfare.diplomacy.leader_here" : "gui.ancientwarfare.diplomacy.leader_away_short");
-      int right = this.contentX() + this.contentWidth();
+      int statusY = y + 2;
       if (tab == DEAL && this.deal != null && entry.leaderNear()) {
-         this.renderWord(graphics, right, y + 2, mouseX, mouseY);
+         this.renderWord(graphics, right, statusY, mouseX, mouseY);
       } else {
-         graphics.drawString(this.font, leader, right - this.font.width(leader), y + 2, entry.leaderNear() ? GOOD_COLOR : MUTED_COLOR);
+         int leaderX = right - this.font.width(leader) - 10;
+         graphics.fill(leaderX, statusY + 2, leaderX + 5, statusY + 7, entry.leaderNear() ? GOOD_COLOR : 0xFF5A5248);
+         graphics.drawString(this.font, leader, leaderX + 9, statusY, entry.leaderNear() ? GOOD_COLOR : MUTED_COLOR);
       }
-      int tabY = this.top() + 48;
-      graphics.fill(x - 2, tabY + 14, right, tabY + 15, FRAME_COLOR);
+
+      if (roomy) {
+         // The treaty as a seal, and the player's standing as a bar.
+         int chipY = y + 28;
+         Component state = stateName(entry.treaty());
+         int chipWidth = this.font.width(state) + 8;
+         graphics.fill(textX, chipY, textX + chipWidth, chipY + 12, 0xFF000000 | stateColor(entry.treaty()) & 0xFF7F7F7F);
+         graphics.fill(textX + 1, chipY + 1, textX + chipWidth - 1, chipY + 11, CARD_COLOR);
+         graphics.drawString(this.font, state, textX + 4, chipY + 2, TEXT_COLOR);
+         int barX = textX + chipWidth + 8;
+         Component opinion = Component.translatable("gui.ancientwarfare.diplomacy.opinion");
+         graphics.drawString(this.font, opinion, barX, chipY + 2, MUTED_COLOR);
+         barX += this.font.width(opinion) + 5;
+         Component standing = standingText(entry.standing());
+         int barWidth = Math.max(30, Math.min(100, right - barX - this.font.width(standing) - 6));
+         this.standingBar(graphics, barX, chipY + 3, barWidth, 5, entry.standing());
+         graphics.drawString(this.font, standing, barX + barWidth + 5, chipY + 2, TEXT_COLOR);
+      }
+
+      int tabY = this.tabY();
+      graphics.fill(x, tabY + 15, right, tabY + 16, FRAME_COLOR);
       for (int i = 0; i < TABS.length; i++) {
          int tabX = this.tabX(i);
          int width = this.tabWidth(i);
          boolean active = tab == i;
-         boolean hover = mouseX >= tabX && mouseX < tabX + width && mouseY >= tabY && mouseY < tabY + 14;
-         graphics.fill(tabX, tabY, tabX + width, tabY + 15, active ? FRAME_COLOR : 0xFF3A2E1E);
-         graphics.fill(tabX + 1, tabY + 1, tabX + width - 1, tabY + 15, active ? 0xFF3A2E1E : hover ? 0xFF2C241A : CARD_COLOR);
-         graphics.drawCenteredString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.tab." + TABS[i]), tabX + width / 2, tabY + 4, active ? GOLD_COLOR : MUTED_COLOR);
+         boolean hover = mouseX >= tabX && mouseX < tabX + width && mouseY >= tabY && mouseY < tabY + 16;
+         graphics.fill(tabX, tabY, tabX + width, tabY + (active ? 16 : 15), active ? FRAME_COLOR : 0xFF3A2E1E);
+         graphics.fill(tabX + 1, tabY + 1, tabX + width - 1, tabY + (active ? 16 : 15), active ? 0xFF3A2E1E : hover ? 0xFF2C241A : CARD_COLOR);
+         if (active) {
+            graphics.fill(tabX + 1, tabY + 1, tabX + width - 1, tabY + 2, GOLD_COLOR);
+         }
+
+         graphics.drawCenteredString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.tab." + TABS[i]), tabX + width / 2, tabY + 4, active ? GOLD_COLOR : hover ? TEXT_COLOR : MUTED_COLOR);
       }
    }
 
-   private void renderOverviewBonds(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int x, int y) {
-      for (Component bond : entry.bonds()) {
-         graphics.drawWordWrap(this.font, bond, x, y, this.contentWidth(), TEXT_COLOR);
-         y += this.font.split(bond, this.contentWidth()).size() * this.font.lineHeight + 2;
-      }
+   /** A heading over part of a tab, with a brass rule after it. */
+   private int section(GuiGraphics graphics, Component label, int x, int y, int width) {
+      graphics.drawString(this.font, label, x, y, GOLD_COLOR);
+      graphics.fill(x + this.font.width(label) + 4, y + 4, x + width, y + 5, 0xFF4A3B26);
+      return y + 12;
    }
 
    private void renderOverview(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int mouseX, int mouseY) {
       int x = this.contentX();
       int y = this.contentY();
       int width = this.contentWidth();
-      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.opinion"), x, y, MUTED_COLOR);
-      int barX = x + 70;
-      int barWidth = width - 70 - 34;
-      this.standingBar(graphics, barX, y + 1, barWidth, 6, entry.standing());
-      graphics.drawString(this.font, standingText(entry.standing()), barX + barWidth + 6, y, TEXT_COLOR);
-      y += 13;
-      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.state", stateName(entry.treaty())), x, y, TEXT_COLOR);
-      Component trade = entry.trade()
-         ? Component.translatable("gui.ancientwarfare.diplomacy.trade", entry.routes())
-         : Component.translatable("gui.ancientwarfare.diplomacy.trade_none");
-      graphics.drawString(this.font, trade, x + width / 2, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
-      y += 14;
-      // Treasury, stores and towns, each with its picture.
+      int actions = this.top() + this.panelHeight() - 8 - 3 * 21;
+      if (!this.roomy()) {
+         // No room in the header for the standing: it heads the overview instead.
+         graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.opinion"), x, y, MUTED_COLOR);
+         int barX = x + 70;
+         int barWidth = width - 70 - 34;
+         this.standingBar(graphics, barX, y + 1, barWidth, 6, entry.standing());
+         graphics.drawString(this.font, standingText(entry.standing()), barX + barWidth + 6, y, TEXT_COLOR);
+         y += 12;
+      }
+
+      // Treasury, stores and towns, each in its own small card.
       int[] stores = entry.stores();
       if (stores.length >= 4) {
          ItemStack[] icons = {CoinItem.create(CoinMetal.GOLD), new ItemStack(Items.OAK_LOG), new ItemStack(Items.COBBLESTONE), new ItemStack(Items.IRON_INGOT), new ItemStack(Items.BELL)};
          int[] amounts = {stores[0] / 10, stores[1], stores[2], stores[3], entry.settlements()};
          String[] tips = {"treasury", "wood", "stone", "iron", "towns"};
-         int step = width / icons.length;
-         graphics.fill(x - 2, y - 2, x + width, y + 18, CARD_COLOR);
+         int step = (width + 3) / icons.length;
          for (int i = 0; i < icons.length; i++) {
-            int iconX = x + i * step;
-            graphics.renderItem(icons[i], iconX, y);
-            graphics.drawString(this.font, Integer.toString(amounts[i]), iconX + 18, y + 5, TEXT_COLOR);
-            if (mouseX >= iconX && mouseX < iconX + step && mouseY >= y && mouseY < y + 16) {
+            int cardX = x + i * step;
+            graphics.fill(cardX, y, cardX + step - 3, y + 20, CARD_COLOR);
+            outline(graphics, cardX, y, step - 3, 20, 0xFF3A2E1E);
+            graphics.renderItem(icons[i], cardX + 2, y + 2);
+            graphics.drawString(this.font, Integer.toString(amounts[i]), cardX + 20, y + 6, TEXT_COLOR);
+            if (mouseX >= cardX && mouseX < cardX + step - 3 && mouseY >= y && mouseY < y + 20) {
                graphics.renderTooltip(this.font, Component.translatable("gui.ancientwarfare.diplomacy.stat." + tips[i]), mouseX, mouseY);
             }
          }
 
-         y += 24;
+         y += 25;
       }
 
-      if (entry.wars().isEmpty()) {
-         graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.wars_none"), x, y, MUTED_COLOR);
-         this.renderOverviewBonds(graphics, entry, x, y + 13);
+      y = this.section(graphics, Component.translatable("gui.ancientwarfare.diplomacy.section.affairs"), x, y, width);
+      Component trade = entry.trade()
+         ? Component.translatable("gui.ancientwarfare.diplomacy.trade", entry.routes())
+         : Component.translatable("gui.ancientwarfare.diplomacy.trade_none");
+      if (!this.roomy()) {
+         graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.diplomacy.state", stateName(entry.treaty())), x, y, TEXT_COLOR);
+         graphics.drawString(this.font, trade, x + width / 2, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
       } else {
-         Component label = Component.translatable("gui.ancientwarfare.diplomacy.wars_label");
+         graphics.drawString(this.font, Component.literal("◆ ").append(trade), x, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
+      }
+
+      y += 12;
+      if (entry.wars().isEmpty()) {
+         graphics.drawString(this.font, Component.literal("◆ ").append(Component.translatable("gui.ancientwarfare.diplomacy.wars_none")), x, y, MUTED_COLOR);
+         y += 12;
+      } else {
+         Component label = Component.literal("◆ ").append(Component.translatable("gui.ancientwarfare.diplomacy.wars_label"));
          graphics.drawString(this.font, label, x, y, BAD_COLOR);
          int wx = x + this.font.width(label) + 4;
          int wy = y;
          for (String war : entry.wars()) {
             Component name = factionName(war);
-            int w = this.font.width(name) + 10;
+            int w = this.font.width(name) + 12;
             if (wx + w > x + width) {
                wx = x + 8;
-               wy += 11;
+               wy += 12;
             }
 
-            graphics.fill(wx, wy, wx + 6, wy + 7, 0xFF000000 | FactionColors.color(war));
-            graphics.drawString(this.font, name, wx + 8, wy, TEXT_COLOR);
-            wx += w + 4;
+            int warColor = 0xFF000000 | FactionColors.color(war);
+            graphics.fill(wx, wy - 1, wx + w, wy + 10, 0xFF2A1A18);
+            graphics.fill(wx, wy - 1, wx + 3, wy + 10, warColor);
+            graphics.drawString(this.font, name, wx + 7, wy + 1, TEXT_COLOR);
+            wx += w + 3;
          }
 
-         this.renderOverviewBonds(graphics, entry, x, wy + 13);
+         y = wy + 13;
+      }
+
+      // With room to spare, the ruler himself: his years, his health and his character.
+      int[] person = entry.person();
+      if (this.roomy() && person.length >= 5) {
+         y = this.section(graphics, Component.translatable("gui.ancientwarfare.diplomacy.section.ruler"), x, y + 2, width);
+         boolean ill = person[3] != 0;
+         MutableComponent life = Component.literal("◆ ")
+            .append(Component.translatable("gui.ancientwarfare.diplomacy.age", person[1]))
+            .append(" · ")
+            .append(Component.translatable("gui.ancientwarfare.diplomacy.reign", person[2]))
+            .append(" · ");
+         life.append(
+            Component.translatable(ill ? "gui.ancientwarfare.diplomacy.health.ill" : person[1] >= 60 ? "gui.ancientwarfare.diplomacy.health.old" : "gui.ancientwarfare.diplomacy.health.well")
+               .withStyle(ill ? ChatFormatting.RED : person[1] >= 60 ? ChatFormatting.GRAY : ChatFormatting.GREEN)
+         );
+         graphics.drawString(this.font, life, x, y, TEXT_COLOR);
+         y += 12;
+         graphics.drawString(this.font, "◆", x, y, TEXT_COLOR);
+         this.courtTip = null;
+         this.renderCharacter(graphics, person[4], x + this.font.width("◆ "), y, mouseX, mouseY);
+         if (this.courtTip != null) {
+            this.headerTip = this.courtTip;
+         }
+
+         y += 12;
+      }
+
+      // Bonds of blood, feasts and grudges, as many as fit above the actions.
+      if (!entry.bonds().isEmpty() && y + 22 < actions) {
+         y = this.section(graphics, Component.translatable("gui.ancientwarfare.diplomacy.section.bonds"), x, y + 2, width);
+         for (Component bond : entry.bonds()) {
+            int lines = this.font.split(bond, width - 8).size();
+            if (y + lines * this.font.lineHeight > actions - 3) {
+               break;
+            }
+
+            graphics.drawString(this.font, "•", x, y, MUTED_COLOR);
+            graphics.drawWordWrap(this.font, bond, x + 8, y, width - 8, TEXT_COLOR);
+            y += lines * this.font.lineHeight + 2;
+         }
       }
    }
 

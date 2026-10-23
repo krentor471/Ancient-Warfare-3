@@ -2556,5 +2556,8 @@
   "feast.ancientwarfare.brawl_rival": "В драке вы бьёте любимца правителя %s. Он этого не простит: теперь он ваш соперник.",
   "feast.ancientwarfare.overheard": "За вином кто-то сболтнул лишнего...",
   "feast.ancientwarfare.line.rivals_only": "Соперничает с: %s",
-  "feast.ancientwarfare.line.came": "В городе %s идёт пир, вы среди гостей."
+  "feast.ancientwarfare.line.came": "В городе %s идёт пир, вы среди гостей.",
+  "gui.ancientwarfare.diplomacy.section.affairs": "Положение",
+  "gui.ancientwarfare.diplomacy.section.bonds": "Связи и обиды",
+  "gui.ancientwarfare.diplomacy.section.ruler": "Правитель"
 }
