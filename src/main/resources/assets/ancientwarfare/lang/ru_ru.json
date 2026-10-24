@@ -2744,5 +2744,9 @@
   "quest.ancientwarfare.hunt.progress": "Чудовищ убито: %s из %s",
   "quest.ancientwarfare.hunt.met": "Окрестности очищены: вернитесь к доске заданий (%s).",
   "quest.ancientwarfare.item.wool": "шерсть",
-  "quest.ancientwarfare.too_many": "Заданий взято: %s, больше нельзя. Сначала выполните одно или откажитесь."
+  "quest.ancientwarfare.too_many": "Заданий взято: %s, больше нельзя. Сначала выполните одно или откажитесь.",
+  "town.ancientwarfare.hall.tavern": "%s: открылась таверна.",
+  "town.ancientwarfare.hall.smithy": "%s: поставили кузницу.",
+  "town.ancientwarfare.hall.stables": "%s: построили конюшни.",
+  "town.ancientwarfare.hall.guild": "%s: возвели зал гильдии."
 }

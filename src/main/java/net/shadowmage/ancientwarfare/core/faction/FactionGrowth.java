@@ -1,6 +1,7 @@
 package net.shadowmage.ancientwarfare.core.faction;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -23,14 +24,18 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
+import net.shadowmage.ancientwarfare.core.structure.AwsTemplatePlacer;
+import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenTemplateRegistry;
 import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator;
+import net.shadowmage.ancientwarfare.core.structure.FactionTowns;
 
 /**
  * Settlements that do well grow by themselves. A day of a full, orderly, fed town adds to its
  * growth; while a player is somewhere around, but not watching the spot, the town builds one piece
  * a while on flat open ground just outside its edge: a house with a bed, a well, a market stall,
- * a lamp post or a garden, with a path back to the middle. Each piece widens the town's bounds and
- * makes room for a few more people.
+ * a lamp post or a garden, with a path back to the middle. Every third piece is, where the town
+ * lacks one and its faction has the building, a hall: a tavern, a smithy, stables or a guild hall.
+ * Each piece widens the town's bounds and makes room for a few more people.
  */
 public final class FactionGrowth {
    /** People each built piece makes room for; see FactionSimulation.capacity. */
@@ -53,6 +58,16 @@ public final class FactionGrowth {
    /** Ground samples needed to judge the level of a town built before its level was recorded. */
    private static final int FLOOR_SAMPLES = 12;
    private static final int PATH_STEPS = 64;
+   /** Every this many pieces, a hall the town lacks instead. */
+   private static final int HALL_EVERY = 3;
+   private static final int HALL_TRIES = 32;
+   /** Halls wider or taller than this would not sit beside a town's edge. */
+   private static final int HALL_MAX_FOOTPRINT = 36;
+   private static final int HALL_MAX_HEIGHT = 32;
+   /** The most the ground under a hall may rise and fall before it is levelled. */
+   private static final int HALL_MAX_SLOPE = 5;
+   private static final List<String> HALL_EXCLUDED = List.of("ship", "boat", "ruin", "camp", "infested", "portal", "spawner", "islands", "tomb", "beach", "coastal");
+   private static final Map<String, List<String>> HALL_TEMPLATES = new HashMap<>();
    private static final Piece[] ORDER = {
       Piece.HOUSE, Piece.LAMP, Piece.GARDEN, Piece.HOUSE, Piece.WELL, Piece.HOUSE, Piece.STALL, Piece.LAMP, Piece.HOUSE, Piece.GARDEN, Piece.HOUSE, Piece.STALL
    };
@@ -158,8 +173,41 @@ public final class FactionGrowth {
       return best;
    }
 
+   /** The halls a town puts up, in the order it wants them, and the words their buildings are named by. */
+   public enum HallKind {
+      TAVERN("tavern", "inn"),
+      SMITHY("smith", "forge"),
+      STABLES("stable"),
+      GUILD("guild");
+
+      final List<String> words;
+
+      HallKind(String... words) {
+         this.words = List.of(words);
+      }
+
+      public String key() {
+         return this.name().toLowerCase(java.util.Locale.ROOT);
+      }
+
+      boolean names(String name) {
+         String lower = name.toLowerCase(java.util.Locale.ROOT);
+         return this.words.stream().anyMatch(lower::contains);
+      }
+   }
+
    /** Builds the town's next piece, if a fitting spot is found. */
    private static boolean grow(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, boolean watched) {
+      if (settlement.grown % HALL_EVERY == HALL_EVERY - 1) {
+         HallKind kind = wantedHall(settlement);
+         if (kind != null && hall(level, data, settlement, kind, watched)) {
+            settlement.grown++;
+            settlement.growth = Math.max(0, settlement.growth - 1);
+            data.setDirty();
+            return true;
+         }
+      }
+
       // A city puts up a watchtower every fourth piece.
       Piece piece = settlement.tier() >= FactionPorts.CITY && settlement.grown % 4 == 3 ? Piece.TOWER : ORDER[settlement.grown % ORDER.length];
       RandomSource random = level.getRandom();
@@ -196,6 +244,181 @@ public final class FactionGrowth {
 
       AncientWarfareCore.LOG.info("Settlement #{} of {} grows: a {} at {}", settlement.id(), settlement.faction(), piece, site);
       return true;
+   }
+
+   /** The first hall the town has none of and its faction has a building for, or null. */
+   private static HallKind wantedHall(FactionWorldData.Settlement settlement) {
+      for (HallKind kind : HallKind.values()) {
+         if (!hasHall(settlement, kind) && !hallTemplates(settlement.faction(), kind).isEmpty()) {
+            return kind;
+         }
+      }
+
+      return null;
+   }
+
+   /**
+    * Whether the town has put up such a hall as it grew, or is itself one such building. A laid-out
+    * town's list of buildings says only what it may have, not what was built, so a big town can come
+    * to have a second tavern.
+    */
+   public static boolean hasHall(FactionWorldData.Settlement settlement, HallKind kind) {
+      if (settlement.halls().stream().anyMatch(hall -> hall.kind().equals(kind.key()))) {
+         return true;
+      }
+
+      String template = settlement.template();
+      return template != null && !FactionTowns.isGenerated(template) && kind.names(template.substring(template.lastIndexOf('/') + 1));
+   }
+
+   private static synchronized List<String> hallTemplates(String faction, HallKind kind) {
+      return HALL_TEMPLATES.computeIfAbsent(faction + "/" + kind.key(), key -> {
+         List<String> found = new java.util.ArrayList<>();
+         for (String path : TemplateFactions.templatesOf(faction)) {
+            AwsWorldGenTemplateRegistry.Template template = AwsWorldGenTemplateRegistry.templateForActivePath(path);
+            String name = path.substring(path.lastIndexOf('/') + 1).toLowerCase(java.util.Locale.ROOT);
+            if (template != null
+               && template.ground()
+               && !template.aquatic()
+               && kind.names(name)
+               && HALL_EXCLUDED.stream().noneMatch(name::contains)
+               && Math.max(template.sizeX(), template.sizeZ()) <= HALL_MAX_FOOTPRINT
+               && template.sizeY() <= HALL_MAX_HEIGHT) {
+               found.add(path);
+            }
+         }
+
+         return found;
+      });
+   }
+
+   /** Puts up one of the faction's buildings of this kind just outside the town, if a spot is found. */
+   private static boolean hall(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, HallKind kind, boolean watched) {
+      RandomSource random = level.getRandom();
+      List<String> paths = hallTemplates(settlement.faction(), kind);
+      AwsWorldGenTemplateRegistry.Template template = AwsWorldGenTemplateRegistry.templateForActivePath(paths.get(random.nextInt(paths.size())));
+      if (template == null) {
+         return false;
+      }
+
+      BlockPos min = settlement.min();
+      BlockPos max = settlement.max();
+      BlockPos center = settlement.center();
+      int floor = floor(level, data, settlement);
+      int span = Math.max(template.sizeX(), template.sizeZ());
+      for (int i = 0; i < HALL_TRIES; i++) {
+         int out = GAP + random.nextInt(REACH);
+         int x;
+         int z;
+         switch (random.nextInt(4)) {
+            case 0 -> {
+               x = min.getX() + random.nextInt(max.getX() - min.getX() + 1) - span / 2;
+               z = min.getZ() - out - span;
+            }
+            case 1 -> {
+               x = min.getX() + random.nextInt(max.getX() - min.getX() + 1) - span / 2;
+               z = max.getZ() + out + 1;
+            }
+            case 2 -> {
+               x = min.getX() - out - span;
+               z = min.getZ() + random.nextInt(max.getZ() - min.getZ() + 1) - span / 2;
+            }
+            default -> {
+               x = max.getX() + out + 1;
+               z = min.getZ() + random.nextInt(max.getZ() - min.getZ() + 1) - span / 2;
+            }
+         }
+
+         // The span-wide square the hall turns within; it faces the middle of town.
+         if (!loadedArea(level, x - BLEND - 1, z - BLEND - 1, x + span + BLEND, z + span + BLEND) || crowded(data, x, z, span, span)) {
+            continue;
+         }
+
+         if (!watched && nearestPlayer(level, new BlockPos(x + span / 2, 0, z + span / 2)) < TOO_CLOSE * TOO_CLOSE) {
+            continue;
+         }
+
+         Direction facing = facing(x + span / 2, z + span / 2, center);
+         int sizeX = template.rotatedSizeX(facing);
+         int sizeZ = template.rotatedSizeZ(facing);
+         Integer ground = hallGround(level, x, z, sizeX, sizeZ);
+         if (ground == null) {
+            continue;
+         }
+
+         boolean free = floor == FactionWorldData.NO_FLOOR || floor == FactionWorldData.FOLLOWS_GROUND;
+         if (!free && Math.abs(ground - floor) <= MAX_LIFT) {
+            ground = floor;
+         }
+
+         // Only the template's height is taken from its origin: its foundation sinks below the ground.
+         BlockPos corner = new BlockPos(x, template.minFor(new BlockPos(x, ground + 1, z), facing).getY(), z);
+         int maxX = x + sizeX - 1;
+         int maxZ = z + sizeZ - 1;
+
+         AwsWorldGenerator.levelTerrain(level, template, corner, maxX, maxZ, ground);
+         if (!AwsTemplatePlacer.placeAtMin(level, corner, template.path(), facing, true)) {
+            return false;
+         }
+
+         BlockPos top = new BlockPos(maxX, corner.getY() + template.sizeY() - 1, maxZ);
+         settlement.extend(corner, top);
+         settlement.halls().add(new FactionWorldData.Hall(kind.key(), corner, top));
+         // A path from the hall's side that faces the town back to the middle.
+         BlockPos side = new BlockPos(
+            Math.max(corner.getX() - 1, Math.min(maxX + 1, center.getX())), ground, Math.max(corner.getZ() - 1, Math.min(maxZ + 1, center.getZ()))
+         );
+         path(level, settlement, side, center);
+         AncientWarfareCore.LOG.info("Settlement #{} of {} grows: a {} hall ({}) at {}", settlement.id(), settlement.faction(), kind, template.path(), corner);
+         Component name = settlement.name().isEmpty() ? FactionNews.factionName(settlement.faction()) : settlement.nameComponent();
+         for (ServerPlayer player : level.players()) {
+            if (settlement.horizontalDistanceSquared(player.getX(), player.getZ()) <= NEAR * NEAR) {
+               player.sendSystemMessage(Component.translatable("town.ancientwarfare.hall." + kind.key(), name).withStyle(ChatFormatting.GRAY));
+            }
+         }
+
+         return true;
+      }
+
+      AncientWarfareCore.LOG.debug("Settlement #{} found no spot for a {} hall ({})", settlement.id(), kind, template.path());
+      return false;
+   }
+
+   private static boolean loadedArea(ServerLevel level, int minX, int minZ, int maxX, int maxZ) {
+      for (int x = minX; x <= maxX + 15; x += 16) {
+         for (int z = minZ; z <= maxZ + 15; z += 16) {
+            if (!level.isLoaded(new BlockPos(Math.min(x, maxX), 64, Math.min(z, maxZ)))) {
+               return false;
+            }
+         }
+      }
+
+      return true;
+   }
+
+   /** The middle ground level under a hall, or null where the land is too steep or wet. */
+   private static Integer hallGround(ServerLevel level, int x, int z, int sizeX, int sizeZ) {
+      List<Integer> heights = new java.util.ArrayList<>();
+      for (int dx = 0; dx < sizeX; dx += 2) {
+         for (int dz = 0; dz < sizeZ; dz += 2) {
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + dx, z + dz) - 1;
+            BlockPos pos = new BlockPos(x + dx, y, z + dz);
+            if (!level.getFluidState(pos).isEmpty() || level.getBlockEntity(pos) != null) {
+               return null;
+            }
+
+            BlockState state = level.getBlockState(pos);
+            // Trees are cleared with the site; anything else that is not plain ground is somebody's building.
+            if (!natural(state) && !state.is(BlockTags.LOGS)) {
+               return null;
+            }
+
+            heights.add(natural(state) ? y : y - 1);
+         }
+      }
+
+      heights.sort(Integer::compareTo);
+      return heights.get(heights.size() - 1) - heights.get(0) > HALL_MAX_SLOPE ? null : heights.get(heights.size() / 2);
    }
 
    /** For the debug command: the nearest town grows by one piece now. */
@@ -322,8 +545,12 @@ public final class FactionGrowth {
 
    /** Whether the spot runs into a settlement, its own included. */
    private static boolean crowded(FactionWorldData data, int x, int z, Piece piece) {
+      return crowded(data, x, z, piece.width, piece.depth);
+   }
+
+   private static boolean crowded(FactionWorldData data, int x, int z, int width, int depth) {
       for (FactionWorldData.Settlement other : data.settlements()) {
-         if (x + piece.width + 1 >= other.min().getX() && x - 1 <= other.max().getX() && z + piece.depth + 1 >= other.min().getZ() && z - 1 <= other.max().getZ()) {
+         if (x + width + 1 >= other.min().getX() && x - 1 <= other.max().getX() && z + depth + 1 >= other.min().getZ() && z - 1 <= other.max().getZ()) {
             return true;
          }
       }

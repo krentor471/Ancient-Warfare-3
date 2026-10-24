@@ -490,7 +490,7 @@ public final class AwsWorldGenerator {
          && (!template.island() || OceanGenerationPolicy.islandDepthAcceptable((long)suitableDepthSamples, (long)waterSamples));
    }
 
-   private static void levelTerrain(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, int maxX, int maxZ, int targetY) {
+   public static void levelTerrain(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, int maxX, int maxZ, int targetY) {
       BlockState top = level.getBlockState(new BlockPos(min.getX(), targetY, min.getZ()));
       if (top.isAir() || !top.getFluidState().isEmpty()) {
          top = Blocks.GRASS_BLOCK.defaultBlockState();

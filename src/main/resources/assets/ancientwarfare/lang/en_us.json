@@ -2744,5 +2744,9 @@
   "quest.ancientwarfare.hunt.progress": "Monsters slain: %s of %s",
   "quest.ancientwarfare.hunt.met": "The land around is cleared: go back to the quest board (%s).",
   "quest.ancientwarfare.item.wool": "wool",
-  "quest.ancientwarfare.too_many": "You have taken %s tasks, as many as you can: finish one or give one up first."
+  "quest.ancientwarfare.too_many": "You have taken %s tasks, as many as you can: finish one or give one up first.",
+  "town.ancientwarfare.hall.tavern": "%s has opened a tavern.",
+  "town.ancientwarfare.hall.smithy": "%s has a new smithy.",
+  "town.ancientwarfare.hall.stables": "%s has built stables.",
+  "town.ancientwarfare.hall.guild": "%s has raised a guild hall."
 }

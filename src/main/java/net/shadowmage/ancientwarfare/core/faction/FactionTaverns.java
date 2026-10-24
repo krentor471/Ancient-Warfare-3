@@ -24,7 +24,9 @@ import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
+import net.shadowmage.ancientwarfare.core.entity.FactionBardNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
+import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
 
 /**
  * The barman of a tavern. Every standing tavern near a player has one; talking to him lists what
@@ -34,6 +36,7 @@ import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
  */
 public final class FactionTaverns {
    public static final String BARMAN_TAG = "AWBarman";
+   public static final String BARD_TAG = "AWTavernBard";
    private static final String ROUND_DAY_TAG = "AWBarmanRoundDay";
    private static final double SERVE_RANGE = 8.0;
    private static final long TALK_COOLDOWN = 40L;
@@ -68,19 +71,27 @@ public final class FactionTaverns {
       return entity.getPersistentData().getBoolean(BARMAN_TAG);
    }
 
-   /** Called with the mercenary check: every tavern near a player gets its barman. */
+   /** Called with the mercenary check: every tavern near a player gets its barman and its bard, a town's tavern hall too. */
    static void tick(ServerLevel level, FactionWorldData data) {
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         if (WorldMap.isTavern(settlement) && FactionMercenaries.playerNear(level, settlement) && level.isLoaded(settlement.min()) && level.isLoaded(settlement.max())) {
-            ensureBarman(level, settlement);
+         if (!FactionMercenaries.playerNear(level, settlement) || !level.isLoaded(settlement.min()) || !level.isLoaded(settlement.max())) {
+            continue;
+         }
+
+         if (WorldMap.isTavern(settlement)) {
+            staff(level, settlement.faction(), settlement.id(), settlement.min(), settlement.max());
+         }
+
+         for (FactionWorldData.Hall hall : settlement.halls()) {
+            if (hall.kind().equals(FactionGrowth.HallKind.TAVERN.key()) && level.isLoaded(hall.min()) && level.isLoaded(hall.max())) {
+               staff(level, settlement.faction(), settlement.id(), hall.min(), hall.max());
+            }
          }
       }
    }
 
-   private static void ensureBarman(ServerLevel level, FactionWorldData.Settlement settlement) {
+   private static void staff(ServerLevel level, String faction, int id, BlockPos min, BlockPos max) {
       // Entities load after their chunks: a barman not yet loaded must not get a twin.
-      BlockPos min = settlement.min();
-      BlockPos max = settlement.max();
       for (int cx = (min.getX() >> 4) - 1; cx <= (max.getX() >> 4) + 1; cx++) {
          for (int cz = (min.getZ() >> 4) - 1; cz <= (max.getZ() >> 4) + 1; cz++) {
             if (!level.areEntitiesLoaded(net.minecraft.world.level.ChunkPos.asLong(cx, cz))) {
@@ -89,26 +100,59 @@ public final class FactionTaverns {
          }
       }
 
-      if (!level.getEntitiesOfClass(FactionNpcEntity.class, FactionMercenaries.area(settlement), npc -> npc.isAlive() && isBarman(npc)).isEmpty()) {
-         return;
+      net.minecraft.world.phys.AABB area = new net.minecraft.world.phys.AABB(min, max.offset(1, 1, 1)).inflate(8.0, 8.0, 8.0);
+      if (level.getEntitiesOfClass(FactionNpcEntity.class, area, npc -> npc.isAlive() && isBarman(npc)).isEmpty()) {
+         FactionNpcEntity barman = (FactionNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_CIVILIAN_MALE_NPC).create(level);
+         if (barman != null) {
+            BlockPos spot = standingSpot(level, min, max);
+            barman.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+            barman.setFactionName(faction);
+            barman.getPersistentData().putBoolean(BARMAN_TAG, true);
+            barman.setCustomName(Component.translatable("entity.ancientwarfare.barman").withStyle(ChatFormatting.GOLD));
+            barman.setCustomNameVisible(true);
+            barman.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.HONEY_BOTTLE));
+            barman.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+            barman.setPersistenceRequired();
+            level.addFreshEntity(barman);
+            AncientWarfareCore.LOG.info("A barman took over tavern of #{} at {}, {}", id, spot.getX(), spot.getZ());
+         }
       }
 
-      FactionNpcEntity barman = (FactionNpcEntity)AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_CIVILIAN_MALE_NPC).create(level);
-      if (barman == null) {
-         return;
+      // A tavern keeps a bard, who plays when there is anyone to hear.
+      if (level.getEntitiesOfClass(FactionBardNpcEntity.class, area, npc -> npc.isAlive() && npc.getPersistentData().getBoolean(BARD_TAG)).isEmpty()) {
+         FactionBardNpcEntity bard = AWCoreEntityTypes.FACTION_BARD_NPC.get().create(level);
+         if (bard != null) {
+            BlockPos spot = standingSpot(level, min, max);
+            bard.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+            bard.setFactionName(faction);
+            bard.getPersistentData().putBoolean(BARD_TAG, true);
+            bard.setHome(spot);
+            bard.setPersistenceRequired();
+            level.addFreshEntity(bard);
+         }
+      }
+   }
+
+   /** Somewhere to stand inside the building: a floor with room for a body above it. */
+   private static BlockPos standingSpot(ServerLevel level, BlockPos min, BlockPos max) {
+      net.minecraft.util.RandomSource random = level.getRandom();
+      for (int attempt = 0; attempt < 60; attempt++) {
+         int x = min.getX() + 1 + random.nextInt(Math.max(1, max.getX() - min.getX() - 1));
+         int z = min.getZ() + 1 + random.nextInt(Math.max(1, max.getZ() - min.getZ() - 1));
+         for (int y = min.getY(); y <= Math.min(max.getY(), min.getY() + 8); y++) {
+            BlockPos feet = new BlockPos(x, y, z);
+            if (level.getBlockState(feet.below()).isSolidRender(level, feet.below())
+               && level.getBlockState(feet).getCollisionShape(level, feet).isEmpty()
+               && level.getBlockState(feet.above()).getCollisionShape(level, feet.above()).isEmpty()
+               && !level.canSeeSky(feet)) {
+               return feet;
+            }
+         }
       }
 
-      BlockPos spot = FactionMercenaries.standingSpot(level, settlement);
-      barman.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
-      barman.setFactionName(settlement.faction());
-      barman.getPersistentData().putBoolean(BARMAN_TAG, true);
-      barman.setCustomName(Component.translatable("entity.ancientwarfare.barman").withStyle(ChatFormatting.GOLD));
-      barman.setCustomNameVisible(true);
-      barman.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.HONEY_BOTTLE));
-      barman.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
-      barman.setPersistenceRequired();
-      level.addFreshEntity(barman);
-      AncientWarfareCore.LOG.info("A barman took over tavern #{} at {}, {}", settlement.id(), spot.getX(), spot.getZ());
+      int x = max.getX() + 2;
+      int z = (min.getZ() + max.getZ()) / 2;
+      return new BlockPos(x, level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z);
    }
 
    private static boolean hostile(ServerPlayer player, FactionNpcEntity barman) {

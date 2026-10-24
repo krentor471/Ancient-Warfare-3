@@ -532,6 +532,20 @@ public final class FactionWorldData extends SavedData {
          if (settlement.board != null) {
             entry.putLong("Board", settlement.board.asLong());
          }
+
+         if (!settlement.halls.isEmpty()) {
+            ListTag halls = new ListTag();
+            for (Hall hall : settlement.halls) {
+               CompoundTag value = new CompoundTag();
+               value.putString("Kind", hall.kind());
+               value.putLong("Min", hall.min().asLong());
+               value.putLong("Max", hall.max().asLong());
+               halls.add(value);
+            }
+
+            entry.put("Halls", halls);
+         }
+
          list.add(entry);
       }
 
@@ -773,6 +787,10 @@ public final class FactionWorldData extends SavedData {
             settlement.grown = entry.getInt("Grown");
             settlement.floor = entry.contains("Floor") ? entry.getInt("Floor") : NO_FLOOR;
             settlement.board = entry.contains("Board") ? BlockPos.of(entry.getLong("Board")) : null;
+            for (net.minecraft.nbt.Tag raw : entry.getList("Halls", 10)) {
+               CompoundTag value = (CompoundTag)raw;
+               settlement.halls.add(new Hall(value.getString("Kind"), BlockPos.of(value.getLong("Min")), BlockPos.of(value.getLong("Max"))));
+            }
          } else if (!settlement.capturedFrom.isEmpty()) {
             settlement.loyalty = 50;
          }
@@ -1457,6 +1475,8 @@ public final class FactionWorldData extends SavedData {
       int floor = NO_FLOOR;
       /** Where the town's quest board stands, once one was put up; see FactionQuests. */
       BlockPos board;
+      /** The tavern, smithy, stables and guild halls the town has put up as it grew; see FactionGrowth. */
+      final List<Hall> halls = new ArrayList<>();
 
       Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
          this.id = id;
@@ -1542,6 +1562,10 @@ public final class FactionWorldData extends SavedData {
          this.floor = floor;
       }
 
+      public List<Hall> halls() {
+         return this.halls;
+      }
+
       public long province() {
          return this.province;
       }
@@ -1608,5 +1632,9 @@ public final class FactionWorldData extends SavedData {
       public boolean contains(double x, double z, int margin) {
          return x >= this.min.getX() - margin && x <= this.max.getX() + 1 + margin && z >= this.min.getZ() - margin && z <= this.max.getZ() + 1 + margin;
       }
+   }
+
+   /** A hall a town put up as it grew: what it is and the box it stands in. */
+   public record Hall(String kind, BlockPos min, BlockPos max) {
    }
 }
