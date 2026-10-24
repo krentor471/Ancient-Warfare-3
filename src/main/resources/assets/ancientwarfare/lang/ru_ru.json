@@ -2848,5 +2848,11 @@
   "chatter.ancientwarfare.cheap.0": "%s у нас дешевле грязи. У всех в избытке.",
   "chatter.ancientwarfare.cheap.1": "Покупай здесь. %s дешевле нигде не найдёшь.",
   "chatter.ancientwarfare.cheap.2": "%s хоть даром раздавай, склады полны.",
-  "chatter.ancientwarfare.cheap.3": "Опять целая телега пришла. %s, как всегда."
+  "chatter.ancientwarfare.cheap.3": "Опять целая телега пришла. %s, как всегда.",
+  "gui.ancientwarfare.world_map.kind.free_village": "Вольная деревня",
+  "news.ancientwarfare.free_village_found": "Вы нашли вольную деревню у %s, %s. Она не принадлежит ни одной стране, и на неё могут позариться соседи и разбойники.",
+  "news.ancientwarfare.free_village_raid": "%s нападают на вольную деревню у %s, %s!",
+  "news.ancientwarfare.free_village_saved": "Налётчиков отогнали от деревни у %s, %s. Жители платят %s серебра тем, кто за них вступился.",
+  "news.ancientwarfare.free_village_plundered": "%s разграбили вольную деревню у %s, %s и ушли.",
+  "news.ancientwarfare.free_village_annexed": "%s присоединили вольную деревню у %s, %s."
 }

@@ -2848,5 +2848,11 @@
   "chatter.ancientwarfare.cheap.0": "%s is cheap as dirt here. Everybody has too much.",
   "chatter.ancientwarfare.cheap.1": "Buy %s here, you won't find it cheaper anywhere.",
   "chatter.ancientwarfare.cheap.2": "We can't give %s away, the stores are full.",
-  "chatter.ancientwarfare.cheap.3": "Another cart of it came in. %s, as always."
+  "chatter.ancientwarfare.cheap.3": "Another cart of it came in. %s, as always.",
+  "gui.ancientwarfare.world_map.kind.free_village": "Free village",
+  "news.ancientwarfare.free_village_found": "You came upon a free village at %s, %s. It belongs to no country, and neighbouring countries and outlaws may come for it.",
+  "news.ancientwarfare.free_village_raid": "%s are raiding the free village at %s, %s!",
+  "news.ancientwarfare.free_village_saved": "The raiders are driven off from the village at %s, %s. The villagers pay %s silver to those who stood by them.",
+  "news.ancientwarfare.free_village_plundered": "%s plundered the free village at %s, %s and left.",
+  "news.ancientwarfare.free_village_annexed": "%s took in the free village at %s, %s."
 }

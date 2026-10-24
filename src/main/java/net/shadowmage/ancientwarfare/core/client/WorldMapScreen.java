@@ -47,7 +47,8 @@ public class WorldMapScreen extends Screen {
    /** Map kinds shown in the legend of signs, in order. */
    private static final WorldMap.Kind[] LEGEND_KINDS = {
       WorldMap.Kind.CAPITAL, WorldMap.Kind.VILLAGE, WorldMap.Kind.FORT, WorldMap.Kind.FARM, WorldMap.Kind.MINE, WorldMap.Kind.TEMPLE,
-      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY, WorldMap.Kind.FLEET, WorldMap.Kind.SHRINE
+      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY, WorldMap.Kind.FLEET, WorldMap.Kind.SHRINE,
+      WorldMap.Kind.FREE_VILLAGE
    };
    /** Lengths the scale bar may show, in blocks. */
    private static final int[] SCALE_STEPS = {50, 100, 250, 500, 1000, 2000, 5000};
@@ -656,6 +657,12 @@ public class WorldMapScreen extends Screen {
          case PLAYER_VILLAGE -> {
             graphics.fill(x - 4, y - 4, x + 5, y + 5, outline);
             graphics.fill(x - 3, y - 3, x + 4, y + 4, 0xFF40A0FF);
+         }
+         case FREE_VILLAGE -> {
+            // A plain village square in green, belonging to nobody.
+            graphics.fill(x - 3, y - 3, x + 4, y + 4, outline);
+            graphics.fill(x - 2, y - 2, x + 3, y + 3, 0xFF60D060);
+            graphics.fill(x, y, x + 1, y + 1, 0xFFFFFFFF);
          }
          case OUTLAW -> {
             graphics.fill(x - 3, y - 3, x + 4, y + 4, outline);

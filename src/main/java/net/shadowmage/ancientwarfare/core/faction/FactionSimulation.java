@@ -103,6 +103,7 @@ public final class FactionSimulation {
       FactionTownLife.tick(level, data);
       FactionGrowth.tick(level, data);
       FactionRepairs.tick(level, data);
+      FreeVillages.tick(level, data);
       FactionPorts.tick(level, data);
       FactionQuests.tick(level, data);
       FactionChatter.tick(level, data);
@@ -191,6 +192,7 @@ public final class FactionSimulation {
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);
       TownMarkets.simulateDay(level, data);
+      FreeVillages.simulateDay(level, data);
       data.setDirty();
       AncientWarfareCore.LOG.debug("Simulated faction day {}: recruits {}", data.lastSimulatedDay(), recruited);
    }

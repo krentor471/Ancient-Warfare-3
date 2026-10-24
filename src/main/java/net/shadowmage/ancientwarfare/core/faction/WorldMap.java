@@ -217,7 +217,8 @@ public final class WorldMap {
       PLAYER_VILLAGE,
       OUTLAW,
       FLEET,
-      SHRINE
+      SHRINE,
+      FREE_VILLAGE
    }
 
    /** name is a FactionNames code, or empty. */
@@ -343,6 +344,12 @@ public final class WorldMap {
             );
          }
       });
+      for (int[] free : FreeVillages.free(level)) {
+         if (free[0] >= originX && free[0] < maxX && free[1] >= originZ && free[1] < maxZ) {
+            markers.add(new Marker(free[0], free[1], Kind.FREE_VILLAGE, 0, "", "", new int[0]));
+         }
+      }
+
       List<int[]> roads = new ArrayList<>();
 
       for (FactionWorldData.Route route : data.routes()) {

@@ -683,6 +683,7 @@ public final class FactionArmies {
    public static void onTownHallPlaced(ServerLevel level, BlockPos pos, UUID owner) {
       FactionWorldData data = FactionWorldData.get(level);
       data.setVillage(pos, owner);
+      FreeVillages.onTownHallPlaced(level, pos);
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          if (!settlement.contains(pos.getX(), pos.getZ(), 0)) {

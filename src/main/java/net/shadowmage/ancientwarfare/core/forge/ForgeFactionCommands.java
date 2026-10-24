@@ -646,6 +646,24 @@ public final class ForgeFactionCommands {
                      )
                )
                .then(
+                  Commands.literal("freevillage")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        Commands.literal("annex")
+                           .then(
+                              factionArgument("faction")
+                                 .executes(context -> freeVillage(context.getSource(), faction(context, "faction"), false))
+                           )
+                     )
+                     .then(
+                        Commands.literal("raid")
+                           .then(
+                              factionArgument("faction")
+                                 .executes(context -> freeVillage(context.getSource(), faction(context, "faction"), true))
+                           )
+                     )
+               )
+               .then(
                   Commands.literal("opinion")
                      .requires(source -> source.hasPermission(2))
                      .then(
@@ -1086,6 +1104,21 @@ public final class ForgeFactionCommands {
 
       source.sendFailure(Component.literal("No settlement #" + settlementId));
       return 0;
+   }
+
+   /** The nearest free village to the caller is taken in by a faction, or raided by it. */
+   private static int freeVillage(CommandSourceStack source, String faction, boolean raid) {
+      net.minecraft.world.phys.Vec3 pos = source.getPosition();
+      boolean done = raid
+         ? net.shadowmage.ancientwarfare.core.faction.FreeVillages.raidNearest(source.getLevel(), faction, pos.x, pos.z)
+         : net.shadowmage.ancientwarfare.core.faction.FreeVillages.annexNearest(source.getLevel(), faction, pos.x, pos.z);
+      if (!done) {
+         source.sendFailure(Component.literal("No free village known near here"));
+         return 0;
+      }
+
+      tell(source, Component.literal(raid ? faction + " will raid the nearest free village" : faction + " took in the nearest free village"));
+      return 1;
    }
 
    private static int assault(CommandSourceStack source, String faction, int settlementId, int size) {
