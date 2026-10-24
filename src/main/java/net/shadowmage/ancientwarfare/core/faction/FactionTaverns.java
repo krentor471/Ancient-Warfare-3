@@ -51,7 +51,9 @@ public final class FactionTaverns {
       MEAL(2),
       RUMOUR(1),
       ROOM(4),
-      ROUND(6);
+      ROUND(6),
+      DICE(3),
+      ARM(2);
 
       final int price;
 
@@ -248,6 +250,8 @@ public final class FactionTaverns {
             FactionCrime.rentRoom(player, barman.blockPosition());
             FactionRumours.say(player, speaker, Component.translatable("tavern.ancientwarfare.served.room"));
          }
+         case DICE -> dice(player, barman, speaker);
+         case ARM -> armWrestle(player, barman, speaker);
          case ROUND -> {
             barman.getPersistentData().putLong(ROUND_DAY_TAG, day + 1);
             int standing = FactionStandingData.get(level).adjustStanding(player.getUUID(), barman.getFactionName(), ROUND_STANDING);
@@ -257,5 +261,56 @@ public final class FactionTaverns {
             );
          }
       }
+   }
+
+   /** Two dice each against a regular at the bar: the higher pair takes both stakes, a tie gives the stake back. */
+   private static void dice(ServerPlayer player, FactionNpcEntity barman, Component speaker) {
+      net.minecraft.util.RandomSource random = barman.getRandom();
+      int mine = 2 + random.nextInt(6) + random.nextInt(6);
+      int theirs = 2 + random.nextInt(6) + random.nextInt(6);
+      player.serverLevel().playSound(null, barman.blockPosition(), SoundEvents.WOOD_HIT, SoundSource.NEUTRAL, 0.8F, 1.6F);
+      String result;
+      if (mine > theirs) {
+         Coins.give(player, Offer.DICE.price * 2);
+         result = "won";
+      } else if (mine == theirs) {
+         Coins.give(player, Offer.DICE.price);
+         result = "tie";
+      } else {
+         result = "lost";
+      }
+
+      FactionRumours.say(player, speaker, Component.translatable("tavern.ancientwarfare.dice." + result, mine, theirs, Offer.DICE.price * 2));
+   }
+
+   /**
+    * Arm wrestling with the strongest arm in the house: a fair match for a player with nothing on him, better with
+    * strength in him and worse when he is hurt or hungry.
+    */
+   private static void armWrestle(ServerPlayer player, FactionNpcEntity barman, Component speaker) {
+      double chance = 0.45;
+      if (player.hasEffect(MobEffects.DAMAGE_BOOST)) {
+         chance += 0.25 * (player.getEffect(MobEffects.DAMAGE_BOOST).getAmplifier() + 1);
+      }
+
+      if (player.hasEffect(MobEffects.WEAKNESS)) {
+         chance -= 0.3;
+      }
+
+      chance -= 0.2 * (1.0 - player.getHealth() / player.getMaxHealth());
+      if (player.getFoodData().getFoodLevel() < 8) {
+         chance -= 0.1;
+      }
+
+      boolean won = barman.getRandom().nextDouble() < Math.max(0.05, Math.min(0.9, chance));
+      player.causeFoodExhaustion(4.0F);
+      if (won) {
+         Coins.give(player, Offer.ARM.price * 2);
+         player.serverLevel().playSound(null, barman.blockPosition(), SoundEvents.PLAYER_ATTACK_STRONG, SoundSource.NEUTRAL, 0.8F, 1.0F);
+      }
+
+      FactionRumours.say(
+         player, speaker, Component.translatable("tavern.ancientwarfare.arm." + (won ? "won" : "lost") + "." + barman.getRandom().nextInt(2), Offer.ARM.price * 2)
+      );
    }
 }

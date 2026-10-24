@@ -36,6 +36,8 @@ import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 
 public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFactionAccess {
    private static final EntityDataAccessor<String> FACTION_NAME = SynchedEntityData.defineId(FactionNpcEntity.class, EntityDataSerializers.STRING);
+   /** A child of the town: half the size, and drawn as one. */
+   private static final EntityDataAccessor<Boolean> CHILD = SynchedEntityData.defineId(FactionNpcEntity.class, EntityDataSerializers.BOOLEAN);
    private static final String TAG_FACTION_NAME = "FactionName";
    private static final double COMBAT_VERTICAL_TARGET_RANGE = 96.0;
    private static final int TARGET_SCAN_INTERVAL = 10;
@@ -56,12 +58,26 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    protected void defineSynchedData() {
       super.defineSynchedData();
       this.entityData.define(FACTION_NAME, "brigand");
+      this.entityData.define(CHILD, false);
+   }
+
+   @Override
+   public boolean isBaby() {
+      return this.entityData.get(CHILD);
+   }
+
+   public void setChild(boolean child) {
+      this.entityData.set(CHILD, child);
+      this.refreshDimensions();
    }
 
    @Override
    public void addAdditionalSaveData(CompoundTag tag) {
       super.addAdditionalSaveData(tag);
       tag.putString("FactionName", this.getFactionName());
+      if (this.isBaby()) {
+         tag.putBoolean("AWChild", true);
+      }
    }
 
    @Override
@@ -69,6 +85,10 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       super.readAdditionalSaveData(tag);
       if (tag.contains("FactionName")) {
          this.setFactionName(tag.getString("FactionName"));
+      }
+
+      if (tag.getBoolean("AWChild")) {
+         this.setChild(true);
       }
 
       this.applyFactionDefaults();
@@ -85,6 +105,8 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       super.onSyncedDataUpdated(key);
       if (FACTION_NAME.equals(key)) {
          this.factionName = (String)this.entityData.get(FACTION_NAME);
+      } else if (CHILD.equals(key)) {
+         this.refreshDimensions();
       }
    }
 
@@ -161,10 +183,10 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
       if (hand == InteractionHand.MAIN_HAND
          && !PlayerDiplomacy.isLeader(this)
          && FactionNpcRole.byId(this.getNpcSubtype()).map(FactionNpcRole::isCivilian).orElse(false)
-         && player.getItemInHand(hand).isEmpty()) {
-         // Townsfolk stop for a word and pass on the news.
+         && (player.getItemInHand(hand).isEmpty() || net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.takesItem(this, player.getItemInHand(hand)))) {
+         // Townsfolk stop for a word: the news, their small troubles, a gift taken, a favour done.
          if (player instanceof ServerPlayer serverPlayer) {
-            net.shadowmage.ancientwarfare.core.faction.FactionRumours.chat(serverPlayer, this);
+            net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.interact(serverPlayer, this, player.getItemInHand(hand));
          }
 
          return InteractionResult.sidedSuccess(this.level().isClientSide);

@@ -442,6 +442,15 @@ public final class FactionSimulation {
          npc.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
          npc.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
          npc.setFactionName(settlement.faction());
+         if (random.nextInt(4) == 0) {
+            npc.setChild(true);
+         } else if (random.nextInt(6) == 0
+            && level.getEntitiesOfClass(FactionNpcEntity.class, area, TownsfolkFavours::isBeggar).isEmpty()) {
+            // One beggar to a town, sitting about the gates and the market.
+            npc.addTag(TownsfolkFavours.BEGGAR_TAG);
+            npc.setCustomName(net.minecraft.network.chat.Component.translatable("townsfolk.ancientwarfare.beggar"));
+         }
+
          level.addFreshEntity(npc);
          return;
       }

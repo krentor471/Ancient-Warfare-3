@@ -332,6 +332,20 @@ public final class ForgeFactionCommands {
                      )
                )
          );
+      // Run by clicking a townsperson's offer to work for the player.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awtownsfolk")
+               .then(
+                  Commands.argument("npc", IntegerArgumentType.integer())
+                     .then(Commands.literal("hire").executes(context -> {
+                        net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.hire(
+                           context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "npc")
+                        );
+                        return 1;
+                     }))
+               )
+         );
       // Run by clicking a mercenary captain's offer in chat.
       event.getDispatcher()
          .register(

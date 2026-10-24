@@ -75,11 +75,23 @@ public class FactionTraderNpcEntity extends FactionNpcEntity {
                this.getFactionName(),
                this.getAvailableTrades(),
                net.shadowmage.ancientwarfare.core.faction.FactionTownLife.priceFactor(server, this.getFactionName(), this.getX(), this.getZ())
+                  * net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.heroPrices(player, this.getFactionName())
             )
          );
          // The trader says what is dear and what is cheap in his town today.
          FactionWorldData.Settlement town = TownMarkets.townAt(server, this.getX(), this.getZ());
          Component prices = town == null ? null : TownMarkets.prices(server, town);
+         if (net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.isHero(player, this.getFactionName())) {
+            player.sendSystemMessage(
+               Component.translatable(
+                     "chatter.ancientwarfare.say",
+                     this.getDisplayName().copy().withStyle(net.minecraft.ChatFormatting.GOLD),
+                     Component.translatable("townsfolk.ancientwarfare.hero.trader", player.getName())
+                  )
+                  .withStyle(net.minecraft.ChatFormatting.GRAY)
+            );
+         }
+
          if (prices != null) {
             player.sendSystemMessage(
                Component.translatable("chatter.ancientwarfare.say", this.getDisplayName().copy().withStyle(net.minecraft.ChatFormatting.GOLD), prices)
