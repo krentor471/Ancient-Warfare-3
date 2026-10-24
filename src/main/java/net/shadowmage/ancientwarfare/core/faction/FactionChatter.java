@@ -51,6 +51,8 @@ public final class FactionChatter {
       Map.entry("priest", 4),
       Map.entry("bard", 4),
       Map.entry("idle", 100),
+      Map.entry("dear", 6),
+      Map.entry("cheap", 4),
       Map.entry("theft", 4),
       Map.entry("bed", 3),
       Map.entry("morning", 4),
@@ -281,6 +283,28 @@ public final class FactionChatter {
 
          if (town.grown() > 0) {
             topics.add(new Topic("grown", null, 1));
+         }
+
+         // Talk of the market: the dearest good in town, or the cheapest.
+         TownMarkets markets = TownMarkets.get(level);
+         int dearest = 0;
+         int cheapest = 0;
+         for (int kind = 1; kind < FactionResources.KINDS; kind++) {
+            if (markets.price(town.id(), kind) > markets.price(town.id(), dearest)) {
+               dearest = kind;
+            }
+
+            if (markets.price(town.id(), kind) < markets.price(town.id(), cheapest)) {
+               cheapest = kind;
+            }
+         }
+
+         if (markets.price(town.id(), dearest) >= TownMarkets.DEAR) {
+            topics.add(new Topic("dear", TownMarkets.goodName(dearest), 3));
+         }
+
+         if (markets.price(town.id(), cheapest) <= TownMarkets.CHEAP) {
+            topics.add(new Topic("cheap", TownMarkets.goodName(cheapest), 2));
          }
 
          List<FactionQuests.Quest> quests = data.allQuests().get(player.getUUID());

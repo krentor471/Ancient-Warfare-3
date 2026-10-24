@@ -228,8 +228,17 @@ public final class WorldMap {
    }
 
    /** Indices into Marker.life, and the flags in its last entry; see life(). */
-   public static final int LIFE_PEOPLE = 0, LIFE_GARRISON = 1, LIFE_FOOD_DAYS = 2, LIFE_HEALTH = 3, LIFE_ORDER = 4, LIFE_LOYALTY = 5, LIFE_FLAGS = 6, LIFE_RANK = 7;
+   public static final int LIFE_PEOPLE = 0, LIFE_GARRISON = 1, LIFE_FOOD_DAYS = 2, LIFE_HEALTH = 3, LIFE_ORDER = 4, LIFE_LOYALTY = 5, LIFE_FLAGS = 6, LIFE_RANK = 7, LIFE_PRICES = 8;
    public static final int FLAG_FAMINE = 1, FLAG_PLAGUE = 2, FLAG_HUNGRY = 4, FLAG_TAKEN = 8, FLAG_PORT = 16;
+
+   /** As life(), followed by the town's prices of the goods (see TownMarkets.priceList) where it has a market. */
+   private static int[] life(ServerLevel level, FactionWorldData.Settlement settlement) {
+      int[] life = life(settlement);
+      int[] prices = TownMarkets.priceList(level, settlement.id());
+      int[] all = java.util.Arrays.copyOf(life, life.length + prices.length);
+      System.arraycopy(prices, 0, all, life.length, prices.length);
+      return all;
+   }
 
    private static int[] life(FactionWorldData.Settlement settlement) {
       int mouths = Math.max(1, settlement.population() + settlement.garrison());
@@ -307,7 +316,7 @@ public final class WorldMap {
                   "#" + settlement.id() + " " + (settlement.built() ? templateName(settlement.template()) : settlement.kind() + " (not built yet)") + ", people " + settlement.population() + ", garrison " + settlement.garrison()
                      + (FactionDiplomacy.isOutlaw(settlement.faction()) ? ", lair level " + FactionBandits.level(settlement) : ""),
                   settlement.name(),
-                  life(settlement)
+                  life(player.serverLevel(), settlement)
                )
             );
          }

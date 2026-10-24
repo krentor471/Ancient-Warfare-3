@@ -466,6 +466,40 @@ public class WorldMapScreen extends Screen {
       if ((flags & WorldMap.FLAG_TAKEN) != 0 && life[WorldMap.LIFE_LOYALTY] < 40) {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.unrest").withStyle(net.minecraft.ChatFormatting.YELLOW));
       }
+
+      addPrices(lines, life);
+   }
+
+   /** What is dear and what is cheap at the town's market. */
+   private static void addPrices(List<Component> lines, int[] life) {
+      int kinds = net.shadowmage.ancientwarfare.core.faction.FactionResources.KINDS;
+      if (life.length < WorldMap.LIFE_PRICES + kinds) {
+         return;
+      }
+
+      net.minecraft.network.chat.MutableComponent dear = Component.empty();
+      net.minecraft.network.chat.MutableComponent cheap = Component.empty();
+      boolean anyDear = false;
+      boolean anyCheap = false;
+      for (int kind = 0; kind < kinds; kind++) {
+         double price = life[WorldMap.LIFE_PRICES + kind] / 100.0;
+         Component name = net.shadowmage.ancientwarfare.core.faction.TownMarkets.goodName(kind);
+         if (price >= net.shadowmage.ancientwarfare.core.faction.TownMarkets.DEAR) {
+            dear.append(anyDear ? ", " : "").append(name);
+            anyDear = true;
+         } else if (price <= net.shadowmage.ancientwarfare.core.faction.TownMarkets.CHEAP) {
+            cheap.append(anyCheap ? ", " : "").append(name);
+            anyCheap = true;
+         }
+      }
+
+      if (anyDear) {
+         lines.add(Component.translatable("market.ancientwarfare.dear", dear).withStyle(net.minecraft.ChatFormatting.RED));
+      }
+
+      if (anyCheap) {
+         lines.add(Component.translatable("market.ancientwarfare.cheap", cheap).withStyle(net.minecraft.ChatFormatting.GREEN));
+      }
    }
 
    private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY, WorldMap.Marker hovered) {

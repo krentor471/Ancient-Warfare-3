@@ -278,8 +278,26 @@ public final class FactionQuests {
             return new Quest(id, town.id(), day, index, type, goods.item, goods.count, reward, hungry ? 6 : 3, 0);
          }
          case MATERIALS -> {
-            Goods goods = MATERIALS[random.nextInt(MATERIALS.length)];
-            return new Quest(id, town.id(), day, index, type, goods.item, goods.count, 8 + random.nextInt(7), 3, 0);
+            // A town asks most for what is dear in its market, and pays more for it.
+            TownMarkets markets = TownMarkets.get(level);
+            double[] weights = new double[MATERIALS.length];
+            double total = 0.0;
+            for (int i = 0; i < MATERIALS.length; i++) {
+               double price = markets.price(town.id(), MATERIALS[i].worth);
+               weights[i] = price * price;
+               total += weights[i];
+            }
+
+            double roll = random.nextDouble() * total;
+            int pick = 0;
+            while (pick < MATERIALS.length - 1 && roll >= weights[pick]) {
+               roll -= weights[pick];
+               pick++;
+            }
+
+            Goods goods = MATERIALS[pick];
+            double price = markets.price(town.id(), goods.worth);
+            return new Quest(id, town.id(), day, index, type, goods.item, goods.count, (int)Math.round((8 + random.nextInt(7)) * price), 3, 0);
          }
          case BOUNTY -> {
             String enemy = enemy(level, data, town, random);
@@ -575,6 +593,7 @@ public final class FactionQuests {
             for (int i = 0; i < MATERIALS.length; i++) {
                if (MATERIALS[i].item.equals(quest.target)) {
                   data.stores(town.faction())[MATERIALS[i].worth] += MATERIAL_STORE[i];
+                  TownMarkets.get(level).change(town.id(), MATERIALS[i].worth, quest.count);
                }
             }
          } else if (quest.type == Type.ARMS) {

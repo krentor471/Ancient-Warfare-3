@@ -1145,7 +1145,7 @@ public final class AWCoreNetwork {
          for (int i = 0; i < markerCount; i++) {
             markers.add(
                new WorldMap.Marker(
-                  buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64), buffer.readVarIntArray(8)
+                  buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64), buffer.readVarIntArray(32)
                )
             );
          }

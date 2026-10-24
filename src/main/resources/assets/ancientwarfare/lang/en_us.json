@@ -2836,5 +2836,17 @@
   "chatter.ancientwarfare.idle.96": "I'll rest when I'm old. Oh wait.",
   "chatter.ancientwarfare.idle.97": "The flowers by the shrine came up early this year.",
   "chatter.ancientwarfare.idle.98": "Mud everywhere. Mud in my soup, I swear.",
-  "chatter.ancientwarfare.idle.99": "A good day. Nobody quarrelled, nobody died."
+  "chatter.ancientwarfare.idle.99": "A good day. Nobody quarrelled, nobody died.",
+  "market.ancientwarfare.dear": "Dear here: %s.",
+  "market.ancientwarfare.cheap": "Cheap here: %s.",
+  "chatter.ancientwarfare.dear.0": "%s costs a fortune here now. Nobody brings any.",
+  "chatter.ancientwarfare.dear.1": "%s? Don't even ask the price.",
+  "chatter.ancientwarfare.dear.2": "If you have %s to sell, the traders will pay well.",
+  "chatter.ancientwarfare.dear.3": "We're short of it again. %s, I mean.",
+  "chatter.ancientwarfare.dear.4": "The caravans haven't brought %s in days.",
+  "chatter.ancientwarfare.dear.5": "%s is worth its weight in silver this week.",
+  "chatter.ancientwarfare.cheap.0": "%s is cheap as dirt here. Everybody has too much.",
+  "chatter.ancientwarfare.cheap.1": "Buy %s here, you won't find it cheaper anywhere.",
+  "chatter.ancientwarfare.cheap.2": "We can't give %s away, the stores are full.",
+  "chatter.ancientwarfare.cheap.3": "Another cart of it came in. %s, as always."
 }

@@ -2836,5 +2836,17 @@
   "chatter.ancientwarfare.idle.96": "Отдохну, когда состарюсь. А, ну да.",
   "chatter.ancientwarfare.idle.97": "Цветы у святилища в этом году взошли рано.",
   "chatter.ancientwarfare.idle.98": "Грязь повсюду. Клянусь, даже в супе грязь.",
-  "chatter.ancientwarfare.idle.99": "Хороший день. Никто не поругался, никто не умер."
+  "chatter.ancientwarfare.idle.99": "Хороший день. Никто не поругался, никто не умер.",
+  "market.ancientwarfare.dear": "Здесь дорого: %s.",
+  "market.ancientwarfare.cheap": "Здесь дёшево: %s.",
+  "chatter.ancientwarfare.dear.0": "Товар «%s» нынче на вес золота. Никто не везёт.",
+  "chatter.ancientwarfare.dear.1": "%s? Даже не спрашивай, сколько стоит.",
+  "chatter.ancientwarfare.dear.2": "Есть что продать? %s сейчас торговцы с руками оторвут.",
+  "chatter.ancientwarfare.dear.3": "Опять нехватка. Я про это: %s.",
+  "chatter.ancientwarfare.dear.4": "Караваны который день не везут. %s кончается.",
+  "chatter.ancientwarfare.dear.5": "%s на этой неделе дороже серебра.",
+  "chatter.ancientwarfare.cheap.0": "%s у нас дешевле грязи. У всех в избытке.",
+  "chatter.ancientwarfare.cheap.1": "Покупай здесь. %s дешевле нигде не найдёшь.",
+  "chatter.ancientwarfare.cheap.2": "%s хоть даром раздавай, склады полны.",
+  "chatter.ancientwarfare.cheap.3": "Опять целая телега пришла. %s, как всегда."
 }
