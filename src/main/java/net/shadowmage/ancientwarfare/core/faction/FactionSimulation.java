@@ -34,6 +34,10 @@ public final class FactionSimulation {
    private static final double ACTIVE_RANGE = 128.0;
    private static final double HIDDEN_RANGE = 24.0;
    private static final int GARRISON_MARGIN = 24;
+   /** Townsfolk out in a town's streets: one for so many of its people, within these bounds. */
+   private static final int PEOPLE_PER_TOWNSFOLK = 4;
+   private static final int MIN_TOWNSFOLK = 4;
+   private static final int MAX_TOWNSFOLK = 20;
    private static final int LOSS_MARGIN = 32;
    private static final int RECRUIT_COST = 5;
    private static final int MAX_RECRUITS_PER_DAY = 2;
@@ -98,6 +102,8 @@ public final class FactionSimulation {
       FactionRumours.tick(level, data);
       FactionTownLife.tick(level, data);
       FactionGrowth.tick(level, data);
+      FactionRepairs.tick(level, data);
+      FreeVillages.tick(level, data);
       FactionPorts.tick(level, data);
       FactionQuests.tick(level, data);
       FactionChatter.tick(level, data);
@@ -185,6 +191,8 @@ public final class FactionSimulation {
       FactionQuests.simulateDay(level, data);
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);
+      TownMarkets.simulateDay(level, data);
+      FreeVillages.simulateDay(level, data);
       data.setDirty();
       AncientWarfareCore.LOG.debug("Simulated faction day {}: recruits {}", data.lastSimulatedDay(), recruited);
    }
@@ -319,6 +327,8 @@ public final class FactionSimulation {
                keepLeader(level, settlement);
             }
 
+            // The town's own people are about whether or not its soldiers have taken up their posts yet.
+            keepTownsfolk(level, data, settlement);
             if (!settlement.manned) {
                if (spawnersRemain(level, settlement)) {
                   continue;
@@ -386,6 +396,66 @@ public final class FactionSimulation {
       }
    }
 
+   /**
+    * A town's streets are not empty: while a player is near, as many of its people as its size
+    * calls for are out and about, one more coming out of a door at a time while nobody watches the
+    * spot. They keep the day of townsfolk (see CivilianRoutineGoal) and sleep in its beds at night.
+    */
+   private static void keepTownsfolk(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement) {
+      if (!FactionTownLife.isTown(settlement) || FactionTownLife.underAttack(data, settlement)) {
+         return;
+      }
+
+      int wanted = Math.max(MIN_TOWNSFOLK, Math.min(MAX_TOWNSFOLK, settlement.population / PEOPLE_PER_TOWNSFOLK));
+      AABB area = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(8.0, 16.0, 8.0);
+      int out = level.getEntitiesOfClass(FactionNpcEntity.class, area, npc -> npc.isAlive() && npc.getFactionName().equals(settlement.faction()) && isCivilian(npc)).size();
+      if (out >= wanted) {
+         return;
+      }
+
+      RandomSource random = level.getRandom();
+      for (int attempt = 0; attempt < 12; attempt++) {
+         int x = settlement.min().getX() + random.nextInt(settlement.max().getX() - settlement.min().getX() + 1);
+         int z = settlement.min().getZ() + random.nextInt(settlement.max().getZ() - settlement.min().getZ() + 1);
+         if (!level.hasChunkAt(new BlockPos(x, 0, z))) {
+            continue;
+         }
+
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         BlockPos pos = new BlockPos(x, y, z);
+         if (level.getNearestPlayer(x + 0.5, y, z + 0.5, HIDDEN_RANGE, false) != null
+            || !level.getBlockState(pos.below()).getFluidState().isEmpty()
+            || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
+            || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()
+            || !onTheGround(level, pos)) {
+            continue;
+         }
+
+         EntityType<? extends FactionNpcEntity> type = random.nextBoolean()
+            ? AWCoreEntityTypes.FACTION_CIVILIAN_MALE_NPC.get()
+            : AWCoreEntityTypes.FACTION_CIVILIAN_FEMALE_NPC.get();
+         FactionNpcEntity npc = type.create(level);
+         if (npc == null) {
+            return;
+         }
+
+         npc.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
+         npc.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+         npc.setFactionName(settlement.faction());
+         if (random.nextInt(4) == 0) {
+            npc.setChild(true);
+         } else if (random.nextInt(6) == 0
+            && level.getEntitiesOfClass(FactionNpcEntity.class, area, TownsfolkFavours::isBeggar).isEmpty()) {
+            // One beggar to a town, sitting about the gates and the market.
+            npc.addTag(TownsfolkFavours.BEGGAR_TAG);
+            npc.setCustomName(net.minecraft.network.chat.Component.translatable("townsfolk.ancientwarfare.beggar"));
+         }
+
+         level.addFreshEntity(npc);
+         return;
+      }
+   }
+
    private static boolean spawnersRemain(ServerLevel level, FactionWorldData.Settlement settlement) {
       for (int cx = settlement.min().getX() >> 4; cx <= settlement.max().getX() >> 4; cx++) {
          for (int cz = settlement.min().getZ() >> 4; cz <= settlement.max().getZ() >> 4; cz++) {
@@ -421,7 +491,7 @@ public final class FactionSimulation {
          int x = settlement.min().getX() + random.nextInt(settlement.max().getX() - settlement.min().getX() + 1);
          int z = settlement.min().getZ() + random.nextInt(settlement.max().getZ() - settlement.min().getZ() + 1);
          if (level.getNearestPlayer(x + 0.5, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z + 0.5, HIDDEN_RANGE, false) == null
-            && spawnSoldier(level, settlement.faction(), x, z) != null) {
+            && spawnDefender(level, settlement.faction(), x, z) != null) {
             return;
          }
       }
@@ -439,12 +509,23 @@ public final class FactionSimulation {
 
    /** As spawnSoldier, an archer with the given chance. */
    static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z, String tag, double archers) {
+      return spawnSoldier(level, faction, x, z, tag, archers, false);
+   }
+
+   /** A town's own defender: one may come out on its walls (never on a roof), and climbs down to fight. */
+   static FactionNpcEntity spawnDefender(ServerLevel level, String faction, int x, int z) {
+      return spawnSoldier(level, faction, x, z, null, 1.0 / 3.0, true);
+   }
+
+   private static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z, String tag, double archers, boolean walls) {
       RandomSource random = level.getRandom();
       int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
       BlockPos pos = new BlockPos(x, y, z);
       if (!level.getBlockState(pos.below()).getFluidState().isEmpty()
          || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
-         || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()) {
+         || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()
+         || onRoof(level, pos)
+         || !walls && onWall(level, pos)) {
          return null;
       }
 
@@ -462,6 +543,51 @@ public final class FactionSimulation {
       }
 
       return level.addFreshEntity(npc) ? npc : null;
+   }
+
+   /**
+    * Whether a spot is on the ground rather than up on a roof or a wall walk, where a soldier put
+    * down would stand stuck out of the fight: a roof has rooms under it, and a wall walk stands
+    * well above the land on either side of it.
+    */
+   static boolean onTheGround(ServerLevel level, BlockPos feet) {
+      return !onRoof(level, feet) && !onWall(level, feet);
+   }
+
+   /** A roof is built, not grown, and has rooms under it; land over a cave or the world's floor is not one. */
+   static boolean onRoof(ServerLevel level, BlockPos feet) {
+      net.minecraft.world.level.block.state.BlockState under = level.getBlockState(feet.below());
+      if (under.is(net.minecraft.tags.BlockTags.DIRT)
+         || under.is(net.minecraft.tags.BlockTags.SAND)
+         || under.is(net.minecraft.tags.BlockTags.BASE_STONE_OVERWORLD)
+         || under.is(net.minecraft.world.level.block.Blocks.GRAVEL)
+         || under.is(net.minecraft.world.level.block.Blocks.DIRT_PATH)
+         || under.is(net.minecraft.world.level.block.Blocks.SNOW_BLOCK)) {
+         return false;
+      }
+
+      for (int dy = 2; dy <= 5 && feet.getY() - dy >= level.getMinBuildHeight(); dy++) {
+         if (level.getBlockState(feet.below(dy)).isAir()) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   /** A wall walk stands well above the land on either side of it. */
+   static boolean onWall(ServerLevel level, BlockPos feet) {
+      int below = 0;
+      for (int i = 0; i < 8; i++) {
+         double angle = i * Math.PI / 4.0;
+         int x = feet.getX() + (int)Math.round(Math.cos(angle) * 4.0);
+         int z = feet.getZ() + (int)Math.round(Math.sin(angle) * 4.0);
+         if (level.hasChunkAt(new BlockPos(x, feet.getY(), z)) && level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) <= feet.getY() - 3) {
+            below++;
+         }
+      }
+
+      return below >= 4;
    }
 
    static boolean isCivilian(FactionNpcEntity npc) {

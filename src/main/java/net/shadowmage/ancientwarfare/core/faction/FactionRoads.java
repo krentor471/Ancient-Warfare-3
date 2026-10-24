@@ -66,8 +66,8 @@ public final class FactionRoads {
    private static final double TURN_ANGLE = Math.PI / 8.0;
    /** Road points are recorded every two steps. */
    private static final int POINT_SPACING = STEP * 2;
-   /** Road length between posts; half the posts are taverns, so a tavern every twice this. */
-   private static final int POST_SPACING = 360;
+   /** Road length between posts; they come in turn, so each kind stands every three times this. */
+   private static final int POST_SPACING = 900;
    /** Posts keep this far from either end of the road. */
    private static final int POST_END_GAP = 80;
    private static final int POST_OFFSET = 22;
@@ -305,23 +305,18 @@ public final class FactionRoads {
       }
 
       String faction = a.horizontalDistanceSquared(x, z) <= b.horizontalDistanceSquared(x, z) ? a.faction() : b.faction();
-      // In turn: a tavern, a guard post, a tavern, a trading post.
-      AwsWorldGenerator.Site wanted = switch (route.postsBuilt % 4) {
-         case 1, 3 -> AwsWorldGenerator.Site.TAVERN;
+      // In turn: a trading post, a guard post, a tavern.
+      AwsWorldGenerator.Site wanted = switch (route.postsBuilt % 3) {
+         case 1 -> AwsWorldGenerator.Site.TRADE_POST;
          case 2 -> AwsWorldGenerator.Site.GUARD_POST;
-         default -> AwsWorldGenerator.Site.TRADE_POST;
+         default -> AwsWorldGenerator.Site.TAVERN;
       };
       AwsWorldGenerator.Site site = wanted;
       boolean built = false;
 
-      // Either side of the road, near and a little further off, before settling for a guard post or nothing.
-      for (int attempt = 0; attempt < POST_ATTEMPTS * 2 && !built; attempt++) {
-         site = attempt < POST_ATTEMPTS ? wanted : AwsWorldGenerator.Site.GUARD_POST;
-         if (attempt >= POST_ATTEMPTS && wanted == AwsWorldGenerator.Site.GUARD_POST) {
-            break;
-         }
-
-         int tried = attempt % POST_ATTEMPTS;
+      // Either side of the road, near and a little further off; where none fits, the road goes without.
+      for (int attempt = 0; attempt < POST_ATTEMPTS && !built; attempt++) {
+         int tried = attempt;
          int along = side * (tried % 2 == 0 ? 1 : -1);
          int offset = POST_OFFSET + tried / 2 * POST_OFFSET_STEP;
          int siteX = x + (int)Math.round(-dz / length * offset * along);

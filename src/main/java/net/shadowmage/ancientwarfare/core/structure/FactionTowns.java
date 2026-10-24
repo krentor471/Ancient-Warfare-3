@@ -13,6 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
@@ -257,9 +258,9 @@ public final class FactionTowns {
     * building already stands) and fields of crops, each a ring of farmland around a water block,
     * wherever buildings and roads left room. Factions with farm buildings get half the fields.
     */
-   static void plantFields(ServerLevel level, AwtTownPlacer.TownPlan plan, int floorY, String faction, boolean capital) {
+   static void plantFields(ServerLevel level, AwtTownPlacer.TownPlan plan, String faction, boolean capital) {
       RandomSource random = RandomSource.create(plan.min().asLong());
-      List<BlockPos> spots = outerSpots(plan, floorY, random);
+      List<BlockPos> spots = outerSpots(level, plan, random);
       boolean hasMine = plan.buildings().stream().anyMatch(placement -> placement.templatePath().toLowerCase(Locale.ROOT).contains("mine"));
       int shafts = hasMine ? 0 : capital ? CAPITAL_MINES : VILLAGE_MINES;
       int dug = 0;
@@ -315,7 +316,7 @@ public final class FactionTowns {
    }
 
    /** Corners on a grid over the town's outer ring, shuffled. */
-   private static List<BlockPos> outerSpots(AwtTownPlacer.TownPlan plan, int floorY, RandomSource random) {
+   private static List<BlockPos> outerSpots(ServerLevel level, AwtTownPlacer.TownPlan plan, RandomSource random) {
       int inner = 7 + 16;
       int innerMinX = plan.min().getX() + inner;
       int innerMinZ = plan.min().getZ() + inner;
@@ -329,7 +330,8 @@ public final class FactionTowns {
             int z = plan.min().getZ() + dz;
             boolean inside = x + FIELD_SIZE > innerMinX && x < innerMaxX && z + FIELD_SIZE > innerMinZ && z < innerMaxZ;
             if (!inside) {
-               spots.add(new BlockPos(x, floorY, z));
+               // The ground at the corner: a town that follows the land has no one floor.
+               spots.add(new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1, z));
             }
          }
       }

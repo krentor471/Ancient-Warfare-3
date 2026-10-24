@@ -55,6 +55,10 @@ public final class FactionWorldData extends SavedData {
    /** The b end of a route to a player's village, and that village's id as an endpoint. */
    public static final int PLAYER_VILLAGE = -1;
    public static final String PLAYER_VILLAGE_KIND = "playervillage";
+   /** A settlement whose ground level was never recorded. */
+   public static final int NO_FLOOR = Integer.MIN_VALUE;
+   /** A settlement built along the land rather than on one level; its new buildings follow the land too. */
+   public static final int FOLLOWS_GROUND = Integer.MIN_VALUE + 1;
    private static final int VILLAGE_HALF_SIZE = 24;
    /** What a player's village counts as in trade income; its villagers are not counted. */
    private static final int PLAYER_VILLAGE_POPULATION = 20;
@@ -521,10 +525,27 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Famine", settlement.famine);
          entry.putInt("Growth", settlement.growth);
          entry.putInt("Grown", settlement.grown);
+         if (settlement.floor != NO_FLOOR) {
+            entry.putInt("Floor", settlement.floor);
+         }
          entry.putInt("Plague", settlement.plague);
          if (settlement.board != null) {
             entry.putLong("Board", settlement.board.asLong());
          }
+
+         if (!settlement.halls.isEmpty()) {
+            ListTag halls = new ListTag();
+            for (Hall hall : settlement.halls) {
+               CompoundTag value = new CompoundTag();
+               value.putString("Kind", hall.kind());
+               value.putLong("Min", hall.min().asLong());
+               value.putLong("Max", hall.max().asLong());
+               halls.add(value);
+            }
+
+            entry.put("Halls", halls);
+         }
+
          list.add(entry);
       }
 
@@ -764,7 +785,12 @@ public final class FactionWorldData extends SavedData {
             settlement.plague = entry.getInt("Plague");
             settlement.growth = entry.getInt("Growth");
             settlement.grown = entry.getInt("Grown");
+            settlement.floor = entry.contains("Floor") ? entry.getInt("Floor") : NO_FLOOR;
             settlement.board = entry.contains("Board") ? BlockPos.of(entry.getLong("Board")) : null;
+            for (net.minecraft.nbt.Tag raw : entry.getList("Halls", 10)) {
+               CompoundTag value = (CompoundTag)raw;
+               settlement.halls.add(new Hall(value.getString("Kind"), BlockPos.of(value.getLong("Min")), BlockPos.of(value.getLong("Max"))));
+            }
          } else if (!settlement.capturedFrom.isEmpty()) {
             settlement.loyalty = 50;
          }
@@ -1445,8 +1471,12 @@ public final class FactionWorldData extends SavedData {
       int growth;
       /** Buildings the town has put up by itself. */
       int grown;
+      /** The level of the ground the town was built on, or NO_FLOOR while unknown; see FactionGrowth. */
+      int floor = NO_FLOOR;
       /** Where the town's quest board stands, once one was put up; see FactionQuests. */
       BlockPos board;
+      /** The tavern, smithy, stables and guild halls the town has put up as it grew; see FactionGrowth. */
+      final List<Hall> halls = new ArrayList<>();
 
       Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
          this.id = id;
@@ -1524,6 +1554,18 @@ public final class FactionWorldData extends SavedData {
          return this.grown;
       }
 
+      public int floor() {
+         return this.floor;
+      }
+
+      public void setFloor(int floor) {
+         this.floor = floor;
+      }
+
+      public List<Hall> halls() {
+         return this.halls;
+      }
+
       public long province() {
          return this.province;
       }
@@ -1590,5 +1632,9 @@ public final class FactionWorldData extends SavedData {
       public boolean contains(double x, double z, int margin) {
          return x >= this.min.getX() - margin && x <= this.max.getX() + 1 + margin && z >= this.min.getZ() - margin && z <= this.max.getZ() + 1 + margin;
       }
+   }
+
+   /** A hall a town put up as it grew: what it is and the box it stands in. */
+   public record Hall(String kind, BlockPos min, BlockPos max) {
    }
 }

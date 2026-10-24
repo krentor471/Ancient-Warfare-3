@@ -104,6 +104,8 @@ public final class FactionCourt extends SavedData {
    /** Days the recent weights were last worn down; not saved, the next day simply wears them again. */
    private long woreDay = -1L;
 
+   static final int ADULT_AGE = 16;
+
    static final class Courtier {
       int name;
       int trait;
@@ -494,7 +496,18 @@ public final class FactionCourt extends SavedData {
       get(level).setDirty();
    }
 
-   /** The ruler's son comes of age and is named heir in place of whoever was. */
+   /** Whether this person, by name and day of birth, is the faction's named heir. */
+   static boolean isHeir(ServerLevel level, String faction, int name, long born) {
+      Courtier heir = courtier(level, faction, Role.HEIR);
+      return heir.name == name && heir.born == born;
+   }
+
+   /** Whether the courtier is old enough to lead men; a child heir raises no banner. */
+   static boolean adult(ServerLevel level, String faction, Role role) {
+      return FactionPeople.age(courtier(level, faction, role).born, Math.max(0L, FactionWorldData.get(level).lastSimulatedDay())) >= ADULT_AGE;
+   }
+
+   /** A son or brother of the ruler is named heir in place of whoever was. */
    static void nameHeir(ServerLevel level, String faction, int name, int trait, int look, long born, int character) {
       court(level, faction)[Role.HEIR.ordinal()] = new Courtier(name, trait, look, born, character);
       get(level).setDirty();

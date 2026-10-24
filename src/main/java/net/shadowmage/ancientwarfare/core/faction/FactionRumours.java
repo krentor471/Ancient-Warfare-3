@@ -38,12 +38,15 @@ public final class FactionRumours {
    private static final int CAPTURED_RANGE = 2000;
    private static final int PLACE_MIN = 300;
    private static final int PLACE_RANGE = 1500;
-   private static final double TREASURE_CHANCE = 0.08;
+   private static final double TREASURE_CHANCE = 0.02;
    private static final int TREASURE_MIN = 200;
    private static final int TREASURE_MAX = 600;
    private static final int MAX_TREASURES = 16;
    /** One treasure a player may hear of per this many ticks. */
-   private static final long TREASURE_COOLDOWN = FactionSimulation.DAY_TICKS;
+   private static final long TREASURE_COOLDOWN = FactionSimulation.DAY_TICKS * 3L;
+   /** How often townsfolk talk of their own lives rather than the news of the land. */
+   private static final double SMALL_TALK_CHANCE = 0.45;
+   private static final int SMALL_TALK = 20;
    private static final double TREASURE_BURY_RANGE = 64.0;
    private static final int TREASURE_DEPTH = 2;
    /** The same person does not repeat themselves to a player this soon. */
@@ -83,6 +86,11 @@ public final class FactionRumours {
 
    /** One piece of news about the land around x, z, or small talk when there is none. */
    public static Component rumour(ServerLevel level, ServerPlayer player, double x, double z, RandomSource random) {
+      if (random.nextDouble() < SMALL_TALK_CHANCE) {
+         // Townsfolk talk of their own lives as often as of the land; a barman paid for news gives news.
+         return Component.translatable("rumour.ancientwarfare.small_talk." + random.nextInt(SMALL_TALK));
+      }
+
       return rumour(level, player, x, z, random, TREASURE_CHANCE);
    }
 
@@ -112,7 +120,7 @@ public final class FactionRumours {
          }
       }
 
-      return Component.translatable("rumour.ancientwarfare.small_talk." + random.nextInt(6));
+      return Component.translatable("rumour.ancientwarfare.small_talk." + random.nextInt(SMALL_TALK));
    }
 
    private static Component march(FactionWorldData data, double x, double z, RandomSource random) {

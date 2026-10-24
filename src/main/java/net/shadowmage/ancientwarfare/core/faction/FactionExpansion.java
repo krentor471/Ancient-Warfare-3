@@ -482,6 +482,13 @@ public final class FactionExpansion {
          return;
       }
 
+      if (!fortLandLoaded(level, center.getX(), center.getZ())) {
+         // As for a fort: the land is generated off the main thread first, or far from every player
+         // the building's land was generated on the spot and stalled the server for seconds.
+         SITE_SEARCH.put(target.id(), checked);
+         return;
+      }
+
       data.removeSettlement(target);
       boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(center.getX() >> 4, center.getZ() >> 4), faction, AwsWorldGenerator.Site.VILLAGE);
       AncientWarfareCore.LOG.info("Faction {} {} a single building for village #{} near {}, {}", faction, built ? "built" : "could not build", target.id(), center.getX(), center.getZ());
