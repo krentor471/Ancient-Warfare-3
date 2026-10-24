@@ -2727,5 +2727,16 @@
   "rumour.ancientwarfare.small_talk.16": "Крыша течёт, а починить некому.",
   "rumour.ancientwarfare.small_talk.17": "В таверне вчера опять подрались. Из-за девки, говорят.",
   "rumour.ancientwarfare.small_talk.18": "Сапоги прохудились, а сапожник цену заломил.",
-  "rumour.ancientwarfare.small_talk.19": "Тётка моя в травах толк знает. Захвораешь, заходи к ней."
+  "rumour.ancientwarfare.small_talk.19": "Тётка моя в травах толк знает. Захвораешь, заходи к ней.",
+  "chatter.ancientwarfare.theft.0": "Вор! Держи вора!",
+  "chatter.ancientwarfare.theft.1": "Эй! Положи на место, это не твоё!",
+  "chatter.ancientwarfare.theft.2": "Стража! Нас грабят!",
+  "chatter.ancientwarfare.theft.3": "Я всё видел! Как не стыдно!",
+  "chatter.ancientwarfare.bed.0": "А ну вон из моей постели!",
+  "chatter.ancientwarfare.bed.1": "Кто тебя сюда пустил? Пошёл вон!",
+  "chatter.ancientwarfare.bed.2": "Здесь тебе не постоялый двор! Иди сними комнату!",
+  "crime.ancientwarfare.theft_seen": "Вас застали за кражей. %1$s: отношение %2$s (теперь %3$s).",
+  "crime.ancientwarfare.theft_found": "Пропажу заметили, подозревают вас. %1$s: отношение %2$s (теперь %3$s).",
+  "crime.ancientwarfare.bed_seen": "Вас застали в чужой постели. %1$s: отношение %2$s (теперь %3$s).",
+  "crime.ancientwarfare.bed": "Это чужая постель. Комнату можно снять в таверне."
 }

@@ -80,6 +80,31 @@ public final class ForgeFactionEvents {
       }
    }
 
+   /** A chest opened in a faction's settlement: what is taken from it may be missed. */
+   @SubscribeEvent
+   public static void onOpenInTown(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+      if (event.getHand() == net.minecraft.world.InteractionHand.MAIN_HAND && event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+         net.shadowmage.ancientwarfare.core.faction.FactionCrime.onOpen(player, event.getPos());
+      }
+   }
+
+   @SubscribeEvent
+   public static void onCloseInTown(net.minecraftforge.event.entity.player.PlayerContainerEvent.Close event) {
+      if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+         net.shadowmage.ancientwarfare.core.faction.FactionCrime.onClose(player);
+      }
+   }
+
+   /** The beds in a faction's settlement are its people's. */
+   @SubscribeEvent
+   public static void onSleepInTown(net.minecraftforge.event.entity.player.PlayerSleepInBedEvent event) {
+      if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+         && event.getOptionalPos().isPresent()
+         && net.shadowmage.ancientwarfare.core.faction.FactionCrime.refusesBed(player, event.getOptionalPos().get())) {
+         event.setResult(net.minecraft.world.entity.player.Player.BedSleepingProblem.OTHER_PROBLEM);
+      }
+   }
+
    /** ...and when a player strikes one of them. */
    @SubscribeEvent
    public static void onFactionNpcStruck(net.minecraftforge.event.entity.living.LivingHurtEvent event) {

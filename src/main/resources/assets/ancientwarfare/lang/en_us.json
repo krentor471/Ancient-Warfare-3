@@ -2727,5 +2727,16 @@
   "rumour.ancientwarfare.small_talk.16": "The roof leaks and there's nobody to mend it.",
   "rumour.ancientwarfare.small_talk.17": "Another brawl at the inn last night. Over a girl, they say.",
   "rumour.ancientwarfare.small_talk.18": "My boots are worn through, and the cobbler wants a fortune.",
-  "rumour.ancientwarfare.small_talk.19": "My aunt knows her herbs. If you fall ill, call on her."
+  "rumour.ancientwarfare.small_talk.19": "My aunt knows her herbs. If you fall ill, call on her.",
+  "chatter.ancientwarfare.theft.0": "Thief! Stop, thief!",
+  "chatter.ancientwarfare.theft.1": "Hey! Put that back, it's not yours!",
+  "chatter.ancientwarfare.theft.2": "Guards! Someone's robbing us!",
+  "chatter.ancientwarfare.theft.3": "I saw that! Shame on you!",
+  "chatter.ancientwarfare.bed.0": "Out of my bed, you lout!",
+  "chatter.ancientwarfare.bed.1": "Who let you in? Get out!",
+  "chatter.ancientwarfare.bed.2": "This is no inn! Go pay for a room!",
+  "crime.ancientwarfare.theft_seen": "You were seen stealing. Standing with %1$s: %2$s (now %3$s).",
+  "crime.ancientwarfare.theft_found": "In %1$s they have noticed something missing, and you are suspected. Standing: %2$s (now %3$s).",
+  "crime.ancientwarfare.bed_seen": "You were caught in someone else's bed. Standing with %1$s: %2$s (now %3$s).",
+  "crime.ancientwarfare.bed": "This bed belongs to someone. A room can be had at the tavern."
 }

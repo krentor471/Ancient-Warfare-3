@@ -201,6 +201,7 @@ public final class FactionTaverns {
                level.setDayTime((level.getDayTime() / DAY_TICKS + 1) * DAY_TICKS);
             }
 
+            FactionCrime.rentRoom(player, barman.blockPosition());
             FactionRumours.say(player, speaker, Component.translatable("tavern.ancientwarfare.served.room"));
          }
          case ROUND -> {
