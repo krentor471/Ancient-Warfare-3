@@ -301,7 +301,7 @@ public final class AwsWorldGenerator {
             // A neutral tavern by a faction's road is that faction's post.
             String owner = info.faction().isEmpty() && (site == Site.TRADE_POST || site == Site.TAVERN) && requiredFaction != null ? requiredFaction : info.faction();
             if (!owner.isEmpty()) {
-               FactionWorldData.get(level)
+               FactionWorldData.Settlement settlement = FactionWorldData.get(level)
                   .addSettlement(
                      owner,
                      site.kind(),
@@ -313,6 +313,9 @@ public final class AwsWorldGenerator {
                      site.garrison(info.soldiers()),
                      site == Site.SETTLEMENT || site == Site.VILLAGE ? FactionSimulation.startingPopulation(info.soldiers(), info.civilians()) : FactionSimulation.startingPopulation(0, 0)
                   );
+               if (template.ground()) {
+                  settlement.setFloor(origin.getY() - 1);
+               }
             }
 
             AncientWarfareCore.LOG
@@ -549,34 +552,39 @@ public final class AwsWorldGenerator {
                continue;
             }
 
-            int surface = surfaceY(level, x, z);
-            BlockPos surfacePos = new BlockPos(x, surface, z);
-            if (!level.getFluidState(surfacePos).isEmpty() || level.getBlockEntity(surfacePos) != null) {
-               continue;
+            blendColumn(level, x, z, distance, targetY, top, fill);
+         }
+      }
+   }
+
+   /** One column beside a levelled floor: brought within one block per block of distance of it. */
+   public static void blendColumn(ServerLevel level, int x, int z, int distance, int targetY, BlockState top, BlockState fill) {
+      int surface = surfaceY(level, x, z);
+      BlockPos surfacePos = new BlockPos(x, surface, z);
+      if (!level.getFluidState(surfacePos).isEmpty() || level.getBlockEntity(surfacePos) != null) {
+         return;
+      }
+
+      int lowest = targetY - distance;
+      int highest = targetY + distance;
+      if (surface < lowest && plainGround(level.getBlockState(surfacePos))) {
+         for (int y = surface + 1; y < lowest; y++) {
+            level.setBlock(new BlockPos(x, y, z), fill, 2);
+         }
+
+         level.setBlock(new BlockPos(x, lowest, z), top, 2);
+      } else if (surface > highest && plainGround(level.getBlockState(surfacePos))) {
+         for (int y = surface; y > highest; y--) {
+            BlockPos pos = new BlockPos(x, y, z);
+            if (!plainGround(level.getBlockState(pos))) {
+               break;
             }
 
-            int lowest = targetY - distance;
-            int highest = targetY + distance;
-            if (surface < lowest) {
-               for (int y = surface + 1; y < lowest; y++) {
-                  level.setBlock(new BlockPos(x, y, z), fill, 2);
-               }
+            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 18);
+         }
 
-               level.setBlock(new BlockPos(x, lowest, z), top, 2);
-            } else if (surface > highest && plainGround(level.getBlockState(surfacePos))) {
-               for (int y = surface; y > highest; y--) {
-                  BlockPos pos = new BlockPos(x, y, z);
-                  if (!plainGround(level.getBlockState(pos))) {
-                     break;
-                  }
-
-                  level.setBlock(pos, Blocks.AIR.defaultBlockState(), 18);
-               }
-
-               if (plainGround(level.getBlockState(new BlockPos(x, highest, z)))) {
-                  level.setBlock(new BlockPos(x, highest, z), top, 2);
-               }
-            }
+         if (plainGround(level.getBlockState(new BlockPos(x, highest, z)))) {
+            level.setBlock(new BlockPos(x, highest, z), top, 2);
          }
       }
    }

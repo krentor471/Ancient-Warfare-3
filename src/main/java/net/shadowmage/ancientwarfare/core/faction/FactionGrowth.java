@@ -1,5 +1,7 @@
 package net.shadowmage.ancientwarfare.core.faction;
 
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -21,6 +23,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.shadowmage.ancientwarfare.core.AncientWarfareCore;
+import net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerator;
 
 /**
  * Settlements that do well grow by themselves. A day of a full, orderly, fed town adds to its
@@ -43,6 +46,12 @@ public final class FactionGrowth {
    private static final int GAP = 3;
    private static final int REACH = 8;
    private static final int MAX_SLOPE = 2;
+   /** How far a piece's ground may be raised or cut to meet the town's level. */
+   private static final int MAX_LIFT = 4;
+   /** How far around a piece the land is sloped to its floor. */
+   private static final int BLEND = 3;
+   /** Ground samples needed to judge the level of a town built before its level was recorded. */
+   private static final int FLOOR_SAMPLES = 12;
    private static final int PATH_STEPS = 64;
    private static final Piece[] ORDER = {
       Piece.HOUSE, Piece.LAMP, Piece.GARDEN, Piece.HOUSE, Piece.WELL, Piece.HOUSE, Piece.STALL, Piece.LAMP, Piece.HOUSE, Piece.GARDEN, Piece.HOUSE, Piece.STALL
@@ -214,6 +223,8 @@ public final class FactionGrowth {
    private static BlockPos site(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, Piece piece, RandomSource random, boolean watched) {
       BlockPos min = settlement.min();
       BlockPos max = settlement.max();
+      int floor = floor(level, data, settlement);
+      BlockPos fallback = null;
       for (int i = 0; i < SITE_TRIES; i++) {
          int out = GAP + random.nextInt(REACH);
          int alongX = min.getX() + random.nextInt(max.getX() - min.getX() + 1) - piece.width / 2;
@@ -248,17 +259,57 @@ public final class FactionGrowth {
          }
 
          Integer y = flatGround(level, x, z, piece);
-         if (y != null) {
-            return new BlockPos(x, y, z);
+         if (y == null) {
+            continue;
+         }
+
+         // Built on the town's own level when the ground is near it, so the town does not sit on one level and its new houses on another.
+         if (floor == FactionWorldData.NO_FLOOR || Math.abs(y - floor) <= MAX_LIFT) {
+            return new BlockPos(x, floor == FactionWorldData.NO_FLOOR ? y : floor, z);
+         }
+
+         if (fallback == null) {
+            fallback = new BlockPos(x, y, z);
          }
       }
 
-      return null;
+      return fallback;
+   }
+
+   /** The level the town stands on: recorded when it was built, else the commonest ground level inside it. */
+   private static int floor(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement) {
+      if (settlement.floor() != FactionWorldData.NO_FLOOR) {
+         return settlement.floor();
+      }
+
+      Map<Integer, Integer> counts = new HashMap<>();
+      BlockPos min = settlement.min();
+      BlockPos max = settlement.max();
+      int step = Math.max(2, Math.max(max.getX() - min.getX(), max.getZ() - min.getZ()) / 12);
+      for (int x = min.getX(); x <= max.getX(); x += step) {
+         for (int z = min.getZ(); z <= max.getZ(); z += step) {
+            if (!level.isLoaded(new BlockPos(x, 64, z))) {
+               continue;
+            }
+
+            counts.merge(level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1, 1, Integer::sum);
+         }
+      }
+
+      if (counts.values().stream().mapToInt(Integer::intValue).sum() < FLOOR_SAMPLES) {
+         return FactionWorldData.NO_FLOOR;
+      }
+
+      int floor = counts.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(FactionWorldData.NO_FLOOR);
+      settlement.setFloor(floor);
+      data.setDirty();
+      return floor;
    }
 
    private static boolean loaded(ServerLevel level, int x, int z, Piece piece) {
-      for (int dx = -1; dx <= piece.width; dx += piece.width + 1) {
-         for (int dz = -1; dz <= piece.depth; dz += piece.depth + 1) {
+      // Wide enough for the sloped land around the piece too.
+      for (int dx = -BLEND - 1; dx <= piece.width + BLEND; dx += piece.width + 2 * BLEND + 1) {
+         for (int dz = -BLEND - 1; dz <= piece.depth + BLEND; dz += piece.depth + 2 * BLEND + 1) {
             if (!level.isLoaded(new BlockPos(x + dx, 64, z + dz))) {
                return false;
             }
@@ -324,13 +375,24 @@ public final class FactionGrowth {
 
       for (int dx = 0; dx < piece.width; dx++) {
          for (int dz = 0; dz < piece.depth; dz++) {
-            for (int dy = 1; dy <= piece.height + 1; dy++) {
+            for (int dy = 1; dy <= Math.max(piece.height, MAX_LIFT) + 1; dy++) {
                set(level, site.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
             }
 
             set(level, site.offset(dx, 0, dz), top);
-            for (int dy = -1; dy >= -3 && !level.getBlockState(site.offset(dx, dy, dz)).isSolidRender(level, site.offset(dx, dy, dz)); dy--) {
+            for (int dy = -1; dy >= -MAX_LIFT - 2 && !level.getBlockState(site.offset(dx, dy, dz)).isSolidRender(level, site.offset(dx, dy, dz)); dy--) {
                set(level, site.offset(dx, dy, dz), Blocks.DIRT.defaultBlockState());
+            }
+         }
+      }
+
+      // The land around is sloped to the new floor, so a raised or sunken piece has no wall of earth beside it.
+      BlockState fill = top.is(BlockTags.SAND) ? top : Blocks.DIRT.defaultBlockState();
+      for (int dx = -BLEND; dx < piece.width + BLEND; dx++) {
+         for (int dz = -BLEND; dz < piece.depth + BLEND; dz++) {
+            int distance = Math.max(Math.max(-dx, dx - piece.width + 1), Math.max(-dz, dz - piece.depth + 1));
+            if (distance > 0) {
+               AwsWorldGenerator.blendColumn(level, site.getX() + dx, site.getZ() + dz, distance, site.getY(), top, fill);
             }
          }
       }

@@ -55,6 +55,8 @@ public final class FactionWorldData extends SavedData {
    /** The b end of a route to a player's village, and that village's id as an endpoint. */
    public static final int PLAYER_VILLAGE = -1;
    public static final String PLAYER_VILLAGE_KIND = "playervillage";
+   /** A settlement whose ground level was never recorded. */
+   public static final int NO_FLOOR = Integer.MIN_VALUE;
    private static final int VILLAGE_HALF_SIZE = 24;
    /** What a player's village counts as in trade income; its villagers are not counted. */
    private static final int PLAYER_VILLAGE_POPULATION = 20;
@@ -521,6 +523,9 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Famine", settlement.famine);
          entry.putInt("Growth", settlement.growth);
          entry.putInt("Grown", settlement.grown);
+         if (settlement.floor != NO_FLOOR) {
+            entry.putInt("Floor", settlement.floor);
+         }
          entry.putInt("Plague", settlement.plague);
          if (settlement.board != null) {
             entry.putLong("Board", settlement.board.asLong());
@@ -764,6 +769,7 @@ public final class FactionWorldData extends SavedData {
             settlement.plague = entry.getInt("Plague");
             settlement.growth = entry.getInt("Growth");
             settlement.grown = entry.getInt("Grown");
+            settlement.floor = entry.contains("Floor") ? entry.getInt("Floor") : NO_FLOOR;
             settlement.board = entry.contains("Board") ? BlockPos.of(entry.getLong("Board")) : null;
          } else if (!settlement.capturedFrom.isEmpty()) {
             settlement.loyalty = 50;
@@ -1445,6 +1451,8 @@ public final class FactionWorldData extends SavedData {
       int growth;
       /** Buildings the town has put up by itself. */
       int grown;
+      /** The level of the ground the town was built on, or NO_FLOOR while unknown; see FactionGrowth. */
+      int floor = NO_FLOOR;
       /** Where the town's quest board stands, once one was put up; see FactionQuests. */
       BlockPos board;
 
@@ -1522,6 +1530,14 @@ public final class FactionWorldData extends SavedData {
 
       public int grown() {
          return this.grown;
+      }
+
+      public int floor() {
+         return this.floor;
+      }
+
+      public void setFloor(int floor) {
+         this.floor = floor;
       }
 
       public long province() {
