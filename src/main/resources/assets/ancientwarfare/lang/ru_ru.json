@@ -2713,5 +2713,19 @@
   "news.ancientwarfare.brother_heir": "%1$s: у правителя %3$s нет сына, наследником объявлен его брат %2$s.",
   "news.ancientwarfare.brother_died": "%1$s: умер %2$s, брат правителя %3$s, в возрасте %4$s.",
   "news.ancientwarfare.sister_died": "%1$s: умерла %2$s, сестра правителя %3$s, в возрасте %4$s.",
-  "family.ancientwarfare.tip.son_heir": "Сын %s, возраст %s, наследник"
+  "family.ancientwarfare.tip.son_heir": "Сын %s, возраст %s, наследник",
+  "rumour.ancientwarfare.small_talk.6": "Колено ноет. Видать, к дождю.",
+  "rumour.ancientwarfare.small_talk.7": "Корова третий день не доится. Сглазили, не иначе.",
+  "rumour.ancientwarfare.small_talk.8": "Сосед опять забор передвинул, на целый локоть в мою сторону!",
+  "rumour.ancientwarfare.small_talk.9": "Ночью лиса курицу утащила. Надо собаку завести.",
+  "rumour.ancientwarfare.small_talk.10": "Мельник опять муку недовешивает, все знают.",
+  "rumour.ancientwarfare.small_talk.11": "Дочка замуж просится, а приданого нет.",
+  "rumour.ancientwarfare.small_talk.12": "Зубы с утра ломит. Старость, видно.",
+  "rumour.ancientwarfare.small_talk.13": "Хлеб в этом году с лебедой, а всё ж хлеб.",
+  "rumour.ancientwarfare.small_talk.14": "Старший мой в солдаты рвётся. Дурень.",
+  "rumour.ancientwarfare.small_talk.15": "Говорят, зима будет лютая. Гуси рано улетели.",
+  "rumour.ancientwarfare.small_talk.16": "Крыша течёт, а починить некому.",
+  "rumour.ancientwarfare.small_talk.17": "В таверне вчера опять подрались. Из-за девки, говорят.",
+  "rumour.ancientwarfare.small_talk.18": "Сапоги прохудились, а сапожник цену заломил.",
+  "rumour.ancientwarfare.small_talk.19": "Тётка моя в травах толк знает. Захвораешь, заходи к ней."
 }

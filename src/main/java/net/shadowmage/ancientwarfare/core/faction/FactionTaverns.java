@@ -38,7 +38,7 @@ public final class FactionTaverns {
    private static final double SERVE_RANGE = 8.0;
    private static final long TALK_COOLDOWN = 40L;
    private static final long DAY_TICKS = 24000L;
-   private static final double TREASURE_CHANCE = 0.25;
+   private static final double TREASURE_CHANCE = 0.1;
    private static final int ROUND_STANDING = 3;
    private static final int GREETINGS = 6;
    private static final Map<UUID, Long> LAST_TALK = new HashMap<>();
