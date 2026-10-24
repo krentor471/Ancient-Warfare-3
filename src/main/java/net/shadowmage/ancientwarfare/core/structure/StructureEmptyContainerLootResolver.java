@@ -3,7 +3,6 @@ package net.shadowmage.ancientwarfare.core.structure;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import net.minecraft.core.BlockPos;
@@ -305,8 +304,25 @@ public final class StructureEmptyContainerLootResolver {
       return false;
    }
 
+   /**
+    * Letters and digits only, lower case. Called with the same handful of words for every container
+    * of every generated structure, so a regular expression here showed up plainly in a profile.
+    */
    private static String normalize(String text) {
-      return text == null ? "" : text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+      if (text == null) {
+         return "";
+      }
+
+      StringBuilder plain = new StringBuilder(text.length());
+
+      for (int index = 0; index < text.length(); index++) {
+         char letter = Character.toLowerCase(text.charAt(index));
+         if (letter >= 'a' && letter <= 'z' || letter >= '0' && letter <= '9') {
+            plain.append(letter);
+         }
+      }
+
+      return plain.toString();
    }
 
    private static Map<String, String> factionMap() {

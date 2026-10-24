@@ -147,7 +147,9 @@ public final class AwsWorldGenerator {
             AwsWorldGenerationData data = AwsWorldGenerationData.get(level);
             Map<String, Integer> rejections = new LinkedHashMap<>();
             boolean oceanAttempt = false;
-            int siteAttempts = forced ? 1 : 8;
+            boolean post = site == Site.TRADE_POST || site == Site.TAVERN || site == Site.GUARD_POST;
+            // A road post is already offered eight spots along its road, so it does not search around each of them.
+            int siteAttempts = forced ? 1 : post ? 2 : 8;
             int siteAttempt = 0;
 
             AwsWorldGenTemplateRegistry.Template template;
@@ -171,7 +173,7 @@ public final class AwsWorldGenerator {
                }
 
                // Roadside posts keep close to their spot so they do not land on the road.
-               int spread = site == Site.TRADE_POST || site == Site.TAVERN || site == Site.GUARD_POST ? 8 : 32;
+               int spread = post ? 8 : 32;
                int x = siteAttempt == 0 ? chunk.getMinBlockX() + random.nextInt(16) : chunk.getMiddleBlockX() + random.nextInt(spread * 2 + 1) - spread;
                int z = siteAttempt == 0 ? chunk.getMinBlockZ() + random.nextInt(16) : chunk.getMiddleBlockZ() + random.nextInt(spread * 2 + 1) - spread;
                long dx = (long)x - (long)spawn.getX();
@@ -249,7 +251,7 @@ public final class AwsWorldGenerator {
 
                         String rejection = !template.fitsBuildHeight(min, level.getMinBuildHeight(), level.getMaxBuildHeight())
                            ? "build_height"
-                           : placementRejection(level, data, template, min, maxX, maxZ, x, z, site == Site.TRADE_POST || site == Site.TAVERN || site == Site.GUARD_POST);
+                           : placementRejection(level, data, template, min, maxX, maxZ, x, z, post);
                         if (rejection == null && template.aquatic()) {
                            NaturalGenerationContext.markArea(min.offset(-16, 0, -16), maxX + 16, maxZ + 16);
                         }

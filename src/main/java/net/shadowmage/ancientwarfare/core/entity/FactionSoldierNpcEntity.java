@@ -83,7 +83,9 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
 
    protected static class FactionMeleeAttackGoal extends MeleeAttackGoal {
       private static final double DIRECT_STEER_SQ = 36.0;
-      private static final int APPROACH_TICK_STRIDE = 3;
+      private static final int APPROACH_TICK_STRIDE = 4;
+      /** Within this distance a soldier with its target in plain sight needs no path to know it can fight. */
+      private static final double SEES_TARGET_SQ = 144.0;
       private final FactionSoldierNpcEntity npc;
       private final double speed;
       private int weaponCooldown;
@@ -95,7 +97,17 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
       }
 
       public boolean canUse() {
-         return !this.npc.isPassenger() && super.canUse();
+         if (this.npc.isPassenger()) {
+            return false;
+         }
+
+         LivingEntity target = this.npc.getTarget();
+         if (target != null && target.isAlive() && this.npc.distanceToSqr(target) <= SEES_TARGET_SQ && this.npc.hasMeleeLineOfSight(target)) {
+            // A path only answers whether the soldier can reach its enemy; a few steps away in plain sight it plainly can.
+            return true;
+         }
+
+         return super.canUse();
       }
 
       public boolean canContinueToUse() {
@@ -112,9 +124,10 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
             return;
          }
 
-         if (target != null && !this.npc.getNavigation().isDone() && (this.npc.tickCount + this.npc.getId()) % APPROACH_TICK_STRIDE != 0) {
-            // Still walking a path toward a target further off: the route rarely needs a refresh every tick.
+         if (target != null && (this.npc.tickCount + this.npc.getId()) % APPROACH_TICK_STRIDE != 0) {
+            // Making for a target further off: the route rarely needs a refresh every tick, and it costs a path search each time.
             this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
+            this.checkAndPerformAttack(target, this.npc.distanceToSqr(target));
             return;
          }
 

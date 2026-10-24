@@ -117,6 +117,8 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       this.goalSelector.addGoal(0, new NpcRoutGoal(this));
    }
 
+   private static final int SUFFOCATION_CHECK_TICKS = 5;
+
    @Override
    protected PathNavigation createNavigation(Level level) {
       return new NpcGroundNavigation(this, level);
@@ -173,7 +175,11 @@ public abstract class NpcBaseEntity extends PathfinderMob {
             mount.setPersistenceRequired();
          }
 
-         NpcSuffocationEscape.tryEscape(this);
+         if ((this.tickCount + this.getId()) % SUFFOCATION_CHECK_TICKS == 0) {
+            // Reading whether the NPC stands inside a block is not cheap, and being walled in is not an emergency.
+            NpcSuffocationEscape.tryEscape(this);
+         }
+
          this.tickMorale();
          int meleeAnimation = this.getMeleeAttackAnimationTicks();
          if (meleeAnimation > 0) {

@@ -8,7 +8,7 @@ import net.minecraft.world.phys.Vec3;
 /** A broken soldier runs away from where the danger came from until its morale recovers. */
 final class NpcRoutGoal extends Goal {
    private static final double FLEE_SPEED = 1.3;
-   private static final int RETRY_TICKS = 10;
+   private static final int RETRY_TICKS = 20;
    private final NpcBaseEntity npc;
    private int retryDelay;
 
@@ -31,7 +31,7 @@ final class NpcRoutGoal extends Goal {
    public void tick() {
       if (this.retryDelay > 0) {
          this.retryDelay--;
-      } else if (this.npc.getNavigation().isDone()) {
+      } else if (this.npc.getNavigation().isDone() && (this.npc.tickCount + this.npc.getId()) % RETRY_TICKS == 0) {
          this.runAway();
       }
    }
