@@ -14,7 +14,7 @@ public class CannonAmmoItem extends Item {
    private final CannonAmmoType ammoType;
 
    public CannonAmmoItem(CannonAmmoType ammoType) {
-      super(new Properties().m_41487_(16));
+      super(new Properties().stacksTo(16));
       this.ammoType = ammoType;
    }
 
@@ -23,18 +23,18 @@ public class CannonAmmoItem extends Item {
    }
 
    public static CannonAmmoType ammoType(ItemStack stack) {
-      return stack.m_41720_() instanceof CannonAmmoItem ammo ? ammo.ammoType() : null;
+      return stack.getItem() instanceof CannonAmmoItem ammo ? ammo.ammoType() : null;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237110_("tooltip.ancientwarfare.cannon_ammo.weight", new Object[]{this.ammoType.weight()}).m_130940_(ChatFormatting.GRAY));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.cannon_ammo.weight", new Object[]{this.ammoType.weight()}).withStyle(ChatFormatting.GRAY));
       if (this.ammoType.damage() > 0.0F) {
          tooltip.add(
-            Component.m_237110_("tooltip.ancientwarfare.cannon_ammo.damage", new Object[]{formatNumber(this.ammoType.damage())}).m_130940_(ChatFormatting.GRAY)
+            Component.translatable("tooltip.ancientwarfare.cannon_ammo.damage", new Object[]{formatNumber(this.ammoType.damage())}).withStyle(ChatFormatting.GRAY)
          );
       }
 
-      tooltip.add(Component.m_237110_(this.ammoType.effectTranslationKey(), new Object[]{this.ammoType.pelletCount()}).m_130940_(ChatFormatting.DARK_GRAY));
+      tooltip.add(Component.translatable(this.ammoType.effectTranslationKey(), new Object[]{this.ammoType.pelletCount()}).withStyle(ChatFormatting.DARK_GRAY));
    }
 
    private static String formatNumber(float value) {

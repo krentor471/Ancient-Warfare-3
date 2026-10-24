@@ -92,9 +92,9 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
       double beforeInput = this.inputCell.getTorque();
       double beforeOutput = this.outputCell.getTorque();
       double loss = 0.0;
-      boolean outputDisabled = this.f_58857_ != null && this.f_58857_.m_276867_(this.f_58858_);
-      double downstreamDemand = this.f_58857_ != null && !outputDisabled
-         ? TorqueNetworkDemand.downstreamDemand(this.f_58857_, this.f_58858_, this.getFacing())
+      boolean outputDisabled = this.level != null && this.level.hasNeighborSignal(this.worldPosition);
+      double downstreamDemand = this.level != null && !outputDisabled
+         ? TorqueNetworkDemand.downstreamDemand(this.level, this.worldPosition, this.getFacing())
          : 0.0;
       this.balancePower(storage, downstreamDemand);
       double output = outputDisabled ? 0.0 : this.transferPowerTo(this.getFacing());
@@ -109,11 +109,11 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
          || output > 0.0;
       if (this.visualActive != nextVisualActive) {
          this.visualActive = nextVisualActive;
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
 
       if (input > 0.0 || output > 0.0 || loss > 0.0) {
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -156,10 +156,10 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
 
    @Nullable
    private FlywheelControllerBlockEntity.FlywheelStorageView findStorage() {
-      if (this.f_58857_ == null) {
+      if (this.level == null) {
          return null;
       } else {
-         BlockPos topCenter = this.f_58858_.m_7495_();
+         BlockPos topCenter = this.worldPosition.below();
          TorqueTier tier = this.getTier();
          if (!this.isStorage(topCenter, tier)) {
             return null;
@@ -168,7 +168,7 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
             int height = 0;
 
             for (int i = 0; i < 21; i++) {
-               BlockPos layerCenter = topCenter.m_6625_(i);
+               BlockPos layerCenter = topCenter.below(i);
                if (!this.isFullLayer(layerCenter, tier, size)) {
                   break;
                }
@@ -179,8 +179,8 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
             if (height <= 0) {
                return null;
             } else {
-               BlockPos controlPos = topCenter.m_6625_(height - 1);
-               return this.f_58857_.m_7702_(controlPos) instanceof FlywheelStorageBlockEntity storage
+               BlockPos controlPos = topCenter.below(height - 1);
+               return this.level.getBlockEntity(controlPos) instanceof FlywheelStorageBlockEntity storage
                   ? new FlywheelControllerBlockEntity.FlywheelStorageView(storage, tier, size, height)
                   : null;
             }
@@ -189,14 +189,14 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
    }
 
    private boolean isFullLayer(BlockPos center, TorqueTier tier, int size) {
-      if (this.f_58857_ == null) {
+      if (this.level == null) {
          return false;
       } else {
          int radius = size == 3 ? 1 : 0;
 
          for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
-               if (!this.isStorage(center.m_7918_(x, 0, z), tier)) {
+               if (!this.isStorage(center.offset(x, 0, z), tier)) {
                   return false;
                }
             }
@@ -207,13 +207,13 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
    }
 
    private boolean isStorage(BlockPos pos, TorqueTier tier) {
-      return this.f_58857_ != null && this.f_58857_.m_8055_(pos).m_60734_() instanceof FlywheelStorageBlock block && block.getTier() == tier;
+      return this.level != null && this.level.getBlockState(pos).getBlock() instanceof FlywheelStorageBlock block && block.getTier() == tier;
    }
 
    private double transferPowerTo(Direction side) {
-      if (this.f_58857_ != null && this.canOutputTorque(side)) {
-         if (this.f_58857_.m_7702_(this.f_58858_.m_121945_(side)) instanceof TorqueAccess target) {
-            Direction targetSide = side.m_122424_();
+      if (this.level != null && this.canOutputTorque(side)) {
+         if (this.level.getBlockEntity(this.worldPosition.relative(side)) instanceof TorqueAccess target) {
+            Direction targetSide = side.getOpposite();
             if (!target.canInputTorque(targetSide)) {
                return 0.0;
             } else {
@@ -268,18 +268,18 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
          return 0.0;
       } else {
          Set<BlockPos> visited = new HashSet<>();
-         visited.add(this.f_58858_);
+         visited.add(this.worldPosition);
          return this.getInputDemand(side, visited, 0);
       }
    }
 
    double getInputDemand(Direction side, Set<BlockPos> visited, int depth) {
-      if (this.f_58857_ != null && this.canInputTorque(side)) {
+      if (this.level != null && this.canInputTorque(side)) {
          FlywheelControllerBlockEntity.FlywheelStorageView storage = this.findStorage();
          double storageSpace = storage == null ? 0.0 : storage.capacity() - storage.getStored();
-         double downstreamDemand = this.f_58857_.m_276867_(this.f_58858_)
+         double downstreamDemand = this.level.hasNeighborSignal(this.worldPosition)
             ? 0.0
-            : TorqueNetworkDemand.downstreamDemand(this.f_58857_, this.f_58858_.m_121945_(this.getFacing()), this.getFacing().m_122424_(), visited, depth + 1);
+            : TorqueNetworkDemand.downstreamDemand(this.level, this.worldPosition.relative(this.getFacing()), this.getFacing().getOpposite(), visited, depth + 1);
          double passThroughNeed = Math.max(0.0, downstreamDemand - this.outputCell.getTorque());
          return Math.min(this.inputCell.getMaxTickInput(), storageSpace + passThroughNeed);
       } else {
@@ -299,7 +299,7 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
 
    @Override
    public boolean canInputTorque(@Nullable Direction side) {
-      return side != null && side == this.getFacing().m_122424_();
+      return side != null && side == this.getFacing().getOpposite();
    }
 
    @Nullable
@@ -307,45 +307,45 @@ public class FlywheelControllerBlockEntity extends BlockEntity implements Torque
       if (side == this.getFacing()) {
          return this.outputCell;
       } else {
-         return side == this.getFacing().m_122424_() ? this.inputCell : null;
+         return side == this.getFacing().getOpposite() ? this.inputCell : null;
       }
    }
 
    private Direction getFacing() {
-      return this.m_58900_().m_61138_(FlywheelControllerBlock.FACING) ? (Direction)this.m_58900_().m_61143_(FlywheelControllerBlock.FACING) : Direction.NORTH;
+      return this.getBlockState().hasProperty(FlywheelControllerBlock.FACING) ? (Direction)this.getBlockState().getValue(FlywheelControllerBlock.FACING) : Direction.NORTH;
    }
 
    private TorqueTier getTier() {
-      return getTierFromState(this.m_58900_());
+      return getTierFromState(this.getBlockState());
    }
 
    private static TorqueTier getTierFromState(BlockState state) {
-      return state.m_60734_() instanceof FlywheelControllerBlock block ? block.getTier() : TorqueTier.LIGHT;
+      return state.getBlock() instanceof FlywheelControllerBlock block ? block.getTier() : TorqueTier.LIGHT;
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128347_("InputTorque", this.inputCell.getTorque());
-      tag.m_128347_("OutputTorque", this.outputCell.getTorque());
-      tag.m_128379_("VisualActive", this.visualActive);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.putDouble("InputTorque", this.inputCell.getTorque());
+      tag.putDouble("OutputTorque", this.outputCell.getTorque());
+      tag.putBoolean("VisualActive", this.visualActive);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.inputCell.setTorque(tag.m_128459_("InputTorque"));
-      this.outputCell.setTorque(tag.m_128459_("OutputTorque"));
-      this.visualActive = tag.m_128471_("VisualActive");
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.inputCell.setTorque(tag.getDouble("InputTorque"));
+      this.outputCell.setTorque(tag.getDouble("OutputTorque"));
+      this.visualActive = tag.getBoolean("VisualActive");
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      this.m_183515_(tag);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      this.saveAdditional(tag);
       return tag;
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
    private static record FlywheelStorageView(FlywheelStorageBlockEntity storage, TorqueTier tier, int size, int height) {

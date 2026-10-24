@@ -13,52 +13,53 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 
 final class NpcRangedAttackHelper {
+   private static final double ARC_ANGLE = Math.toRadians(45.0);
    private NpcRangedAttackHelper() {
    }
 
    static void configureBowArrow(LivingEntity attacker, AbstractArrow arrow, float drawForce) {
-      arrow.m_36781_((double)drawForce * 2.0 + attacker.m_217043_().m_188583_() * 0.25);
-      int power = EnchantmentHelper.m_44843_(Enchantments.f_44988_, attacker.m_21205_());
+      arrow.setBaseDamage((double)drawForce * 2.0 + attacker.getRandom().nextGaussian() * 0.25);
+      int power = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.POWER_ARROWS, attacker.getMainHandItem());
       if (power > 0) {
-         arrow.m_36781_(arrow.m_36789_() + (double)power * 0.5 + 0.5);
+         arrow.setBaseDamage(arrow.getBaseDamage() + (double)power * 0.5 + 0.5);
       }
 
-      int punch = EnchantmentHelper.m_44843_(Enchantments.f_44989_, attacker.m_21205_());
+      int punch = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.PUNCH_ARROWS, attacker.getMainHandItem());
       if (punch > 0) {
-         arrow.m_36735_(punch);
+         arrow.setKnockback(punch);
       }
 
-      if (EnchantmentHelper.m_44843_(Enchantments.f_44990_, attacker.m_21205_()) > 0) {
-         arrow.m_20254_(100);
+      if (EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FLAMING_ARROWS, attacker.getMainHandItem()) > 0) {
+         arrow.setSecondsOnFire(100);
       }
    }
 
    static void configureCrossbowArrow(LivingEntity attacker, AbstractArrow arrow, ItemStack crossbow) {
-      arrow.m_36781_(2.0 + attacker.m_217043_().m_188583_() * 0.25);
-      int piercing = EnchantmentHelper.m_44843_(Enchantments.f_44961_, crossbow);
+      arrow.setBaseDamage(2.0 + attacker.getRandom().nextGaussian() * 0.25);
+      int piercing = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.PIERCING, crossbow);
       if (piercing > 0) {
-         arrow.m_36767_((byte)piercing);
+         arrow.setPierceLevel((byte)piercing);
       }
    }
 
    static int crossbowProjectileCount(ItemStack crossbow) {
-      return EnchantmentHelper.m_44843_(Enchantments.f_44959_, crossbow) > 0 ? 3 : 1;
+      return EnchantmentHelper.getItemEnchantmentLevel(Enchantments.MULTISHOT, crossbow) > 0 ? 3 : 1;
    }
 
    static int crossbowChargeDuration(ItemStack crossbow) {
-      int quickCharge = EnchantmentHelper.m_44843_(Enchantments.f_44960_, crossbow);
+      int quickCharge = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.QUICK_CHARGE, crossbow);
       return Math.max(5, 25 - quickCharge * 5);
    }
 
    static Vec3 predictTargetPosition(LivingEntity attacker, LivingEntity target, double projectileSpeed) {
-      Vec3 predicted = target.m_20182_().m_82520_(0.0, (double)target.m_20206_() / 3.0, 0.0);
-      Vec3 targetVelocity = target.m_20184_();
+      Vec3 predicted = target.position().add(0.0, (double)target.getBbHeight() / 3.0, 0.0);
+      Vec3 targetVelocity = target.getDeltaMovement();
 
       for (int iteration = 0; iteration < 3; iteration++) {
-         double distance = attacker.m_146892_().m_82554_(predicted);
+         double distance = attacker.getEyePosition().distanceTo(predicted);
          double flightTicks = distance / Math.max(0.1, projectileSpeed);
-         predicted = target.m_20182_().m_82549_(targetVelocity.m_82490_(flightTicks));
-         predicted = predicted.m_82520_(0.0, (double)target.m_20206_() / 3.0, 0.0);
+         predicted = target.position().add(targetVelocity.scale(flightTicks));
+         predicted = predicted.add(0.0, (double)target.getBbHeight() / 3.0, 0.0);
       }
 
       return predicted;
@@ -67,15 +68,15 @@ final class NpcRangedAttackHelper {
    static Optional<NpcRangedAttackHelper.BallisticShot> findBallisticShot(
       LivingEntity attacker, LivingEntity target, Vec3 start, double projectileSpeed, double gravity
    ) {
-      if (attacker.m_9236_() != null && target != null && !(projectileSpeed <= 0.01) && !(gravity <= 0.0)) {
+      if (attacker.level() != null && target != null && !(projectileSpeed <= 0.01) && !(gravity <= 0.0)) {
          Vec3 aim = predictTargetPosition(attacker, target, projectileSpeed);
-         double dx = aim.f_82479_ - start.f_82479_;
-         double dz = aim.f_82481_ - start.f_82481_;
+         double dx = aim.x - start.x;
+         double dz = aim.z - start.z;
          double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
          if (horizontalDistance < 0.01) {
             return Optional.empty();
          } else {
-            double height = aim.f_82480_ - start.f_82480_;
+            double height = aim.y - start.y;
             double speedSquared = projectileSpeed * projectileSpeed;
             double discriminant = speedSquared * speedSquared - gravity * (gravity * horizontalDistance * horizontalDistance + 2.0 * height * speedSquared);
             if (discriminant < 0.0) {
@@ -101,26 +102,78 @@ final class NpcRangedAttackHelper {
       }
    }
 
+   /**
+    * High arcing shot at a point on the ground, for area fire over the heads of the front ranks. Speed is searched with
+    * the arrow's real drag; empty when the point is out of reach at {@code maxSpeed}.
+    */
+   static Optional<NpcRangedAttackHelper.BallisticShot> findArcShot(Vec3 start, Vec3 aim, double maxSpeed) {
+      double dx = aim.x - start.x;
+      double dz = aim.z - start.z;
+      double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+      if (horizontalDistance < 0.5) {
+         return Optional.empty();
+      }
+
+      double height = aim.y - start.y;
+      if (arcRange(maxSpeed, ARC_ANGLE, height) < horizontalDistance) {
+         return Optional.empty();
+      }
+
+      double low = 0.05;
+      double high = maxSpeed;
+
+      for (int iteration = 0; iteration < 16; iteration++) {
+         double middle = (low + high) * 0.5;
+         if (arcRange(middle, ARC_ANGLE, height) < horizontalDistance) {
+            low = middle;
+         } else {
+            high = middle;
+         }
+      }
+
+      return Optional.of(shot(new Vec3(dx / horizontalDistance, 0.0, dz / horizontalDistance), ARC_ANGLE, high));
+   }
+
+   /** Horizontal distance an arrow covers before it falls back to {@code height}, stepping like the arrow does in flight. */
+   private static double arcRange(double speed, double angle, double height) {
+      double vx = speed * Math.cos(angle);
+      double vy = speed * Math.sin(angle);
+      double x = 0.0;
+      double y = 0.0;
+
+      for (int tick = 0; tick < 300; tick++) {
+         x += vx;
+         y += vy;
+         vx *= 0.99;
+         vy = vy * 0.99 - 0.05;
+         if (vy < 0.0 && y < height) {
+            break;
+         }
+      }
+
+      return x;
+   }
+
    private static NpcRangedAttackHelper.BallisticShot shot(Vec3 horizontalDirection, double angle, double speed) {
       double cos = Math.cos(angle);
-      Vec3 direction = horizontalDirection.m_82490_(cos).m_82520_(0.0, Math.sin(angle), 0.0).m_82541_();
+      Vec3 direction = horizontalDirection.scale(cos).add(0.0, Math.sin(angle), 0.0).normalize();
       return new NpcRangedAttackHelper.BallisticShot(direction, (float)speed);
    }
 
    private static boolean hasClearPath(LivingEntity attacker, Vec3 start, double horizontalDistance, double gravity, NpcRangedAttackHelper.BallisticShot shot) {
-      double horizontalSpeed = (double)shot.speed() * shot.direction().m_165924_();
+      double horizontalSpeed = (double)shot.speed() * shot.direction().horizontalDistance();
       if (horizontalSpeed < 0.01) {
          return false;
       } else {
          double flightTime = horizontalDistance / horizontalSpeed;
          int steps = Math.max(4, Math.min(160, (int)Math.ceil(flightTime / 0.5)));
-         Vec3 velocity = shot.direction().m_82490_((double)shot.speed());
+         Vec3 velocity = shot.direction().scale((double)shot.speed());
          Vec3 previous = start;
 
          for (int step = 1; step <= steps; step++) {
             double time = flightTime * (double)step / (double)steps;
-            Vec3 current = start.m_82549_(velocity.m_82490_(time)).m_82520_(0.0, -0.5 * gravity * time * time, 0.0);
-            if (attacker.m_9236_().m_45547_(new ClipContext(previous, current, Block.COLLIDER, Fluid.NONE, attacker)).m_6662_() != Type.MISS) {
+            Vec3 current = start.add(velocity.scale(time)).add(0.0, -0.5 * gravity * time * time, 0.0);
+            if (attacker.level().clip(new ClipContext(previous, current, Block.COLLIDER, Fluid.NONE, attacker)).getType() != Type.MISS) {
                return false;
             }
 

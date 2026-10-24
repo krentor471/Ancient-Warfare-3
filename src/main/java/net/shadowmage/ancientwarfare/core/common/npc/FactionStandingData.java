@@ -1,25 +1,37 @@
 package net.shadowmage.ancientwarfare.core.common.npc;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
+import net.shadowmage.ancientwarfare.core.faction.RelationState;
 
 public final class FactionStandingData extends SavedData {
    private static final String DATA_NAME = "ancientwarfare_faction_standings";
    private final Map<UUID, Map<String, Integer>> standings = new HashMap<>();
+   /** The player's agreement with each faction; missing means neutral. */
+   private final Map<UUID, Map<String, RelationState>> treaties = new HashMap<>();
+   /** Factions the player has met, the ones the diplomacy screen lists. */
+   private final Map<UUID, Set<String>> known = new HashMap<>();
+   /** Factions the player has a trade agreement with; war ends it. */
+   private final Map<UUID, Set<String>> trade = new HashMap<>();
 
    public static FactionStandingData get(ServerLevel level) {
-      MinecraftServer server = level.m_7654_();
-      return (FactionStandingData)server.m_129783_()
-         .m_8895_()
-         .m_164861_(FactionStandingData::load, FactionStandingData::new, "ancientwarfare_faction_standings");
+      MinecraftServer server = level.getServer();
+      return (FactionStandingData)server.overworld()
+         .getDataStorage()
+         .computeIfAbsent(FactionStandingData::load, FactionStandingData::new, "ancientwarfare_faction_standings");
    }
 
    public int getStanding(UUID playerId, String factionName) {
@@ -30,7 +42,7 @@ public final class FactionStandingData extends SavedData {
    public int setStanding(UUID playerId, String factionName, int standing) {
       String faction = normalize(factionName);
       this.standings.computeIfAbsent(playerId, ignored -> new HashMap<>()).put(faction, standing);
-      this.m_77762_();
+      this.setDirty();
       return standing;
    }
 
@@ -41,34 +53,110 @@ public final class FactionStandingData extends SavedData {
          : this.getStanding(playerId, factionName);
    }
 
+   /** At war: always hostile. Under a pact or alliance: never. Otherwise hostile below zero standing. */
    public boolean isHostile(UUID playerId, String factionName) {
-      return this.getStanding(playerId, factionName) < 0;
+      return switch (this.getTreaty(playerId, factionName)) {
+         case WAR -> true;
+         case PACT, ALLIANCE -> false;
+         default -> this.getStanding(playerId, factionName) < 0;
+      };
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
+   public RelationState getTreaty(UUID playerId, String factionName) {
+      String faction = normalize(factionName);
+      return FactionDiplomacy.isOutlaw(faction)
+         ? RelationState.WAR
+         : this.treaties.getOrDefault(playerId, Map.of()).getOrDefault(faction, RelationState.NEUTRAL);
+   }
+
+   public void setTreaty(UUID playerId, String factionName, RelationState state) {
+      this.treaties.computeIfAbsent(playerId, ignored -> new HashMap<>()).put(normalize(factionName), state);
+      if (state == RelationState.WAR) {
+         this.setTrade(playerId, factionName, false);
+      }
+
+      this.setDirty();
+   }
+
+   public boolean hasTrade(UUID playerId, String factionName) {
+      return this.trade.getOrDefault(playerId, Set.of()).contains(normalize(factionName));
+   }
+
+   public void setTrade(UUID playerId, String factionName, boolean agreed) {
+      Set<String> factions = this.trade.computeIfAbsent(playerId, ignored -> new HashSet<>());
+      if (agreed ? factions.add(normalize(factionName)) : factions.remove(normalize(factionName))) {
+         this.setDirty();
+      }
+   }
+
+   /** Every player's trade partners, by player. */
+   public Map<UUID, Set<String>> tradeAgreements() {
+      return Collections.unmodifiableMap(this.trade);
+   }
+
+   public Set<String> knownFactions(UUID playerId) {
+      return Collections.unmodifiableSet(this.known.getOrDefault(playerId, Set.of()));
+   }
+
+   /** Returns true when the player had not met this faction before. */
+   public boolean discover(UUID playerId, String factionName) {
+      String faction = normalize(factionName);
+      if (!FactionRegistry.isKnown(faction) || !this.known.computeIfAbsent(playerId, ignored -> new HashSet<>()).add(faction)) {
+         return false;
+      }
+
+      this.setDirty();
+      return true;
+   }
+
+   public CompoundTag save(CompoundTag tag) {
       ListTag players = new ListTag();
-      this.standings.forEach((playerId, factionStandings) -> {
+      Set<UUID> playerIds = new HashSet<>(this.standings.keySet());
+      playerIds.addAll(this.treaties.keySet());
+      playerIds.addAll(this.known.keySet());
+      playerIds.addAll(this.trade.keySet());
+      playerIds.forEach(playerId -> {
          CompoundTag playerTag = new CompoundTag();
-         playerTag.m_128362_("Player", playerId);
+         playerTag.putUUID("Player", playerId);
          CompoundTag values = new CompoundTag();
-         factionStandings.forEach(values::m_128405_);
-         playerTag.m_128365_("Standings", values);
+         this.standings.getOrDefault(playerId, Map.of()).forEach(values::putInt);
+         playerTag.put("Standings", values);
+         CompoundTag treatyTag = new CompoundTag();
+         this.treaties.getOrDefault(playerId, Map.of()).forEach((faction, state) -> treatyTag.putString(faction, state.serializedName()));
+         playerTag.put("Treaties", treatyTag);
+         ListTag knownTag = new ListTag();
+         this.known.getOrDefault(playerId, Set.of()).forEach(faction -> knownTag.add(StringTag.valueOf(faction)));
+         playerTag.put("Known", knownTag);
+         ListTag tradeTag = new ListTag();
+         this.trade.getOrDefault(playerId, Set.of()).forEach(faction -> tradeTag.add(StringTag.valueOf(faction)));
+         playerTag.put("Trade", tradeTag);
          players.add(playerTag);
       });
-      tag.m_128365_("Players", players);
+      tag.put("Players", players);
       return tag;
    }
 
    private static FactionStandingData load(CompoundTag tag) {
       FactionStandingData data = new FactionStandingData();
 
-      for (Tag entry : tag.m_128437_("Players", 10)) {
+      for (Tag entry : tag.getList("Players", 10)) {
          CompoundTag playerTag = (CompoundTag)entry;
-         if (playerTag.m_128403_("Player")) {
+         if (playerTag.hasUUID("Player")) {
             Map<String, Integer> values = new HashMap<>();
-            CompoundTag standingsTag = playerTag.m_128469_("Standings");
-            standingsTag.m_128431_().forEach(faction -> values.put(normalize(faction), standingsTag.m_128451_(faction)));
-            data.standings.put(playerTag.m_128342_("Player"), values);
+            CompoundTag standingsTag = playerTag.getCompound("Standings");
+            standingsTag.getAllKeys().forEach(faction -> values.put(normalize(faction), standingsTag.getInt(faction)));
+            UUID playerId = playerTag.getUUID("Player");
+            data.standings.put(playerId, values);
+            CompoundTag treatyTag = playerTag.getCompound("Treaties");
+            Map<String, RelationState> playerTreaties = new HashMap<>();
+            treatyTag.getAllKeys().forEach(faction -> playerTreaties.put(faction, RelationState.byName(treatyTag.getString(faction))));
+            data.treaties.put(playerId, playerTreaties);
+            Set<String> knownFactions = new HashSet<>();
+            playerTag.getList("Known", Tag.TAG_STRING).forEach(element -> knownFactions.add(element.getAsString()));
+            data.known.put(playerId, knownFactions);
+            Set<String> partners = new HashSet<>();
+            playerTag.getList("Trade", Tag.TAG_STRING).forEach(element -> partners.add(element.getAsString()));
+            data.trade.put(playerId, partners);
          }
       }
 

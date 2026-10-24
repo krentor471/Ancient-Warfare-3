@@ -11,8 +11,8 @@ public class FlywheelControllerGeoRenderer extends GeoBlockRenderer<FlywheelCont
    }
 
    protected Direction getFacing(FlywheelControllerBlockEntity animatable) {
-      return animatable.m_58900_().m_61138_(FlywheelControllerBlock.FACING)
-         ? (Direction)animatable.m_58900_().m_61143_(FlywheelControllerBlock.FACING)
+      return animatable.getBlockState().hasProperty(FlywheelControllerBlock.FACING)
+         ? (Direction)animatable.getBlockState().getValue(FlywheelControllerBlock.FACING)
          : Direction.NORTH;
    }
 }

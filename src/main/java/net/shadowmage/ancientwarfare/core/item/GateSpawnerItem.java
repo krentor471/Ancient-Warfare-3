@@ -37,81 +37,81 @@ public class GateSpawnerItem extends Item {
    }
 
    public GateSpawnerItem(GateEntity.Material material, GateEntity.OpeningStyle openingStyle) {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
       this.material = material;
       this.openingStyle = openingStyle;
    }
 
-   public InteractionResult m_6225_(UseOnContext context) {
-      Level level = context.m_43725_();
-      ItemStack stack = context.m_43722_();
-      Player player = context.m_43723_();
-      if (player != null && !player.m_5833_() && !stack.m_41619_()) {
-         BlockPos clicked = context.m_8083_().m_121945_(context.m_43719_());
-         CompoundTag tag = stack.m_41784_();
-         if (!tag.m_128441_("FirstPos")) {
-            if (!level.f_46443_ && player != null) {
-               tag.m_128365_("FirstPos", NbtUtils.m_129224_(clicked));
-               player.m_5661_(
-                  Component.m_237110_("message.ancientwarfare.gate.first_pos", new Object[]{clicked.m_123341_(), clicked.m_123342_(), clicked.m_123343_()}),
+   public InteractionResult useOn(UseOnContext context) {
+      Level level = context.getLevel();
+      ItemStack stack = context.getItemInHand();
+      Player player = context.getPlayer();
+      if (player != null && !player.isSpectator() && !stack.isEmpty()) {
+         BlockPos clicked = context.getClickedPos().relative(context.getClickedFace());
+         CompoundTag tag = stack.getOrCreateTag();
+         if (!tag.contains("FirstPos")) {
+            if (!level.isClientSide && player != null) {
+               tag.put("FirstPos", NbtUtils.writeBlockPos(clicked));
+               player.displayClientMessage(
+                  Component.translatable("message.ancientwarfare.gate.first_pos", new Object[]{clicked.getX(), clicked.getY(), clicked.getZ()}),
                   true
                );
             }
 
-            return InteractionResult.m_19078_(level.f_46443_);
+            return InteractionResult.sidedSuccess(level.isClientSide);
          } else {
-            BlockPos first = NbtUtils.m_129239_(tag.m_128469_("FirstPos"));
-            tag.m_128473_("FirstPos");
-            if (!level.f_46443_ && player != null) {
+            BlockPos first = NbtUtils.readBlockPos(tag.getCompound("FirstPos"));
+            tag.remove("FirstPos");
+            if (!level.isClientSide && player != null) {
                if (!isValidPlane(first, clicked)) {
-                  player.m_5661_(Component.m_237115_("message.ancientwarfare.gate.invalid_plane"), true);
+                  player.displayClientMessage(Component.translatable("message.ancientwarfare.gate.invalid_plane"), true);
                   return InteractionResult.FAIL;
                }
 
                BlockPos min = new BlockPos(
-                  Math.min(first.m_123341_(), clicked.m_123341_()),
-                  Math.min(first.m_123342_(), clicked.m_123342_()),
-                  Math.min(first.m_123343_(), clicked.m_123343_())
+                  Math.min(first.getX(), clicked.getX()),
+                  Math.min(first.getY(), clicked.getY()),
+                  Math.min(first.getZ(), clicked.getZ())
                );
                BlockPos max = new BlockPos(
-                  Math.max(first.m_123341_(), clicked.m_123341_()),
-                  Math.max(first.m_123342_(), clicked.m_123342_()),
-                  Math.max(first.m_123343_(), clicked.m_123343_())
+                  Math.max(first.getX(), clicked.getX()),
+                  Math.max(first.getY(), clicked.getY()),
+                  Math.max(first.getZ(), clicked.getZ())
                );
                if (!isValidSize(min, max)) {
-                  player.m_5661_(Component.m_237110_("message.ancientwarfare.gate.invalid_size", new Object[]{12, 12}), true);
+                  player.displayClientMessage(Component.translatable("message.ancientwarfare.gate.invalid_size", new Object[]{12, 12}), true);
                   return InteractionResult.FAIL;
                }
 
                if (!canPlace(level, player, stack, min, max)) {
-                  player.m_5661_(Component.m_237115_("message.ancientwarfare.gate.blocked"), true);
+                  player.displayClientMessage(Component.translatable("message.ancientwarfare.gate.blocked"), true);
                   return InteractionResult.FAIL;
                }
 
-               GateEntity gate = (GateEntity)AWCoreRegistryAccess.entityType(AWCoreIds.DYNAMIC_GATE).m_20615_(level);
+               GateEntity gate = (GateEntity)AWCoreRegistryAccess.entityType(AWCoreIds.DYNAMIC_GATE).create(level);
                if (gate != null) {
-                  gate.configure(first, clicked, context.m_8125_());
+                  gate.configure(first, clicked, context.getHorizontalDirection());
                   gate.setMaterial(this.material);
                   gate.setOpeningStyle(this.openingStyle);
-                  gate.setOwner(player.m_20148_());
-                  if (tag.m_128441_("GateHealth")) {
-                     gate.restorePackedHealth(tag.m_128457_("GateHealth"));
+                  gate.setOwner(player.getUUID());
+                  if (tag.contains("GateHealth")) {
+                     gate.restorePackedHealth(tag.getFloat("GateHealth"));
                   }
 
-                  if (!level.m_7967_(gate)) {
+                  if (!level.addFreshEntity(gate)) {
                      return InteractionResult.FAIL;
                   }
 
                   gate.ensureProxyBlocks();
-                  if (!player.m_150110_().f_35937_) {
-                     stack.m_41774_(1);
+                  if (!player.getAbilities().instabuild) {
+                     stack.shrink(1);
                   }
 
-                  player.m_5661_(Component.m_237115_("message.ancientwarfare.gate.created"), true);
+                  player.displayClientMessage(Component.translatable("message.ancientwarfare.gate.created"), true);
                }
             }
 
-            return InteractionResult.m_19078_(level.f_46443_);
+            return InteractionResult.sidedSuccess(level.isClientSide);
          }
       } else {
          return InteractionResult.FAIL;
@@ -119,25 +119,25 @@ public class GateSpawnerItem extends Item {
    }
 
    private static boolean isValidPlane(BlockPos first, BlockPos second) {
-      return first.m_123341_() == second.m_123341_() ^ first.m_123343_() == second.m_123343_();
+      return first.getX() == second.getX() ^ first.getZ() == second.getZ();
    }
 
    private static boolean isValidSize(BlockPos min, BlockPos max) {
-      int width = Math.max(max.m_123341_() - min.m_123341_() + 1, max.m_123343_() - min.m_123343_() + 1);
-      int height = max.m_123342_() - min.m_123342_() + 1;
+      int width = Math.max(max.getX() - min.getX() + 1, max.getZ() - min.getZ() + 1);
+      int height = max.getY() - min.getY() + 1;
       return width >= 1 && height >= 1 && width <= 12 && height <= 12;
    }
 
    private static boolean canPlace(Level level, Player player, ItemStack stack, BlockPos min, BlockPos max) {
-      for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
-         for (int y = min.m_123342_(); y <= max.m_123342_(); y++) {
-            int z = min.m_123343_();
+      for (int x = min.getX(); x <= max.getX(); x++) {
+         for (int y = min.getY(); y <= max.getY(); y++) {
+            int z = min.getZ();
 
-            while (z <= max.m_123343_()) {
+            while (z <= max.getZ()) {
                BlockPos pos = new BlockPos(x, y, z);
-               if (level.m_46805_(pos) && level.m_7966_(player, pos) && player.m_36204_(pos, Direction.UP, stack)) {
-                  BlockState state = level.m_8055_(pos);
-                  if (!state.m_60713_(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY)) && (state.m_60795_() || state.m_247087_())) {
+               if (level.hasChunkAt(pos) && level.mayInteract(player, pos) && player.mayUseItemAt(pos, Direction.UP, stack)) {
+                  BlockState state = level.getBlockState(pos);
+                  if (!state.is(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY)) && (state.isAir() || state.canBeReplaced())) {
                      z++;
                      continue;
                   }
@@ -153,14 +153,14 @@ public class GateSpawnerItem extends Item {
       return true;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_(this.tooltipKey()).m_130940_(ChatFormatting.GRAY));
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.gate_spawner.ownership").m_130940_(ChatFormatting.GRAY));
-      if (stack.m_41782_() && stack.m_41783_().m_128441_("FirstPos")) {
-         BlockPos first = NbtUtils.m_129239_(stack.m_41783_().m_128469_("FirstPos"));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable(this.tooltipKey()).withStyle(ChatFormatting.GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.gate_spawner.ownership").withStyle(ChatFormatting.GRAY));
+      if (stack.hasTag() && stack.getTag().contains("FirstPos")) {
+         BlockPos first = NbtUtils.readBlockPos(stack.getTag().getCompound("FirstPos"));
          tooltip.add(
-            Component.m_237110_("tooltip.ancientwarfare.gate_spawner.selected", new Object[]{first.m_123341_(), first.m_123342_(), first.m_123343_()})
-               .m_130940_(ChatFormatting.YELLOW)
+            Component.translatable("tooltip.ancientwarfare.gate_spawner.selected", new Object[]{first.getX(), first.getY(), first.getZ()})
+               .withStyle(ChatFormatting.YELLOW)
          );
       }
    }

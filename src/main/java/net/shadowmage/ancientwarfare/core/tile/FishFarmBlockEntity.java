@@ -60,7 +60,7 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private static final ResourceLocation FISHING_TREASURE = new ResourceLocation("minecraft", "gameplay/fishing/treasure");
    private static final int WORK_COST = 100;
    private static final int WORKER_ENERGY_PER_VISIT = 1600;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(32, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(32, ItemStack.EMPTY);
    private BlockPos boundsMin;
    private BlockPos boundsMax;
    private boolean harvestFish = true;
@@ -83,17 +83,17 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    @Override
    public boolean hasWork() {
-      return this.f_58857_ != null && !this.f_58857_.f_46443_ && this.countWater() > 0 && (this.harvestFish || this.harvestInk) && this.hasOutputSpace();
+      return this.level != null && !this.level.isClientSide && this.countWater() > 0 && (this.harvestFish || this.harvestInk) && this.hasOutputSpace();
    }
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
          this.storedEnergy = Math.min(
             this.getMaxEnergy(), this.storedEnergy + Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())))
          );
          this.processStoredEnergy();
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -121,18 +121,18 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    private boolean processNextAction() {
       int water = this.countWater();
-      if (water > 0 && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (water > 0 && this.level instanceof ServerLevel serverLevel) {
          boolean var6 = this.harvestFish;
          boolean ink = this.harvestInk;
          if (var6 && ink) {
-            var6 = this.f_58857_.f_46441_.m_188499_();
+            var6 = this.level.random.nextBoolean();
             ink = !var6;
          }
 
          if (var6) {
-            return this.produceFishingLoot(serverLevel, this.findWaterPos().orElse(this.f_58858_));
+            return this.produceFishingLoot(serverLevel, this.findWaterPos().orElse(this.worldPosition));
          } else if (ink) {
-            ItemStack inkStack = new ItemStack(Items.f_42532_);
+            ItemStack inkStack = new ItemStack(Items.INK_SAC);
             return this.insertAll(List.of(inkStack));
          } else {
             return false;
@@ -144,13 +144,13 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    private boolean produceFishingLoot(ServerLevel serverLevel, BlockPos origin) {
       LootParams params = new Builder(serverLevel)
-         .m_287286_(LootContextParams.f_81460_, Vec3.m_82512_(origin))
-         .m_287286_(LootContextParams.f_81463_, new ItemStack(Items.f_42523_))
-         .m_287235_(LootContextParamSets.f_81414_);
-      int roll = this.f_58857_.f_46441_.m_188503_(100);
+         .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(origin))
+         .withParameter(LootContextParams.TOOL, new ItemStack(Items.FISHING_ROD))
+         .create(LootContextParamSets.FISHING);
+      int roll = this.level.random.nextInt(100);
       ResourceLocation tableId = roll < 10 ? FISHING_JUNK : (roll < 15 ? FISHING_TREASURE : FISHING_FISH);
-      LootTable table = serverLevel.m_7654_().m_278653_().m_278676_(tableId);
-      List<ItemStack> drops = new ArrayList<>(table.m_287195_(params));
+      LootTable table = serverLevel.getServer().getLootData().getLootTable(tableId);
+      List<ItemStack> drops = new ArrayList<>(table.getRandomItems(params));
       return drops.isEmpty() ? false : this.insertAll(drops);
    }
 
@@ -159,9 +159,9 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
 
-      for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
-         for (int z = min.m_123343_(); z <= max.m_123343_(); z++) {
-            for (int y = max.m_123342_(); y >= min.m_123342_() && this.f_58857_.m_6425_(new BlockPos(x, y, z)).m_205070_(FluidTags.f_13131_); y--) {
+      for (int x = min.getX(); x <= max.getX(); x++) {
+         for (int z = min.getZ(); z <= max.getZ(); z++) {
+            for (int y = max.getY(); y >= min.getY() && this.level.getFluidState(new BlockPos(x, y, z)).is(FluidTags.WATER); y--) {
                count++;
             }
          }
@@ -174,11 +174,11 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
 
-      for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
-         for (int z = min.m_123343_(); z <= max.m_123343_(); z++) {
-            for (int y = max.m_123342_(); y >= min.m_123342_(); y--) {
+      for (int x = min.getX(); x <= max.getX(); x++) {
+         for (int z = min.getZ(); z <= max.getZ(); z++) {
+            for (int y = max.getY(); y >= min.getY(); y--) {
                BlockPos pos = new BlockPos(x, y, z);
-               if (this.f_58857_.m_6425_(pos).m_205070_(FluidTags.f_13131_)) {
+               if (this.level.getFluidState(pos).is(FluidTags.WATER)) {
                   return Optional.of(pos);
                }
             }
@@ -189,14 +189,14 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private boolean insertAll(List<ItemStack> drops) {
-      NonNullList<ItemStack> simulated = NonNullList.m_122780_(27, ItemStack.f_41583_);
+      NonNullList<ItemStack> simulated = NonNullList.withSize(27, ItemStack.EMPTY);
 
       for (int slot = 0; slot < 27; slot++) {
-         simulated.set(slot, ((ItemStack)this.items.get(0 + slot)).m_41777_());
+         simulated.set(slot, ((ItemStack)this.items.get(0 + slot)).copy());
       }
 
       for (ItemStack drop : drops) {
-         if (!this.insertIntoRange(simulated, drop.m_41777_(), 0, 27).m_41619_()) {
+         if (!this.insertIntoRange(simulated, drop.copy(), 0, 27).isEmpty()) {
             return false;
          }
       }
@@ -205,20 +205,20 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          this.items.set(0 + slot, (ItemStack)simulated.get(slot));
       }
 
-      this.m_6596_();
+      this.setChanged();
       return true;
    }
 
    private ItemStack insertIntoRange(NonNullList<ItemStack> target, ItemStack stack, int start, int count) {
-      for (int slot = start; slot < start + count && !stack.m_41619_(); slot++) {
+      for (int slot = start; slot < start + count && !stack.isEmpty(); slot++) {
          ItemStack existing = (ItemStack)target.get(slot);
-         if (existing.m_41619_()) {
-            target.set(slot, stack.m_41777_());
-            stack.m_41764_(0);
-         } else if (ItemStack.m_150942_(existing, stack) && existing.m_41613_() < existing.m_41741_()) {
-            int moved = Math.min(stack.m_41613_(), existing.m_41741_() - existing.m_41613_());
-            existing.m_41769_(moved);
-            stack.m_41774_(moved);
+         if (existing.isEmpty()) {
+            target.set(slot, stack.copy());
+            stack.setCount(0);
+         } else if (ItemStack.isSameItemSameTags(existing, stack) && existing.getCount() < existing.getMaxStackSize()) {
+            int moved = Math.min(stack.getCount(), existing.getMaxStackSize() - existing.getCount());
+            existing.grow(moved);
+            stack.shrink(moved);
          }
       }
 
@@ -228,7 +228,7 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private boolean hasOutputSpace() {
       for (int slot = 0; slot < 27; slot++) {
          ItemStack stack = (ItemStack)this.items.get(slot);
-         if (stack.m_41619_() || stack.m_41613_() < Math.min(this.m_6893_(), stack.m_41741_())) {
+         if (stack.isEmpty() || stack.getCount() < Math.min(this.getMaxStackSize(), stack.getMaxStackSize())) {
             return true;
          }
       }
@@ -246,18 +246,18 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    public void toggleHarvestFish() {
       this.harvestFish = !this.harvestFish;
-      this.m_6596_();
+      this.setChanged();
    }
 
    public void toggleHarvestInk() {
       this.harvestInk = !this.harvestInk;
-      this.m_6596_();
+      this.setChanged();
    }
 
    @Override
    public BlockPos getBoundsMin() {
       if (this.boundsMin == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMin;
@@ -266,7 +266,7 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    @Override
    public BlockPos getBoundsMax() {
       if (this.boundsMax == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMax;
@@ -278,7 +278,7 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    public void adjustBounds(int minXDelta, int maxXDelta, int minZDelta, int maxZDelta) {
       WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjust(
-         this.f_58858_, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
+         this.worldPosition, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
       );
       if (adjusted != null) {
          this.boundsMin = adjusted.min();
@@ -291,147 +291,147 @@ public class FishFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    public boolean containsWorkTarget(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_()
-         && pos.m_123342_() >= min.m_123342_()
-         && pos.m_123342_() <= max.m_123342_();
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ()
+         && pos.getY() >= min.getY()
+         && pos.getY() <= max.getY();
    }
 
    private void resetDefaultBounds(BlockPos pos, BlockState state) {
-      Direction facing = state.m_61138_(AutomationWorksiteBlock.FACING)
-         ? ((Direction)state.m_61143_(AutomationWorksiteBlock.FACING)).m_122424_()
+      Direction facing = state.hasProperty(AutomationWorksiteBlock.FACING)
+         ? ((Direction)state.getValue(AutomationWorksiteBlock.FACING)).getOpposite()
          : Direction.SOUTH;
-      BlockPos near = pos.m_121945_(facing);
-      BlockPos far = pos.m_5484_(facing, 5);
-      int minY = pos.m_123342_() - 5;
-      int maxY = pos.m_123342_() - 1;
-      if (facing.m_122434_() == Axis.Z) {
-         this.boundsMin = new BlockPos(pos.m_123341_() - 2, minY, Math.min(near.m_123343_(), far.m_123343_()));
-         this.boundsMax = new BlockPos(pos.m_123341_() + 2, maxY, Math.max(near.m_123343_(), far.m_123343_()));
+      BlockPos near = pos.relative(facing);
+      BlockPos far = pos.relative(facing, 5);
+      int minY = pos.getY() - 5;
+      int maxY = pos.getY() - 1;
+      if (facing.getAxis() == Axis.Z) {
+         this.boundsMin = new BlockPos(pos.getX() - 2, minY, Math.min(near.getZ(), far.getZ()));
+         this.boundsMax = new BlockPos(pos.getX() + 2, maxY, Math.max(near.getZ(), far.getZ()));
       } else {
-         this.boundsMin = new BlockPos(Math.min(near.m_123341_(), far.m_123341_()), minY, pos.m_123343_() - 2);
-         this.boundsMax = new BlockPos(Math.max(near.m_123341_(), far.m_123341_()), maxY, pos.m_123343_() + 2);
+         this.boundsMin = new BlockPos(Math.min(near.getX(), far.getX()), minY, pos.getZ() - 2);
+         this.boundsMax = new BlockPos(Math.max(near.getX(), far.getX()), maxY, pos.getZ() + 2);
       }
    }
 
    @Override
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128379_("HarvestFish", this.harvestFish);
-      tag.m_128379_("HarvestInk", this.harvestInk);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putBoolean("HarvestFish", this.harvestFish);
+      tag.putBoolean("HarvestInk", this.harvestInk);
    }
 
    @Override
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      if (tag.m_128441_("BoundsMin")) {
-         this.boundsMin = BlockPos.m_122022_(tag.m_128454_("BoundsMin"));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      if (tag.contains("BoundsMin")) {
+         this.boundsMin = BlockPos.of(tag.getLong("BoundsMin"));
       }
 
-      if (tag.m_128441_("BoundsMax")) {
-         this.boundsMax = BlockPos.m_122022_(tag.m_128454_("BoundsMax"));
+      if (tag.contains("BoundsMax")) {
+         this.boundsMax = BlockPos.of(tag.getLong("BoundsMax"));
       }
 
-      this.harvestFish = !tag.m_128441_("HarvestFish") || tag.m_128471_("HarvestFish");
-      this.harvestInk = !tag.m_128441_("HarvestInk") || tag.m_128471_("HarvestInk");
+      this.harvestFish = !tag.contains("HarvestFish") || tag.getBoolean("HarvestFish");
+      this.harvestInk = !tag.contains("HarvestInk") || tag.getBoolean("HarvestInk");
       this.normalizeLoadedBounds();
    }
 
    private void normalizeLoadedBounds() {
-      if (this.f_58857_ == null || !this.f_58857_.f_46443_) {
+      if (this.level == null || !this.level.isClientSide) {
          if (this.boundsMin != null && this.boundsMax != null && !WorksiteBoundsGeometry.hasValidSize(this.boundsMin, this.boundsMax, this.getMaxBoundsWidth())
             )
           {
-            this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+            this.resetDefaultBounds(this.worldPosition, this.getBlockState());
          }
       }
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128379_("HarvestFish", this.harvestFish);
-      tag.m_128379_("HarvestInk", this.harvestInk);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putBoolean("HarvestFish", this.harvestFish);
+      tag.putBoolean("HarvestInk", this.harvestInk);
       return tag;
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 32;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return this.isValidSlot(slot) ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return this.isValidSlot(slot) ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         this.m_6596_();
+         this.setChanged();
          if (slot >= 27 && slot < 32) {
             this.refreshChunkLoading();
          }
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_(this.getDescriptionId());
+   public Component getDisplayName() {
+      return Component.translatable(this.getDescriptionId());
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new FishFarmMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new FishFarmMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createBoundsMenu(int containerId, Inventory playerInventory) {
-      return new FishFarmBoundsMenu(containerId, playerInventory, this.f_58858_);
+      return new FishFarmBoundsMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createControlMenu(int containerId, Inventory playerInventory) {
-      return new FishFarmControlMenu(containerId, playerInventory, this.f_58858_);
+      return new FishFarmControlMenu(containerId, playerInventory, this.worldPosition);
    }
 
    @Override

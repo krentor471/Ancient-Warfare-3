@@ -121,7 +121,7 @@ public class WarehouseStockViewerBlockEntity extends BlockEntity implements Menu
       long revision = control == null ? -1L : control.getInventoryRevision();
       if (this.filtersDirty || control != this.lastController || revision != this.lastRevision) {
          for (WarehouseStockFilter filter : this.filters) {
-            long quantity = control != null && !filter.item().m_41619_() ? control.getCountOfLong(filter.item()) : 0L;
+            long quantity = control != null && !filter.item().isEmpty() ? control.getCountOfLong(filter.item()) : 0L;
             filter.setQuantity(quantity);
          }
 
@@ -136,65 +136,65 @@ public class WarehouseStockViewerBlockEntity extends BlockEntity implements Menu
    }
 
    protected void syncChanged() {
-      this.m_6596_();
-      if (this.f_58857_ != null) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+      this.setChanged();
+      if (this.level != null) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
       this.saveFilters(tag);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
+   public void load(CompoundTag tag) {
+      super.load(tag);
       this.loadFilters(tag);
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
       this.saveFilters(tag);
       return tag;
    }
 
    protected void saveFilters(CompoundTag tag) {
       this.membership.save(tag);
-      tag.m_128379_("RequireAll", this.requireAll);
+      tag.putBoolean("RequireAll", this.requireAll);
       ListTag list = new ListTag();
 
       for (WarehouseStockFilter filter : this.filters) {
          list.add(filter.save());
       }
 
-      tag.m_128365_("Filters", list);
+      tag.put("Filters", list);
    }
 
    protected void loadFilters(CompoundTag tag) {
       this.configurationRevision++;
       this.membership.load(tag);
-      this.requireAll = tag.m_128471_("RequireAll");
+      this.requireAll = tag.getBoolean("RequireAll");
       this.filtersDirty = true;
-      if (tag.m_128441_("Filters")) {
-         ListTag list = tag.m_128437_("Filters", 10);
+      if (tag.contains("Filters")) {
+         ListTag list = tag.getList("Filters", 10);
 
          for (int i = 0; i < this.filters.length && i < list.size(); i++) {
-            this.filters[i].load(list.m_128728_(i));
+            this.filters[i].load(list.getCompound(i));
          }
       }
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.warehouse_stock_viewer");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.warehouse_stock_viewer");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new WarehouseStockViewerMenu(containerId, playerInventory, this.f_58858_, false);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new WarehouseStockViewerMenu(containerId, playerInventory, this.worldPosition, false);
    }
 }

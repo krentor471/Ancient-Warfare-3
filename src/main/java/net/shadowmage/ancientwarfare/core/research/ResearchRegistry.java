@@ -16,8 +16,94 @@ public final class ResearchRegistry {
    private ResearchRegistry() {
    }
 
+   /** Science a technology costs by how deep in the tree it lies; the first two steps cost none. */
+   private static final int[] SCIENCE_BY_DEPTH = {0, 0, 300, 500, 800, 1200, 1600, 2000};
+   private static final int AUTO_SCIENCE = -1;
+
    private static ResearchGoal goal(String id, int time, Set<String> dependencies, List<ResearchResource> resources) {
-      return new ResearchGoal(id, title(id), time, dependencies, resources);
+      return goal(id, time, dependencies, resources, AUTO_SCIENCE);
+   }
+
+   private static ResearchGoal goal(String id, int time, Set<String> dependencies, List<ResearchResource> resources, int science) {
+      return new ResearchGoal(id, title(id), time, dependencies, resources, science);
+   }
+
+   private static int depth(String id, Map<String, Integer> depths) {
+      Integer known = depths.get(id);
+      if (known != null) {
+         return known;
+      }
+
+      depths.put(id, 0);
+      ResearchGoal goal = GOALS.get(id);
+      int depth = 0;
+      if (goal != null) {
+         for (String dependency : goal.dependencies()) {
+            depth = Math.max(depth, depth(dependency, depths) + 1);
+         }
+      }
+
+      depths.put(id, depth);
+      return depth;
+   }
+
+   /** Gives every technology without a set price the science its depth in the tree calls for. */
+   private static final Map<String, Integer> DEPTHS = new java.util.HashMap<>();
+   /** Eras are technologies too: a big step everything past it waits on. */
+   public static final String ERA_PREFIX = "era_";
+   public static final String ERA_KINGDOM = "era_kingdom";
+   public static final String ERA_EMPIRE = "era_empire";
+
+   /**
+    * Opens an era: the era needs the named technologies, and every technology that was as deep in
+    * the tree as the era now is waits on the era as well.
+    */
+   private static void era(String id, int science, Set<String> needs, List<ResearchResource> resources) {
+      int depth = 0;
+      for (String need : needs) {
+         depth = Math.max(depth, depth(need) + 1);
+      }
+
+      List<String> waiting = new java.util.ArrayList<>();
+      for (ResearchGoal goal : GOALS.values()) {
+         if (depth(goal.id()) == depth) {
+            waiting.add(goal.id());
+         }
+      }
+
+      register(goal(id, 400, needs, resources, science));
+      for (String other : waiting) {
+         GOALS.put(other, GOALS.get(other).withDependency(id));
+      }
+
+      DEPTHS.clear();
+   }
+
+   /** The era a technology belongs to, by the last era on the way to it: null before the first. */
+   public static String eraOf(String id) {
+      ResearchGoal empire = GOALS.get(ERA_EMPIRE);
+      ResearchGoal kingdom = GOALS.get(ERA_KINGDOM);
+      int depth = depth(id);
+      if (empire != null && depth >= depth(ERA_EMPIRE)) {
+         return ERA_EMPIRE;
+      } else {
+         return kingdom != null && depth >= depth(ERA_KINGDOM) ? ERA_KINGDOM : null;
+      }
+   }
+
+   /** How many steps of research lie before this one: 0 for the roots of the tree. */
+   public static int depth(String id) {
+      return depth(id, DEPTHS);
+   }
+
+   private static void priceScience() {
+      Map<String, Integer> depths = DEPTHS;
+      for (Map.Entry<String, ResearchGoal> entry : GOALS.entrySet()) {
+         if (entry.getValue().science() == AUTO_SCIENCE) {
+            int depth = depth(entry.getKey(), depths);
+            entry.setValue(entry.getValue().withScience(SCIENCE_BY_DEPTH[Math.min(depth, SCIENCE_BY_DEPTH.length - 1)]));
+         }
+      }
    }
 
    private static Set<String> deps(String... ids) {
@@ -29,7 +115,7 @@ public final class ResearchRegistry {
    }
 
    private static ResearchResource stack(Item item, int count) {
-      return stack(BuiltInRegistries.f_257033_.m_7981_(item).toString(), count);
+      return stack(BuiltInRegistries.ITEM.getKey(item).toString(), count);
    }
 
    private static ResearchResource stack(String itemId, int count) {
@@ -75,15 +161,15 @@ public final class ResearchRegistry {
    }
 
    static {
-      register(goal("agriculture", 200, deps(), res(stack(Items.f_42398_, 24), stack(Items.f_42401_, 3), stack(Items.f_42405_, 4), stack(Items.f_42000_, 4))));
-      register(goal("invention", 200, deps(), res(stack(Items.f_42398_, 12), stack(Items.f_42401_, 3), stack(Items.f_42413_, 4), stack(Items.f_42000_, 4))));
-      register(goal("leadership", 200, deps(), res(stack(Items.f_42516_, 10), stack(Items.f_42398_, 24), stack(Items.f_42401_, 3), stack(Items.f_42000_, 4))));
+      register(goal("agriculture", 200, deps(), res(stack(Items.STICK, 24), stack(Items.STRING, 3), stack(Items.WHEAT, 4), stack(Items.TORCH, 4))));
+      register(goal("invention", 200, deps(), res(stack(Items.STICK, 12), stack(Items.STRING, 3), stack(Items.COAL, 4), stack(Items.TORCH, 4))));
+      register(goal("leadership", 200, deps(), res(stack(Items.PAPER, 10), stack(Items.STICK, 24), stack(Items.STRING, 3), stack(Items.TORCH, 4))));
       register(
          goal(
             "animal_husbandry",
             200,
             deps("agriculture"),
-            res(stack(Items.f_42405_, 12), stack(Items.f_42454_, 4), stack(Items.f_42401_, 12), stack(Items.f_42000_, 4))
+            res(stack(Items.WHEAT, 12), stack(Items.LEATHER, 4), stack(Items.STRING, 12), stack(Items.TORCH, 4))
          )
       );
       register(
@@ -91,7 +177,7 @@ public final class ResearchRegistry {
             "engineering",
             200,
             deps("invention"),
-            res(stack(Items.f_42516_, 20), stack(Items.f_42398_, 12), stack(Items.f_42413_, 4), stack(Items.f_42000_, 4))
+            res(stack(Items.PAPER, 20), stack(Items.STICK, 12), stack(Items.COAL, 4), stack(Items.TORCH, 4))
          )
       );
       register(
@@ -99,23 +185,23 @@ public final class ResearchRegistry {
             "farming",
             200,
             deps("invention", "agriculture"),
-            res(stack(Items.f_42405_, 12), stack(Items.f_42398_, 24), stack(Items.f_42401_, 3), stack(Items.f_42000_, 4))
+            res(stack(Items.WHEAT, 12), stack(Items.STICK, 24), stack(Items.STRING, 3), stack(Items.TORCH, 4))
          )
       );
       register(
          goal(
-            "fishing", 200, deps("agriculture"), res(stack(Items.f_42526_, 5), stack(Items.f_42401_, 24), stack(Items.f_42398_, 12), stack(Items.f_42000_, 4))
+            "fishing", 200, deps("agriculture"), res(stack(Items.COD, 5), stack(Items.STRING, 24), stack(Items.STICK, 12), stack(Items.TORCH, 4))
          )
       );
       register(
-         goal("command", 200, deps("leadership"), res(stack(Items.f_42468_, 1), stack(Items.f_42469_, 1), stack(Items.f_42470_, 1), stack(Items.f_42471_, 1)))
+         goal("command", 200, deps("leadership"), res(stack(Items.IRON_HELMET, 1), stack(Items.IRON_CHESTPLATE, 1), stack(Items.IRON_LEGGINGS, 1), stack(Items.IRON_BOOTS, 1)))
       );
       register(
          goal(
             "conscription",
             200,
             deps("leadership"),
-            res(stack(Items.f_42516_, 12), stack(Items.f_42417_, 4), stack(Items.f_42383_, 1), stack(Items.f_42436_, 1))
+            res(stack(Items.PAPER, 12), stack(Items.GOLD_INGOT, 4), stack(Items.IRON_SWORD, 1), stack(Items.GOLDEN_APPLE, 1))
          )
       );
       register(
@@ -123,7 +209,7 @@ public final class ResearchRegistry {
             "construction",
             200,
             deps("engineering"),
-            res(stack(Items.f_42385_, 1), stack(Items.f_42401_, 4), stack(Items.f_42398_, 12), stack(Items.f_42416_, 4))
+            res(stack(Items.IRON_PICKAXE, 1), stack(Items.STRING, 4), stack(Items.STICK, 12), stack(Items.IRON_INGOT, 4))
          )
       );
       register(
@@ -131,26 +217,26 @@ public final class ResearchRegistry {
             "mathematics",
             200,
             deps("engineering"),
-            res(stack(Items.f_42517_, 3), stack(Items.f_42451_, 5), stack(Items.f_41859_, 1), stack(Items.f_42413_, 4))
+            res(stack(Items.BOOK, 3), stack(Items.REDSTONE, 5), stack(Items.NOTE_BLOCK, 1), stack(Items.COAL, 4))
          )
       );
       register(
-         goal("mining", 200, deps("engineering"), res(stack(Items.f_42385_, 1), stack(Items.f_42520_, 1), stack(Items.f_42594_, 16), stack(Items.f_42000_, 8)))
+         goal("mining", 200, deps("engineering"), res(stack(Items.IRON_PICKAXE, 1), stack(Items.FURNACE_MINECART, 1), stack(Items.COBBLESTONE, 16), stack(Items.TORCH, 8)))
       );
       register(
          goal(
-            "the_wheel", 200, deps("engineering"), res(stack(Items.f_42155_, 1), stack(Items.f_42162_, 1), stack(Items.f_41905_, 4), stack(Items.f_42647_, 4))
+            "the_wheel", 200, deps("engineering"), res(stack(Items.HOPPER, 1), stack(Items.DROPPER, 1), stack(Items.STONE, 4), stack(Items.OAK_PLANKS, 4))
          )
       );
       register(
-         goal("chemistry", 200, deps("mining"), res(stack(Items.f_42451_, 32), stack(Items.f_42534_, 16), stack(Items.f_42417_, 2), stack(Items.f_42048_, 8)))
+         goal("chemistry", 200, deps("mining"), res(stack(Items.REDSTONE, 32), stack(Items.LAPIS_LAZULI, 16), stack(Items.GOLD_INGOT, 2), stack(Items.NETHERRACK, 8)))
       );
       register(
          goal(
             "combustion",
             200,
             deps("mining", "the_wheel"),
-            res(stack(Items.f_42413_, 10), stack(Items.f_42414_, 8), stack(Items.f_42416_, 5), stack(Items.f_42048_, 10))
+            res(stack(Items.COAL, 10), stack(Items.CHARCOAL, 8), stack(Items.IRON_INGOT, 5), stack(Items.NETHERRACK, 10))
          )
       );
       register(
@@ -158,7 +244,7 @@ public final class ResearchRegistry {
             "tactics",
             200,
             deps("conscription", "command"),
-            res(stack(Items.f_42516_, 8), stack(Items.f_42413_, 4), stack(Items.f_42517_, 1), stack(Items.f_42401_, 4))
+            res(stack(Items.PAPER, 8), stack(Items.COAL, 4), stack(Items.BOOK, 1), stack(Items.STRING, 4))
          )
       );
       register(
@@ -166,7 +252,7 @@ public final class ResearchRegistry {
             "theory_of_gravity",
             200,
             deps("the_wheel", "construction", "mathematics"),
-            res(stack(Items.f_42416_, 8), stack(Items.f_42401_, 8), stack(Items.f_42517_, 1), stack(Items.f_42410_, 1))
+            res(stack(Items.IRON_INGOT, 8), stack(Items.STRING, 8), stack(Items.BOOK, 1), stack(Items.APPLE, 1))
          )
       );
       register(
@@ -174,7 +260,7 @@ public final class ResearchRegistry {
             "trade",
             200,
             deps("fishing", "command"),
-            res(stack(Items.f_42417_, 8), stack(Items.f_42415_, 3), stack(Items.f_42616_, 1), stack(Items.f_42517_, 4))
+            res(stack(Items.GOLD_INGOT, 8), stack(Items.DIAMOND, 3), stack(Items.EMERALD, 1), stack(Items.BOOK, 4))
          )
       );
       register(
@@ -182,7 +268,7 @@ public final class ResearchRegistry {
             "ballistics",
             200,
             deps("theory_of_gravity"),
-            res(stack(Items.f_42401_, 6), stack(Items.f_42498_, 6), stack(Items.f_42516_, 12), stack(Items.f_42000_, 6))
+            res(stack(Items.STRING, 6), stack(Items.BLACK_DYE, 6), stack(Items.PAPER, 12), stack(Items.TORCH, 6))
          )
       );
       register(
@@ -190,7 +276,7 @@ public final class ResearchRegistry {
             "explosives",
             200,
             deps("combustion", "chemistry"),
-            res(stack(Items.f_42413_, 12), stack(Items.f_42414_, 8), stack(Items.f_41830_, 10), stack(Items.f_42048_, 10))
+            res(stack(Items.COAL, 12), stack(Items.CHARCOAL, 8), stack(Items.SAND, 10), stack(Items.NETHERRACK, 10))
          )
       );
       register(
@@ -198,7 +284,7 @@ public final class ResearchRegistry {
             "machinery",
             200,
             deps("theory_of_gravity"),
-            res(stack("ancientwarfare:iron_gear", 3), stack(Items.f_42416_, 8), stack("ancientwarfare:iron_bearings", 2), stack(Items.f_42749_, 8))
+            res(stack("ancientwarfare:iron_gear", 3), stack(Items.IRON_INGOT, 8), stack("ancientwarfare:iron_bearings", 2), stack(Items.IRON_NUGGET, 8))
          )
       );
       register(
@@ -206,12 +292,12 @@ public final class ResearchRegistry {
             "navigation",
             200,
             deps("theory_of_gravity", "seafaring"),
-            res(stack(Items.f_42522_, 1), stack(Items.f_42676_, 1), stack(Items.f_42516_, 12), stack(Items.f_42526_, 4))
+            res(stack(Items.COMPASS, 1), stack(Items.MAP, 1), stack(Items.PAPER, 12), stack(Items.COD, 4))
          )
       );
       register(
          goal(
-            "refining", 200, deps("chemistry"), res(stack(Items.f_42416_, 12), stack(Items.f_42516_, 10), stack(Items.f_42417_, 2), stack(Items.f_42413_, 12))
+            "refining", 200, deps("chemistry"), res(stack(Items.IRON_INGOT, 12), stack(Items.PAPER, 10), stack(Items.GOLD_INGOT, 2), stack(Items.COAL, 12))
          )
       );
       register(
@@ -219,7 +305,7 @@ public final class ResearchRegistry {
             "rocketry",
             200,
             deps("gunpowder", "ballistics"),
-            res(stack(Items.f_42403_, 12), stack(Items.f_42416_, 6), stack(Items.f_42398_, 18), stack(Items.f_42516_, 12), stack(Items.f_42000_, 6))
+            res(stack(Items.GUNPOWDER, 12), stack(Items.IRON_INGOT, 6), stack(Items.STICK, 18), stack(Items.PAPER, 12), stack(Items.TORCH, 6))
          )
       );
       register(
@@ -227,7 +313,7 @@ public final class ResearchRegistry {
             "seafaring",
             200,
             deps("the_wheel", "mathematics", "trade"),
-            res(stack(Items.f_42647_, 12), stack(Items.f_42416_, 8), tag("minecraft:wool", 10), stack(Items.f_42401_, 12))
+            res(stack(Items.OAK_PLANKS, 12), stack(Items.IRON_INGOT, 8), tag("minecraft:wool", 10), stack(Items.STRING, 12))
          )
       );
       register(
@@ -235,7 +321,7 @@ public final class ResearchRegistry {
             "siege_warfare",
             200,
             deps("tactics", "the_wheel"),
-            res(stack("ancientwarfare:treated_wood", 8), stack("ancientwarfare:mobility_unit", 1), stack(Items.f_42401_, 12), stack(Items.f_42516_, 6))
+            res(stack("ancientwarfare:treated_wood", 8), stack("ancientwarfare:mobility_unit", 1), stack(Items.STRING, 12), stack(Items.PAPER, 6))
          )
       );
       register(
@@ -256,7 +342,7 @@ public final class ResearchRegistry {
             "gunpowder",
             200,
             deps("explosives", "refining"),
-            res(stack("ancientwarfare:explosive_charge", 4), stack("ancientwarfare:iron_casing", 4), stack(Items.f_42413_, 12), stack(Items.f_42516_, 8))
+            res(stack("ancientwarfare:explosive_charge", 4), stack("ancientwarfare:iron_casing", 4), stack(Items.COAL, 12), stack(Items.PAPER, 8))
          )
       );
       register(
@@ -264,7 +350,7 @@ public final class ResearchRegistry {
             "mass_production",
             200,
             deps("refining", "machinery"),
-            res(stack("ancientwarfare:steel_ingot", 12), stack("ancientwarfare:steel_ingot", 6), stack(Items.f_42749_, 3), stack(Items.f_42416_, 3))
+            res(stack("ancientwarfare:steel_ingot", 12), stack("ancientwarfare:steel_ingot", 6), stack(Items.IRON_NUGGET, 3), stack(Items.IRON_INGOT, 3))
          )
       );
       register(
@@ -276,9 +362,95 @@ public final class ResearchRegistry {
                stack("ancientwarfare:treated_wood", 12),
                stack("ancientwarfare:mobility_unit", 2),
                stack("ancientwarfare:turret_components", 1),
-               stack(Items.f_42516_, 8)
+               stack(Items.PAPER, 8)
             )
          )
+      );
+      // The age of states: planning works, roads, commanding from above, treaties and spies.
+      register(
+         goal(
+            PlayerResearch.SURVEYING,
+            200,
+            deps("construction", "mathematics"),
+            res(stack(Items.PAPER, 12), stack(Items.STRING, 16), stack(Items.STICK, 16), stack(Items.COMPASS, 1))
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.ARCHITECTURE,
+            200,
+            deps(PlayerResearch.SURVEYING, "the_wheel"),
+            res(stack(Items.BOOK, 4), stack(Items.STONE_BRICKS, 32), stack(Items.OAK_PLANKS, 32), stack(Items.IRON_INGOT, 6))
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.ROAD_BUILDING,
+            200,
+            deps(PlayerResearch.SURVEYING, "the_wheel"),
+            res(stack(Items.GRAVEL, 32), stack(Items.COBBLESTONE, 32), stack(Items.IRON_SHOVEL, 1), stack(Items.STICK, 12)),
+            600
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.FIELD_COMMAND,
+            200,
+            deps("tactics"),
+            res(stack(Items.MAP, 1), stack(Items.PAPER, 16), stack(Items.BLACK_DYE, 4), stack(Items.GOLD_INGOT, 2))
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.DIPLOMACY,
+            200,
+            deps("leadership", "trade"),
+            res(stack(Items.WRITABLE_BOOK, 1), stack(Items.PAPER, 16), stack(Items.GOLD_INGOT, 4), stack(Items.RED_DYE, 4))
+         )
+      );
+      register(
+         goal(
+            PlayerResearch.ESPIONAGE,
+            200,
+            deps(PlayerResearch.DIPLOMACY, "tactics"),
+            res(stack(Items.PAPER, 12), stack(Items.INK_SAC, 8), stack(Items.LEATHER, 6), stack(Items.MAP, 1))
+         )
+      );
+      // Branches: economy, roads, maps, war, the secret service, faith and culture.
+      register(goal(PlayerResearch.CROP_ROTATION, 200, deps("farming", "animal_husbandry"), res(stack(Items.WHEAT_SEEDS, 32), stack(Items.BONE_MEAL, 16), stack(Items.IRON_HOE, 1), stack(Items.WHEAT, 32))));
+      register(goal(PlayerResearch.GRANARIES, 200, deps(PlayerResearch.CROP_ROTATION, "construction"), res(stack(Items.OAK_PLANKS, 48), stack(Items.HAY_BLOCK, 8), stack(Items.CHEST, 2), stack(Items.IRON_INGOT, 4))));
+      register(goal(PlayerResearch.MARKETS, 200, deps("trade", PlayerResearch.CROP_ROTATION), res(stack(Items.GOLD_INGOT, 6), stack(Items.EMERALD, 2), stack(Items.CHEST, 2), stack(Items.PAPER, 8))));
+      register(goal(PlayerResearch.COURIERS, 200, deps(PlayerResearch.ROAD_BUILDING, "animal_husbandry"), res(stack(Items.SADDLE, 1), stack(Items.LEATHER, 8), stack(Items.PAPER, 8), stack(Items.GOLD_INGOT, 2))));
+      register(goal(PlayerResearch.CARTOGRAPHY, 200, deps(PlayerResearch.SURVEYING, "navigation"), res(stack(Items.MAP, 4), stack(Items.COMPASS, 2), stack(Items.PAPER, 24), stack(Items.INK_SAC, 8))));
+      register(goal(PlayerResearch.DRILL, 200, deps("tactics", "conscription"), res(stack(Items.IRON_SWORD, 2), stack(Items.SHIELD, 2), stack(Items.PAPER, 8), stack(Items.LEATHER, 4))));
+      register(goal(PlayerResearch.FIELD_CAMPS, 200, deps(PlayerResearch.DRILL, "construction"), res(stack(Items.CAMPFIRE, 2), tag("minecraft:wool", 12), stack(Items.LEATHER, 8), stack(Items.TORCH, 8))));
+      register(goal(PlayerResearch.GARRISONS, 200, deps(PlayerResearch.DRILL, PlayerResearch.GRANARIES), res(stack(Items.IRON_CHESTPLATE, 1), stack(Items.SHIELD, 4), stack(Items.BREAD, 16), stack(Items.STONE_BRICKS, 32))));
+      register(goal(PlayerResearch.CIPHERS, 200, deps(PlayerResearch.ESPIONAGE, "mathematics"), res(stack(Items.BOOK, 4), stack(Items.INK_SAC, 8), stack(Items.PAPER, 16), stack(Items.REDSTONE, 8))));
+      register(goal(PlayerResearch.SECRET_SERVICE, 200, deps(PlayerResearch.CIPHERS), res(stack(Items.GOLD_INGOT, 12), stack(Items.ENDER_PEARL, 2), stack(Items.PAPER, 16), stack(Items.BLACK_DYE, 8))));
+      register(goal(PlayerResearch.TEMPLES, 200, deps("leadership", "construction"), res(stack(Items.STONE_BRICKS, 32), stack(Items.GOLD_INGOT, 4), stack(Items.CANDLE, 4), stack(Items.BOOK, 2))));
+      register(goal(PlayerResearch.FESTIVALS, 200, deps(PlayerResearch.TEMPLES, PlayerResearch.CROP_ROTATION), res(stack(Items.CAKE, 2), stack(Items.WHITE_BANNER, 2), stack(Items.FIREWORK_ROCKET, 8), stack(Items.WHEAT, 32))));
+      register(goal(PlayerResearch.CHRONICLES, 200, deps(PlayerResearch.TEMPLES, "tactics"), res(stack(Items.BOOK, 6), stack(Items.INK_SAC, 8), stack(Items.FEATHER, 4), stack(Items.PAPER, 16))));
+      register(goal(PlayerResearch.MISSIONARIES, 200, deps(PlayerResearch.TEMPLES, PlayerResearch.DIPLOMACY), res(stack(Items.BOOK, 4), stack(Items.BREAD, 16), stack(Items.GOLD_INGOT, 4), stack(Items.CANDLE, 4))));
+      register(goal(PlayerResearch.BRIDGES, 200, deps(PlayerResearch.ROAD_BUILDING, "construction"), res(stack(Items.OAK_PLANKS, 48), stack(Items.STONE_BRICKS, 32), stack(Items.STRING, 16), stack(Items.IRON_INGOT, 4))));
+      register(goal(PlayerResearch.POST_STATIONS, 200, deps(PlayerResearch.COURIERS, "trade"), res(stack(Items.WRITABLE_BOOK, 2), stack(Items.PAPER, 24), stack(Items.BELL, 1), stack(Items.LEATHER, 8))));
+      register(goal(PlayerResearch.SEA_CHARTS, 200, deps(PlayerResearch.CARTOGRAPHY, "seafaring"), res(stack(Items.MAP, 6), stack(Items.COMPASS, 2), stack(Items.CLOCK, 1), stack(Items.INK_SAC, 8))));
+      register(goal(PlayerResearch.LANDING, 200, deps("naval_warfare", PlayerResearch.FIELD_COMMAND), res(stack("ancientwarfare:treated_wood", 16), stack(Items.LEAD, 4), stack(Items.IRON_SWORD, 2), stack(Items.PAPER, 8))));
+      // The state: law, the census and the court at the capital.
+      register(goal(PlayerResearch.WRITTEN_LAW, 200, deps("leadership", "mathematics"), res(stack(Items.BOOK, 4), stack(Items.INK_SAC, 8), stack(Items.PAPER, 16), stack(Items.IRON_INGOT, 4))));
+      register(goal(PlayerResearch.TAX_CENSUS, 200, deps(PlayerResearch.WRITTEN_LAW, "trade"), res(stack(Items.WRITABLE_BOOK, 2), stack(Items.PAPER, 24), stack(Items.GOLD_INGOT, 6), stack(Items.CHEST, 2))));
+      register(goal(PlayerResearch.CAPITAL_COURT, 200, deps(PlayerResearch.TAX_CENSUS, PlayerResearch.DIPLOMACY), res(stack(Items.GOLD_BLOCK, 1), stack(Items.BOOK, 6), stack(Items.RED_BANNER, 2), stack(Items.EMERALD, 4))));
+      priceScience();
+      era(
+         ERA_KINGDOM,
+         1000,
+         deps("construction", "mathematics", "trade", "tactics"),
+         res(stack(Items.GOLD_INGOT, 8), stack(Items.BOOK, 6), stack(Items.WHITE_BANNER, 1), stack(Items.IRON_INGOT, 16))
+      );
+      era(
+         ERA_EMPIRE,
+         2500,
+         deps("machinery", "refining", "navigation", PlayerResearch.ESPIONAGE),
+         res(stack(Items.GOLD_BLOCK, 2), stack(Items.BOOK, 12), stack(Items.EMERALD, 4), stack(Items.DIAMOND, 2))
       );
    }
 }

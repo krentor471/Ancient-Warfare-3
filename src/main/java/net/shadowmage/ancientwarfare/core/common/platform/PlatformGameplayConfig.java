@@ -13,10 +13,6 @@ public interface PlatformGameplayConfig {
 
    boolean preventDuplicateResearchNotes();
 
-   boolean iceAndFireBonusLoot();
-
-   boolean slashBladeBonusLoot();
-
    boolean fillUnconfiguredStructureContainers();
 
    boolean awsEnabled();

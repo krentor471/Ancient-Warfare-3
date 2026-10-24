@@ -31,32 +31,32 @@ public class FruitFarmBoundsMenu extends AbstractContainerMenu {
    public FruitFarmBoundsMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.FRUIT_FARM_BOUNDS), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      this.owner = playerInventory.f_35978_;
-      this.fruitFarm = this.level.m_7702_(pos) instanceof FruitFarmBlockEntity farm ? farm : null;
+      this.level = playerInventory.player.level();
+      this.owner = playerInventory.player;
+      this.fruitFarm = this.level.getBlockEntity(pos) instanceof FruitFarmBlockEntity farm ? farm : null;
       this.previewMin = this.fruitFarm == null ? pos : this.fruitFarm.getBoundsMin();
       this.previewMax = this.fruitFarm == null ? pos : this.fruitFarm.getBoundsMax();
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       if (this.fruitFarm != null
-         && !this.level.f_46443_
+         && !this.level.isClientSide
          && player == this.owner
-         && player.m_9236_() == this.level
-         && !player.m_5833_()
-         && player.f_36096_ == this
-         && this.m_6875_(player)
-         && this.level.m_7702_(this.pos) == this.fruitFarm) {
+         && player.level() == this.level
+         && !player.isSpectator()
+         && player.containerMenu == this
+         && this.stillValid(player)
+         && this.level.getBlockEntity(this.pos) == this.fruitFarm) {
          BlockPos min = this.fruitFarm.getBoundsMin();
          BlockPos max = this.fruitFarm.getBoundsMax();
          WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjustButton(this.pos, min, max, this.fruitFarm.getMaxBoundsWidth(), id);
          if (adjusted == null) {
             return false;
          } else {
-            long minXDelta = (long)adjusted.min().m_123341_() - (long)min.m_123341_();
-            long maxXDelta = (long)adjusted.max().m_123341_() - (long)max.m_123341_();
-            long minZDelta = (long)adjusted.min().m_123343_() - (long)min.m_123343_();
-            long maxZDelta = (long)adjusted.max().m_123343_() - (long)max.m_123343_();
+            long minXDelta = (long)adjusted.min().getX() - (long)min.getX();
+            long maxXDelta = (long)adjusted.max().getX() - (long)max.getX();
+            long minZDelta = (long)adjusted.min().getZ() - (long)min.getZ();
+            long maxZDelta = (long)adjusted.max().getZ() - (long)max.getZ();
             if (minXDelta >= -2147483648L
                && minXDelta <= 2147483647L
                && maxXDelta >= -2147483648L
@@ -68,7 +68,7 @@ public class FruitFarmBoundsMenu extends AbstractContainerMenu {
                this.fruitFarm.adjustBounds((int)minXDelta, (int)maxXDelta, (int)minZDelta, (int)maxZDelta);
                this.previewMin = this.fruitFarm.getBoundsMin();
                this.previewMax = this.fruitFarm.getBoundsMax();
-               this.m_38946_();
+               this.broadcastChanges();
                return true;
             } else {
                return false;
@@ -85,10 +85,10 @@ public class FruitFarmBoundsMenu extends AbstractContainerMenu {
             this.pos, this.previewMin, this.previewMax, this.fruitFarm.getMaxBoundsWidth(), id
          );
          if (adjusted != null) {
-            long minXDelta = (long)adjusted.min().m_123341_() - (long)this.previewMin.m_123341_();
-            long maxXDelta = (long)adjusted.max().m_123341_() - (long)this.previewMax.m_123341_();
-            long minZDelta = (long)adjusted.min().m_123343_() - (long)this.previewMin.m_123343_();
-            long maxZDelta = (long)adjusted.max().m_123343_() - (long)this.previewMax.m_123343_();
+            long minXDelta = (long)adjusted.min().getX() - (long)this.previewMin.getX();
+            long maxXDelta = (long)adjusted.max().getX() - (long)this.previewMax.getX();
+            long minZDelta = (long)adjusted.min().getZ() - (long)this.previewMin.getZ();
+            long maxZDelta = (long)adjusted.max().getZ() - (long)this.previewMax.getZ();
             if (minXDelta < -2147483648L
                || minXDelta > 2147483647L
                || maxXDelta < -2147483648L
@@ -118,11 +118,11 @@ public class FruitFarmBoundsMenu extends AbstractContainerMenu {
       return this.pos;
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.FRUIT_FARM));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.FRUIT_FARM));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

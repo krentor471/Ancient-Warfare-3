@@ -17,60 +17,60 @@ public class MailboxNameSelectScreen extends Screen {
    private int top;
 
    public MailboxNameSelectScreen(Screen parent, MailboxBlockEntity box) {
-      super(Component.m_237115_("guistrings.automation.mailbox_name"));
+      super(Component.translatable("guistrings.automation.mailbox_name"));
       this.parent = parent;
       this.box = box;
    }
 
-   protected void m_7856_() {
-      this.left = (this.f_96543_ - 256) / 2;
-      this.top = (this.f_96544_ - 80) / 2;
-      String name = this.input == null ? this.box.getMailboxName() : this.input.m_94155_();
-      this.input = new EditBox(this.f_96547_, this.left + 8, this.top + 24, 240, 16, this.f_96539_);
-      this.input.m_94199_(128);
-      this.input.m_94144_(name);
-      this.m_142416_(this.input);
-      this.m_142416_(
+   protected void init() {
+      this.left = (this.width - 256) / 2;
+      this.top = (this.height - 80) / 2;
+      String name = this.input == null ? this.box.getMailboxName() : this.input.getValue();
+      this.input = new EditBox(this.font, this.left + 8, this.top + 24, 240, 16, this.title);
+      this.input.setMaxLength(128);
+      this.input.setValue(name);
+      this.addRenderableWidget(this.input);
+      this.addRenderableWidget(
          new LegacyTexturedButton(
-            this.left + 8, this.top + 56, 112, 12, Component.m_237115_("guistrings.automation.mailbox_save_name"), button -> this.saveName()
+            this.left + 8, this.top + 56, 112, 12, Component.translatable("guistrings.automation.mailbox_save_name"), button -> this.saveName()
          )
       );
-      this.m_142416_(new LegacyTexturedButton(this.left + 136, this.top + 56, 112, 12, Component.m_237115_("guistrings.npc.back"), button -> this.m_7379_()));
-      this.m_264313_(this.input);
+      this.addRenderableWidget(new LegacyTexturedButton(this.left + 136, this.top + 56, 112, 12, Component.translatable("guistrings.npc.back"), button -> this.onClose()));
+      this.setInitialFocus(this.input);
    }
 
    private void saveName() {
-      String name = this.input.m_94155_().trim();
+      String name = this.input.getValue().trim();
       this.box.setMailboxName(name);
-      AWCorePlatform.sendMailboxConfig(this.box.m_58899_(), 0, name, false);
-      this.m_7379_();
+      AWCorePlatform.sendMailboxConfig(this.box.getBlockPos(), 0, name, false);
+      this.onClose();
    }
 
-   public void m_86600_() {
-      this.input.m_94120_();
+   public void tick() {
+      this.input.tick();
    }
 
-   public boolean m_7933_(int keyCode, int scanCode, int modifiers) {
-      if ((keyCode == 257 || keyCode == 335) && this.input.m_93696_()) {
+   public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+      if ((keyCode == 257 || keyCode == 335) && this.input.isFocused()) {
          this.saveName();
          return true;
       } else {
-         return super.m_7933_(keyCode, scanCode, modifiers);
+         return super.keyPressed(keyCode, scanCode, modifiers);
       }
    }
 
-   public void m_7379_() {
-      this.f_96541_.m_91152_(this.parent);
+   public void onClose() {
+      this.minecraft.setScreen(this.parent);
    }
 
-   public boolean m_7043_() {
+   public boolean isPauseScreen() {
       return false;
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
       LegacyGuiStyle.background(graphics, this.left, this.top, 256, 80);
-      graphics.m_280614_(this.f_96547_, this.f_96539_, this.left + 8, this.top + 8, -1, false);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
+      graphics.drawString(this.font, this.title, this.left + 8, this.top + 8, -1, false);
+      super.render(graphics, mouseX, mouseY, partialTick);
    }
 }

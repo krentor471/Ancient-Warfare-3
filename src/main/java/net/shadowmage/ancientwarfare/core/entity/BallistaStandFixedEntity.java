@@ -8,7 +8,7 @@ import net.minecraft.world.level.Level;
 import net.shadowmage.ancientwarfare.core.item.BallistaTurretStandItem;
 
 public class BallistaStandFixedEntity extends BallistaTurretStandEntity {
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.ballista_stand_fixed");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.ballista_stand_fixed");
 
    public BallistaStandFixedEntity(EntityType<? extends BallistaStandFixedEntity> type, Level level) {
       super(type, level);
@@ -30,7 +30,7 @@ public class BallistaStandFixedEntity extends BallistaTurretStandEntity {
       ItemStack stack = new ItemStack(BallistaTurretStandItem.itemForMaterialLevel(this.getMaterialLevel(), true));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("BallistaTurretStandData", tag);
+      stack.getOrCreateTag().put("BallistaTurretStandData", tag);
       return stack;
    }
 }

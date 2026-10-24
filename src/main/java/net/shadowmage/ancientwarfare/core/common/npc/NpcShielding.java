@@ -21,11 +21,11 @@ public final class NpcShielding {
    }
 
    public static boolean hasShield(LivingEntity entity) {
-      return entity != null && isShield(entity.m_21206_());
+      return entity != null && isShield(entity.getOffhandItem());
    }
 
    public static boolean isShield(ItemStack stack) {
-      return stack != null && !stack.m_41619_() && (stack.m_41720_() instanceof NpcShieldItem || stack.m_41720_() instanceof ShieldItem);
+      return stack != null && !stack.isEmpty() && (stack.getItem() instanceof NpcShieldItem || stack.getItem() instanceof ShieldItem);
    }
 
    public static boolean shouldRaiseShield(LivingEntity entity, LivingEntity target) {
@@ -34,16 +34,16 @@ public final class NpcShielding {
 
    public static boolean isBlockedFromFront(LivingEntity entity, Vec3 sourcePosition) {
       if (entity != null && sourcePosition != null) {
-         Vec3 look = entity.m_20252_(1.0F).m_82541_();
-         Vec3 incoming = sourcePosition.m_82505_(entity.m_20182_()).m_82541_();
-         return incoming.m_82526_(look) < -0.25;
+         Vec3 look = entity.getViewVector(1.0F).normalize();
+         Vec3 incoming = sourcePosition.vectorTo(entity.position()).normalize();
+         return incoming.dot(look) < -0.25;
       } else {
          return false;
       }
    }
 
    private static boolean targetIsUsingRangedWeapon(LivingEntity target) {
-      return target != null && target.m_6117_() && target.m_21211_().m_41779_() > 0 && isRangedWeapon(target.m_21211_());
+      return target != null && target.isUsingItem() && target.getUseItem().getUseDuration() > 0 && isRangedWeapon(target.getUseItem());
    }
 
    @Nullable
@@ -53,22 +53,22 @@ public final class NpcShielding {
 
    @Nullable
    private static Projectile findIncomingProjectile(LivingEntity entity, double scanRange) {
-      AABB box = entity.m_20191_().m_82400_(scanRange);
+      AABB box = entity.getBoundingBox().inflate(scanRange);
       Projectile closest = null;
       double closestInterceptTime = Double.MAX_VALUE;
-      Vec3 targetCenter = entity.m_20182_().m_82520_(0.0, (double)entity.m_20206_() * 0.52, 0.0);
-      double hitRadius = Math.max(1.05, (double)entity.m_20205_() * 0.5 + 0.55);
+      Vec3 targetCenter = entity.position().add(0.0, (double)entity.getBbHeight() * 0.52, 0.0);
+      double hitRadius = Math.max(1.05, (double)entity.getBbWidth() * 0.5 + 0.55);
 
-      for (Projectile projectile : entity.m_9236_().m_6443_(Projectile.class, box, projectilex -> projectilex.m_6084_() && projectilex.m_19749_() != entity)) {
-         if (!isFriendlyProjectileOwner(entity, projectile.m_19749_())) {
-            Vec3 velocity = projectile.m_20184_();
-            if (!(velocity.m_82556_() < 0.01)) {
-               Vec3 toNpc = targetCenter.m_82546_(projectile.m_20182_());
-               double interceptTime = toNpc.m_82526_(velocity) / velocity.m_82556_();
+      for (Projectile projectile : entity.level().getEntitiesOfClass(Projectile.class, box, projectilex -> projectilex.isAlive() && projectilex.getOwner() != entity)) {
+         if (!isFriendlyProjectileOwner(entity, projectile.getOwner())) {
+            Vec3 velocity = projectile.getDeltaMovement();
+            if (!(velocity.lengthSqr() < 0.01)) {
+               Vec3 toNpc = targetCenter.subtract(projectile.position());
+               double interceptTime = toNpc.dot(velocity) / velocity.lengthSqr();
                if (!(interceptTime < 0.0) && !(interceptTime > 24.0)) {
-                  Vec3 closestPoint = projectile.m_20182_().m_82549_(velocity.m_82490_(interceptTime));
-                  if (!(closestPoint.m_82557_(targetCenter) > hitRadius * hitRadius)
-                     && !(velocity.m_82541_().m_82526_(toNpc.m_82541_()) < 0.78)
+                  Vec3 closestPoint = projectile.position().add(velocity.scale(interceptTime));
+                  if (!(closestPoint.distanceToSqr(targetCenter) > hitRadius * hitRadius)
+                     && !(velocity.normalize().dot(toNpc.normalize()) < 0.78)
                      && interceptTime < closestInterceptTime) {
                      closestInterceptTime = interceptTime;
                      closest = projectile;
@@ -84,9 +84,9 @@ public final class NpcShielding {
    private static boolean isFriendlyProjectileOwner(LivingEntity defender, @Nullable Entity owner) {
       if (owner == null) {
          return false;
-      } else if (!defender.m_7307_(owner) && !owner.m_7307_(defender)) {
+      } else if (!defender.isAlliedTo(owner) && !owner.isAlliedTo(defender)) {
          if (defender instanceof NpcOwnerAccess ownedDefender) {
-            if (owner instanceof Player player && ownedDefender.getOwner().map(player.m_20148_()::equals).orElse(false)) {
+            if (owner instanceof Player player && ownedDefender.getOwner().map(player.getUUID()::equals).orElse(false)) {
                return true;
             }
 
@@ -102,6 +102,6 @@ public final class NpcShielding {
    }
 
    private static boolean isRangedWeapon(ItemStack stack) {
-      return stack.m_150930_(Items.f_42411_) || stack.m_150930_(Items.f_42717_) || stack.m_150930_(Items.f_42713_);
+      return stack.is(Items.BOW) || stack.is(Items.CROSSBOW) || stack.is(Items.TRIDENT);
    }
 }

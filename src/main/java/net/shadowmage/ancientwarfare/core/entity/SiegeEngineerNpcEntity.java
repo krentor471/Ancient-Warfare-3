@@ -30,7 +30,7 @@ public class SiegeEngineerNpcEntity extends WeaponOperatorNpcEntity {
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 20.0).m_22268_(Attributes.f_22279_, 0.25).m_22268_(Attributes.f_22277_, 120.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.25).add(Attributes.FOLLOW_RANGE, 120.0);
    }
 
    @Override
@@ -39,33 +39,33 @@ public class SiegeEngineerNpcEntity extends WeaponOperatorNpcEntity {
    }
 
    @Override
-   protected void m_8099_() {
-      super.m_8099_();
-      this.f_21345_.m_25352_(3, new SiegeEngineerNpcEntity.OperateSiegeWeaponGoal(this));
-      this.f_21345_.m_25352_(4, new SiegeEngineerNpcEntity.FindSiegeWeaponGoal(this));
-      this.f_21346_.m_25352_(2, new VerticalRangeTargetGoal(this, FactionNpcEntity.class, 10, false, false, this::isHostileFactionNpc, 96.0));
-      this.f_21346_.m_25352_(3, new VerticalRangeTargetGoal<LivingEntity>(this, LivingEntity.class, 10, false, false, this::isAutomaticSiegeTarget, 96.0));
+   protected void registerGoals() {
+      super.registerGoals();
+      this.goalSelector.addGoal(3, new SiegeEngineerNpcEntity.OperateSiegeWeaponGoal(this));
+      this.goalSelector.addGoal(4, new SiegeEngineerNpcEntity.FindSiegeWeaponGoal(this));
+      this.targetSelector.addGoal(2, new VerticalRangeTargetGoal<>(this, FactionNpcEntity.class, 10, false, false, this::isHostileFactionNpc, 96.0));
+      this.targetSelector.addGoal(3, new VerticalRangeTargetGoal<LivingEntity>(this, LivingEntity.class, 10, false, false, this::isAutomaticSiegeTarget, 96.0));
    }
 
-   protected InteractionResult m_6071_(Player player, InteractionHand hand) {
+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
       if (this.tryAcceptFood(player, hand)) {
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
-      } else if (player.m_21120_(hand).m_41720_() instanceof CommandBatonItem) {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.m_21120_(hand), player, this);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
+            CommandBatonItem.toggleNpcSelection(player.getItemInHand(hand), player, this);
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
             AWCorePlatform.openMenu(
                player,
-               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.m_5446_()),
-               buffer -> buffer.writeInt(this.m_19879_())
+               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.getDisplayName()),
+               buffer -> buffer.writeInt(this.getId())
             );
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
    }
 
@@ -80,8 +80,8 @@ public class SiegeEngineerNpcEntity extends WeaponOperatorNpcEntity {
    }
 
    @Override
-   public Component m_5677_() {
-      return Component.m_237115_("entity.ancientwarfare.siege_engineer");
+   public Component getTypeName() {
+      return Component.translatable("entity.ancientwarfare.siege_engineer");
    }
 
    @Override
@@ -105,7 +105,7 @@ public class SiegeEngineerNpcEntity extends WeaponOperatorNpcEntity {
    }
 
    private boolean canAttackTarget(LivingEntity target) {
-      return NpcTargeting.canHarm(this, target) && (target == this.m_5448_() || this.isAutomaticSiegeTarget(target));
+      return NpcTargeting.canHarm(this, target) && (target == this.getTarget() || this.isAutomaticSiegeTarget(target));
    }
 
    private boolean isAutomaticSiegeTarget(LivingEntity target) {
@@ -128,10 +128,10 @@ public class SiegeEngineerNpcEntity extends WeaponOperatorNpcEntity {
 
       private FindSiegeWeaponGoal(SiegeEngineerNpcEntity engineer) {
          this.engineer = engineer;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.engineer.getSiegeWeapon().isPresent()) {
             return false;
          } else if (this.rescanDelay > 0) {
@@ -147,27 +147,27 @@ public class SiegeEngineerNpcEntity extends WeaponOperatorNpcEntity {
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.targetEntity != null
-            && this.targetEntity.m_6084_()
+            && this.targetEntity.isAlive()
             && this.targetWeapon != null
             && this.targetWeapon.canBeOperatedBy(this.engineer)
             && this.engineer.getSiegeWeapon().isEmpty();
       }
 
-      public void m_8037_() {
-         this.engineer.m_21563_().m_148051_(this.targetEntity);
+      public void tick() {
+         this.engineer.getLookControl().setLookAt(this.targetEntity);
          if (!this.engineer.siegeBrain.isCloseEnoughToOperate(this.targetEntity)) {
-            this.engineer.m_21573_().m_5624_(this.targetEntity, 1.0);
+            this.engineer.getNavigation().moveTo(this.targetEntity, 1.0);
          } else if (this.targetWeapon.beginOperation(this.engineer)) {
             this.engineer.setSiegeWeapon(this.targetWeapon);
          }
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.targetEntity = null;
          this.targetWeapon = null;
-         this.engineer.m_21573_().m_26573_();
+         this.engineer.getNavigation().stop();
       }
    }
 
@@ -177,22 +177,22 @@ public class SiegeEngineerNpcEntity extends WeaponOperatorNpcEntity {
 
       private OperateSiegeWeaponGoal(SiegeEngineerNpcEntity engineer) {
          this.engineer = engineer;
-         this.m_7021_(EnumSet.of(Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          return this.engineer.getSiegeWeapon().isPresent();
       }
 
-      public boolean m_8045_() {
-         return this.m_8036_();
+      public boolean canContinueToUse() {
+         return this.canUse();
       }
 
-      public void m_8037_() {
+      public void tick() {
          this.engineer.siegeBrain.tickWeapon(this.engineer::canAttackTarget, this.fireDelay);
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.fireDelay.value = 0;
       }
    }

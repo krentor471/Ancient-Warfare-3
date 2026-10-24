@@ -60,7 +60,7 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    private static final int WORK_COST = 100;
    private static final int WORKER_ENERGY_PER_VISIT = 1600;
    private static final int MAX_HEIGHT_SEARCH = 7;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(38, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(38, ItemStack.EMPTY);
    private BlockPos boundsMin;
    private BlockPos boundsMax;
    private byte[] targetMap = createFilledTargetMap();
@@ -82,19 +82,19 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
 
    @Override
    public boolean hasWork() {
-      return this.f_58857_ != null && !this.f_58857_.f_46443_
+      return this.level != null && !this.level.isClientSide
          ? this.findHarvestTarget().isPresent() || this.findPlantingTarget().isPresent() || this.findFertilizeTarget().isPresent()
          : false;
    }
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType())) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType())) {
          this.storedEnergy = Math.min(
             this.getMaxEnergy(), this.storedEnergy + Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())))
          );
          this.processStoredEnergy();
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -126,29 +126,29 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
 
    private boolean tryHarvest() {
       Optional<BlockPos> target = this.findHarvestTarget();
-      if (!target.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!target.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          BlockPos var7 = target.get();
-         BlockState state = this.f_58857_.m_8055_(var7);
+         BlockState state = this.level.getBlockState(var7);
          if (this.isSweetBerryHarvestable(state)) {
-            int age = (Integer)state.m_61143_(SweetBerryBushBlock.f_57244_);
-            ItemStack berries = new ItemStack(Items.f_42780_, 1 + this.f_58857_.f_46441_.m_188503_(2) + (age == 3 ? 1 : 0));
-            this.f_58857_.m_7731_(var7, (BlockState)state.m_61124_(SweetBerryBushBlock.f_57244_, 1), 3);
-            this.f_58857_.m_5594_(null, var7, SoundEvents.f_12457_, SoundSource.BLOCKS, 1.0F, 0.8F + this.f_58857_.f_46441_.m_188501_() * 0.4F);
+            int age = (Integer)state.getValue(SweetBerryBushBlock.AGE);
+            ItemStack berries = new ItemStack(Items.SWEET_BERRIES, 1 + this.level.random.nextInt(2) + (age == 3 ? 1 : 0));
+            this.level.setBlock(var7, (BlockState)state.setValue(SweetBerryBushBlock.AGE, 1), 3);
+            this.level.playSound(null, var7, SoundEvents.SWEET_BERRY_BUSH_PICK_BERRIES, SoundSource.BLOCKS, 1.0F, 0.8F + this.level.random.nextFloat() * 0.4F);
             this.insertOrDrop(var7, berries);
             return true;
          } else if (this.hasGlowBerries(state)) {
-            this.f_58857_.m_7731_(var7, (BlockState)state.m_61124_(CaveVines.f_152949_, false), 3);
-            this.f_58857_.m_5594_(null, var7, SoundEvents.f_144088_, SoundSource.BLOCKS, 1.0F, 0.8F + this.f_58857_.f_46441_.m_188501_() * 0.4F);
-            this.insertOrDrop(var7, new ItemStack(Items.f_151079_));
+            this.level.setBlock(var7, (BlockState)state.setValue(CaveVines.BERRIES, false), 3);
+            this.level.playSound(null, var7, SoundEvents.CAVE_VINES_PICK_BERRIES, SoundSource.BLOCKS, 1.0F, 0.8F + this.level.random.nextFloat() * 0.4F);
+            this.insertOrDrop(var7, new ItemStack(Items.GLOW_BERRIES));
             return true;
          } else {
             List<ItemStack> drops = new ArrayList<>(
-               Block.m_49874_(state, serverLevel, var7, this.f_58857_.m_7702_(var7), null, WorksiteUpgradeHelper.fortuneTool(Items.f_42391_, this, 33, 5))
+               Block.getDrops(state, serverLevel, var7, this.level.getBlockEntity(var7), null, WorksiteUpgradeHelper.fortuneTool(Items.DIAMOND_AXE, this, 33, 5))
             );
             if (drops.isEmpty()) {
                return false;
             } else {
-               this.f_58857_.m_46961_(var7, false);
+               this.level.destroyBlock(var7, false);
                this.insertOrDrop(var7, drops);
                return true;
             }
@@ -164,9 +164,9 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
          return false;
       } else {
          FruitFarmBlockEntity.PlantingTarget plantingTarget = target.get();
-         this.f_58857_.m_7731_(plantingTarget.pos(), plantingTarget.state(), 3);
-         ((ItemStack)this.items.get(plantingTarget.slot())).m_41774_(1);
-         this.m_6596_();
+         this.level.setBlock(plantingTarget.pos(), plantingTarget.state(), 3);
+         ((ItemStack)this.items.get(plantingTarget.slot())).shrink(1);
+         this.setChanged();
          return true;
       }
    }
@@ -174,16 +174,16 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    private boolean tryFertilize() {
       Optional<BlockPos> target = this.findFertilizeTarget();
       Optional<Integer> boneMealSlot = this.findBoneMealSlot();
-      if (!target.isEmpty() && !boneMealSlot.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!target.isEmpty() && !boneMealSlot.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          BlockPos var8 = target.get();
-         BlockState state = this.f_58857_.m_8055_(var8);
-         if (state.m_60734_() instanceof BonemealableBlock bonemealable
-            && bonemealable.m_7370_(this.f_58857_, var8, state, false)
-            && bonemealable.m_214167_(this.f_58857_, this.f_58857_.f_46441_, var8, state)) {
-            bonemealable.m_214148_(serverLevel, this.f_58857_.f_46441_, var8, state);
-            ((ItemStack)this.items.get(boneMealSlot.get())).m_41774_(1);
-            this.f_58857_.m_46796_(2005, var8, 0);
-            this.m_6596_();
+         BlockState state = this.level.getBlockState(var8);
+         if (state.getBlock() instanceof BonemealableBlock bonemealable
+            && bonemealable.isValidBonemealTarget(this.level, var8, state, false)
+            && bonemealable.isBonemealSuccess(this.level, this.level.random, var8, state)) {
+            bonemealable.performBonemeal(serverLevel, this.level.random, var8, state);
+            ((ItemStack)this.items.get(boneMealSlot.get())).shrink(1);
+            this.level.levelEvent(2005, var8, 0);
+            this.setChanged();
             return true;
          }
 
@@ -202,10 +202,10 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
          return Optional.empty();
       } else {
          for (BlockPos pos : this.scanFruitArea()) {
-            if (this.f_58857_.m_8055_(pos).m_247087_()) {
+            if (this.level.getBlockState(pos).canBeReplaced()) {
                for (int slot = 27; slot < 30; slot++) {
                   BlockState fruit = this.fruitForPlantable((ItemStack)this.items.get(slot), pos);
-                  if (fruit != null && fruit.m_60710_(this.f_58857_, pos)) {
+                  if (fruit != null && fruit.canSurvive(this.level, pos)) {
                      return Optional.of(new FruitFarmBlockEntity.PlantingTarget(pos, slot, fruit));
                   }
                }
@@ -225,12 +225,12 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
 
-      for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
-         for (int z = min.m_123343_(); z <= max.m_123343_(); z++) {
-            BlockPos ground = new BlockPos(x, min.m_123342_(), z);
+      for (int x = min.getX(); x <= max.getX(); x++) {
+         for (int z = min.getZ(); z <= max.getZ(); z++) {
+            BlockPos ground = new BlockPos(x, min.getY(), z);
             if (this.isTarget(ground)) {
                for (int y = 0; y < 7; y++) {
-                  targets.add(ground.m_6630_(y));
+                  targets.add(ground.above(y));
                }
             }
          }
@@ -240,13 +240,13 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    }
 
    private boolean isHarvestableFruit(BlockPos pos) {
-      BlockState state = this.f_58857_.m_8055_(pos);
+      BlockState state = this.level.getBlockState(pos);
       return this.isMatureCocoa(state) || this.isSweetBerryHarvestable(state) || this.hasGlowBerries(state);
    }
 
    private boolean canFertilize(BlockPos pos) {
-      BlockState state = this.f_58857_.m_8055_(pos);
-      if (state.m_60734_() instanceof BonemealableBlock bonemealable && bonemealable.m_7370_(this.f_58857_, pos, state, false)) {
+      BlockState state = this.level.getBlockState(pos);
+      if (state.getBlock() instanceof BonemealableBlock bonemealable && bonemealable.isValidBonemealTarget(this.level, pos, state, false)) {
          return true;
       }
 
@@ -254,41 +254,41 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    }
 
    private boolean isMatureCocoa(BlockState state) {
-      return state.m_60713_(Blocks.f_50262_) && (Integer)state.m_61143_(CocoaBlock.f_51736_) >= 2;
+      return state.is(Blocks.COCOA) && (Integer)state.getValue(CocoaBlock.AGE) >= 2;
    }
 
    private boolean isSweetBerryHarvestable(BlockState state) {
-      return state.m_60713_(Blocks.f_50685_) && (Integer)state.m_61143_(SweetBerryBushBlock.f_57244_) >= 2;
+      return state.is(Blocks.SWEET_BERRY_BUSH) && (Integer)state.getValue(SweetBerryBushBlock.AGE) >= 2;
    }
 
    private boolean hasGlowBerries(BlockState state) {
-      return state.m_61138_(CaveVines.f_152949_) && (Boolean)state.m_61143_(CaveVines.f_152949_);
+      return state.hasProperty(CaveVines.BERRIES) && (Boolean)state.getValue(CaveVines.BERRIES);
    }
 
    @Nullable
    private BlockState fruitForPlantable(ItemStack stack, BlockPos pos) {
-      if (stack.m_150930_(Items.f_42533_)) {
+      if (stack.is(Items.COCOA_BEANS)) {
          for (Direction direction : Plane.HORIZONTAL) {
-            BlockState cocoa = (BlockState)Blocks.f_50262_.m_49966_().m_61124_(CocoaBlock.f_54117_, direction);
-            if (cocoa.m_60710_(this.f_58857_, pos)) {
+            BlockState cocoa = (BlockState)Blocks.COCOA.defaultBlockState().setValue(CocoaBlock.FACING, direction);
+            if (cocoa.canSurvive(this.level, pos)) {
                return cocoa;
             }
          }
       }
 
-      if (stack.m_150930_(Items.f_42780_)) {
-         return Blocks.f_50685_.m_49966_();
+      if (stack.is(Items.SWEET_BERRIES)) {
+         return Blocks.SWEET_BERRY_BUSH.defaultBlockState();
       } else {
-         return stack.m_150930_(Items.f_151079_) ? (BlockState)Blocks.f_152538_.m_49966_().m_61124_(CaveVines.f_152949_, true) : null;
+         return stack.is(Items.GLOW_BERRIES) ? (BlockState)Blocks.CAVE_VINES.defaultBlockState().setValue(CaveVines.BERRIES, true) : null;
       }
    }
 
    public boolean isPlantable(ItemStack stack) {
-      return stack.m_150930_(Items.f_42533_) || stack.m_150930_(Items.f_42780_) || stack.m_150930_(Items.f_151079_);
+      return stack.is(Items.COCOA_BEANS) || stack.is(Items.SWEET_BERRIES) || stack.is(Items.GLOW_BERRIES);
    }
 
    public boolean isMiscItem(ItemStack stack) {
-      return stack.m_150930_(Items.f_42499_);
+      return stack.is(Items.BONE_MEAL);
    }
 
    private boolean hasPlantable() {
@@ -303,7 +303,7 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
 
    private Optional<Integer> findBoneMealSlot() {
       for (int slot = 30; slot < 33; slot++) {
-         if (((ItemStack)this.items.get(slot)).m_150930_(Items.f_42499_)) {
+         if (((ItemStack)this.items.get(slot)).is(Items.BONE_MEAL)) {
             return Optional.of(slot);
          }
       }
@@ -318,16 +318,16 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    }
 
    private void insertOrDrop(BlockPos pos, ItemStack stack) {
-      if (!stack.m_41619_()) {
+      if (!stack.isEmpty()) {
          ItemStack remaining = this.insertStack(stack);
-         if (!remaining.m_41619_()) {
-            Block.m_49840_(this.f_58857_, pos, remaining);
+         if (!remaining.isEmpty()) {
+            Block.popResource(this.level, pos, remaining);
          }
       }
    }
 
    private ItemStack insertStack(ItemStack stack) {
-      ItemStack remaining = stack.m_41777_();
+      ItemStack remaining = stack.copy();
       if (this.isPlantable(remaining)) {
          remaining = this.insertIntoRange(remaining, 27, 3);
       }
@@ -336,26 +336,26 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    }
 
    private ItemStack insertIntoRange(ItemStack stack, int start, int count) {
-      for (int slot = start; slot < start + count && !stack.m_41619_(); slot++) {
+      for (int slot = start; slot < start + count && !stack.isEmpty(); slot++) {
          ItemStack existing = (ItemStack)this.items.get(slot);
-         if (existing.m_41619_()) {
-            this.items.set(slot, stack.m_41777_());
-            stack.m_41764_(0);
-         } else if (ItemStack.m_150942_(existing, stack) && existing.m_41613_() < existing.m_41741_()) {
-            int moved = Math.min(stack.m_41613_(), existing.m_41741_() - existing.m_41613_());
-            existing.m_41769_(moved);
-            stack.m_41774_(moved);
+         if (existing.isEmpty()) {
+            this.items.set(slot, stack.copy());
+            stack.setCount(0);
+         } else if (ItemStack.isSameItemSameTags(existing, stack) && existing.getCount() < existing.getMaxStackSize()) {
+            int moved = Math.min(stack.getCount(), existing.getMaxStackSize() - existing.getCount());
+            existing.grow(moved);
+            stack.shrink(moved);
          }
       }
 
-      this.m_6596_();
+      this.setChanged();
       return stack;
    }
 
    @Override
    public BlockPos getBoundsMin() {
       if (this.boundsMin == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMin;
@@ -364,7 +364,7 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    @Override
    public BlockPos getBoundsMax() {
       if (this.boundsMax == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMax;
@@ -376,7 +376,7 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
 
    public void adjustBounds(int minXDelta, int maxXDelta, int minZDelta, int maxZDelta) {
       WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjust(
-         this.f_58858_, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
+         this.worldPosition, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
       );
       if (adjusted != null) {
          this.boundsMin = adjusted.min();
@@ -394,12 +394,12 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    public boolean containsWorkTarget(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_()
-         && pos.m_123342_() >= min.m_123342_()
-         && pos.m_123342_() < min.m_123342_() + 7;
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ()
+         && pos.getY() >= min.getY()
+         && pos.getY() < min.getY() + 7;
    }
 
    public byte[] getTargetMap() {
@@ -409,28 +409,28 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    public void setTargetMap(byte[] targetMap) {
       if (targetMap.length <= 256) {
          this.normalizeTargetMap(targetMap);
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
    private int targetIndex(BlockPos pos) {
-      int x = pos.m_123341_() - this.getBoundsMin().m_123341_();
-      int z = pos.m_123343_() - this.getBoundsMin().m_123343_();
+      int x = pos.getX() - this.getBoundsMin().getX();
+      int z = pos.getZ() - this.getBoundsMin().getZ();
       return z * 16 + x;
    }
 
    private void resetDefaultBounds(BlockPos pos, BlockState state) {
-      Direction facing = state.m_61138_(AutomationWorksiteBlock.FACING)
-         ? ((Direction)state.m_61143_(AutomationWorksiteBlock.FACING)).m_122424_()
+      Direction facing = state.hasProperty(AutomationWorksiteBlock.FACING)
+         ? ((Direction)state.getValue(AutomationWorksiteBlock.FACING)).getOpposite()
          : Direction.SOUTH;
-      BlockPos near = pos.m_121945_(facing);
-      BlockPos far = pos.m_5484_(facing, 5);
-      if (facing.m_122434_() == Axis.Z) {
-         this.boundsMin = new BlockPos(pos.m_123341_() - 2, pos.m_123342_(), Math.min(near.m_123343_(), far.m_123343_()));
-         this.boundsMax = new BlockPos(pos.m_123341_() + 2, pos.m_123342_(), Math.max(near.m_123343_(), far.m_123343_()));
+      BlockPos near = pos.relative(facing);
+      BlockPos far = pos.relative(facing, 5);
+      if (facing.getAxis() == Axis.Z) {
+         this.boundsMin = new BlockPos(pos.getX() - 2, pos.getY(), Math.min(near.getZ(), far.getZ()));
+         this.boundsMax = new BlockPos(pos.getX() + 2, pos.getY(), Math.max(near.getZ(), far.getZ()));
       } else {
-         this.boundsMin = new BlockPos(Math.min(near.m_123341_(), far.m_123341_()), pos.m_123342_(), pos.m_123343_() - 2);
-         this.boundsMax = new BlockPos(Math.max(near.m_123341_(), far.m_123341_()), pos.m_123342_(), pos.m_123343_() + 2);
+         this.boundsMin = new BlockPos(Math.min(near.getX(), far.getX()), pos.getY(), pos.getZ() - 2);
+         this.boundsMax = new BlockPos(Math.max(near.getX(), far.getX()), pos.getY(), pos.getZ() + 2);
       }
    }
 
@@ -445,28 +445,28 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    }
 
    @Override
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128382_("TargetMap", this.targetMap);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putByteArray("TargetMap", this.targetMap);
    }
 
    @Override
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      if (tag.m_128441_("BoundsMin")) {
-         this.boundsMin = BlockPos.m_122022_(tag.m_128454_("BoundsMin"));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      if (tag.contains("BoundsMin")) {
+         this.boundsMin = BlockPos.of(tag.getLong("BoundsMin"));
       }
 
-      if (tag.m_128441_("BoundsMax")) {
-         this.boundsMax = BlockPos.m_122022_(tag.m_128454_("BoundsMax"));
+      if (tag.contains("BoundsMax")) {
+         this.boundsMax = BlockPos.of(tag.getLong("BoundsMax"));
       }
 
-      if (tag.m_128441_("TargetMap")) {
-         byte[] loadedTargets = tag.m_128463_("TargetMap");
+      if (tag.contains("TargetMap")) {
+         byte[] loadedTargets = tag.getByteArray("TargetMap");
          if (loadedTargets.length <= 256) {
             this.normalizeTargetMap(loadedTargets);
          }
@@ -490,89 +490,89 @@ public class FruitFarmBlockEntity extends BasicWorksiteBlockEntity implements Co
    }
 
    private void normalizeLoadedBounds() {
-      if (this.f_58857_ == null || !this.f_58857_.f_46443_) {
+      if (this.level == null || !this.level.isClientSide) {
          if (this.boundsMin != null && this.boundsMax != null && !WorksiteBoundsGeometry.hasValidSize(this.boundsMin, this.boundsMax, this.getMaxBoundsWidth())
             )
           {
-            this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+            this.resetDefaultBounds(this.worldPosition, this.getBlockState());
          }
       }
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128382_("TargetMap", this.targetMap);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putByteArray("TargetMap", this.targetMap);
       return tag;
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 38;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return this.isValidSlot(slot) ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return this.isValidSlot(slot) ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         this.m_6596_();
+         this.setChanged();
          if (slot >= 33 && slot < 38) {
             this.refreshChunkLoading();
          }
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_(this.getDescriptionId());
+   public Component getDisplayName() {
+      return Component.translatable(this.getDescriptionId());
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new FruitFarmMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new FruitFarmMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createBoundsMenu(int containerId, Inventory playerInventory) {
-      return new FruitFarmBoundsMenu(containerId, playerInventory, this.f_58858_);
+      return new FruitFarmBoundsMenu(containerId, playerInventory, this.worldPosition);
    }
 
    @Override

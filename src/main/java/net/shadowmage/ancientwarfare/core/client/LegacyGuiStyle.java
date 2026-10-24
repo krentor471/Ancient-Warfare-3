@@ -17,7 +17,7 @@ public final class LegacyGuiStyle {
    }
 
    public static void slot(GuiGraphics graphics, int left, int top, int x, int y) {
-      graphics.m_280163_(WIDGETS, left + x - 1, top + y - 1, 152.0F, 120.0F, 18, 18, 256, 256);
+      graphics.blit(WIDGETS, left + x - 1, top + y - 1, 152.0F, 120.0F, 18, 18, 256, 256);
    }
 
    public static void slots(GuiGraphics graphics, int left, int top, int x, int y, int columns, int rows) {
@@ -29,7 +29,7 @@ public final class LegacyGuiStyle {
    }
 
    public static void arrow(GuiGraphics graphics, int left, int top, int x, int y, boolean right) {
-      graphics.m_280163_(WIDGETS, left + x, top + y, right ? 200.0F : 170.0F, 121.0F, 10, 16, 256, 256);
+      graphics.blit(WIDGETS, left + x, top + y, right ? 200.0F : 170.0F, 121.0F, 10, 16, 256, 256);
    }
 
    public static void button(GuiGraphics graphics, int left, int top, int x, int y, int width, int height, int mouseX, int mouseY) {
@@ -41,18 +41,18 @@ public final class LegacyGuiStyle {
       GuiGraphics graphics, Font font, int left, int top, int x, int y, int width, int height, Component label, int mouseX, int mouseY
    ) {
       button(graphics, left, top, x, y, width, height, mouseX, mouseY);
-      int textWidth = font.m_92852_(label);
+      int textWidth = font.width(label);
       float scale = textWidth <= width - 4 ? 1.0F : (float)(width - 4) / (float)textWidth;
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_()
-         .m_252880_(
+      graphics.pose().pushPose();
+      graphics.pose()
+         .translate(
             (float)(left + x) + (scale == 1.0F ? (float)(width - textWidth) / 2.0F : 2.0F),
             (float)(top + y) + Math.max(1.0F, ((float)height - 8.0F) / 2.0F),
             0.0F
          );
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(font, label, 0, 0, -1, true);
-      graphics.m_280168_().m_85849_();
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(font, label, 0, 0, -1, true);
+      graphics.pose().popPose();
    }
 
    public static void nineSlice(GuiGraphics graphics, int left, int top, int x, int y, int width, int height, int u, int v, int textureWidth, int textureHeight) {
@@ -68,9 +68,9 @@ public final class LegacyGuiStyle {
       int bottomHeight = height - halfHeight;
       int rightU = u + sourceWidth - rightWidth;
       int bottomV = v + sourceHeight - bottomHeight;
-      graphics.m_280163_(texture, x, y, (float)u, (float)v, halfWidth, halfHeight, 256, 256);
-      graphics.m_280163_(texture, x + halfWidth, y, (float)rightU, (float)v, rightWidth, halfHeight, 256, 256);
-      graphics.m_280163_(texture, x, y + halfHeight, (float)u, (float)bottomV, halfWidth, bottomHeight, 256, 256);
-      graphics.m_280163_(texture, x + halfWidth, y + halfHeight, (float)rightU, (float)bottomV, rightWidth, bottomHeight, 256, 256);
+      graphics.blit(texture, x, y, (float)u, (float)v, halfWidth, halfHeight, 256, 256);
+      graphics.blit(texture, x + halfWidth, y, (float)rightU, (float)v, rightWidth, halfHeight, 256, 256);
+      graphics.blit(texture, x, y + halfHeight, (float)u, (float)bottomV, halfWidth, bottomHeight, 256, 256);
+      graphics.blit(texture, x + halfWidth, y + halfHeight, (float)rightU, (float)bottomV, rightWidth, bottomHeight, 256, 256);
    }
 }

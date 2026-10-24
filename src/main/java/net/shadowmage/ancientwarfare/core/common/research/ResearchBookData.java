@@ -18,6 +18,8 @@ public final class ResearchBookData {
    public static final String CURRENT_PROGRESS_TAG = "currentProgress";
    public static final String COMPLETED_RESEARCH_TAG = "completedResearch";
    public static final String QUEUED_RESEARCH_TAG = "queuedResearch";
+   /** Science the scribes have gathered for this book and not yet spent. */
+   public static final String SCIENCE_TAG = "science";
    public static final int MAX_RESEARCHER_NAME_LENGTH = 32;
 
    private ResearchBookData() {
@@ -25,12 +27,12 @@ public final class ResearchBookData {
 
    @Nullable
    public static String getResearcherName(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag != null && tag.m_128441_("researcherName") ? sanitizeResearcherName(tag.m_128461_("researcherName")) : null;
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("researcherName") ? sanitizeResearcherName(tag.getString("researcherName")) : null;
    }
 
    public static void setResearcherName(ItemStack stack, String name) {
-      stack.m_41784_().m_128359_("researcherName", name);
+      stack.getOrCreateTag().putString("researcherName", name);
    }
 
    public static boolean hasResearcherName(ItemStack stack) {
@@ -39,14 +41,14 @@ public final class ResearchBookData {
 
    public static List<String> getQueuedResearch(ItemStack stack) {
       ArrayList<String> queued = new ArrayList<>();
-      CompoundTag tag = stack.m_41783_();
+      CompoundTag tag = stack.getTag();
       if (tag == null) {
          return queued;
       } else {
-         ListTag list = tag.m_128437_("queuedResearch", 8);
+         ListTag list = tag.getList("queuedResearch", 8);
 
          for (int i = 0; i < list.size(); i++) {
-            String id = list.m_128778_(i);
+            String id = list.getString(i);
             if (ResearchRegistry.get(id) != null) {
                queued.add(id);
             }
@@ -58,9 +60,19 @@ public final class ResearchBookData {
 
    public static boolean queueResearch(ItemStack stack, String id) {
       ResearchGoal goal = ResearchRegistry.get(id);
-      if (goal == null || getCurrentResearch(stack) != null || getCompletedResearch(stack).contains(id)) {
+      String current = getCurrentResearch(stack);
+      if (goal == null || id.equals(current) || getCompletedResearch(stack).contains(id)) {
          return false;
-      } else if (!goal.canResearch(getCompletedResearch(stack))) {
+      }
+
+      // Research may be queued behind what it needs, as long as that is learned, being studied, or queued ahead.
+      Set<String> ahead = new HashSet<>(getCompletedResearch(stack));
+      ahead.addAll(getQueuedResearch(stack));
+      if (current != null) {
+         ahead.add(current);
+      }
+
+      if (!ahead.containsAll(goal.dependencies())) {
          return false;
       } else {
          List<String> queued = getQueuedResearch(stack);
@@ -116,39 +128,91 @@ public final class ResearchBookData {
 
       for (String id : queued) {
          if (ResearchRegistry.get(id) != null) {
-            list.add(StringTag.m_129297_(id));
+            list.add(StringTag.valueOf(id));
          }
       }
 
-      stack.m_41784_().m_128365_("queuedResearch", list);
+      stack.getOrCreateTag().put("queuedResearch", list);
    }
 
    @Nullable
    public static String getCurrentResearch(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      if (tag != null && tag.m_128441_("currentResearch")) {
-         String id = tag.m_128461_("currentResearch");
+      CompoundTag tag = stack.getTag();
+      if (tag != null && tag.contains("currentResearch")) {
+         String id = tag.getString("currentResearch");
          return ResearchRegistry.get(id) == null ? null : id;
       } else {
          return null;
       }
    }
 
+   public static int getScience(ItemStack stack) {
+      CompoundTag tag = stack.getTag();
+      return tag == null ? 0 : Math.max(0, tag.getInt(SCIENCE_TAG));
+   }
+
+   public static void addScience(ItemStack stack, int amount) {
+      stack.getOrCreateTag().putInt(SCIENCE_TAG, getScience(stack) + Math.max(0, amount));
+   }
+
+   /** Set when the scribes last found no paper and ink beside the desk, so the station can say why no science comes. */
+   public static boolean isStarved(ItemStack stack) {
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.getBoolean("scienceStarved");
+   }
+
+   public static void setStarved(ItemStack stack, boolean starved) {
+      if (starved != isStarved(stack)) {
+         if (starved) {
+            stack.getOrCreateTag().putBoolean("scienceStarved", true);
+         } else {
+            stack.getOrCreateTag().remove("scienceStarved");
+         }
+      }
+   }
+
+   /** How much dearer research is for this book's researcher, by the size of their country; kept up to date by the station. */
+   public static float getScienceScale(ItemStack stack) {
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("scienceScale") ? Math.max(1.0F, tag.getFloat("scienceScale")) : 1.0F;
+   }
+
+   public static void setScienceScale(ItemStack stack, float scale) {
+      if (Math.abs(scale - getScienceScale(stack)) > 0.001F) {
+         stack.getOrCreateTag().putFloat("scienceScale", scale);
+      }
+   }
+
+   /** The science a technology costs this book's researcher. */
+   public static int scienceCost(ItemStack stack, ResearchGoal goal) {
+      return Math.round(goal.science() * getScienceScale(stack));
+   }
+
+   public static boolean takeScience(ItemStack stack, int amount) {
+      int science = getScience(stack);
+      if (science < amount) {
+         return false;
+      }
+
+      stack.getOrCreateTag().putInt(SCIENCE_TAG, science - amount);
+      return true;
+   }
+
    public static int getCurrentProgress(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag == null ? 0 : Math.max(0, tag.m_128451_("currentProgress"));
+      CompoundTag tag = stack.getTag();
+      return tag == null ? 0 : Math.max(0, tag.getInt("currentProgress"));
    }
 
    public static Set<String> getCompletedResearch(ItemStack stack) {
       Set<String> completed = new HashSet<>();
-      CompoundTag tag = stack.m_41783_();
+      CompoundTag tag = stack.getTag();
       if (tag == null) {
          return completed;
       } else {
-         ListTag list = tag.m_128437_("completedResearch", 8);
+         ListTag list = tag.getList("completedResearch", 8);
 
          for (int i = 0; i < list.size(); i++) {
-            String id = list.m_128778_(i);
+            String id = list.getString(i);
             if (ResearchRegistry.get(id) != null) {
                completed.add(id);
             }
@@ -159,9 +223,9 @@ public final class ResearchBookData {
    }
 
    public static void setCurrentResearch(ItemStack stack, String id) {
-      CompoundTag tag = stack.m_41784_();
-      tag.m_128359_("currentResearch", id);
-      tag.m_128405_("currentProgress", 0);
+      CompoundTag tag = stack.getOrCreateTag();
+      tag.putString("currentResearch", id);
+      tag.putInt("currentProgress", 0);
    }
 
    public static void addProgress(ItemStack stack, int amount) {
@@ -169,30 +233,30 @@ public final class ResearchBookData {
       if (current != null) {
          ResearchGoal goal = ResearchRegistry.get(current);
          if (goal != null) {
-            CompoundTag tag = stack.m_41784_();
+            CompoundTag tag = stack.getOrCreateTag();
             int progress = Math.min(goal.time(), getCurrentProgress(stack) + amount);
             if (progress >= goal.time()) {
                completeResearch(stack, current);
             } else {
-               tag.m_128405_("currentProgress", progress);
+               tag.putInt("currentProgress", progress);
             }
          }
       }
    }
 
    public static void completeResearch(ItemStack stack, String id) {
-      CompoundTag tag = stack.m_41784_();
+      CompoundTag tag = stack.getOrCreateTag();
       Set<String> completed = getCompletedResearch(stack);
       completed.add(id);
       ListTag list = new ListTag();
 
       for (String research : completed) {
-         list.add(StringTag.m_129297_(research));
+         list.add(StringTag.valueOf(research));
       }
 
-      tag.m_128365_("completedResearch", list);
-      tag.m_128473_("currentResearch");
-      tag.m_128473_("currentProgress");
+      tag.put("completedResearch", list);
+      tag.remove("currentResearch");
+      tag.remove("currentProgress");
    }
 
    @Nullable

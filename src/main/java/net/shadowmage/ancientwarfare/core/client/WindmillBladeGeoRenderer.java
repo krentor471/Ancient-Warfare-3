@@ -11,8 +11,8 @@ public class WindmillBladeGeoRenderer extends GeoBlockRenderer<WindmillBladeBloc
    }
 
    protected Direction getFacing(WindmillBladeBlockEntity blade) {
-      return blade.m_58900_().m_61138_(WindmillBladeRunningBlock.FACING)
-         ? (Direction)blade.m_58900_().m_61143_(WindmillBladeRunningBlock.FACING)
+      return blade.getBlockState().hasProperty(WindmillBladeRunningBlock.FACING)
+         ? (Direction)blade.getBlockState().getValue(WindmillBladeRunningBlock.FACING)
          : Direction.NORTH;
    }
 }

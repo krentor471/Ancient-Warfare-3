@@ -12,12 +12,12 @@ public class TorqueGeneratorGeoRenderer extends GeoBlockRenderer<TorqueGenerator
    }
 
    protected Direction getFacing(TorqueGeneratorBlockEntity animatable) {
-      if (!animatable.m_58900_().m_61138_(TorqueGeneratorBlock.FACING)) {
+      if (!animatable.getBlockState().hasProperty(TorqueGeneratorBlock.FACING)) {
          return Direction.NORTH;
       } else {
-         Direction facing = (Direction)animatable.m_58900_().m_61143_(TorqueGeneratorBlock.FACING);
-         if (animatable.m_58900_().m_60734_() instanceof TorqueGeneratorBlock block && block.getKind() == TorqueGeneratorKind.WINDMILL) {
-            return facing.m_122424_();
+         Direction facing = (Direction)animatable.getBlockState().getValue(TorqueGeneratorBlock.FACING);
+         if (animatable.getBlockState().getBlock() instanceof TorqueGeneratorBlock block && block.getKind() == TorqueGeneratorKind.WINDMILL) {
+            return facing.getOpposite();
          }
 
          return facing;

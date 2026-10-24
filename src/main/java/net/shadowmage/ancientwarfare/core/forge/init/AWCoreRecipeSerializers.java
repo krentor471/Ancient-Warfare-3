@@ -10,7 +10,7 @@ import net.shadowmage.ancientwarfare.core.common.engineering.EngineeringRecipeSe
 import net.shadowmage.ancientwarfare.core.crafting.OrderCopyingRecipe;
 
 public final class AWCoreRecipeSerializers {
-   public static final DeferredRegister<RecipeSerializer<?>> REGISTER = DeferredRegister.create(Registries.f_256764_, "ancientwarfare");
+   public static final DeferredRegister<RecipeSerializer<?>> REGISTER = DeferredRegister.create(Registries.RECIPE_SERIALIZER, "ancientwarfare");
    public static final RegistryObject<RecipeSerializer<OrderCopyingRecipe>> ORDER_COPYING = REGISTER.register(
       "order_copying", () -> new SimpleCraftingRecipeSerializer(OrderCopyingRecipe::new)
    );

@@ -53,7 +53,7 @@ public final class ForgeEngineeringRecipeReloadListener {
 
          for (Entry<ResourceLocation, JsonElement> entry : json.entrySet()) {
             try {
-               recipes.add(this.readRecipe(entry.getKey(), GsonHelper.m_13918_(entry.getValue(), "engineering recipe")));
+               recipes.add(this.readRecipe(entry.getKey(), GsonHelper.convertToJsonObject(entry.getValue(), "engineering recipe")));
             } catch (RuntimeException var8) {
                AncientWarfareCore.LOG.error("Failed to load engineering recipe {}", entry.getKey(), var8);
             }
@@ -75,7 +75,7 @@ public final class ForgeEngineeringRecipeReloadListener {
                throw new JsonSyntaxException("Engineering recipe keys must be one non-space character");
             }
 
-            key.put(entry.getKey().charAt(0), Ingredient.m_43917_(entry.getValue()));
+            key.put(entry.getKey().charAt(0), Ingredient.fromJson(entry.getValue()));
          }
 
          return key;
@@ -88,7 +88,7 @@ public final class ForgeEngineeringRecipeReloadListener {
             Ingredient[] ingredients = new Ingredient[9];
 
             for (int row = 0; row < 3; row++) {
-               String line = GsonHelper.m_13805_(pattern.get(row), "pattern row");
+               String line = GsonHelper.convertToString(pattern.get(row), "pattern row");
                if (line.length() != 3) {
                   throw new JsonSyntaxException("Engineering recipe pattern rows must be exactly 3 characters");
                }
@@ -96,7 +96,7 @@ public final class ForgeEngineeringRecipeReloadListener {
                for (int col = 0; col < 3; col++) {
                   char keyChar = line.charAt(col);
                   if (keyChar == ' ') {
-                     ingredients[row * 3 + col] = Ingredient.f_43901_;
+                     ingredients[row * 3 + col] = Ingredient.EMPTY;
                   } else {
                      Ingredient ingredient = key.get(keyChar);
                      if (ingredient == null) {
@@ -113,19 +113,19 @@ public final class ForgeEngineeringRecipeReloadListener {
       }
 
       private ItemStack readResult(JsonObject resultObject) {
-         ResourceLocation itemId = new ResourceLocation(GsonHelper.m_13906_(resultObject, "item"));
-         Item item = (Item)BuiltInRegistries.f_257033_.m_7745_(itemId);
+         ResourceLocation itemId = new ResourceLocation(GsonHelper.getAsString(resultObject, "item"));
+         Item item = (Item)BuiltInRegistries.ITEM.get(itemId);
          if (item == null) {
             throw new JsonSyntaxException("Unknown result item " + itemId);
          } else {
-            ItemStack result = new ItemStack(item, GsonHelper.m_13824_(resultObject, "count", 1));
+            ItemStack result = new ItemStack(item, GsonHelper.getAsInt(resultObject, "count", 1));
             if (resultObject.has("backpack_level")) {
-               BackpackItem.setLevel(result, GsonHelper.m_13927_(resultObject, "backpack_level"));
+               BackpackItem.setLevel(result, GsonHelper.getAsInt(resultObject, "backpack_level"));
             }
 
             if (resultObject.has("tag")) {
                try {
-                  result.m_41751_(TagParser.m_129359_(GSON.toJson(resultObject.get("tag"))));
+                  result.setTag(TagParser.parseTag(GSON.toJson(resultObject.get("tag"))));
                } catch (Exception var6) {
                   throw new JsonSyntaxException("Invalid result tag", var6);
                }

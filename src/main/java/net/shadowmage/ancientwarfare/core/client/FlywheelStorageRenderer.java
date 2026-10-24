@@ -34,7 +34,7 @@ public class FlywheelStorageRenderer extends GeoBlockRenderer<FlywheelStorageBlo
       float alpha
    ) {
       if (!animatable.getStorageRenderState().visible()) {
-         poseStack.m_85841_(0.0F, 0.0F, 0.0F);
+         poseStack.scale(0.0F, 0.0F, 0.0F);
       }
 
       super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
@@ -60,7 +60,7 @@ public class FlywheelStorageRenderer extends GeoBlockRenderer<FlywheelStorageBlo
       ) {
          if (animatable.getStorageRenderState().visible()) {
             ResourceLocation texture = this.windowModel.getTextureResource(animatable);
-            RenderType translucent = RenderType.m_110473_(texture);
+            RenderType translucent = RenderType.entityTranslucent(texture);
             BakedGeoModel windows = this.windowModel.getBakedModel(this.windowModel.getModelResource(animatable));
             this.getRenderer()
                .reRender(
@@ -69,10 +69,10 @@ public class FlywheelStorageRenderer extends GeoBlockRenderer<FlywheelStorageBlo
                   bufferSource,
                   animatable,
                   translucent,
-                  bufferSource.m_6299_(translucent),
+                  bufferSource.getBuffer(translucent),
                   partialTick,
                   packedLight,
-                  OverlayTexture.f_118083_,
+                  OverlayTexture.NO_OVERLAY,
                   1.0F,
                   1.0F,
                   1.0F,

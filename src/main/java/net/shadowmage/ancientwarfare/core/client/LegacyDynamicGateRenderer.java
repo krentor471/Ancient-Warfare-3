@@ -24,7 +24,7 @@ public final class LegacyDynamicGateRenderer extends EntityRenderer<GateEntity> 
 
    public LegacyDynamicGateRenderer(Context context) {
       super(context);
-      this.f_114477_ = 0.0F;
+      this.shadowRadius = 0.0F;
    }
 
    private static ResourceLocation texture(String name) {
@@ -37,42 +37,42 @@ public final class LegacyDynamicGateRenderer extends EntityRenderer<GateEntity> 
 
    public boolean shouldRender(GateEntity gate, Frustum frustum, double x, double y, double z) {
       if (gate.openingStyle() != GateEntity.OpeningStyle.DRAWBRIDGE) {
-         return super.m_5523_(gate, frustum, x, y, z);
-      } else if (!gate.m_6000_(x, y, z)) {
+         return super.shouldRender(gate, frustum, x, y, z);
+      } else if (!gate.shouldRender(x, y, z)) {
          return false;
       } else {
          BlockPos min = gate.minPos();
          BlockPos max = gate.maxPos();
-         BlockPos end = max.m_5484_(gate.facing().m_122424_(), gate.heightBlocks());
+         BlockPos end = max.relative(gate.facing().getOpposite(), gate.heightBlocks());
          AABB bounds = new AABB(
-            (double)Math.min(min.m_123341_(), end.m_123341_()),
-            (double)min.m_123342_(),
-            (double)Math.min(min.m_123343_(), end.m_123343_()),
-            (double)(Math.max(max.m_123341_(), end.m_123341_()) + 1),
-            (double)(max.m_123342_() + 1),
-            (double)(Math.max(max.m_123343_(), end.m_123343_()) + 1)
+            (double)Math.min(min.getX(), end.getX()),
+            (double)min.getY(),
+            (double)Math.min(min.getZ(), end.getZ()),
+            (double)(Math.max(max.getX(), end.getX()) + 1),
+            (double)(max.getY() + 1),
+            (double)(Math.max(max.getZ(), end.getZ()) + 1)
          );
-         return frustum.m_113029_(bounds.m_82400_(0.5));
+         return frustum.isVisible(bounds.inflate(0.5));
       }
    }
 
    public void render(GateEntity entity, float yaw, float partialTick, PoseStack poses, MultiBufferSource buffers, int light) {
-      VertexConsumer vertices = buffers.m_6299_(RenderType.m_110458_(this.getTextureLocation(entity)));
-      int overlay = entity.hurtTime() > 0 ? OverlayTexture.m_118093_(OverlayTexture.m_118088_(0.0F), OverlayTexture.m_118096_(true)) : OverlayTexture.f_118083_;
-      poses.m_85836_();
+      VertexConsumer vertices = buffers.getBuffer(RenderType.entityCutoutNoCull(this.getTextureLocation(entity)));
+      int overlay = entity.hurtTime() > 0 ? OverlayTexture.pack(OverlayTexture.u(0.0F), OverlayTexture.v(true)) : OverlayTexture.NO_OVERLAY;
+      poses.pushPose();
       if (entity.openingStyle() == GateEntity.OpeningStyle.DRAWBRIDGE && !entity.isXAxisGate()) {
-         poses.m_252781_(Axis.f_252436_.m_252977_(90.0F));
+         poses.mulPose(Axis.YP.rotationDegrees(90.0F));
       }
 
-      poses.m_85841_(-1.0F, -1.0F, 1.0F);
+      poses.scale(-1.0F, -1.0F, 1.0F);
       if (entity.openingStyle() == GateEntity.OpeningStyle.DRAWBRIDGE) {
          this.renderBridge(entity, poses, vertices, entity.openProgress(partialTick), light, overlay);
       } else {
          this.renderGate(entity, poses, vertices, entity.openProgress(partialTick), light, overlay);
       }
 
-      poses.m_85849_();
-      super.m_7392_(entity, yaw, partialTick, poses, buffers, light);
+      poses.popPose();
+      super.render(entity, yaw, partialTick, poses, buffers, light);
    }
 
    private void renderGate(GateEntity gate, PoseStack poses, VertexConsumer vertices, float progress, int light, int overlay) {
@@ -84,9 +84,9 @@ public final class LegacyDynamicGateRenderer extends EntityRenderer<GateEntity> 
 
       for (int row = 0; row < height; row++) {
          for (int col = 0; col < width; col++) {
-            poses.m_85836_();
+            poses.pushPose();
             float offset = (float)col - (float)(width - 1) * 0.5F;
-            poses.m_252880_(alongX ? offset : 0.0F, (float)(-row), alongX ? 0.0F : offset);
+            poses.translate(alongX ? offset : 0.0F, (float)(-row), alongX ? 0.0F : offset);
             if (row == height - 1) {
                part(
                   this.basic,
@@ -104,15 +104,15 @@ public final class LegacyDynamicGateRenderer extends EntityRenderer<GateEntity> 
             float movement = GateRenderLayout.panelMovement(gate.openingStyle(), width, col, progress);
             if (GateRenderLayout.panelVisible(gate.openingStyle(), width, height, col, row, progress)) {
                if (gate.openingStyle() == GateEntity.OpeningStyle.VERTICAL) {
-                  poses.m_252880_(0.0F, -movement, 0.0F);
+                  poses.translate(0.0F, -movement, 0.0F);
                } else {
-                  poses.m_252880_(alongX ? movement : 0.0F, 0.0F, alongX ? 0.0F : movement);
+                  poses.translate(alongX ? movement : 0.0F, 0.0F, alongX ? 0.0F : movement);
                }
 
                part(this.basic, panel, rotation, poses, vertices, light, overlay);
             }
 
-            poses.m_85849_();
+            poses.popPose();
          }
       }
    }
@@ -120,17 +120,17 @@ public final class LegacyDynamicGateRenderer extends EntityRenderer<GateEntity> 
    private void renderBridge(GateEntity gate, PoseStack poses, VertexConsumer vertices, float angle, int light, int overlay) {
       int width = gate.widthBlocks();
       int height = gate.heightBlocks();
-      int facingStep = gate.isXAxisGate() ? gate.facing().m_122431_() : gate.facing().m_122429_();
-      poses.m_85837_(0.0, -0.5, 0.0);
-      poses.m_252781_(Axis.f_252529_.m_252977_(facingStep >= 0 ? angle : -angle));
+      int facingStep = gate.isXAxisGate() ? gate.facing().getStepZ() : gate.facing().getStepX();
+      poses.translate(0.0, -0.5, 0.0);
+      poses.mulPose(Axis.XP.rotationDegrees(facingStep >= 0 ? angle : -angle));
       if (facingStep < 0) {
-         poses.m_252781_(Axis.f_252436_.m_252977_(180.0F));
+         poses.mulPose(Axis.YP.rotationDegrees(180.0F));
       }
 
       for (int row = 0; row < height; row++) {
          for (int col = 0; col < width; col++) {
-            poses.m_85836_();
-            poses.m_252880_((float)col - (float)(width - 1) * 0.5F, (float)(-row), 0.0F);
+            poses.pushPose();
+            poses.translate((float)col - (float)(width - 1) * 0.5F, (float)(-row), 0.0F);
             if (row == 0) {
                part(this.bridge, "part1", 180.0F, poses, vertices, light, overlay);
             }
@@ -153,7 +153,7 @@ public final class LegacyDynamicGateRenderer extends EntityRenderer<GateEntity> 
                part(this.bridge, "bridgePiece", 180.0F, poses, vertices, light, overlay);
             }
 
-            poses.m_85849_();
+            poses.popPose();
          }
       }
    }
@@ -165,8 +165,8 @@ public final class LegacyDynamicGateRenderer extends EntityRenderer<GateEntity> 
    }
 
    private static void part(ModelPart model, String name, float rotation, PoseStack poses, VertexConsumer vertices, int light, int overlay) {
-      ModelPart part = model.m_171324_(name);
-      part.f_104204_ = (float)Math.toRadians((double)rotation);
-      part.m_104301_(poses, vertices, light, overlay);
+      ModelPart part = model.getChild(name);
+      part.yRot = (float)Math.toRadians((double)rotation);
+      part.render(poses, vertices, light, overlay);
    }
 }

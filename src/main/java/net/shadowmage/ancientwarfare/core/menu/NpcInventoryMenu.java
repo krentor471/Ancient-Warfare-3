@@ -20,7 +20,6 @@ import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
 import net.shadowmage.ancientwarfare.core.entity.BardNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.DragonRiderController;
 import net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.TraderNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.WorkerNpcEntity;
@@ -42,35 +41,35 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
    private boolean guiLockHeld;
 
    public NpcInventoryMenu(int containerId, Inventory playerInventory, int entityId) {
-      this(containerId, playerInventory, findNpc(playerInventory.f_35978_, entityId));
+      this(containerId, playerInventory, findNpc(playerInventory.player, entityId));
    }
 
    public NpcInventoryMenu(int containerId, Inventory playerInventory, PlayerOwnedNpcEntity npc) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.NPC_INVENTORY), containerId);
       this.npc = npc;
-      if (npc != null && !playerInventory.f_35978_.m_9236_().f_46443_) {
-         npc.beginGuiInteraction(playerInventory.f_35978_);
+      if (npc != null && !playerInventory.player.level().isClientSide) {
+         npc.beginGuiInteraction(playerInventory.player);
          this.guiLockHeld = npc.isGuiInteractionPaused();
       }
 
-      this.m_38897_(new NpcInventoryMenu.EquipmentItemSlot(npc, EquipmentSlot.MAINHAND, 8, 8));
-      this.m_38897_(new NpcInventoryMenu.EquipmentItemSlot(npc, EquipmentSlot.OFFHAND, 8, 26));
-      this.m_38897_(new NpcInventoryMenu.ArmorEquipmentSlot(npc, EquipmentSlot.FEET, 8, 98));
-      this.m_38897_(new NpcInventoryMenu.ArmorEquipmentSlot(npc, EquipmentSlot.LEGS, 8, 80));
-      this.m_38897_(new NpcInventoryMenu.ArmorEquipmentSlot(npc, EquipmentSlot.CHEST, 8, 62));
-      this.m_38897_(new NpcInventoryMenu.ArmorEquipmentSlot(npc, EquipmentSlot.HEAD, 8, 44));
-      this.m_38897_(new NpcInventoryMenu.NpcStoredStackSlot(npc, NpcInventoryMenu.StoredStackType.ORDERS, 44, 44));
-      this.m_38897_(new NpcInventoryMenu.NpcStoredStackSlot(npc, NpcInventoryMenu.StoredStackType.UPKEEP, 44, 62));
-      this.m_38897_(new NpcInventoryMenu.NpcStoredStackSlot(npc, NpcInventoryMenu.StoredStackType.FOOD, 44, 80));
+      this.addSlot(new NpcInventoryMenu.EquipmentItemSlot(npc, EquipmentSlot.MAINHAND, 8, 8));
+      this.addSlot(new NpcInventoryMenu.EquipmentItemSlot(npc, EquipmentSlot.OFFHAND, 8, 26));
+      this.addSlot(new NpcInventoryMenu.ArmorEquipmentSlot(npc, EquipmentSlot.FEET, 8, 98));
+      this.addSlot(new NpcInventoryMenu.ArmorEquipmentSlot(npc, EquipmentSlot.LEGS, 8, 80));
+      this.addSlot(new NpcInventoryMenu.ArmorEquipmentSlot(npc, EquipmentSlot.CHEST, 8, 62));
+      this.addSlot(new NpcInventoryMenu.ArmorEquipmentSlot(npc, EquipmentSlot.HEAD, 8, 44));
+      this.addSlot(new NpcInventoryMenu.NpcStoredStackSlot(npc, NpcInventoryMenu.StoredStackType.ORDERS, 44, 44));
+      this.addSlot(new NpcInventoryMenu.NpcStoredStackSlot(npc, NpcInventoryMenu.StoredStackType.UPKEEP, 44, 62));
+      this.addSlot(new NpcInventoryMenu.NpcStoredStackSlot(npc, NpcInventoryMenu.StoredStackType.FOOD, 44, 80));
       this.addPlayerInventory(playerInventory);
    }
 
    public Component getNpcDisplayName() {
-      return (Component)(this.npc == null ? Component.m_237115_("entity.ancientwarfare.worker_npc") : this.npc.m_5446_());
+      return (Component)(this.npc == null ? Component.translatable("entity.ancientwarfare.worker_npc") : this.npc.getDisplayName());
    }
 
    public int getNpcEntityId() {
-      return this.npc == null ? -1 : this.npc.m_19879_();
+      return this.npc == null ? -1 : this.npc.getId();
    }
 
    public String getSkinName() {
@@ -79,15 +78,15 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
 
    public Component getSkinButtonLabel() {
       String skinName = this.getSkinName();
-      return skinName.isBlank() ? Component.m_237115_("guistrings.npc.default_skin") : Component.m_237113_(skinName);
+      return skinName.isBlank() ? Component.translatable("guistrings.npc.default_skin") : Component.literal(skinName);
    }
 
    public boolean canRepack(Player player) {
-      return this.npc != null && this.npc.m_6084_() && player != null && this.npc.hasCommandPermission(player);
+      return this.npc != null && this.npc.isAlive() && player != null && this.npc.hasCommandPermission(player);
    }
 
    public boolean canOpenCreativeGui(Player player) {
-      return player != null && player.m_7500_();
+      return player != null && player.isCreative();
    }
 
    public boolean isAlexModel() {
@@ -118,8 +117,8 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
       return this.npc instanceof TraderNpcEntity && AWCoreRegistryAccess.is(this.npc.getOrdersStack(), AWCoreIds.TRADE_ORDER);
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (this.npc == null || !this.npc.m_6084_() || !this.npc.hasCommandPermission(player)) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (this.npc == null || !this.npc.isAlive() || !this.npc.hasCommandPermission(player)) {
          return false;
       } else if (id == 0) {
          this.npc.toggleFollow(player);
@@ -127,61 +126,56 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
       } else if (id == 1) {
          if (this.npc.hasHome()) {
             this.npc.clearHome();
-            player.m_5661_(Component.m_237115_("guistrings.npc.home_cleared"), true);
+            player.displayClientMessage(Component.translatable("guistrings.npc.home_cleared"), true);
          } else {
-            this.npc.setHome(this.npc.m_20183_());
-            player.m_5661_(Component.m_237115_("guistrings.npc.home_set"), true);
+            this.npc.setHome(this.npc.blockPosition());
+            player.displayClientMessage(Component.translatable("guistrings.npc.home_set"), true);
          }
 
          return true;
       } else if (id == 2) {
          this.npc.clearHome();
-         player.m_5661_(Component.m_237115_("guistrings.npc.home_cleared"), true);
+         player.displayClientMessage(Component.translatable("guistrings.npc.home_cleared"), true);
          return true;
       } else if (id == 3) {
-         Entity storedMount = this.npc.m_20202_();
-         Entity logicalMount = DragonRiderController.getLogicalMount(this.npc);
+         Entity storedMount = this.npc.getVehicle();
          ItemStack repackedNpc = NpcSpawnerItem.createFromNpc(this.npc);
-         if (!player.m_150109_().m_36054_(repackedNpc)) {
-            player.m_36176_(repackedNpc, false);
+         if (!player.getInventory().add(repackedNpc)) {
+            player.drop(repackedNpc, false);
          }
 
-         player.f_36096_ = player.f_36095_;
-         this.npc.m_8127_();
-         this.npc.m_146870_();
-         if (storedMount instanceof Mob && storedMount.m_6084_()) {
-            storedMount.m_146870_();
+         player.containerMenu = player.inventoryMenu;
+         this.npc.stopRiding();
+         this.npc.discard();
+         if (storedMount instanceof Mob && storedMount.isAlive()) {
+            storedMount.discard();
          }
 
-         if (logicalMount instanceof Mob && logicalMount.m_6084_()) {
-            logicalMount.m_146870_();
-         }
-
-         player.m_5661_(Component.m_237115_("guistrings.npc.repacked"), true);
+         player.displayClientMessage(Component.translatable("guistrings.npc.repacked"), true);
          return true;
       } else if (id == 4) {
-         player.m_5661_(Component.m_237115_("guistrings.npc.not_ported_yet"), true);
+         player.displayClientMessage(Component.translatable("guistrings.npc.not_ported_yet"), true);
          return true;
       } else if (id == 5 && this.npc instanceof BardNpcEntity bard) {
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(
                (containerId, inventory, openedPlayer) -> new BardMusicMenu(containerId, inventory, bard),
-               Component.m_237115_("container.ancientwarfare.bard_music")
+               Component.translatable("container.ancientwarfare.bard_music")
             ),
-            buffer -> BardMusicMenu.writeTracks(buffer, bard.m_19879_(), bard.getBardTracks())
+            buffer -> BardMusicMenu.writeTracks(buffer, bard.getId(), bard.getBardTracks())
          );
          return true;
       } else if (id == 6 && this.npc instanceof TraderNpcEntity trader && AWCoreRegistryAccess.is(trader.getOrdersStack(), AWCoreIds.TRADE_ORDER)) {
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(
-               (containerId, inventory, openedPlayer) -> new TradeOrderMenu(containerId, inventory, InteractionHand.MAIN_HAND, trader.m_19879_()),
-               Component.m_237115_("container.ancientwarfare.trade_order")
+               (containerId, inventory, openedPlayer) -> new TradeOrderMenu(containerId, inventory, InteractionHand.MAIN_HAND, trader.getId()),
+               Component.translatable("container.ancientwarfare.trade_order")
             ),
             buffer -> {
-               buffer.m_130068_(InteractionHand.MAIN_HAND);
-               buffer.writeInt(trader.m_19879_());
+               buffer.writeEnum(InteractionHand.MAIN_HAND);
+               buffer.writeInt(trader.getId());
             }
          );
          return true;
@@ -190,48 +184,48 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
       }
    }
 
-   public boolean m_6875_(Player player) {
-      return this.npc != null && this.npc.m_6084_() && this.npc.m_20280_(player) < 64.0;
+   public boolean stillValid(Player player) {
+      return this.npc != null && this.npc.isAlive() && this.npc.distanceToSqr(player) < 64.0;
    }
 
-   public void m_6877_(Player player) {
-      super.m_6877_(player);
+   public void removed(Player player) {
+      super.removed(player);
       if (this.guiLockHeld && this.npc != null) {
          this.npc.endGuiInteraction(player);
          this.guiLockHeld = false;
       }
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      ItemStack result = ItemStack.f_41583_;
-      Slot slot = (Slot)this.f_38839_.get(index);
-      if (slot != null && slot.m_6657_()) {
-         ItemStack stack = slot.m_7993_();
-         result = stack.m_41777_();
+   public ItemStack quickMoveStack(Player player, int index) {
+      ItemStack result = ItemStack.EMPTY;
+      Slot slot = (Slot)this.slots.get(index);
+      if (slot != null && slot.hasItem()) {
+         ItemStack stack = slot.getItem();
+         result = stack.copy();
          if (index < 9) {
-            if (!this.m_38903_(stack, 9, this.f_38839_.size(), true)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(stack, 9, this.slots.size(), true)) {
+               return ItemStack.EMPTY;
             }
          } else if (isOrdersStack(stack)) {
-            if (!this.m_38903_(stack, 6, 7, false)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(stack, 6, 7, false)) {
+               return ItemStack.EMPTY;
             }
          } else if (isUpkeepOrderStack(stack)) {
-            if (!this.m_38903_(stack, 7, 8, false)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(stack, 7, 8, false)) {
+               return ItemStack.EMPTY;
             }
          } else if (isFoodStack(stack)) {
-            if (!this.m_38903_(stack, 8, 9, false)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(stack, 8, 9, false)) {
+               return ItemStack.EMPTY;
             }
          } else if (!this.moveItemStackToEquipment(stack)) {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          }
 
-         if (stack.m_41619_()) {
-            slot.m_5852_(ItemStack.f_41583_);
+         if (stack.isEmpty()) {
+            slot.set(ItemStack.EMPTY);
          } else {
-            slot.m_6654_();
+            slot.setChanged();
          }
       }
 
@@ -240,7 +234,7 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
 
    private boolean moveItemStackToEquipment(ItemStack stack) {
       EquipmentSlot resolvedSlot = NpcEquipmentResolver.equipmentSlot(stack);
-      if (resolvedSlot.m_20743_() == Type.ARMOR) {
+      if (resolvedSlot.getType() == Type.ARMOR) {
          int target = switch (resolvedSlot) {
             case FEET -> 2;
             case LEGS -> 3;
@@ -248,12 +242,12 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
             case HEAD -> 5;
             default -> -1;
          };
-         if (target >= 0 && this.m_38903_(stack, target, target + 1, false)) {
+         if (target >= 0 && this.moveItemStackTo(stack, target, target + 1, false)) {
             return true;
          }
       }
 
-      return this.m_38903_(stack, 0, 2, false);
+      return this.moveItemStackTo(stack, 0, 2, false);
    }
 
    private static boolean isOrdersStack(ItemStack stack) {
@@ -268,23 +262,23 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
    }
 
    private static boolean isFoodStack(ItemStack stack) {
-      return !stack.m_41619_() && PlayerOwnedNpcEntity.foodValue(stack) > 0;
+      return !stack.isEmpty() && PlayerOwnedNpcEntity.foodValue(stack) > 0;
    }
 
    private void addPlayerInventory(Inventory playerInventory) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 124 + row * 18));
+            this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 124 + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(playerInventory, col, 8 + col * 18, 182));
+         this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 182));
       }
    }
 
    private static PlayerOwnedNpcEntity findNpc(Player player, int entityId) {
-      return player.m_9236_().m_6815_(entityId) instanceof PlayerOwnedNpcEntity npc ? npc : null;
+      return player.level().getEntity(entityId) instanceof PlayerOwnedNpcEntity npc ? npc : null;
    }
 
    private static class ArmorEquipmentSlot extends NpcInventoryMenu.EquipmentItemSlot {
@@ -296,7 +290,7 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
       }
 
       @Override
-      public boolean m_5857_(ItemStack stack) {
+      public boolean mayPlace(ItemStack stack) {
          return NpcEquipmentResolver.equipmentSlot(stack) == this.armorSlot;
       }
    }
@@ -312,47 +306,47 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
          this.equipmentSlot = equipmentSlot;
       }
 
-      public ItemStack m_7993_() {
-         return this.npc == null ? ItemStack.f_41583_ : this.npc.m_6844_(this.equipmentSlot);
+      public ItemStack getItem() {
+         return this.npc == null ? ItemStack.EMPTY : this.npc.getItemBySlot(this.equipmentSlot);
       }
 
-      public void m_5852_(ItemStack stack) {
+      public void set(ItemStack stack) {
          if (this.npc != null) {
-            this.npc.m_8061_(this.equipmentSlot, stack);
+            this.npc.setItemSlot(this.equipmentSlot, stack);
          }
 
-         this.m_6654_();
+         this.setChanged();
       }
 
-      public boolean m_6657_() {
-         return !this.m_7993_().m_41619_();
+      public boolean hasItem() {
+         return !this.getItem().isEmpty();
       }
 
-      public int m_6641_() {
+      public int getMaxStackSize() {
          return 1;
       }
 
-      public ItemStack m_6201_(int amount) {
-         ItemStack current = this.m_7993_();
-         if (!current.m_41619_() && amount > 0) {
-            ItemStack removed = current.m_41620_(amount);
-            if (current.m_41619_()) {
-               this.m_5852_(ItemStack.f_41583_);
+      public ItemStack remove(int amount) {
+         ItemStack current = this.getItem();
+         if (!current.isEmpty() && amount > 0) {
+            ItemStack removed = current.split(amount);
+            if (current.isEmpty()) {
+               this.set(ItemStack.EMPTY);
             } else {
-               this.m_6654_();
+               this.setChanged();
             }
 
             return removed;
          } else {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          }
       }
 
-      public boolean m_5857_(ItemStack stack) {
-         return !stack.m_41619_();
+      public boolean mayPlace(ItemStack stack) {
+         return !stack.isEmpty();
       }
 
-      public boolean m_8010_(Player player) {
+      public boolean mayPickup(Player player) {
          return true;
       }
    }
@@ -368,9 +362,9 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
          this.type = type;
       }
 
-      public ItemStack m_7993_() {
+      public ItemStack getItem() {
          if (this.npc == null) {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          } else {
             return switch (this.type) {
                case ORDERS -> this.npc.getOrdersStack();
@@ -380,7 +374,7 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
          }
       }
 
-      public void m_5852_(ItemStack stack) {
+      public void set(ItemStack stack) {
          if (this.npc != null) {
             switch (this.type) {
                case ORDERS:
@@ -394,38 +388,38 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
             }
          }
 
-         this.m_6654_();
+         this.setChanged();
       }
 
-      public boolean m_6657_() {
-         return !this.m_7993_().m_41619_();
+      public boolean hasItem() {
+         return !this.getItem().isEmpty();
       }
 
-      public int m_6641_() {
+      public int getMaxStackSize() {
          return this.type == NpcInventoryMenu.StoredStackType.FOOD ? 64 : 1;
       }
 
-      public int m_5866_(ItemStack stack) {
-         return this.type == NpcInventoryMenu.StoredStackType.FOOD ? Math.min(64, stack.m_41741_()) : 1;
+      public int getMaxStackSize(ItemStack stack) {
+         return this.type == NpcInventoryMenu.StoredStackType.FOOD ? Math.min(64, stack.getMaxStackSize()) : 1;
       }
 
-      public ItemStack m_6201_(int amount) {
-         ItemStack current = this.m_7993_();
-         if (!current.m_41619_() && amount > 0) {
-            ItemStack removed = current.m_41620_(amount);
-            if (current.m_41619_()) {
-               this.m_5852_(ItemStack.f_41583_);
+      public ItemStack remove(int amount) {
+         ItemStack current = this.getItem();
+         if (!current.isEmpty() && amount > 0) {
+            ItemStack removed = current.split(amount);
+            if (current.isEmpty()) {
+               this.set(ItemStack.EMPTY);
             } else {
-               this.m_5852_(current);
+               this.set(current);
             }
 
             return removed;
          } else {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          }
       }
 
-      public boolean m_5857_(ItemStack stack) {
+      public boolean mayPlace(ItemStack stack) {
          return switch (this.type) {
             case ORDERS -> NpcInventoryMenu.isOrdersStack(stack);
             case UPKEEP -> NpcInventoryMenu.isUpkeepOrderStack(stack);
@@ -433,7 +427,7 @@ public class NpcInventoryMenu extends AbstractContainerMenu {
          };
       }
 
-      public boolean m_8010_(Player player) {
+      public boolean mayPickup(Player player) {
          return true;
       }
    }

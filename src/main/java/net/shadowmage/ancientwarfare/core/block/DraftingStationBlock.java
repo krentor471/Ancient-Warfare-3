@@ -31,58 +31,58 @@ public class DraftingStationBlock extends BaseEntityBlock {
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return new DraftingStationBlockEntity(pos, state);
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.MODEL;
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState state, BlockEntityType<T> type) {
-      return level.f_46443_ ? null : m_152132_(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.DRAFTING_STATION), DraftingStationBlockEntity::serverTick);
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+      return level.isClientSide ? null : createTickerHelper(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.DRAFTING_STATION), DraftingStationBlockEntity::serverTick);
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if (!level.f_46443_ && player instanceof ServerPlayer serverPlayer && level.m_7702_(pos) instanceof DraftingStationBlockEntity station) {
-         List<DraftingStationMenu.TemplateSummary> templates = DraftingStationMenu.serverTemplateSummaries(serverPlayer.m_284548_());
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if (!level.isClientSide && player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof DraftingStationBlockEntity station) {
+         List<DraftingStationMenu.TemplateSummary> templates = DraftingStationMenu.serverTemplateSummaries(serverPlayer.serverLevel());
          AWCorePlatform.openMenu(
             serverPlayer,
             station,
             buffer -> {
-               buffer.m_130064_(pos);
-               buffer.m_130130_(templates.size());
+               buffer.writeBlockPos(pos);
+               buffer.writeVarInt(templates.size());
                templates.forEach(template -> {
-                  buffer.m_130072_(template.id(), 256);
-                  buffer.m_130072_(template.label(), 128);
-                  buffer.m_130130_(template.materials().size());
+                  buffer.writeUtf(template.id(), 256);
+                  buffer.writeUtf(template.label(), 128);
+                  buffer.writeVarInt(template.materials().size());
                   template.materials().forEach(resource -> {
-                     buffer.m_130130_(BuiltInRegistries.f_257033_.m_7447_((Item)BuiltInRegistries.f_257033_.m_7745_(resource.itemId())));
-                     buffer.m_130130_(resource.count());
+                     buffer.writeVarInt(BuiltInRegistries.ITEM.getId((Item)BuiltInRegistries.ITEM.get(resource.itemId())));
+                     buffer.writeVarInt(resource.count());
                   });
                });
-               buffer.m_130072_(station.selectedTemplate(), 256);
-               buffer.m_130130_(templates.size());
+               buffer.writeUtf(station.selectedTemplate(), 256);
+               buffer.writeVarInt(templates.size());
                templates.forEach(
                   template -> {
-                     buffer.m_130130_(template.materials().size());
+                     buffer.writeVarInt(template.materials().size());
                      template.materials()
-                        .forEach(material -> buffer.m_130130_(template.id().equals(station.selectedTemplate()) ? station.suppliedCount(material.itemId()) : 0));
+                        .forEach(material -> buffer.writeVarInt(template.id().equals(station.selectedTemplate()) ? station.suppliedCount(material.itemId()) : 0));
                   }
                );
             }
          );
       }
 
-      return InteractionResult.m_19078_(level.f_46443_);
+      return InteractionResult.sidedSuccess(level.isClientSide);
    }
 
-   public void m_6810_(BlockState state, Level level, BlockPos pos, BlockState next, boolean piston) {
-      if (!state.m_60713_(next.m_60734_()) && level.m_7702_(pos) instanceof DraftingStationBlockEntity station) {
-         Containers.m_19002_(level, pos, station);
+   public void onRemove(BlockState state, Level level, BlockPos pos, BlockState next, boolean piston) {
+      if (!state.is(next.getBlock()) && level.getBlockEntity(pos) instanceof DraftingStationBlockEntity station) {
+         Containers.dropContents(level, pos, station);
       }
 
-      super.m_6810_(state, level, pos, next, piston);
+      super.onRemove(state, level, pos, next, piston);
    }
 }

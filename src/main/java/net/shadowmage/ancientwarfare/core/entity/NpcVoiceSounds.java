@@ -22,8 +22,8 @@ final class NpcVoiceSounds {
    static void playFactionAttack(FactionNpcEntity npc) {
       SoundEvent sound = event(npc, "attack");
       if (sound != null) {
-         float pitch = 1.2F / (npc.m_217043_().m_188501_() * 0.2F + 0.9F);
-         npc.m_5496_(sound, 1.0F, pitch);
+         float pitch = 1.2F / (npc.getRandom().nextFloat() * 0.2F + 0.9F);
+         npc.playSound(sound, 1.0F, pitch);
       }
    }
 

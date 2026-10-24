@@ -21,7 +21,7 @@ public class BardInstrumentItem extends Item {
    private static final String INSTRUMENT_TAG = "instrument";
 
    public BardInstrumentItem() {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
    }
 
    public static ItemStack create(BardInstrumentType type) {
@@ -31,25 +31,25 @@ public class BardInstrumentItem extends Item {
    }
 
    public static BardInstrumentType getType(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag == null ? BardInstrumentType.LUTE : BardInstrumentType.byId(tag.m_128461_("instrument"));
+      CompoundTag tag = stack.getTag();
+      return tag == null ? BardInstrumentType.LUTE : BardInstrumentType.byId(tag.getString("instrument"));
    }
 
    public static void setType(ItemStack stack, BardInstrumentType type) {
-      stack.m_41784_().m_128359_("instrument", type.id());
+      stack.getOrCreateTag().putString("instrument", type.id());
    }
 
-   public Component m_7626_(ItemStack stack) {
-      return Component.m_237115_("item.ancientwarfare.bard_instrument." + getType(stack).id());
+   public Component getName(ItemStack stack) {
+      return Component.translatable("item.ancientwarfare.bard_instrument." + getType(stack).id());
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
-      ItemStack stack = player.m_21120_(hand);
-      if (!level.f_46443_) {
-         level.m_5594_(null, player.m_20183_(), this.soundFor(getType(stack)), SoundSource.PLAYERS, 2.0F, 1.0F);
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+      ItemStack stack = player.getItemInHand(hand);
+      if (!level.isClientSide) {
+         level.playSound(null, player.blockPosition(), this.soundFor(getType(stack)), SoundSource.PLAYERS, 2.0F, 1.0F);
       }
 
-      return InteractionResultHolder.m_19092_(stack, level.f_46443_);
+      return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
    }
 
    public boolean onEntitySwing(ItemStack stack, LivingEntity entity) {
@@ -58,10 +58,10 @@ public class BardInstrumentItem extends Item {
 
    private SoundEvent soundFor(BardInstrumentType type) {
       return switch (type) {
-         case LUTE -> (SoundEvent)SoundEvents.f_12209_.m_203334_();
-         case FLUTE -> (SoundEvent)SoundEvents.f_12212_.m_203334_();
-         case HARP -> (SoundEvent)SoundEvents.f_12214_.m_203334_();
-         case DRUM -> (SoundEvent)SoundEvents.f_12208_.m_203334_();
+         case LUTE -> (SoundEvent)SoundEvents.NOTE_BLOCK_BASS.value();
+         case FLUTE -> (SoundEvent)SoundEvents.NOTE_BLOCK_FLUTE.value();
+         case HARP -> (SoundEvent)SoundEvents.NOTE_BLOCK_HARP.value();
+         case DRUM -> (SoundEvent)SoundEvents.NOTE_BLOCK_BASEDRUM.value();
       };
    }
 }

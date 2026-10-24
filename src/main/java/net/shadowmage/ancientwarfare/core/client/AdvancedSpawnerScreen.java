@@ -62,89 +62,89 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
 
    public AdvancedSpawnerScreen(AdvancedSpawnerMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title);
-      this.f_97726_ = 348;
-      this.f_97727_ = 236;
-      this.f_97731_ = 10000;
+      this.imageWidth = 348;
+      this.imageHeight = 236;
+      this.inventoryLabelY = 10000;
       this.buildEntityOptions();
       this.buildFactionOptions();
    }
 
-   protected void m_7856_() {
-      super.m_7856_();
-      AdvancedSpawnerConfig config = ((AdvancedSpawnerMenu)this.f_97732_).getConfig();
-      this.selectedEntity = ResourceLocation.m_135820_(config.entityId());
+   protected void init() {
+      super.init();
+      AdvancedSpawnerConfig config = ((AdvancedSpawnerMenu)this.menu).getConfig();
+      this.selectedEntity = ResourceLocation.tryParse(config.entityId());
       this.selectedFaction = config.factionName().isBlank() ? "brigand" : config.factionName();
       this.lightSensitive = config.lightSensitive();
       this.redstoneSensitive = config.redstoneSensitive();
       this.redstoneMode = config.redstoneMode();
       this.transparent = config.transparent();
       this.debugMode = config.debugMode();
-      this.entitySearch = this.addTextBox(this.f_97735_ + 12, this.f_97736_ + 28, 154, this.selectedEntity == null ? "" : this.selectedEntity.toString(), 128);
-      this.entityButton = (Button)this.m_142416_(Button.m_253074_(Component.m_237115_("gui.ancientwarfare.advanced_spawner.select_entity"), button -> {
+      this.entitySearch = this.addTextBox(this.leftPos + 12, this.topPos + 28, 154, this.selectedEntity == null ? "" : this.selectedEntity.toString(), 128);
+      this.entityButton = (Button)this.addRenderableWidget(Button.builder(Component.translatable("gui.ancientwarfare.advanced_spawner.select_entity"), button -> {
          this.entityDropdownOpen = !this.entityDropdownOpen;
          this.factionDropdownOpen = false;
-      }).m_252987_(this.f_97735_ + 172, this.f_97736_ + 27, 92, 18).m_253136_());
-      this.factionButton = (Button)this.m_142416_(Button.m_253074_(Component.m_237119_(), button -> {
+      }).bounds(this.leftPos + 172, this.topPos + 27, 92, 18).build());
+      this.factionButton = (Button)this.addRenderableWidget(Button.builder(Component.empty(), button -> {
          this.factionDropdownOpen = !this.factionDropdownOpen;
          this.entityDropdownOpen = false;
-      }).m_252987_(this.f_97735_ + 12, this.f_97736_ + 55, 154, 18).m_253136_());
-      this.entityNbt = this.addTextBox(this.f_97735_ + 12, this.f_97736_ + 202, 322, config.entityNbt(), 2048);
-      this.minToSpawn = this.addNumberBox(this.f_97735_ + 214, this.f_97736_ + 58, 34, config.minToSpawn(), 3);
-      this.maxToSpawn = this.addNumberBox(this.f_97735_ + 278, this.f_97736_ + 58, 34, config.maxToSpawn(), 3);
-      this.spawnDelay = this.addNumberBox(this.f_97735_ + 214, this.f_97736_ + 82, 34, config.spawnDelay(), 5);
-      this.playerRange = this.addNumberBox(this.f_97735_ + 214, this.f_97736_ + 106, 34, config.playerRange(), 3);
-      this.mobRange = this.addNumberBox(this.f_97735_ + 278, this.f_97736_ + 106, 34, config.mobRange(), 3);
-      this.spawnRange = this.addNumberBox(this.f_97735_ + 214, this.f_97736_ + 130, 34, config.spawnRange(), 3);
-      this.maxNearby = this.addNumberBox(this.f_97735_ + 278, this.f_97736_ + 130, 34, config.maxNearby(), 3);
-      this.spawnYOffset = this.addSignedNumberBox(this.f_97735_ + 214, this.f_97736_ + 154, 34, config.spawnYOffset(), 4);
+      }).bounds(this.leftPos + 12, this.topPos + 55, 154, 18).build());
+      this.entityNbt = this.addTextBox(this.leftPos + 12, this.topPos + 202, 322, config.entityNbt(), 2048);
+      this.minToSpawn = this.addNumberBox(this.leftPos + 214, this.topPos + 58, 34, config.minToSpawn(), 3);
+      this.maxToSpawn = this.addNumberBox(this.leftPos + 278, this.topPos + 58, 34, config.maxToSpawn(), 3);
+      this.spawnDelay = this.addNumberBox(this.leftPos + 214, this.topPos + 82, 34, config.spawnDelay(), 5);
+      this.playerRange = this.addNumberBox(this.leftPos + 214, this.topPos + 106, 34, config.playerRange(), 3);
+      this.mobRange = this.addNumberBox(this.leftPos + 278, this.topPos + 106, 34, config.mobRange(), 3);
+      this.spawnRange = this.addNumberBox(this.leftPos + 214, this.topPos + 130, 34, config.spawnRange(), 3);
+      this.maxNearby = this.addNumberBox(this.leftPos + 278, this.topPos + 130, 34, config.maxNearby(), 3);
+      this.spawnYOffset = this.addSignedNumberBox(this.leftPos + 214, this.topPos + 154, 34, config.spawnYOffset(), 4);
       this.lightButton = this.addToggle(
-         this.f_97735_ + 12, this.f_97736_ + 82, 80, "gui.ancientwarfare.advanced_spawner.light", this.lightSensitive, button -> {
+         this.leftPos + 12, this.topPos + 82, 80, "gui.ancientwarfare.advanced_spawner.light", this.lightSensitive, button -> {
             this.lightSensitive = !this.lightSensitive;
             this.refreshToggleLabels();
          }
       );
       this.redstoneButton = this.addToggle(
-         this.f_97735_ + 98, this.f_97736_ + 82, 96, "gui.ancientwarfare.advanced_spawner.redstone", this.redstoneSensitive, button -> {
+         this.leftPos + 98, this.topPos + 82, 96, "gui.ancientwarfare.advanced_spawner.redstone", this.redstoneSensitive, button -> {
             this.redstoneSensitive = !this.redstoneSensitive;
             this.refreshToggleLabels();
          }
       );
       this.redstoneModeButton = this.addToggle(
-         this.f_97735_ + 12, this.f_97736_ + 106, 122, "gui.ancientwarfare.advanced_spawner.mode", this.redstoneMode, button -> {
+         this.leftPos + 12, this.topPos + 106, 122, "gui.ancientwarfare.advanced_spawner.mode", this.redstoneMode, button -> {
             this.redstoneMode = !this.redstoneMode;
             this.refreshToggleLabels();
          }
       );
       this.transparentButton = this.addToggle(
-         this.f_97735_ + 12, this.f_97736_ + 130, 80, "gui.ancientwarfare.advanced_spawner.transparent", this.transparent, button -> {
+         this.leftPos + 12, this.topPos + 130, 80, "gui.ancientwarfare.advanced_spawner.transparent", this.transparent, button -> {
             this.transparent = !this.transparent;
             this.refreshToggleLabels();
          }
       );
-      this.debugButton = this.addToggle(this.f_97735_ + 98, this.f_97736_ + 130, 96, "gui.ancientwarfare.advanced_spawner.debug", this.debugMode, button -> {
+      this.debugButton = this.addToggle(this.leftPos + 98, this.topPos + 130, 96, "gui.ancientwarfare.advanced_spawner.debug", this.debugMode, button -> {
          this.debugMode = !this.debugMode;
          this.refreshToggleLabels();
       });
-      this.m_142416_(
-         Button.m_253074_(Component.m_237115_("gui.ancientwarfare.advanced_spawner.save"), button -> this.save())
-            .m_252987_(this.f_97735_ + 214, this.f_97736_ + 176, 58, 18)
-            .m_253136_()
+      this.addRenderableWidget(
+         Button.builder(Component.translatable("gui.ancientwarfare.advanced_spawner.save"), button -> this.save())
+            .bounds(this.leftPos + 214, this.topPos + 176, 58, 18)
+            .build()
       );
-      this.m_142416_(
-         Button.m_253074_(Component.m_237115_("gui.ancientwarfare.advanced_spawner.close"), button -> this.m_7379_())
-            .m_252987_(this.f_97735_ + 278, this.f_97736_ + 176, 58, 18)
-            .m_253136_()
+      this.addRenderableWidget(
+         Button.builder(Component.translatable("gui.ancientwarfare.advanced_spawner.close"), button -> this.onClose())
+            .bounds(this.leftPos + 278, this.topPos + 176, 58, 18)
+            .build()
       );
       this.refreshToggleLabels();
    }
 
    private void buildEntityOptions() {
       this.entityOptions.clear();
-      BuiltInRegistries.f_256780_
-         .m_6579_()
+      BuiltInRegistries.ENTITY_TYPE
+         .entrySet()
          .stream()
-         .filter(entry -> ((EntityType)entry.getValue()).m_20584_())
-         .map(entry -> ((ResourceKey)entry.getKey()).m_135782_())
+         .filter(entry -> ((EntityType)entry.getValue()).canSerialize())
+         .map(entry -> ((ResourceKey)entry.getKey()).location())
          .sorted(Comparator.comparing(ResourceLocation::toString))
          .forEach(this.entityOptions::add);
    }
@@ -160,57 +160,57 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
    }
 
    private EditBox addTextBox(int x, int y, int width, String value, int maxLength) {
-      EditBox box = new EditBox(this.f_96547_, x, y, width, 16, Component.m_237119_());
-      box.m_94199_(maxLength);
-      box.m_94202_(-1);
-      box.m_94205_(-4210753);
-      box.m_94144_(value);
-      return (EditBox)this.m_142416_(box);
+      EditBox box = new EditBox(this.font, x, y, width, 16, Component.empty());
+      box.setMaxLength(maxLength);
+      box.setTextColor(-1);
+      box.setTextColorUneditable(-4210753);
+      box.setValue(value);
+      return (EditBox)this.addRenderableWidget(box);
    }
 
    private EditBox addNumberBox(int x, int y, int width, int value, int maxLength) {
       EditBox box = this.addTextBox(x, y, width, Integer.toString(value), maxLength);
-      box.m_94153_(text -> text.isEmpty() || text.matches("[0-9]+"));
+      box.setFilter(text -> text.isEmpty() || text.matches("[0-9]+"));
       return box;
    }
 
    private EditBox addSignedNumberBox(int x, int y, int width, int value, int maxLength) {
       EditBox box = this.addTextBox(x, y, width, Integer.toString(value), maxLength);
-      box.m_94153_(text -> text.isEmpty() || text.matches("-?[0-9]+"));
+      box.setFilter(text -> text.isEmpty() || text.matches("-?[0-9]+"));
       return box;
    }
 
    private Button addToggle(int x, int y, int width, String labelKey, boolean value, OnPress onPress) {
-      return (Button)this.m_142416_(Button.m_253074_(this.toggleLabel(labelKey, value), onPress).m_252987_(x, y, width, 18).m_253136_());
+      return (Button)this.addRenderableWidget(Button.builder(this.toggleLabel(labelKey, value), onPress).bounds(x, y, width, 18).build());
    }
 
    private Component toggleLabel(String labelKey, boolean value) {
-      return Component.m_237110_(
-         "gui.ancientwarfare.advanced_spawner.toggle", new Object[]{Component.m_237115_(labelKey), Component.m_237115_(value ? "options.on" : "options.off")}
+      return Component.translatable(
+         "gui.ancientwarfare.advanced_spawner.toggle", new Object[]{Component.translatable(labelKey), Component.translatable(value ? "options.on" : "options.off")}
       );
    }
 
    private void refreshToggleLabels() {
-      this.factionButton.m_93666_(Component.m_237110_("gui.ancientwarfare.advanced_spawner.faction_value", new Object[]{this.selectedFaction}));
-      this.lightButton.m_93666_(this.toggleLabel("gui.ancientwarfare.advanced_spawner.light", this.lightSensitive));
-      this.redstoneButton.m_93666_(this.toggleLabel("gui.ancientwarfare.advanced_spawner.redstone", this.redstoneSensitive));
+      this.factionButton.setMessage(Component.translatable("gui.ancientwarfare.advanced_spawner.faction_value", new Object[]{this.selectedFaction}));
+      this.lightButton.setMessage(this.toggleLabel("gui.ancientwarfare.advanced_spawner.light", this.lightSensitive));
+      this.redstoneButton.setMessage(this.toggleLabel("gui.ancientwarfare.advanced_spawner.redstone", this.redstoneSensitive));
       this.redstoneModeButton
-         .m_93666_(
-            Component.m_237110_(
+         .setMessage(
+            Component.translatable(
                "gui.ancientwarfare.advanced_spawner.mode_value",
                new Object[]{
-                  Component.m_237115_(this.redstoneMode ? "gui.ancientwarfare.advanced_spawner.powered" : "gui.ancientwarfare.advanced_spawner.unpowered")
+                  Component.translatable(this.redstoneMode ? "gui.ancientwarfare.advanced_spawner.powered" : "gui.ancientwarfare.advanced_spawner.unpowered")
                }
             )
          );
-      this.transparentButton.m_93666_(this.toggleLabel("gui.ancientwarfare.advanced_spawner.transparent", this.transparent));
-      this.debugButton.m_93666_(this.toggleLabel("gui.ancientwarfare.advanced_spawner.debug", this.debugMode));
+      this.transparentButton.setMessage(this.toggleLabel("gui.ancientwarfare.advanced_spawner.transparent", this.transparent));
+      this.debugButton.setMessage(this.toggleLabel("gui.ancientwarfare.advanced_spawner.debug", this.debugMode));
    }
 
-   protected void m_7286_(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      graphics.m_280509_(this.f_97735_, this.f_97736_, this.f_97735_ + this.f_97726_, this.f_97736_ + this.f_97727_, -1515310);
-      graphics.m_280509_(this.f_97735_, this.f_97736_, this.f_97735_ + this.f_97726_, this.f_97736_ + 20, -3687255);
-      graphics.m_280614_(this.f_96547_, this.f_96539_, this.f_97735_ + 10, this.f_97736_ + 7, -14671840, false);
+   protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+      graphics.fill(this.leftPos, this.topPos, this.leftPos + this.imageWidth, this.topPos + this.imageHeight, -1515310);
+      graphics.fill(this.leftPos, this.topPos, this.leftPos + this.imageWidth, this.topPos + 20, -3687255);
+      graphics.drawString(this.font, this.title, this.leftPos + 10, this.topPos + 7, -14671840, false);
       this.drawLabel(graphics, "gui.ancientwarfare.advanced_spawner.entity_search", 12, 18);
       this.drawLabel(graphics, "gui.ancientwarfare.advanced_spawner.faction", 12, 47);
       this.drawLabel(graphics, "gui.ancientwarfare.advanced_spawner.entity_nbt", 12, 193);
@@ -225,25 +225,25 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
    }
 
    private void renderDropdowns(GuiGraphics graphics, int mouseX, int mouseY) {
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_(0.0F, 0.0F, 400.0F);
+      graphics.pose().pushPose();
+      graphics.pose().translate(0.0F, 0.0F, 400.0F);
       this.renderEntityDropdown(graphics, mouseX, mouseY);
       this.renderFactionDropdown(graphics, mouseX, mouseY);
-      graphics.m_280168_().m_85849_();
+      graphics.pose().popPose();
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
    }
 
    private void drawLabel(GuiGraphics graphics, String key, int x, int y) {
-      graphics.m_280614_(this.f_96547_, Component.m_237115_(key), this.f_97735_ + x, this.f_97736_ + y, -14671840, false);
+      graphics.drawString(this.font, Component.translatable(key), this.leftPos + x, this.topPos + y, -14671840, false);
    }
 
    private void renderEntityDropdown(GuiGraphics graphics, int mouseX, int mouseY) {
       if (this.entityDropdownOpen) {
          List<ResourceLocation> filtered = this.filteredEntities();
-         int x = this.f_97735_ + 12;
-         int y = this.f_97736_ + 48;
+         int x = this.leftPos + 12;
+         int y = this.topPos + 48;
          int width = 252;
          this.renderDropdown(graphics, x, y, width, filtered.size());
 
@@ -261,8 +261,8 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
 
    private void renderFactionDropdown(GuiGraphics graphics, int mouseX, int mouseY) {
       if (this.factionDropdownOpen) {
-         int x = this.f_97735_ + 12;
-         int y = this.f_97736_ + 75;
+         int x = this.leftPos + 12;
+         int y = this.topPos + 75;
          int width = 154;
          this.renderDropdown(graphics, x, y, width, this.factionOptions.size());
 
@@ -280,47 +280,47 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
 
    private void renderDropdown(GuiGraphics graphics, int x, int y, int width, int size) {
       int rows = Math.min(8, size);
-      graphics.m_280509_(x - 1, y - 1, x + width + 1, y + rows * 14 + 1, -12963029);
-      graphics.m_280509_(x, y, x + width, y + rows * 14, -462104);
+      graphics.fill(x - 1, y - 1, x + width + 1, y + rows * 14 + 1, -12963029);
+      graphics.fill(x, y, x + width, y + rows * 14, -462104);
    }
 
    private void renderDropdownRow(GuiGraphics graphics, int x, int y, int width, int row, String text, boolean selected, int mouseX, int mouseY) {
       int rowY = y + row * 14;
       boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= rowY && mouseY < rowY + 14;
       if (selected || hovered) {
-         graphics.m_280509_(x, rowY, x + width, rowY + 14, selected ? -2758457 : -1054500);
+         graphics.fill(x, rowY, x + width, rowY + 14, selected ? -2758457 : -1054500);
       }
 
-      graphics.m_280614_(this.f_96547_, Component.m_237113_(this.f_96547_.m_92834_(text, width - 8)), x + 4, rowY + 3, -14671840, false);
+      graphics.drawString(this.font, Component.literal(this.font.plainSubstrByWidth(text, width - 8)), x + 4, rowY + 3, -14671840, false);
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
       if (this.entityDropdownOpen && this.selectEntity(mouseX, mouseY)) {
          return true;
       } else {
-         return this.factionDropdownOpen && this.selectFaction(mouseX, mouseY) ? true : super.m_6375_(mouseX, mouseY, button);
+         return this.factionDropdownOpen && this.selectFaction(mouseX, mouseY) ? true : super.mouseClicked(mouseX, mouseY, button);
       }
    }
 
    private boolean selectEntity(double mouseX, double mouseY) {
       List<ResourceLocation> filtered = this.filteredEntities();
-      int x = this.f_97735_ + 12;
-      int y = this.f_97736_ + 48;
+      int x = this.leftPos + 12;
+      int y = this.topPos + 48;
       int width = 252;
       int row = this.dropdownRow(mouseX, mouseY, x, y, width, filtered.size());
       if (row < 0) {
          return false;
       } else {
          this.selectedEntity = filtered.get(this.entityScroll + row);
-         this.entitySearch.m_94144_(this.selectedEntity.toString());
+         this.entitySearch.setValue(this.selectedEntity.toString());
          this.entityDropdownOpen = false;
          return true;
       }
    }
 
    private boolean selectFaction(double mouseX, double mouseY) {
-      int x = this.f_97735_ + 12;
-      int y = this.f_97736_ + 75;
+      int x = this.leftPos + 12;
+      int y = this.topPos + 75;
       int width = 154;
       int row = this.dropdownRow(mouseX, mouseY, x, y, width, this.factionOptions.size());
       if (row < 0) {
@@ -340,7 +340,7 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
          : -1;
    }
 
-   public boolean m_6050_(double mouseX, double mouseY, double delta) {
+   public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
       if (this.entityDropdownOpen) {
          this.entityScroll = this.scroll(this.entityScroll, this.filteredEntities().size(), delta);
          return true;
@@ -348,7 +348,7 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
          this.factionScroll = this.scroll(this.factionScroll, this.factionOptions.size(), delta);
          return true;
       } else {
-         return super.m_6050_(mouseX, mouseY, delta);
+         return super.mouseScrolled(mouseX, mouseY, delta);
       }
    }
 
@@ -358,13 +358,13 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
    }
 
    private List<ResourceLocation> filteredEntities() {
-      String filter = this.entitySearch == null ? "" : this.entitySearch.m_94155_().toLowerCase(Locale.ROOT);
+      String filter = this.entitySearch == null ? "" : this.entitySearch.getValue().toLowerCase(Locale.ROOT);
       return this.entityOptions.stream().filter(id -> filter.isBlank() || id.toString().toLowerCase(Locale.ROOT).contains(filter)).toList();
    }
 
    private void save() {
       ResourceLocation entity = this.selectedEntity;
-      ResourceLocation typed = ResourceLocation.m_135820_(this.entitySearch.m_94155_());
+      ResourceLocation typed = ResourceLocation.tryParse(this.entitySearch.getValue());
       if (typed != null && this.entityOptions.contains(typed)) {
          entity = typed;
       }
@@ -372,7 +372,7 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
       AdvancedSpawnerConfig config = new AdvancedSpawnerConfig(
          entity == null ? "" : entity.toString(),
          this.selectedFaction,
-         this.entityNbt.m_94155_(),
+         this.entityNbt.getValue(),
          this.number(this.minToSpawn, 1),
          this.number(this.maxToSpawn, 1),
          this.number(this.spawnDelay, 0),
@@ -387,13 +387,13 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
          this.transparent,
          this.debugMode
       );
-      AWCorePlatform.setAdvancedSpawnerConfig(((AdvancedSpawnerMenu)this.f_97732_).getPos(), config);
-      this.m_7379_();
+      AWCorePlatform.setAdvancedSpawnerConfig(((AdvancedSpawnerMenu)this.menu).getPos(), config);
+      this.onClose();
    }
 
    private int number(EditBox box, int fallback) {
       try {
-         return Math.max(0, Integer.parseInt(box.m_94155_()));
+         return Math.max(0, Integer.parseInt(box.getValue()));
       } catch (NumberFormatException var4) {
          return fallback;
       }
@@ -401,16 +401,16 @@ public class AdvancedSpawnerScreen extends AbstractContainerScreen<AdvancedSpawn
 
    private int signedNumber(EditBox box, int fallback) {
       try {
-         return Integer.parseInt(box.m_94155_());
+         return Integer.parseInt(box.getValue());
       } catch (NumberFormatException var4) {
          return fallback;
       }
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
+      super.render(graphics, mouseX, mouseY, partialTick);
       this.renderDropdowns(graphics, mouseX, mouseY);
-      this.m_280072_(graphics, mouseX, mouseY);
+      this.renderTooltip(graphics, mouseX, mouseY);
    }
 }

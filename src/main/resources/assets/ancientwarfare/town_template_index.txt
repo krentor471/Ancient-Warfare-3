@@ -6,5 +6,3 @@ MohawkyPack1.12.2V72/towns/town_templates/NorskaUnwalledTown.awt
 MohawkyPack1.12.2V72/towns/town_templates/NorskaWalledTown.awt
 MohawkyPack1.12.2V72/towns/town_templates/SarkonidUnwalledTown.awt
 MohawkyPack1.12.2V72/towns/town_templates/SarkonidWalledTown.awt
-MohawkyPack1.12.2V72/towns/town_templates/UndeadUnwalledGraveyard.awt
-MohawkyPack1.12.2V72/towns/town_templates/UndeadWalledGraveyard.awt

@@ -26,7 +26,7 @@ public final class AWCoreSounds {
    }
 
    private static void registerNpcVoice(String name) {
-      NPC_VOICES.put(name, REGISTER.register(name, () -> SoundEvent.m_262824_(AWCoreIds.id(name))));
+      NPC_VOICES.put(name, REGISTER.register(name, () -> SoundEvent.createVariableRangeEvent(AWCoreIds.id(name))));
    }
 
    static {

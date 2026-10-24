@@ -24,35 +24,35 @@ final class FollowPlayerGoal extends Goal {
       this.npc = npc;
       this.stopDistanceSq = stopDistance * stopDistance;
       this.startDistanceSq = startDistance * startDistance;
-      this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+      this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
    }
 
-   public boolean m_8036_() {
-      if (this.canFollow() && !this.npc.m_20159_()) {
+   public boolean canUse() {
+      if (this.canFollow() && !this.npc.isPassenger()) {
          this.player = this.npc.getFollowTargetPlayer().orElse(null);
-         return this.player != null && this.npc.m_20280_(this.player) > (double)this.startDistanceSq;
+         return this.player != null && this.npc.distanceToSqr(this.player) > (double)this.startDistanceSq;
       } else {
          return false;
       }
    }
 
-   public boolean m_8045_() {
-      return this.player != null && this.canFollow() && !this.npc.m_20159_() && this.npc.m_20280_(this.player) > (double)this.stopDistanceSq;
+   public boolean canContinueToUse() {
+      return this.player != null && this.canFollow() && !this.npc.isPassenger() && this.npc.distanceToSqr(this.player) > (double)this.stopDistanceSq;
    }
 
-   public void m_8056_() {
+   public void start() {
       this.repathTicks = 0;
       this.failedPathTicks = 0;
       this.teleportCooldown = 0;
    }
 
-   public void m_8037_() {
-      this.npc.m_21563_().m_24960_(this.player, 10.0F, (float)this.npc.m_8132_());
+   public void tick() {
+      this.npc.getLookControl().setLookAt(this.player, 10.0F, (float)this.npc.getMaxHeadXRot());
       if (this.teleportCooldown > 0) {
          this.teleportCooldown--;
       }
 
-      double distanceSq = this.npc.m_20280_(this.player);
+      double distanceSq = this.npc.distanceToSqr(this.player);
       if (distanceSq > 2304.0 && this.teleportCooldown <= 0) {
          this.teleportCooldown = 40;
          if (this.tryTeleportNearPlayer()) {
@@ -62,8 +62,8 @@ final class FollowPlayerGoal extends Goal {
          }
       }
 
-      if (this.repathTicks-- <= 0 || this.npc.m_21573_().m_26571_()) {
-         boolean pathStarted = this.npc.m_21573_().m_5624_(this.player, this.npc.playerSprintNavigationSpeed());
+      if (this.repathTicks-- <= 0 || this.npc.getNavigation().isDone()) {
+         boolean pathStarted = this.npc.getNavigation().moveTo(this.player, this.npc.playerSprintNavigationSpeed());
          this.failedPathTicks = pathStarted ? 0 : this.failedPathTicks + 10;
          if (distanceSq > 576.0 && this.failedPathTicks >= 20 && this.teleportCooldown <= 0) {
             this.tryTeleportNearPlayer();
@@ -75,45 +75,45 @@ final class FollowPlayerGoal extends Goal {
       }
    }
 
-   public void m_8041_() {
+   public void stop() {
       this.player = null;
       this.repathTicks = 0;
       this.failedPathTicks = 0;
       this.teleportCooldown = 0;
-      this.npc.m_21573_().m_26573_();
+      this.npc.getNavigation().stop();
    }
 
    private boolean canFollow() {
       if (this.npc.getCurrentCommand() == NpcCommandType.FOLLOW && !this.npc.isGuiInteractionPaused()) {
-         LivingEntity target = this.npc.m_5448_();
-         return this.npc.isFollowCombatRecallActive() || target == null || !target.m_6084_();
+         LivingEntity target = this.npc.getTarget();
+         return this.npc.isFollowCombatRecallActive() || target == null || !target.isAlive();
       } else {
          return false;
       }
    }
 
    private boolean tryTeleportNearPlayer() {
-      BlockPos center = this.player.m_20183_();
+      BlockPos center = this.player.blockPosition();
 
       for (int attempt = 0; attempt < 12; attempt++) {
-         int dx = this.npc.m_217043_().m_188503_(9) - 4;
-         int dz = this.npc.m_217043_().m_188503_(9) - 4;
-         int dy = this.npc.m_217043_().m_188503_(5) - 2;
+         int dx = this.npc.getRandom().nextInt(9) - 4;
+         int dz = this.npc.getRandom().nextInt(9) - 4;
+         int dy = this.npc.getRandom().nextInt(5) - 2;
          if (Math.abs(dx) >= 2 || Math.abs(dz) >= 2) {
-            BlockPos pos = center.m_7918_(dx, dy, dz);
-            if (this.npc.m_9236_().m_46805_(pos) && this.npc.m_9236_().m_6857_().m_61937_(pos)) {
-               BlockPos floor = pos.m_7495_();
-               if (this.npc.m_9236_().m_8055_(floor).m_60783_(this.npc.m_9236_(), floor, Direction.UP)) {
-                  double x = (double)pos.m_123341_() + 0.5;
-                  double y = (double)pos.m_123342_();
-                  double z = (double)pos.m_123343_() + 0.5;
+            BlockPos pos = center.offset(dx, dy, dz);
+            if (this.npc.level().hasChunkAt(pos) && this.npc.level().getWorldBorder().isWithinBounds(pos)) {
+               BlockPos floor = pos.below();
+               if (this.npc.level().getBlockState(floor).isFaceSturdy(this.npc.level(), floor, Direction.UP)) {
+                  double x = (double)pos.getX() + 0.5;
+                  double y = (double)pos.getY();
+                  double z = (double)pos.getZ() + 0.5;
                   if (this.npc
-                     .m_9236_()
-                     .m_45756_(this.npc, this.npc.m_20191_().m_82386_(x - this.npc.m_20185_(), y - this.npc.m_20186_(), z - this.npc.m_20189_()))) {
-                     this.npc.m_21573_().m_26573_();
-                     this.npc.m_6021_(x, y, z);
-                     this.npc.m_20256_(Vec3.f_82478_);
-                     this.npc.f_19789_ = 0.0F;
+                     .level()
+                     .noCollision(this.npc, this.npc.getBoundingBox().move(x - this.npc.getX(), y - this.npc.getY(), z - this.npc.getZ()))) {
+                     this.npc.getNavigation().stop();
+                     this.npc.teleportTo(x, y, z);
+                     this.npc.setDeltaMovement(Vec3.ZERO);
+                     this.npc.fallDistance = 0.0F;
                      return true;
                   }
                }

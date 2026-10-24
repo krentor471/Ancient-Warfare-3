@@ -19112,7 +19112,7 @@ rule:
 plugin=blockTile
 number=89
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19128,7 +19128,7 @@ rule:
 plugin=blockTile
 number=91
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19168,7 +19168,7 @@ rule:
 plugin=blockTile
 number=96
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19184,7 +19184,7 @@ rule:
 plugin=blockTile
 number=98
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19304,7 +19304,7 @@ rule:
 plugin=blockTile
 number=113
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19320,7 +19320,7 @@ rule:
 plugin=blockTile
 number=115
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19400,7 +19400,7 @@ rule:
 plugin=blockTile
 number=125
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19424,7 +19424,7 @@ rule:
 plugin=blockTile
 number=128
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19472,7 +19472,7 @@ rule:
 plugin=blockTile
 number=134
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19488,7 +19488,7 @@ rule:
 plugin=blockTile
 number=136
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19584,7 +19584,7 @@ rule:
 plugin=blockTile
 number=148
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 
@@ -19600,7 +19600,7 @@ rule:
 plugin=blockTile
 number=150
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/undead",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/gravestone_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 

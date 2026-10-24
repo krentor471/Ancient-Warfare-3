@@ -18,12 +18,12 @@ final class TorqueNetworkDemand {
    static double downstreamDemand(Level level, BlockPos sourcePos, Direction outputSide) {
       Set<BlockPos> visited = new HashSet<>();
       visited.add(sourcePos);
-      return downstreamDemand(level, sourcePos.m_121945_(outputSide), outputSide.m_122424_(), visited, 0);
+      return downstreamDemand(level, sourcePos.relative(outputSide), outputSide.getOpposite(), visited, 0);
    }
 
    static double downstreamDemand(Level level, BlockPos targetPos, Direction targetSide, Set<BlockPos> visited, int depth) {
       if (depth < 128 && visited.add(targetPos)) {
-         BlockEntity blockEntity = level.m_7702_(targetPos);
+         BlockEntity blockEntity = level.getBlockEntity(targetPos);
          if (!(blockEntity instanceof TorqueAccess access) || !access.canInputTorque(targetSide)) {
             return 0.0;
          }

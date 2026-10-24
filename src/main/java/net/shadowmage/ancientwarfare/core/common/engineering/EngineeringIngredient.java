@@ -24,35 +24,35 @@ public record EngineeringIngredient(Ingredient ingredient, int count, @Nullable 
    }
 
    public static EngineeringIngredient empty() {
-      return new EngineeringIngredient(Ingredient.f_43901_, 1, null);
+      return new EngineeringIngredient(Ingredient.EMPTY, 1, null);
    }
 
    public boolean isEmpty() {
-      return this.ingredient.m_43947_();
+      return this.ingredient.isEmpty();
    }
 
    public boolean test(ItemStack stack) {
-      return !stack.m_41619_()
-         && stack.m_41613_() >= this.count
+      return !stack.isEmpty()
+         && stack.getCount() >= this.count
          && this.ingredient.test(stack)
-         && (this.requiredTag == null || this.specialTagMatch(stack) || NbtUtils.m_129235_(this.requiredTag, stack.m_41783_(), true));
+         && (this.requiredTag == null || this.specialTagMatch(stack) || NbtUtils.compareNbt(this.requiredTag, stack.getTag(), true));
    }
 
    private boolean specialTagMatch(ItemStack stack) {
-      if (this.requiredTag != null && this.requiredTag.m_128441_("StoredEnchantments")) {
-         ListTag required = this.requiredTag.m_128437_("StoredEnchantments", 10);
+      if (this.requiredTag != null && this.requiredTag.contains("StoredEnchantments")) {
+         ListTag required = this.requiredTag.getList("StoredEnchantments", 10);
          if (required.isEmpty()) {
             return false;
          } else {
-            CompoundTag enchantment = required.m_128728_(0);
-            ResourceLocation id = ResourceLocation.m_135820_(enchantment.m_128461_("id"));
+            CompoundTag enchantment = required.getCompound(0);
+            ResourceLocation id = ResourceLocation.tryParse(enchantment.getString("id"));
             if (id == null) {
                return false;
             } else {
-               Enchantment requiredEnchantment = (Enchantment)BuiltInRegistries.f_256876_.m_7745_(id);
+               Enchantment requiredEnchantment = (Enchantment)BuiltInRegistries.ENCHANTMENT.get(id);
                return requiredEnchantment == null
                   ? false
-                  : EnchantmentHelper.m_44831_(stack).getOrDefault(requiredEnchantment, 0) >= enchantment.m_128448_("lvl");
+                  : EnchantmentHelper.getEnchantments(stack).getOrDefault(requiredEnchantment, 0) >= enchantment.getShort("lvl");
             }
          }
       } else {
@@ -61,13 +61,13 @@ public record EngineeringIngredient(Ingredient ingredient, int count, @Nullable 
    }
 
    public ItemStack[] displayStacks() {
-      ItemStack[] stacks = this.ingredient.m_43908_();
+      ItemStack[] stacks = this.ingredient.getItems();
       ItemStack[] result = new ItemStack[stacks.length];
 
       for (int index = 0; index < stacks.length; index++) {
-         result[index] = stacks[index].m_255036_(this.count);
+         result[index] = stacks[index].copyWithCount(this.count);
          if (this.requiredTag != null) {
-            result[index].m_41784_().m_128391_(this.requiredTag.m_6426_());
+            result[index].getOrCreateTag().merge(this.requiredTag.copy());
          }
       }
 
@@ -75,12 +75,12 @@ public record EngineeringIngredient(Ingredient ingredient, int count, @Nullable 
    }
 
    public void toNetwork(FriendlyByteBuf buffer) {
-      this.ingredient.m_43923_(buffer);
-      buffer.m_130130_(this.count);
-      buffer.m_130079_(this.requiredTag);
+      this.ingredient.toNetwork(buffer);
+      buffer.writeVarInt(this.count);
+      buffer.writeNbt(this.requiredTag);
    }
 
    public static EngineeringIngredient fromNetwork(FriendlyByteBuf buffer) {
-      return new EngineeringIngredient(Ingredient.m_43940_(buffer), buffer.m_130242_(), buffer.m_130260_());
+      return new EngineeringIngredient(Ingredient.fromNetwork(buffer), buffer.readVarInt(), buffer.readNbt());
    }
 }

@@ -10,15 +10,15 @@ import net.shadowmage.ancientwarfare.core.common.npc.FactionNpcRole;
 
 public class FactionLeaderEliteNpcEntity extends FactionSoldierNpcEntity {
    public FactionLeaderEliteNpcEntity(EntityType<? extends FactionSoldierNpcEntity> entityType, Level level) {
-      super(entityType, level, FactionNpcRole.LEADER_ELITE, new ItemStack(Items.f_42388_));
+      super(entityType, level, FactionNpcRole.LEADER_ELITE, new ItemStack(Items.DIAMOND_SWORD));
    }
 
    public static Builder createAttributes() {
-      return m_21552_()
-         .m_22268_(Attributes.f_22276_, 60.0)
-         .m_22268_(Attributes.f_22279_, 0.3)
-         .m_22268_(Attributes.f_22281_, 5.0)
-         .m_22268_(Attributes.f_22283_, 4.0)
-         .m_22268_(Attributes.f_22277_, 35.0);
+      return createMobAttributes()
+         .add(Attributes.MAX_HEALTH, 60.0)
+         .add(Attributes.MOVEMENT_SPEED, 0.3)
+         .add(Attributes.ATTACK_DAMAGE, 5.0)
+         .add(Attributes.ATTACK_SPEED, 4.0)
+         .add(Attributes.FOLLOW_RANGE, 35.0);
    }
 }

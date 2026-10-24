@@ -24,12 +24,26 @@ import org.jetbrains.annotations.Nullable;
 
 public class QuillItem extends Item implements NpcProfessionTool {
    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
+   /** How much science a scribe gathers with this quill, against a wooden one. */
+   private final float science;
 
    public QuillItem(Tier tier) {
-      super(new Properties().m_41503_(tier.m_6609_()));
+      super(new Properties().durability(tier.getUses()));
+      this.science = tier == net.minecraft.world.item.Tiers.WOOD
+         ? 1.0F
+         : tier == net.minecraft.world.item.Tiers.STONE
+            ? 1.25F
+            : tier == net.minecraft.world.item.Tiers.IRON
+               ? 1.5F
+               : tier == net.minecraft.world.item.Tiers.GOLD ? 2.0F : tier == net.minecraft.world.item.Tiers.DIAMOND ? 3.0F : 3.5F;
       Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-      builder.put(Attributes.f_22281_, new AttributeModifier(f_41374_, "Tool modifier", 1.0 + (double)tier.m_6631_(), Operation.ADDITION));
+      builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Tool modifier", 1.0 + (double)tier.getAttackDamageBonus(), Operation.ADDITION));
       this.defaultModifiers = builder.build();
+   }
+
+   /** The science a scribe holding this stack gathers, against a wooden quill; 1 for anything that is not a quill. */
+   public static float scienceMultiplier(ItemStack stack) {
+      return stack.getItem() instanceof QuillItem quill ? quill.science : 1.0F;
    }
 
    @Override
@@ -37,29 +51,30 @@ public class QuillItem extends Item implements NpcProfessionTool {
       return NpcProfessionTool.ToolRole.RESEARCHER;
    }
 
-   public Multimap<Attribute, AttributeModifier> m_7167_(EquipmentSlot slot) {
-      return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.m_7167_(slot);
+   public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
+      return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.getDefaultAttributeModifiers(slot);
    }
 
-   public boolean m_7579_(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-      stack.m_41622_(1, attacker, entity -> entity.m_21166_(EquipmentSlot.MAINHAND));
+   public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+      stack.hurtAndBreak(1, attacker, entity -> entity.broadcastBreakEvent(EquipmentSlot.MAINHAND));
       return true;
    }
 
-   public boolean m_6813_(ItemStack stack, Level level, BlockState state, BlockPos pos, LivingEntity entity) {
-      if (!level.f_46443_ && state.m_60800_(level, pos) != 0.0F) {
-         stack.m_41622_(2, entity, living -> living.m_21166_(EquipmentSlot.MAINHAND));
+   public boolean mineBlock(ItemStack stack, Level level, BlockState state, BlockPos pos, LivingEntity entity) {
+      if (!level.isClientSide && state.getDestroySpeed(level, pos) != 0.0F) {
+         stack.hurtAndBreak(2, entity, living -> living.broadcastBreakEvent(EquipmentSlot.MAINHAND));
       }
 
       return true;
    }
 
-   public boolean m_8120_(ItemStack stack) {
+   public boolean isEnchantable(ItemStack stack) {
       return true;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.quill.work_mode"));
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.quill.porting_note"));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.quill.work_mode"));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.quill.science", net.minecraft.util.Mth.floor(this.science * 100.0F) / 100.0F)
+         .withStyle(net.minecraft.ChatFormatting.AQUA));
    }
 }

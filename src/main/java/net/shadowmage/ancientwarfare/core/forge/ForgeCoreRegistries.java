@@ -10,6 +10,7 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreMenuTypes;
 import net.shadowmage.ancientwarfare.core.forge.init.AWCoreRecipeSerializers;
 import net.shadowmage.ancientwarfare.core.forge.init.AWCoreRecipeTypes;
 import net.shadowmage.ancientwarfare.core.forge.init.AWCoreSounds;
+import net.shadowmage.ancientwarfare.core.forge.init.AWCoreWorldgen;
 
 public final class ForgeCoreRegistries {
    private ForgeCoreRegistries() {
@@ -25,5 +26,6 @@ public final class ForgeCoreRegistries {
       AWCoreRecipeSerializers.REGISTER.register(modBus);
       AWCoreRecipeTypes.REGISTER.register(modBus);
       AWCoreSounds.REGISTER.register(modBus);
+      AWCoreWorldgen.DENSITY_FUNCTIONS.register(modBus);
    }
 }

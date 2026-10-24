@@ -7,12 +7,12 @@ public final class WarehouseItemKey {
    private final int hash;
 
    public WarehouseItemKey(ItemStack stack) {
-      this.prototype = stack.m_255036_(1);
-      this.hash = 31 * this.prototype.m_41720_().hashCode() + (this.prototype.m_41783_() == null ? 0 : this.prototype.m_41783_().hashCode());
+      this.prototype = stack.copyWithCount(1);
+      this.hash = 31 * this.prototype.getItem().hashCode() + (this.prototype.getTag() == null ? 0 : this.prototype.getTag().hashCode());
    }
 
    public ItemStack stack() {
-      return this.prototype.m_41777_();
+      return this.prototype.copy();
    }
 
    @Override
@@ -22,7 +22,7 @@ public final class WarehouseItemKey {
 
    @Override
    public boolean equals(Object other) {
-      if (other instanceof WarehouseItemKey key && ItemStack.m_150942_(this.prototype, key.prototype)) {
+      if (other instanceof WarehouseItemKey key && ItemStack.isSameItemSameTags(this.prototype, key.prototype)) {
          return true;
       }
 

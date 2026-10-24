@@ -76,36 +76,36 @@ public final class FactionNpcDefaultsRegistry {
    }
 
    public static void apply(Mob npc, String faction, FactionNpcRole role) {
-      setAttribute(npc, faction, role, "generic.maxHealth", Attributes.f_22276_);
-      setAttribute(npc, faction, role, "generic.movementSpeed", Attributes.f_22279_);
-      setAttribute(npc, faction, role, "generic.followRange", Attributes.f_22277_);
-      setAttribute(npc, faction, role, "generic.attackDamage", Attributes.f_22281_);
-      setAttribute(npc, faction, role, "generic.armor", Attributes.f_22284_);
-      setAttribute(npc, faction, role, "generic.armorToughness", Attributes.f_22285_);
-      npc.m_21153_(npc.m_21233_());
+      setAttribute(npc, faction, role, "generic.maxHealth", Attributes.MAX_HEALTH);
+      setAttribute(npc, faction, role, "generic.movementSpeed", Attributes.MOVEMENT_SPEED);
+      setAttribute(npc, faction, role, "generic.followRange", Attributes.FOLLOW_RANGE);
+      setAttribute(npc, faction, role, "generic.attackDamage", Attributes.ATTACK_DAMAGE);
+      setAttribute(npc, faction, role, "generic.armor", Attributes.ARMOR);
+      setAttribute(npc, faction, role, "generic.armorToughness", Attributes.ARMOR_TOUGHNESS);
+      npc.setHealth(npc.getMaxHealth());
       applyEquipment(npc, faction, role);
    }
 
    public static ItemStack stackForEquipmentId(String rawId) {
       String normalized = normalizeItemId(rawId);
       if (!normalized.isBlank() && !normalized.equals("minecraft:air")) {
-         ResourceLocation id = ResourceLocation.m_135820_(normalized);
+         ResourceLocation id = ResourceLocation.tryParse(normalized);
          if (id == null) {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          } else {
-            Item item = BuiltInRegistries.f_257033_.m_6612_(id).orElse(Items.f_41852_);
-            return item == Items.f_41852_ ? ItemStack.f_41583_ : new ItemStack(item);
+            Item item = BuiltInRegistries.ITEM.getOptional(id).orElse(Items.AIR);
+            return item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
          }
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
    private static void setAttribute(Mob npc, String faction, FactionNpcRole role, String oldName, Attribute attribute) {
       attributeValue(faction, role, oldName).ifPresent(value -> {
-         AttributeInstance instance = npc.m_21051_(attribute);
+         AttributeInstance instance = npc.getAttribute(attribute);
          if (instance != null) {
-            instance.m_22100_(value);
+            instance.setBaseValue(value);
          }
       });
    }
@@ -141,7 +141,7 @@ public final class FactionNpcDefaultsRegistry {
          .or(() -> getString(defaultSubtype, "loot_table"))
          .or(() -> getString(factionObject, "loot_table"))
          .or(() -> getString(defaults, "loot_table"))
-         .<ResourceLocation>map(ResourceLocation::m_135820_)
+         .<ResourceLocation>map(ResourceLocation::tryParse)
          .filter(Objects::nonNull);
    }
 
@@ -149,28 +149,28 @@ public final class FactionNpcDefaultsRegistry {
       String normalized = oldEntityName == null ? "" : oldEntityName.trim();
 
       return switch (normalized) {
-         case "net.minecraft.entity.passive.EntitySkeletonHorse" -> EntityType.f_20525_;
-         case "net.minecraft.entity.passive.EntityZombieHorse" -> EntityType.f_20502_;
-         case "net.minecraft.entity.passive.EntityLlama" -> EntityType.f_20466_;
-         case "net.minecraft.entity.passive.EntityPig" -> EntityType.f_20510_;
-         case "net.minecraft.entity.passive.EntityChicken" -> EntityType.f_20555_;
-         case "net.minecraft.entity.monster.EntitySpider" -> EntityType.f_20479_;
-         case "net.minecraft.entity.monster.EntityPolarBear" -> EntityType.f_20514_;
-         default -> EntityType.f_20457_;
+         case "net.minecraft.entity.passive.EntitySkeletonHorse" -> EntityType.SKELETON_HORSE;
+         case "net.minecraft.entity.passive.EntityZombieHorse" -> EntityType.ZOMBIE_HORSE;
+         case "net.minecraft.entity.passive.EntityLlama" -> EntityType.LLAMA;
+         case "net.minecraft.entity.passive.EntityPig" -> EntityType.PIG;
+         case "net.minecraft.entity.passive.EntityChicken" -> EntityType.CHICKEN;
+         case "net.minecraft.entity.monster.EntitySpider" -> EntityType.SPIDER;
+         case "net.minecraft.entity.monster.EntityPolarBear" -> EntityType.POLAR_BEAR;
+         default -> EntityType.HORSE;
       };
    }
 
    private static void applyEquipment(Mob npc, String faction, FactionNpcRole role) {
       ItemStack mainhand = equipment(faction, role, "mainhand");
       ItemStack offhand = equipment(faction, role, "offhand");
-      npc.m_8061_(EquipmentSlot.MAINHAND, mainhand);
-      npc.m_8061_(EquipmentSlot.OFFHAND, offhand);
-      if (!mainhand.m_41619_()) {
-         npc.m_21008_(InteractionHand.MAIN_HAND, mainhand);
+      npc.setItemSlot(EquipmentSlot.MAINHAND, mainhand);
+      npc.setItemSlot(EquipmentSlot.OFFHAND, offhand);
+      if (!mainhand.isEmpty()) {
+         npc.setItemInHand(InteractionHand.MAIN_HAND, mainhand);
       }
 
-      if (!offhand.m_41619_()) {
-         npc.m_21008_(InteractionHand.OFF_HAND, offhand);
+      if (!offhand.isEmpty()) {
+         npc.setItemInHand(InteractionHand.OFF_HAND, offhand);
       }
    }
 

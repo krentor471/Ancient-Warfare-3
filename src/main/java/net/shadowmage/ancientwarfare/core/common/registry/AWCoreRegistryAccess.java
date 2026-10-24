@@ -21,23 +21,23 @@ public final class AWCoreRegistryAccess {
    }
 
    public static Item item(ResourceLocation id) {
-      return BuiltInRegistries.f_257033_.m_7804_(id) ? (Item)BuiltInRegistries.f_257033_.m_7745_(id) : Items.f_41852_;
+      return BuiltInRegistries.ITEM.containsKey(id) ? (Item)BuiltInRegistries.ITEM.get(id) : Items.AIR;
    }
 
    public static Block block(ResourceLocation id) {
-      return BuiltInRegistries.f_256975_.m_7804_(id) ? (Block)BuiltInRegistries.f_256975_.m_7745_(id) : Blocks.f_50016_;
+      return BuiltInRegistries.BLOCK.containsKey(id) ? (Block)BuiltInRegistries.BLOCK.get(id) : Blocks.AIR;
    }
 
    public static <T extends AbstractContainerMenu> MenuType<T> menu(ResourceLocation id) {
-      return (MenuType<T>)BuiltInRegistries.f_256818_.m_7745_(id);
+      return (MenuType<T>)BuiltInRegistries.MENU.get(id);
    }
 
    public static <T extends BlockEntity> BlockEntityType<T> blockEntityType(ResourceLocation id) {
-      return (BlockEntityType<T>)BuiltInRegistries.f_257049_.m_7745_(id);
+      return (BlockEntityType<T>)BuiltInRegistries.BLOCK_ENTITY_TYPE.get(id);
    }
 
    public static <T extends Entity> EntityType<T> entityType(ResourceLocation id) {
-      return (EntityType<T>)BuiltInRegistries.f_256780_.m_7745_(id);
+      return (EntityType<T>)BuiltInRegistries.ENTITY_TYPE.get(id);
    }
 
    public static ItemStack stack(ResourceLocation id) {
@@ -46,18 +46,18 @@ public final class AWCoreRegistryAccess {
 
    public static ItemStack stack(ResourceLocation id, int count) {
       Item item = item(id);
-      return item == Items.f_41852_ ? ItemStack.f_41583_ : new ItemStack(item, count);
+      return item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item, count);
    }
 
    public static boolean is(ItemStack stack, ResourceLocation id) {
-      return !stack.m_41619_() && BuiltInRegistries.f_257033_.m_7981_(stack.m_41720_()).equals(id);
+      return !stack.isEmpty() && BuiltInRegistries.ITEM.getKey(stack.getItem()).equals(id);
    }
 
    public static <T extends RecipeType<?>> T recipeType(ResourceLocation id) {
-      return (T)BuiltInRegistries.f_256990_.m_7745_(id);
+      return (T)BuiltInRegistries.RECIPE_TYPE.get(id);
    }
 
    public static <T extends RecipeSerializer<?>> T recipeSerializer(ResourceLocation id) {
-      return (T)BuiltInRegistries.f_256769_.m_7745_(id);
+      return (T)BuiltInRegistries.RECIPE_SERIALIZER.get(id);
    }
 }

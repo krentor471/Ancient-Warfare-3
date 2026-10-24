@@ -2,7 +2,9 @@ package net.shadowmage.ancientwarfare.core.structure;
 
 import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BiomeTags;
@@ -11,8 +13,13 @@ import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.platform.PlatformTagAccess;
 
 public final class BiomeFamilyMatcher {
+   /** Families by biome and by configured id: worked out once, read on every placement check. Never modified once cached. */
+   private static final Map<Biome, EnumSet<BiomeFamilyMatcher.Family>> BIOMES = new ConcurrentHashMap<>();
+   private static final Map<String, EnumSet<BiomeFamilyMatcher.Family>> IDS = new ConcurrentHashMap<>();
+
    private BiomeFamilyMatcher() {
    }
+
 
    public static boolean matchesAny(Holder<Biome> biome, Set<String> configuredBiomeIds) {
       if (biome != null && configuredBiomeIds != null && !configuredBiomeIds.isEmpty()) {
@@ -35,28 +42,32 @@ public final class BiomeFamilyMatcher {
    }
 
    private static EnumSet<BiomeFamilyMatcher.Family> familiesOf(Holder<Biome> biome) {
+      return BIOMES.computeIfAbsent(biome.value(), value -> computeFamilies(biome));
+   }
+
+   private static EnumSet<BiomeFamilyMatcher.Family> computeFamilies(Holder<Biome> biome) {
       EnumSet<BiomeFamilyMatcher.Family> families = EnumSet.noneOf(BiomeFamilyMatcher.Family.class);
-      ResourceLocation key = biome.m_203543_().map(value -> value.m_135782_()).orElse(null);
-      String path = key == null ? "" : key.m_135815_().toLowerCase(Locale.ROOT);
-      if (biome.m_203656_(BiomeTags.f_207602_) || contains(path, "deep_ocean", "deep_frozen_ocean")) {
+      ResourceLocation key = biome.unwrapKey().map(value -> value.location()).orElse(null);
+      String path = key == null ? "" : key.getPath().toLowerCase(Locale.ROOT);
+      if (biome.is(BiomeTags.IS_DEEP_OCEAN) || contains(path, "deep_ocean", "deep_frozen_ocean")) {
          families.add(BiomeFamilyMatcher.Family.DEEP_OCEAN);
-      } else if (biome.m_203656_(BiomeTags.f_207603_) || oceanName(path)) {
+      } else if (biome.is(BiomeTags.IS_OCEAN) || oceanName(path)) {
          families.add(BiomeFamilyMatcher.Family.OCEAN);
       }
 
-      if (biome.m_203656_(BiomeTags.f_207604_) || contains(path, "beach", "shore", "coast")) {
+      if (biome.is(BiomeTags.IS_BEACH) || contains(path, "beach", "shore", "coast")) {
          families.add(BiomeFamilyMatcher.Family.BEACH);
       }
 
-      if (biome.m_203656_(BiomeTags.f_207605_) || contains(path, "river", "stream")) {
+      if (biome.is(BiomeTags.IS_RIVER) || contains(path, "river", "stream")) {
          families.add(BiomeFamilyMatcher.Family.RIVER);
       }
 
-      if (biome.m_203656_(BiomeTags.f_207607_) || contains(path, "badlands", "mesa")) {
+      if (biome.is(BiomeTags.IS_BADLANDS) || contains(path, "badlands", "mesa")) {
          families.add(BiomeFamilyMatcher.Family.BADLANDS);
       }
 
-      if (biome.m_203656_(BiomeTags.f_207606_)
+      if (biome.is(BiomeTags.IS_MOUNTAIN)
          || AWCorePlatform.isBiomeTagged(biome, PlatformTagAccess.BiomeTag.MOUNTAIN)
          || AWCorePlatform.isBiomeTagged(biome, PlatformTagAccess.BiomeTag.PEAK)
          || AWCorePlatform.isBiomeTagged(biome, PlatformTagAccess.BiomeTag.SLOPE)
@@ -67,17 +78,17 @@ public final class BiomeFamilyMatcher {
       boolean birch = contains(path, "birch");
       if (birch) {
          families.add(BiomeFamilyMatcher.Family.BIRCH_FOREST);
-      } else if (biome.m_203656_(BiomeTags.f_207609_)
+      } else if (biome.is(BiomeTags.IS_TAIGA)
          || AWCorePlatform.isBiomeTagged(biome, PlatformTagAccess.BiomeTag.CONIFEROUS)
          || contains(path, "taiga", "conifer", "redwood", "spruce", "pine")) {
          families.add(BiomeFamilyMatcher.Family.TAIGA);
-      } else if (biome.m_203656_(BiomeTags.f_207610_) || contains(path, "jungle", "rainforest", "bamboo")) {
+      } else if (biome.is(BiomeTags.IS_JUNGLE) || contains(path, "jungle", "rainforest", "bamboo")) {
          families.add(BiomeFamilyMatcher.Family.JUNGLE);
-      } else if (biome.m_203656_(BiomeTags.f_207611_) || contains(path, "forest", "woods", "woodland", "grove", "orchard")) {
+      } else if (biome.is(BiomeTags.IS_FOREST) || contains(path, "forest", "woods", "woodland", "grove", "orchard")) {
          families.add(BiomeFamilyMatcher.Family.FOREST);
       }
 
-      if (biome.m_203656_(BiomeTags.f_215816_) || contains(path, "savanna")) {
+      if (biome.is(BiomeTags.IS_SAVANNA) || contains(path, "savanna")) {
          families.add(BiomeFamilyMatcher.Family.SAVANNA);
       }
 
@@ -122,7 +133,7 @@ public final class BiomeFamilyMatcher {
          families.add(BiomeFamilyMatcher.Family.FLORAL);
       }
 
-      if (!families.contains(BiomeFamilyMatcher.Family.SNOWY) && ((Biome)biome.m_203334_()).m_47554_() < 0.15F) {
+      if (!families.contains(BiomeFamilyMatcher.Family.SNOWY) && ((Biome)biome.value()).getBaseTemperature() < 0.15F) {
          families.add(BiomeFamilyMatcher.Family.SNOWY);
       }
 
@@ -130,6 +141,10 @@ public final class BiomeFamilyMatcher {
    }
 
    private static EnumSet<BiomeFamilyMatcher.Family> familiesOf(String biomeId) {
+      return biomeId == null ? EnumSet.noneOf(BiomeFamilyMatcher.Family.class) : IDS.computeIfAbsent(biomeId, BiomeFamilyMatcher::computeFamilies);
+   }
+
+   private static EnumSet<BiomeFamilyMatcher.Family> computeFamilies(String biomeId) {
       if (biomeId != null && !biomeId.isBlank()) {
          String path = biomeId.toLowerCase(Locale.ROOT);
          int separator = path.indexOf(58);

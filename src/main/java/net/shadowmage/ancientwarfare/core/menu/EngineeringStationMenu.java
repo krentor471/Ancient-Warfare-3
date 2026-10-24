@@ -41,75 +41,75 @@ public class EngineeringStationMenu extends AbstractContainerMenu {
    private final ResultContainer resultSlots = new ResultContainer();
    private final BlockPos pos;
    private final Level level;
-   private final DataSlot matchingRecipeCount = DataSlot.m_39401_();
+   private final DataSlot matchingRecipeCount = DataSlot.standalone();
 
    public EngineeringStationMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.ENGINEERING_STATION), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      if (this.level.m_7702_(pos) instanceof EngineeringStationBlockEntity engineeringStation) {
+      this.level = playerInventory.player.level();
+      if (this.level.getBlockEntity(pos) instanceof EngineeringStationBlockEntity engineeringStation) {
          this.container = engineeringStation;
       } else {
          this.container = new SimpleContainer(28);
       }
 
-      this.container.m_5856_(playerInventory.f_35978_);
-      this.m_38897_(new ResearchBookSlot(this.container, 0, 8, 26));
+      this.container.startOpen(playerInventory.player);
+      this.addSlot(new ResearchBookSlot(this.container, 0, 8, 26));
 
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 3; col++) {
             int index = 1 + row * 3 + col;
-            this.m_38897_(new EngineeringStationMenu.CraftInputSlot(this.container, index, 62 + col * 18, 8 + row * 18));
+            this.addSlot(new EngineeringStationMenu.CraftInputSlot(this.container, index, 62 + col * 18, 8 + row * 18));
          }
       }
 
-      this.m_38897_(new Slot(this.resultSlots, 0, 134, 26) {
-         public boolean m_8010_(Player player) {
-            return super.m_8010_(player) && EngineeringStationMenu.this.isResearchUnlocked(EngineeringStationMenu.this.resultSlots.m_8020_(0));
+      this.addSlot(new Slot(this.resultSlots, 0, 134, 26) {
+         public boolean mayPickup(Player player) {
+            return super.mayPickup(player) && EngineeringStationMenu.this.isResearchUnlocked(EngineeringStationMenu.this.resultSlots.getItem(0));
          }
 
-         public void m_142406_(Player player, ItemStack stack) {
+         public void onTake(Player player, ItemStack stack) {
             EngineeringStationMenu.this.consumeCraftingIngredients(player);
-            super.m_142406_(player, stack);
-            EngineeringStationMenu.this.m_6199_(this.f_40218_);
+            super.onTake(player, stack);
+            EngineeringStationMenu.this.slotsChanged(this.container);
          }
       });
 
       for (int row = 0; row < 2; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(this.container, 10 + row * 9 + col, 8 + col * 18, 66 + row * 18));
+            this.addSlot(new Slot(this.container, 10 + row * 9 + col, 8 + col * 18, 66 + row * 18));
          }
       }
 
       this.addPlayerInventory(playerInventory);
-      this.m_38895_(this.matchingRecipeCount);
-      this.m_6199_(this.container);
+      this.addDataSlot(this.matchingRecipeCount);
+      this.slotsChanged(this.container);
    }
 
-   public void m_6199_(Container changedContainer) {
-      if (!this.level.f_46443_) {
+   public void slotsChanged(Container changedContainer) {
+      if (!this.level.isClientSide) {
          CraftingContainer crafting = this.buildCraftingInput();
          List<Recipe<CraftingContainer>> recipes = this.matchingRecipes(crafting);
          Recipe<CraftingContainer> selected = this.normalizeSelection(recipes);
-         this.matchingRecipeCount.m_6422_(recipes.size());
-         this.resultSlots.m_6836_(0, CraftingRecipeSelection.result(selected, crafting, this.level));
-         this.m_38946_();
+         this.matchingRecipeCount.set(recipes.size());
+         this.resultSlots.setItem(0, CraftingRecipeSelection.result(selected, crafting, this.level));
+         this.broadcastChanges();
       }
    }
 
    public boolean hasMultipleRecipes() {
-      return this.matchingRecipeCount.m_6501_() > 1;
+      return this.matchingRecipeCount.get() > 1;
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (!this.level.f_46443_ && (id == 1000 || id == 1001)) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (!this.level.isClientSide && (id == 1000 || id == 1001)) {
          CraftingContainer crafting = this.buildCraftingInput();
          List<Recipe<CraftingContainer>> recipes = this.matchingRecipes(crafting);
          if (recipes.size() < 2) {
             return false;
          } else {
             this.setSelectedRecipeId(CraftingRecipeSelection.cycle(recipes, this.getSelectedRecipeId(), id == 1000 ? -1 : 1));
-            this.m_6199_(this.container);
+            this.slotsChanged(this.container);
             return true;
          }
       } else {
@@ -122,8 +122,8 @@ public class EngineeringStationMenu extends AbstractContainerMenu {
       if (required == null) {
          return true;
       } else {
-         ItemStack book = this.container.m_8020_(0);
-         return !book.m_41619_() && this.hasCompletedResearch(book, required);
+         ItemStack book = this.container.getItem(0);
+         return !book.isEmpty() && this.hasCompletedResearch(book, required);
       }
    }
 
@@ -161,21 +161,21 @@ public class EngineeringStationMenu extends AbstractContainerMenu {
       ItemStack[] grid = new ItemStack[9];
 
       for (int i = 0; i < 9; i++) {
-         grid[i] = this.container.m_8020_(1 + i);
+         grid[i] = this.container.getItem(1 + i);
       }
 
       CraftingContainer crafting = new TransientCraftingContainer(new AbstractContainerMenu(null, -1) {
-         public ItemStack m_7648_(Player player, int index) {
-            return ItemStack.f_41583_;
+         public ItemStack quickMoveStack(Player player, int index) {
+            return ItemStack.EMPTY;
          }
 
-         public boolean m_6875_(Player player) {
+         public boolean stillValid(Player player) {
             return true;
          }
       }, 3, 3);
 
       for (int i = 0; i < grid.length; i++) {
-         crafting.m_6836_(i, grid[i]);
+         crafting.setItem(i, grid[i]);
       }
 
       return crafting;
@@ -187,37 +187,37 @@ public class EngineeringStationMenu extends AbstractContainerMenu {
       ItemStack[] grid = new ItemStack[9];
 
       for (int index = 0; index < grid.length; index++) {
-         grid[index] = crafting.m_8020_(index);
+         grid[index] = crafting.getItem(index);
       }
 
       int[] engineeringConsumption = selected instanceof EngineeringRecipe engineering ? engineering.consumptionCounts(grid) : null;
       NonNullList<ItemStack> remaining = selected instanceof EngineeringRecipe
-         ? NonNullList.m_122780_(9, ItemStack.f_41583_)
-         : (selected == null ? NonNullList.m_122780_(9, ItemStack.f_41583_) : selected.m_7457_(crafting));
+         ? NonNullList.withSize(9, ItemStack.EMPTY)
+         : (selected == null ? NonNullList.withSize(9, ItemStack.EMPTY) : selected.getRemainingItems(crafting));
 
       for (int i = 0; i < 9; i++) {
-         ItemStack stack = this.container.m_8020_(1 + i);
-         if (!stack.m_41619_()) {
-            stack.m_41774_(engineeringConsumption == null ? 1 : engineeringConsumption[i]);
-            this.container.m_6836_(1 + i, stack);
+         ItemStack stack = this.container.getItem(1 + i);
+         if (!stack.isEmpty()) {
+            stack.shrink(engineeringConsumption == null ? 1 : engineeringConsumption[i]);
+            this.container.setItem(1 + i, stack);
          }
 
          ItemStack remainder = (ItemStack)remaining.get(i);
-         if (!remainder.m_41619_()) {
-            if (this.container.m_8020_(1 + i).m_41619_()) {
-               this.container.m_6836_(1 + i, remainder);
-            } else if (!player.m_150109_().m_36054_(remainder)) {
-               player.m_36176_(remainder, false);
+         if (!remainder.isEmpty()) {
+            if (this.container.getItem(1 + i).isEmpty()) {
+               this.container.setItem(1 + i, remainder);
+            } else if (!player.getInventory().add(remainder)) {
+               player.drop(remainder, false);
             }
          }
       }
 
-      this.container.m_6596_();
+      this.container.setChanged();
    }
 
    private List<Recipe<CraftingContainer>> matchingRecipes(CraftingContainer crafting) {
-      ItemStack book = this.container.m_8020_(0);
-      return CraftingRecipeSelection.matching(this.level, crafting, book.m_41619_() ? Set.of() : ResearchBookItem.getCompletedResearch(book));
+      ItemStack book = this.container.getItem(0);
+      return CraftingRecipeSelection.matching(this.level, crafting, book.isEmpty() ? Set.of() : ResearchBookItem.getCompletedResearch(book));
    }
 
    private Recipe<CraftingContainer> selectedRecipe(CraftingContainer crafting) {
@@ -226,7 +226,7 @@ public class EngineeringStationMenu extends AbstractContainerMenu {
 
    private Recipe<CraftingContainer> normalizeSelection(List<Recipe<CraftingContainer>> recipes) {
       Recipe<CraftingContainer> selected = CraftingRecipeSelection.select(recipes, this.getSelectedRecipeId());
-      this.setSelectedRecipeId(selected == null ? null : selected.m_6423_());
+      this.setSelectedRecipeId(selected == null ? null : selected.getId());
       return selected;
    }
 
@@ -245,76 +245,76 @@ public class EngineeringStationMenu extends AbstractContainerMenu {
 
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, top + row * 18));
+            this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, top + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(playerInventory, col, 8 + col * 18, top + 58));
+         this.addSlot(new Slot(playerInventory, col, 8 + col * 18, top + 58));
       }
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.ENGINEERING_STATION));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.ENGINEERING_STATION));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
+   public ItemStack quickMoveStack(Player player, int index) {
       int resultSlot = 10;
       int storageMenuStart = 11;
       int playerMenuStart = 29;
-      if (index >= 0 && index < this.f_38839_.size()) {
-         Slot slot = (Slot)this.f_38839_.get(index);
-         if (!slot.m_6657_()) {
-            return ItemStack.f_41583_;
+      if (index >= 0 && index < this.slots.size()) {
+         Slot slot = (Slot)this.slots.get(index);
+         if (!slot.hasItem()) {
+            return ItemStack.EMPTY;
          } else {
-            ItemStack stack = slot.m_7993_();
-            ItemStack original = stack.m_41777_();
+            ItemStack stack = slot.getItem();
+            ItemStack original = stack.copy();
             if (index == 10) {
-               if (!this.m_38903_(stack, 29, this.f_38839_.size(), true)) {
-                  return ItemStack.f_41583_;
+               if (!this.moveItemStackTo(stack, 29, this.slots.size(), true)) {
+                  return ItemStack.EMPTY;
                }
 
-               slot.m_40234_(stack, original);
+               slot.onQuickCraft(stack, original);
             } else if (index < 29) {
-               if (!this.m_38903_(stack, 29, this.f_38839_.size(), true)) {
-                  return ItemStack.f_41583_;
+               if (!this.moveItemStackTo(stack, 29, this.slots.size(), true)) {
+                  return ItemStack.EMPTY;
                }
             } else if (AWCoreRegistryAccess.is(stack, AWCoreIds.RESEARCH_BOOK)) {
-               if (!this.m_38903_(stack, 0, 1, false)) {
-                  return ItemStack.f_41583_;
+               if (!this.moveItemStackTo(stack, 0, 1, false)) {
+                  return ItemStack.EMPTY;
                }
-            } else if (!this.m_38903_(stack, 11, 29, false) && !this.m_38903_(stack, 1, 10, false)) {
-               return ItemStack.f_41583_;
+            } else if (!this.moveItemStackTo(stack, 11, 29, false) && !this.moveItemStackTo(stack, 1, 10, false)) {
+               return ItemStack.EMPTY;
             }
 
-            if (stack.m_41619_()) {
-               slot.m_5852_(ItemStack.f_41583_);
+            if (stack.isEmpty()) {
+               slot.set(ItemStack.EMPTY);
             } else {
-               slot.m_6654_();
+               slot.setChanged();
             }
 
-            if (stack.m_41613_() == original.m_41613_()) {
-               return ItemStack.f_41583_;
+            if (stack.getCount() == original.getCount()) {
+               return ItemStack.EMPTY;
             } else {
-               slot.m_142406_(player, stack);
+               slot.onTake(player, stack);
                return original;
             }
          }
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
    public boolean transferEngineeringRecipe(Player player, ResourceLocation recipeId) {
-      if (!this.level.f_46443_ && recipeId != null) {
+      if (!this.level.isClientSide && recipeId != null) {
          boolean transferred = this.level
-            .m_7465_()
-            .m_44043_(recipeId)
-            .filter(recipe -> recipe.m_6671_() == AWCoreRegistryAccess.recipeType(AWCoreIds.id("engineering")))
-            .map(recipe -> EngineeringRecipeTransfer.fill(this.container, 1, 0, player.m_150109_(), (EngineeringRecipe)recipe, new int[]{10}, new int[]{18}))
+            .getRecipeManager()
+            .byKey(recipeId)
+            .filter(recipe -> recipe.getType() == AWCoreRegistryAccess.recipeType(AWCoreIds.id("engineering")))
+            .map(recipe -> EngineeringRecipeTransfer.fill(this.container, 1, 0, player.getInventory(), (EngineeringRecipe)recipe, new int[]{10}, new int[]{18}))
             .orElse(false);
          if (transferred) {
-            this.m_6199_(this.container);
+            this.slotsChanged(this.container);
          }
 
          return transferred;
@@ -323,9 +323,9 @@ public class EngineeringStationMenu extends AbstractContainerMenu {
       }
    }
 
-   public void m_6877_(Player player) {
-      super.m_6877_(player);
-      this.container.m_5785_(player);
+   public void removed(Player player) {
+      super.removed(player);
+      this.container.stopOpen(player);
    }
 
    private class CraftInputSlot extends Slot {
@@ -333,9 +333,9 @@ public class EngineeringStationMenu extends AbstractContainerMenu {
          super(container, slot, x, y);
       }
 
-      public void m_6654_() {
-         super.m_6654_();
-         EngineeringStationMenu.this.m_6199_(this.f_40218_);
+      public void setChanged() {
+         super.setChanged();
+         EngineeringStationMenu.this.slotsChanged(this.container);
       }
    }
 }

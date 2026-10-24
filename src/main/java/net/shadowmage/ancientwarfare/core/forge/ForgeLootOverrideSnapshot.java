@@ -28,7 +28,7 @@ import net.minecraft.world.level.storage.loot.Deserializers;
 import net.minecraftforge.common.ForgeHooks;
 
 public final class ForgeLootOverrideSnapshot {
-   private static final Gson LOOT_GSON = Deserializers.m_78800_().create();
+   private static final Gson LOOT_GSON = Deserializers.createLootTableSerializer().create();
    private final Map<String, byte[]> files;
 
    private ForgeLootOverrideSnapshot(Map<String, byte[]> files) {
@@ -86,11 +86,11 @@ public final class ForgeLootOverrideSnapshot {
                   throw new IllegalArgumentException("pack_format must be a positive integer");
                }
 
-               PackMetadataSection.f_243696_.m_6322_(pack);
+               PackMetadataSection.TYPE.fromJson(pack);
             } else {
                String[] parts = path.split("/", 4);
-               if (parts.length == 4 && parts[0].equals(PackType.SERVER_DATA.m_10305_()) && parts[2].equals("loot_tables")) {
-                  ResourceLocation location = ResourceLocation.m_214293_(parts[1], parts[3].substring(0, parts[3].length() - ".json".length()));
+               if (parts.length == 4 && parts[0].equals(PackType.SERVER_DATA.getDirectory()) && parts[2].equals("loot_tables")) {
+                  ResourceLocation location = ResourceLocation.tryBuild(parts[1], parts[3].substring(0, parts[3].length() - ".json".length()));
                   if (location == null) {
                      throw new IllegalArgumentException("Invalid loot-table resource path");
                   }
@@ -115,7 +115,7 @@ public final class ForgeLootOverrideSnapshot {
          super(id, true);
       }
 
-      public IoSupplier<InputStream> m_8017_(String... elements) {
+      public IoSupplier<InputStream> getRootResource(String... elements) {
          for (String element : elements) {
             if (element.isEmpty() || element.equals(".") || element.equals("..") || element.indexOf(47) >= 0 || element.indexOf(92) >= 0) {
                return null;
@@ -125,17 +125,17 @@ public final class ForgeLootOverrideSnapshot {
          return this.resource(String.join("/", elements));
       }
 
-      public IoSupplier<InputStream> m_214146_(PackType type, ResourceLocation location) {
-         return this.resource(type.m_10305_() + "/" + location.m_135827_() + "/" + location.m_135815_());
+      public IoSupplier<InputStream> getResource(PackType type, ResourceLocation location) {
+         return this.resource(type.getDirectory() + "/" + location.getNamespace() + "/" + location.getPath());
       }
 
-      public void m_8031_(PackType type, String namespace, String path, ResourceOutput output) {
-         String namespaceRoot = type.m_10305_() + "/" + namespace + "/";
+      public void listResources(PackType type, String namespace, String path, ResourceOutput output) {
+         String namespaceRoot = type.getDirectory() + "/" + namespace + "/";
          String prefix = namespaceRoot + (path.isEmpty() ? "" : path + "/");
 
          for (String name : ForgeLootOverrideSnapshot.this.files.keySet()) {
             if (name.startsWith(prefix)) {
-               ResourceLocation location = ResourceLocation.m_214293_(namespace, name.substring(namespaceRoot.length()));
+               ResourceLocation location = ResourceLocation.tryBuild(namespace, name.substring(namespaceRoot.length()));
                if (location != null) {
                   output.accept(location, this.resource(name));
                }
@@ -143,16 +143,16 @@ public final class ForgeLootOverrideSnapshot {
          }
       }
 
-      public Set<String> m_5698_(PackType type) {
+      public Set<String> getNamespaces(PackType type) {
          Set<String> namespaces = new LinkedHashSet<>();
-         String prefix = type.m_10305_() + "/";
+         String prefix = type.getDirectory() + "/";
 
          for (String name : ForgeLootOverrideSnapshot.this.files.keySet()) {
             if (name.startsWith(prefix)) {
                int end = name.indexOf(47, prefix.length());
                if (end > prefix.length()) {
                   String namespace = name.substring(prefix.length(), end);
-                  if (ResourceLocation.m_135843_(namespace)) {
+                  if (ResourceLocation.isValidNamespace(namespace)) {
                      namespaces.add(namespace);
                   }
                }

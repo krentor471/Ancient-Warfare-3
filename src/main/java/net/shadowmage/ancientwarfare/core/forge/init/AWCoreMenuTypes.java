@@ -56,94 +56,94 @@ public final class AWCoreMenuTypes {
    public static final DeferredRegister<MenuType<?>> REGISTER = DeferredRegister.create(ForgeRegistries.MENU_TYPES, "ancientwarfare");
    public static final RegistryObject<MenuType<MailboxMenu>> MAILBOX = REGISTER.register(
       "mailbox",
-      () -> IForgeMenuType.create((windowId, inv, data) -> new MailboxMenu(windowId, inv, (MailboxBlockEntity)inv.f_35978_.m_9236_().m_7702_(data.m_130135_())))
+      () -> IForgeMenuType.create((windowId, inv, data) -> new MailboxMenu(windowId, inv, (MailboxBlockEntity)inv.player.level().getBlockEntity(data.readBlockPos())))
    );
    public static final RegistryObject<MenuType<BackpackMenu>> BACKPACK = REGISTER.register(
-      "backpack", () -> IForgeMenuType.create((windowId, inv, data) -> new BackpackMenu(windowId, inv, (InteractionHand)data.m_130066_(InteractionHand.class)))
+      "backpack", () -> IForgeMenuType.create((windowId, inv, data) -> new BackpackMenu(windowId, inv, (InteractionHand)data.readEnum(InteractionHand.class)))
    );
    public static final RegistryObject<MenuType<ChestPushcartMenu>> CHEST_PUSHCART = REGISTER.register(
       "chest_pushcart", () -> IForgeMenuType.create((windowId, inv, data) -> new ChestPushcartMenu(windowId, inv, data.readInt()))
    );
    public static final RegistryObject<MenuType<EngineeringStationMenu>> ENGINEERING_STATION = REGISTER.register(
-      "engineering_station", () -> IForgeMenuType.create((windowId, inv, data) -> new EngineeringStationMenu(windowId, inv, data.m_130135_()))
+      "engineering_station", () -> IForgeMenuType.create((windowId, inv, data) -> new EngineeringStationMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<ResearchStationMenu>> RESEARCH_STATION = REGISTER.register(
-      "research_station", () -> IForgeMenuType.create((windowId, inv, data) -> new ResearchStationMenu(windowId, inv, data.m_130135_()))
+      "research_station", () -> IForgeMenuType.create((windowId, inv, data) -> new ResearchStationMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<CropFarmMenu>> CROP_FARM = REGISTER.register(
-      "crop_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new CropFarmMenu(windowId, inv, data.m_130135_()))
+      "crop_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new CropFarmMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<CropFarmBoundsMenu>> CROP_FARM_BOUNDS = REGISTER.register(
-      "crop_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new CropFarmBoundsMenu(windowId, inv, data.m_130135_()))
+      "crop_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new CropFarmBoundsMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<CropFarmControlMenu>> CROP_FARM_CONTROL = REGISTER.register(
-      "crop_farm_control", () -> IForgeMenuType.create((windowId, inv, data) -> new CropFarmControlMenu(windowId, inv, data.m_130135_()))
+      "crop_farm_control", () -> IForgeMenuType.create((windowId, inv, data) -> new CropFarmControlMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<AnimalFarmMenu>> ANIMAL_FARM = REGISTER.register(
-      "animal_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new AnimalFarmMenu(windowId, inv, data.m_130135_()))
+      "animal_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new AnimalFarmMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<AnimalFarmBoundsMenu>> ANIMAL_FARM_BOUNDS = REGISTER.register(
-      "animal_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new AnimalFarmBoundsMenu(windowId, inv, data.m_130135_()))
+      "animal_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new AnimalFarmBoundsMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<AnimalFarmControlMenu>> ANIMAL_FARM_CONTROL = REGISTER.register(
-      "animal_farm_control", () -> IForgeMenuType.create((windowId, inv, data) -> new AnimalFarmControlMenu(windowId, inv, data.m_130135_()))
+      "animal_farm_control", () -> IForgeMenuType.create((windowId, inv, data) -> new AnimalFarmControlMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<TreeFarmMenu>> TREE_FARM = REGISTER.register(
-      "tree_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new TreeFarmMenu(windowId, inv, data.m_130135_()))
+      "tree_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new TreeFarmMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<TreeFarmBoundsMenu>> TREE_FARM_BOUNDS = REGISTER.register(
-      "tree_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new TreeFarmBoundsMenu(windowId, inv, data.m_130135_()))
+      "tree_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new TreeFarmBoundsMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<FishFarmMenu>> FISH_FARM = REGISTER.register(
-      "fish_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new FishFarmMenu(windowId, inv, data.m_130135_()))
+      "fish_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new FishFarmMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<FishFarmBoundsMenu>> FISH_FARM_BOUNDS = REGISTER.register(
-      "fish_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new FishFarmBoundsMenu(windowId, inv, data.m_130135_()))
+      "fish_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new FishFarmBoundsMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<FishFarmControlMenu>> FISH_FARM_CONTROL = REGISTER.register(
-      "fish_farm_control", () -> IForgeMenuType.create((windowId, inv, data) -> new FishFarmControlMenu(windowId, inv, data.m_130135_()))
+      "fish_farm_control", () -> IForgeMenuType.create((windowId, inv, data) -> new FishFarmControlMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<FruitFarmMenu>> FRUIT_FARM = REGISTER.register(
-      "fruit_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new FruitFarmMenu(windowId, inv, data.m_130135_()))
+      "fruit_farm", () -> IForgeMenuType.create((windowId, inv, data) -> new FruitFarmMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<FruitFarmBoundsMenu>> FRUIT_FARM_BOUNDS = REGISTER.register(
-      "fruit_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new FruitFarmBoundsMenu(windowId, inv, data.m_130135_()))
+      "fruit_farm_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new FruitFarmBoundsMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<QuarryMenu>> QUARRY = REGISTER.register(
-      "quarry", () -> IForgeMenuType.create((windowId, inv, data) -> new QuarryMenu(windowId, inv, data.m_130135_()))
+      "quarry", () -> IForgeMenuType.create((windowId, inv, data) -> new QuarryMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<QuarryBoundsMenu>> QUARRY_BOUNDS = REGISTER.register(
-      "quarry_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new QuarryBoundsMenu(windowId, inv, data.m_130135_()))
+      "quarry_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new QuarryBoundsMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<QuarryControlMenu>> QUARRY_CONTROL = REGISTER.register(
-      "quarry_control", () -> IForgeMenuType.create((windowId, inv, data) -> new QuarryControlMenu(windowId, inv, data.m_130135_()))
+      "quarry_control", () -> IForgeMenuType.create((windowId, inv, data) -> new QuarryControlMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<WorksiteSideConfigMenu>> WORKSITE_SIDE_CONFIG = REGISTER.register(
-      "worksite_side_config", () -> IForgeMenuType.create((windowId, inv, data) -> new WorksiteSideConfigMenu(windowId, inv, data.m_130135_()))
+      "worksite_side_config", () -> IForgeMenuType.create((windowId, inv, data) -> new WorksiteSideConfigMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<WarehouseControlMenu>> WAREHOUSE_CONTROL = REGISTER.register(
-      "warehouse_control", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseControlMenu(windowId, inv, data.m_130135_()))
+      "warehouse_control", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseControlMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<WarehouseStorageMenu>> WAREHOUSE_STORAGE = REGISTER.register(
-      "warehouse_storage", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseStorageMenu(windowId, inv, data.m_130135_()))
+      "warehouse_storage", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseStorageMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<WarehouseInterfaceMenu>> WAREHOUSE_INTERFACE = REGISTER.register(
-      "warehouse_interface", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseInterfaceMenu(windowId, inv, data.m_130135_()))
+      "warehouse_interface", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseInterfaceMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<WarehouseCraftingStationMenu>> WAREHOUSE_CRAFTING = REGISTER.register(
-      "warehouse_crafting", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseCraftingStationMenu(windowId, inv, data.m_130135_()))
+      "warehouse_crafting", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseCraftingStationMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<AutoCraftingMenu>> AUTO_CRAFTING = REGISTER.register(
-      "auto_crafting", () -> IForgeMenuType.create((windowId, inv, data) -> new AutoCraftingMenu(windowId, inv, data.m_130135_()))
+      "auto_crafting", () -> IForgeMenuType.create((windowId, inv, data) -> new AutoCraftingMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<WarehouseBoundsMenu>> WAREHOUSE_BOUNDS = REGISTER.register(
-      "warehouse_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseBoundsMenu(windowId, inv, data.m_130135_()))
+      "warehouse_bounds", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseBoundsMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<WarehouseStockViewerMenu>> WAREHOUSE_STOCK_VIEWER = REGISTER.register(
-      "warehouse_stock_viewer", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseStockViewerMenu(windowId, inv, data.m_130135_(), false))
+      "warehouse_stock_viewer", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseStockViewerMenu(windowId, inv, data.readBlockPos(), false))
    );
    public static final RegistryObject<MenuType<WarehouseStockViewerMenu>> WAREHOUSE_STOCK_LINKER = REGISTER.register(
-      "warehouse_stock_linker", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseStockViewerMenu(windowId, inv, data.m_130135_(), true))
+      "warehouse_stock_linker", () -> IForgeMenuType.create((windowId, inv, data) -> new WarehouseStockViewerMenu(windowId, inv, data.readBlockPos(), true))
    );
    public static final RegistryObject<MenuType<ManualMenu>> MANUAL = REGISTER.register(
       "manual", () -> IForgeMenuType.create((windowId, inv, data) -> new ManualMenu(windowId))
@@ -157,11 +157,11 @@ public final class AWCoreMenuTypes {
    public static final RegistryObject<MenuType<BardMusicMenu>> BARD_MUSIC = REGISTER.register("bard_music", () -> IForgeMenuType.create(BardMusicMenu::new));
    public static final RegistryObject<MenuType<WorkOrderMenu>> WORK_ORDER = REGISTER.register(
       "work_order",
-      () -> IForgeMenuType.create((windowId, inv, data) -> new WorkOrderMenu(windowId, inv, (InteractionHand)data.m_130066_(InteractionHand.class)))
+      () -> IForgeMenuType.create((windowId, inv, data) -> new WorkOrderMenu(windowId, inv, (InteractionHand)data.readEnum(InteractionHand.class)))
    );
    public static final RegistryObject<MenuType<RoutingOrderMenu>> ROUTING_ORDER = REGISTER.register(
       "routing_order",
-      () -> IForgeMenuType.create((windowId, inv, data) -> new RoutingOrderMenu(windowId, inv, (InteractionHand)data.m_130066_(InteractionHand.class)))
+      () -> IForgeMenuType.create((windowId, inv, data) -> new RoutingOrderMenu(windowId, inv, (InteractionHand)data.readEnum(InteractionHand.class)))
    );
    public static final RegistryObject<MenuType<TradeOrderMenu>> TRADE_ORDER = REGISTER.register("trade_order", () -> IForgeMenuType.create(TradeOrderMenu::new));
    public static final RegistryObject<MenuType<FactionTradeMenu>> FACTION_TRADE = REGISTER.register(
@@ -169,20 +169,20 @@ public final class AWCoreMenuTypes {
    );
    public static final RegistryObject<MenuType<UpkeepOrderMenu>> UPKEEP_ORDER = REGISTER.register(
       "upkeep_order",
-      () -> IForgeMenuType.create((windowId, inv, data) -> new UpkeepOrderMenu(windowId, inv, (InteractionHand)data.m_130066_(InteractionHand.class)))
+      () -> IForgeMenuType.create((windowId, inv, data) -> new UpkeepOrderMenu(windowId, inv, (InteractionHand)data.readEnum(InteractionHand.class)))
    );
    public static final RegistryObject<MenuType<CombatOrderMenu>> COMBAT_ORDER = REGISTER.register(
       "combat_order",
-      () -> IForgeMenuType.create((windowId, inv, data) -> new CombatOrderMenu(windowId, inv, (InteractionHand)data.m_130066_(InteractionHand.class)))
+      () -> IForgeMenuType.create((windowId, inv, data) -> new CombatOrderMenu(windowId, inv, (InteractionHand)data.readEnum(InteractionHand.class)))
    );
    public static final RegistryObject<MenuType<TownHallMenu>> TOWN_HALL = REGISTER.register(
-      "town_hall", () -> IForgeMenuType.create((windowId, inv, data) -> new TownHallMenu(windowId, inv, data.m_130135_()))
+      "town_hall", () -> IForgeMenuType.create((windowId, inv, data) -> new TownHallMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<StructureContainerMenu>> STRUCTURE_CONTAINER = REGISTER.register(
-      "structure_container", () -> IForgeMenuType.create((windowId, inv, data) -> new StructureContainerMenu(windowId, inv, data.m_130135_()))
+      "structure_container", () -> IForgeMenuType.create((windowId, inv, data) -> new StructureContainerMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<AdvancedSpawnerMenu>> ADVANCED_SPAWNER = REGISTER.register(
-      "advanced_spawner", () -> IForgeMenuType.create((windowId, inv, data) -> new AdvancedSpawnerMenu(windowId, inv, data.m_130135_()))
+      "advanced_spawner", () -> IForgeMenuType.create((windowId, inv, data) -> new AdvancedSpawnerMenu(windowId, inv, data.readBlockPos()))
    );
    public static final RegistryObject<MenuType<StructureScannerMenu>> STRUCTURE_SCANNER = REGISTER.register(
       "structure_scanner", () -> IForgeMenuType.create(StructureScannerMenu::new)

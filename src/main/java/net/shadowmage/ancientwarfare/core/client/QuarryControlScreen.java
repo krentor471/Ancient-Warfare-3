@@ -10,19 +10,19 @@ public class QuarryControlScreen extends LegacyContainerScreen<QuarryControlMenu
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
+   protected void init() {
+      super.init();
       this.addLegacyWidget(
          "toggle",
          new LegacyCheckbox(
-            this.f_97735_ + 8,
-            this.f_97736_ + 12,
+            this.leftPos + 8,
+            this.topPos + 12,
             16,
-            Component.m_237115_("guistrings.automation.only_mine_ores"),
-            ((QuarryControlMenu)this.f_97732_).onlyMineOres(),
+            Component.translatable("guistrings.automation.only_mine_ores"),
+            ((QuarryControlMenu)this.menu).onlyMineOres(),
             checked -> {
-               ((QuarryControlMenu)this.f_97732_).previewButton(0);
-               this.f_96541_.f_91072_.m_105208_(((QuarryControlMenu)this.f_97732_).f_38840_, 0);
+               ((QuarryControlMenu)this.menu).previewButton(0);
+               this.minecraft.gameMode.handleInventoryButtonClick(((QuarryControlMenu)this.menu).containerId, 0);
             }
          ),
          8,

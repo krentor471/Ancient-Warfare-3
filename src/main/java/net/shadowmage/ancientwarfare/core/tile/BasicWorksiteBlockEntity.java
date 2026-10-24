@@ -55,7 +55,7 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
    }
 
    public static void tickStoredEnergy(Level level, BlockPos pos, BlockState state, BasicWorksiteBlockEntity worksite) {
-      if (!level.f_46443_ && worksite.storedEnergy > 0) {
+      if (!level.isClientSide && worksite.storedEnergy > 0) {
          if (worksite.storedEnergyWorkCooldown > 0) {
             worksite.storedEnergyWorkCooldown--;
          } else {
@@ -72,10 +72,10 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
          int amount = Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())));
          this.storedEnergy = Math.min(this.getMaxEnergy(), this.storedEnergy + amount);
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -102,14 +102,14 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
 
    @Override
    public double addTorque(@Nullable Direction side, double amount) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && this.canInputTorque(side)) {
+      if (this.level != null && !this.level.isClientSide && this.canInputTorque(side)) {
          double accepted = Math.min(amount, this.getMaxTorqueInput(side));
          if (accepted <= 0.0) {
             return 0.0;
          } else {
             this.addStoredEnergy(accepted * 1.0);
             this.onWorkEnergyAdded();
-            this.m_6596_();
+            this.setChanged();
             return accepted;
          }
       } else {
@@ -155,7 +155,7 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
    }
 
    private void tickChunkLoading() {
-      if (this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (this.level instanceof ServerLevel serverLevel) {
          if (this.chunkLoadRefreshCooldown > 0) {
             this.chunkLoadRefreshCooldown--;
          } else {
@@ -166,13 +166,13 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
    }
 
    protected void refreshChunkLoading() {
-      if (this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (this.level instanceof ServerLevel serverLevel) {
          this.refreshChunkLoading(serverLevel);
       }
    }
 
    public void releaseChunkLoading() {
-      if (this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (this.level instanceof ServerLevel serverLevel) {
          this.setForcedChunks(serverLevel, Set.of(), false);
       }
    }
@@ -187,7 +187,7 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
       for (long chunk : Set.copyOf(this.forcedChunks)) {
          if (!desired.contains(chunk) || this.chunkLoadingActive != ticking) {
             ChunkPos chunkPos = new ChunkPos(chunk);
-            AWCorePlatform.setChunkForced(serverLevel, this.f_58858_, chunkPos, false, this.chunkLoadingActive);
+            AWCorePlatform.setChunkForced(serverLevel, this.worldPosition, chunkPos, false, this.chunkLoadingActive);
             this.forcedChunks.remove(chunk);
          }
       }
@@ -195,7 +195,7 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
       for (long chunkx : desired) {
          if (!this.forcedChunks.contains(chunkx) || !this.chunkLoadingActive) {
             ChunkPos chunkPos = new ChunkPos(chunkx);
-            if (AWCorePlatform.setChunkForced(serverLevel, this.f_58858_, chunkPos, true, ticking)) {
+            if (AWCorePlatform.setChunkForced(serverLevel, this.worldPosition, chunkPos, true, ticking)) {
                this.forcedChunks.add(chunkx);
             }
          }
@@ -206,18 +206,18 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
 
    private Set<Long> desiredForcedChunks() {
       Set<Long> chunks = new HashSet<>();
-      chunks.add(new ChunkPos(this.f_58858_).m_45588_());
+      chunks.add(new ChunkPos(this.worldPosition).toLong());
       if (this instanceof BoundedArea boundedArea) {
          BlockPos min = boundedArea.getBoundsMin();
          BlockPos max = boundedArea.getBoundsMax();
-         int minChunkX = Math.floorDiv(min.m_123341_(), 16);
-         int maxChunkX = Math.floorDiv(max.m_123341_(), 16);
-         int minChunkZ = Math.floorDiv(min.m_123343_(), 16);
-         int maxChunkZ = Math.floorDiv(max.m_123343_(), 16);
+         int minChunkX = Math.floorDiv(min.getX(), 16);
+         int maxChunkX = Math.floorDiv(max.getX(), 16);
+         int minChunkZ = Math.floorDiv(min.getZ(), 16);
+         int maxChunkZ = Math.floorDiv(max.getZ(), 16);
 
          for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-               chunks.add(ChunkPos.m_45589_(chunkX, chunkZ));
+               chunks.add(ChunkPos.asLong(chunkX, chunkZ));
             }
          }
       }
@@ -273,15 +273,15 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
       } else if (side == Direction.DOWN) {
          return WorksiteRelativeSide.BOTTOM;
       } else {
-         Direction front = this.m_58900_().m_61138_(AutomationWorksiteBlock.FACING)
-            ? (Direction)this.m_58900_().m_61143_(AutomationWorksiteBlock.FACING)
+         Direction front = this.getBlockState().hasProperty(AutomationWorksiteBlock.FACING)
+            ? (Direction)this.getBlockState().getValue(AutomationWorksiteBlock.FACING)
             : Direction.NORTH;
          if (side == front) {
             return WorksiteRelativeSide.FRONT;
-         } else if (side == front.m_122424_()) {
+         } else if (side == front.getOpposite()) {
             return WorksiteRelativeSide.BACK;
          } else {
-            return side == front.m_122428_() ? WorksiteRelativeSide.RIGHT : WorksiteRelativeSide.LEFT;
+            return side == front.getCounterClockWise() ? WorksiteRelativeSide.RIGHT : WorksiteRelativeSide.LEFT;
          }
       }
    }
@@ -306,7 +306,7 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
    @Override
    public void setSideAccess(WorksiteRelativeSide side, WorksiteInventoryAccess access) {
       this.sideAccess.put(side, access == null ? WorksiteInventoryAccess.NONE : access);
-      this.m_6596_();
+      this.setChanged();
    }
 
    @Override
@@ -325,45 +325,45 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
    }
 
    protected final void saveAndSyncWorksiteState() {
-      this.m_6596_();
-      if (this.f_58857_ != null) {
-         if (this.f_58857_ instanceof ServerLevel serverLevel) {
-            serverLevel.m_46745_(this.f_58858_).m_8092_(true);
+      this.setChanged();
+      if (this.level != null) {
+         if (this.level instanceof ServerLevel serverLevel) {
+            serverLevel.getChunkAt(this.worldPosition).setUnsaved(true);
          }
 
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128405_("StoredEnergy", this.storedEnergy);
-      tag.m_128347_("FractionalStoredEnergy", this.fractionalStoredEnergy);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.putInt("StoredEnergy", this.storedEnergy);
+      tag.putDouble("FractionalStoredEnergy", this.fractionalStoredEnergy);
       CompoundTag sideTag = new CompoundTag();
 
       for (Entry<WorksiteRelativeSide, WorksiteInventoryAccess> entry : this.sideAccess.entrySet()) {
-         sideTag.m_128359_(entry.getKey().name(), entry.getValue().name());
+         sideTag.putString(entry.getKey().name(), entry.getValue().name());
       }
 
-      tag.m_128365_("SideAccess", sideTag);
+      tag.put("SideAccess", sideTag);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.storedEnergy = Math.max(0, Math.min(this.getMaxEnergy(), tag.m_128451_("StoredEnergy")));
-      this.fractionalStoredEnergy = Math.max(0.0, Math.min(1.0, tag.m_128459_("FractionalStoredEnergy")));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.storedEnergy = Math.max(0, Math.min(this.getMaxEnergy(), tag.getInt("StoredEnergy")));
+      this.fractionalStoredEnergy = Math.max(0.0, Math.min(1.0, tag.getDouble("FractionalStoredEnergy")));
       if (this.storedEnergy >= this.getMaxEnergy()) {
          this.fractionalStoredEnergy = 0.0;
       }
 
       this.resetDefaultSideAccess();
-      if (tag.m_128441_("SideAccess")) {
-         CompoundTag sideTag = tag.m_128469_("SideAccess");
+      if (tag.contains("SideAccess")) {
+         CompoundTag sideTag = tag.getCompound("SideAccess");
 
          for (WorksiteRelativeSide side : WorksiteRelativeSide.values()) {
-            if (sideTag.m_128441_(side.name())) {
+            if (sideTag.contains(side.name())) {
                try {
-                  this.sideAccess.put(side, WorksiteInventoryAccess.valueOf(sideTag.m_128461_(side.name())));
+                  this.sideAccess.put(side, WorksiteInventoryAccess.valueOf(sideTag.getString(side.name())));
                } catch (IllegalArgumentException var8) {
                   this.sideAccess.put(side, WorksiteInventoryAccess.NONE);
                }
@@ -373,7 +373,7 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
    }
 
    public void handleUpdateTag(CompoundTag tag) {
-      this.m_142466_(tag);
+      this.load(tag);
    }
 
    protected static record UpgradeSlots(int start, int count) {
@@ -396,44 +396,44 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
 
       @Override
       public int getSlots() {
-         return this.container().m_6643_();
+         return this.container().getContainerSize();
       }
 
       @Override
       public ItemStack getStackInSlot(int slot) {
-         return this.valid(slot) && BasicWorksiteBlockEntity.this.slotMatchesAccess(slot, this.access()) ? this.container().m_8020_(slot) : ItemStack.f_41583_;
+         return this.valid(slot) && BasicWorksiteBlockEntity.this.slotMatchesAccess(slot, this.access()) ? this.container().getItem(slot) : ItemStack.EMPTY;
       }
 
       @Override
       public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
          WorksiteInventoryAccess access = this.access();
          if (this.valid(slot)
-            && !stack.m_41619_()
+            && !stack.isEmpty()
             && access != WorksiteInventoryAccess.OUTPUT
             && BasicWorksiteBlockEntity.this.slotMatchesAccess(slot, access)
-            && this.container().m_7013_(slot, stack)) {
-            ItemStack existing = this.container().m_8020_(slot);
-            if (!existing.m_41619_() && !ItemStack.m_150942_(existing, stack)) {
+            && this.container().canPlaceItem(slot, stack)) {
+            ItemStack existing = this.container().getItem(slot);
+            if (!existing.isEmpty() && !ItemStack.isSameItemSameTags(existing, stack)) {
                return stack;
             } else {
-               int limit = Math.min(this.container().m_6893_(), stack.m_41741_());
-               int moved = Math.min(existing.m_41619_() ? limit : limit - existing.m_41613_(), stack.m_41613_());
+               int limit = Math.min(this.container().getMaxStackSize(), stack.getMaxStackSize());
+               int moved = Math.min(existing.isEmpty() ? limit : limit - existing.getCount(), stack.getCount());
                if (moved <= 0) {
                   return stack;
                } else {
                   if (!simulate) {
-                     if (existing.m_41619_()) {
-                        this.container().m_6836_(slot, stack.m_255036_(moved));
+                     if (existing.isEmpty()) {
+                        this.container().setItem(slot, stack.copyWithCount(moved));
                      } else {
-                        existing.m_41769_(moved);
-                        this.container().m_6836_(slot, existing);
+                        existing.grow(moved);
+                        this.container().setItem(slot, existing);
                      }
 
-                     this.container().m_6596_();
+                     this.container().setChanged();
                   }
 
-                  ItemStack remaining = stack.m_41777_();
-                  remaining.m_41774_(moved);
+                  ItemStack remaining = stack.copy();
+                  remaining.shrink(moved);
                   return remaining;
                }
             }
@@ -446,27 +446,27 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
       public ItemStack extractItem(int slot, int amount, boolean simulate) {
          WorksiteInventoryAccess access = this.access();
          if (this.valid(slot) && amount > 0 && access != WorksiteInventoryAccess.INPUT && BasicWorksiteBlockEntity.this.slotMatchesAccess(slot, access)) {
-            ItemStack existing = this.container().m_8020_(slot);
-            if (existing.m_41619_()) {
-               return ItemStack.f_41583_;
+            ItemStack existing = this.container().getItem(slot);
+            if (existing.isEmpty()) {
+               return ItemStack.EMPTY;
             } else {
-               int moved = Math.min(amount, existing.m_41613_());
-               ItemStack result = existing.m_255036_(moved);
+               int moved = Math.min(amount, existing.getCount());
+               ItemStack result = existing.copyWithCount(moved);
                if (!simulate) {
-                  this.container().m_7407_(slot, moved);
-                  this.container().m_6596_();
+                  this.container().removeItem(slot, moved);
+                  this.container().setChanged();
                }
 
                return result;
             }
          } else {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          }
       }
 
       @Override
       public int getSlotLimit(int slot) {
-         return this.valid(slot) ? this.container().m_6893_() : 0;
+         return this.valid(slot) ? this.container().getMaxStackSize() : 0;
       }
 
       @Override
@@ -475,11 +475,11 @@ public abstract class BasicWorksiteBlockEntity extends BlockEntity implements Wo
          return this.valid(slot)
             && access != WorksiteInventoryAccess.OUTPUT
             && BasicWorksiteBlockEntity.this.slotMatchesAccess(slot, access)
-            && this.container().m_7013_(slot, stack);
+            && this.container().canPlaceItem(slot, stack);
       }
 
       private boolean valid(int slot) {
-         return slot >= 0 && slot < this.container().m_6643_();
+         return slot >= 0 && slot < this.container().getContainerSize();
       }
    }
 }

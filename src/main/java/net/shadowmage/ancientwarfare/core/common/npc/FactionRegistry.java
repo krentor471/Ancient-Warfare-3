@@ -38,6 +38,11 @@ public final class FactionRegistry {
       return !faction.isEmpty() && faction.equals(other);
    }
 
+   public static boolean isKnown(String factionName) {
+      ensureLoaded();
+      return factions.containsKey(normalize(factionName));
+   }
+
    public static Set<String> factionNames() {
       ensureLoaded();
       return factions.keySet();

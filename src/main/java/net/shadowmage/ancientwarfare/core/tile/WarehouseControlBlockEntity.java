@@ -49,7 +49,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
    public static final int MAX_BOUNDS_WIDTH = 16;
    private static final String MIN_TAG = "BoundsMin";
    private static final String MAX_TAG = "BoundsMax";
-   private final NonNullList<ItemStack> inputItems = NonNullList.m_122780_(9, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> inputItems = NonNullList.withSize(9, ItemStack.EMPTY);
    private BlockPos boundsMin;
    private BlockPos boundsMax;
    private int tickCounter;
@@ -76,18 +76,18 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
    private int offlineStorages;
    private long totalCapacity;
 
-   public void m_142339_(Level level) {
-      super.m_142339_(level);
+   public void setLevel(Level level) {
+      super.setLevel(level);
       WarehouseNetwork.register(this);
    }
 
-   public void m_7651_() {
-      WarehouseNetwork.changed(this.f_58857_);
-      super.m_7651_();
+   public void setRemoved() {
+      WarehouseNetwork.changed(this.level);
+      super.setRemoved();
    }
 
    public void storageChanged(WarehouseStorageBlockEntity storage) {
-      this.dirtyStorages.add(storage.m_58899_());
+      this.dirtyStorages.add(storage.getBlockPos());
    }
 
    public WarehouseControlBlockEntity(BlockPos pos, BlockState state) {
@@ -108,9 +108,9 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
 
       for (int slot = 0; slot < this.inputItems.size(); slot++) {
          ItemStack stack = (ItemStack)this.inputItems.get(slot);
-         if (!stack.m_41619_()) {
+         if (!stack.isEmpty()) {
             ItemStack remainder = this.insertIntoStorage(stack);
-            if (remainder.m_41613_() != stack.m_41613_()) {
+            if (remainder.getCount() != stack.getCount()) {
                this.inputItems.set(slot, remainder);
                changed = true;
             }
@@ -118,17 +118,17 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
       }
 
       if (changed) {
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
    public ItemStack insertIntoStorage(ItemStack stack) {
-      ItemStack remaining = stack.m_41777_();
+      ItemStack remaining = stack.copy();
 
       for (WarehouseStorageBlockEntity storage : this.destinations(stack)) {
          remaining = storage.insertStack(remaining);
-         if (remaining.m_41619_()) {
-            return ItemStack.f_41583_;
+         if (remaining.isEmpty()) {
+            return ItemStack.EMPTY;
          }
       }
 
@@ -149,7 +149,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
          List<ItemStack> filters = storage.getFilters();
          if (filters.isEmpty()) {
             unfiltered.add(storage);
-         } else if (filters.stream().anyMatch(filter -> !filter.m_41619_() && ItemStack.m_150942_(filter, stack))) {
+         } else if (filters.stream().anyMatch(filter -> !filter.isEmpty() && ItemStack.isSameItemSameTags(filter, stack))) {
             eligible.add(storage);
          }
       }
@@ -162,40 +162,40 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
    }
 
    public ItemStack extractFromStorage(ItemStack filter, int amount) {
-      if (!filter.m_41619_() && amount > 0) {
-         amount = Math.min(amount, Math.min(this.m_6893_(), filter.m_41741_()));
+      if (!filter.isEmpty() && amount > 0) {
+         amount = Math.min(amount, Math.min(this.getMaxStackSize(), filter.getMaxStackSize()));
          this.ensureIndex();
-         ItemStack result = filter.m_41777_();
-         result.m_41764_(0);
+         ItemStack result = filter.copy();
+         result.setCount(0);
          Set<BlockPos> candidates = this.locations.getOrDefault(new WarehouseItemKey(filter), Set.of());
 
          for (BlockPos position : new ArrayList<>(candidates)) {
             WarehouseStorageBlockEntity storage = this.members.get(position);
             if (storage != null && this.isAvailable(storage)) {
-               ItemStack extracted = storage.extractMatching(filter, amount - result.m_41613_());
-               if (!extracted.m_41619_()) {
-                  result.m_41769_(extracted.m_41613_());
+               ItemStack extracted = storage.extractMatching(filter, amount - result.getCount());
+               if (!extracted.isEmpty()) {
+                  result.grow(extracted.getCount());
                }
 
-               if (result.m_41613_() >= amount) {
+               if (result.getCount() >= amount) {
                   break;
                }
             }
          }
 
-         return result.m_41619_() ? ItemStack.f_41583_ : result;
+         return result.isEmpty() ? ItemStack.EMPTY : result;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
    public NonNullList<ItemStack> getDisplayItems(int maxSlots, String search, WarehouseSortType sortType, boolean descending, int offset) {
       List<WarehouseEntry> entries = this.getFilteredEntries(search, sortType, descending);
-      NonNullList<ItemStack> display = NonNullList.m_122780_(maxSlots, ItemStack.f_41583_);
+      NonNullList<ItemStack> display = NonNullList.withSize(maxSlots, ItemStack.EMPTY);
       int start = Math.max(0, Math.min(offset, entries.size()));
 
       for (int index = 0; index < maxSlots && start + index < entries.size(); index++) {
-         display.set(index, entries.get(start + index).stack().m_41777_());
+         display.set(index, entries.get(start + index).stack().copy());
       }
 
       return display;
@@ -215,7 +215,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
 
    public long getCountOfLong(ItemStack filter) {
       this.ensureIndex();
-      return filter.m_41619_() ? 0L : this.totals.getOrDefault(new WarehouseItemKey(filter), 0L);
+      return filter.isEmpty() ? 0L : this.totals.getOrDefault(new WarehouseItemKey(filter), 0L);
    }
 
    public long getInventoryRevision() {
@@ -271,8 +271,8 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
          }
 
          Comparator<WarehouseEntry> comparator = sortType == WarehouseSortType.COUNT
-            ? Comparator.comparingLong(WarehouseEntry::count).thenComparing(entryx -> entryx.stack().m_41786_().getString())
-            : Comparator.comparing(entryx -> entryx.stack().m_41786_().getString().toLowerCase(Locale.ROOT));
+            ? Comparator.comparingLong(WarehouseEntry::count).thenComparing(entryx -> entryx.stack().getHoverName().getString())
+            : Comparator.comparing(entryx -> entryx.stack().getHoverName().getString().toLowerCase(Locale.ROOT));
          if (descending) {
             comparator = comparator.reversed();
          }
@@ -291,8 +291,8 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
       if (searchTerm.isEmpty()) {
          return true;
       } else {
-         String name = stack.m_41786_().getString().toLowerCase(Locale.ROOT);
-         String itemId = BuiltInRegistries.f_257033_.m_7981_(stack.m_41720_()).toString().toLowerCase(Locale.ROOT);
+         String name = stack.getHoverName().getString().toLowerCase(Locale.ROOT);
+         String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString().toLowerCase(Locale.ROOT);
          return searchTerm.startsWith("@") ? itemId.contains(searchTerm.substring(1)) : name.contains(searchTerm) || itemId.contains(searchTerm);
       }
    }
@@ -303,32 +303,32 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
    }
 
    private boolean isAvailable(WarehouseStorageBlockEntity storage) {
-      return this.f_58857_ != null
-         && !storage.m_58901_()
-         && this.f_58857_.m_46805_(storage.m_58899_())
-         && this.f_58857_.m_7702_(storage.m_58899_()) == storage
-         && this.f_58858_.equals(storage.getMembership().getControllerPos());
+      return this.level != null
+         && !storage.isRemoved()
+         && this.level.hasChunkAt(storage.getBlockPos())
+         && this.level.getBlockEntity(storage.getBlockPos()) == storage
+         && this.worldPosition.equals(storage.getMembership().getControllerPos());
    }
 
    private void ensureIndex() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && !this.updatingIndex) {
+      if (this.level != null && !this.level.isClientSide && !this.updatingIndex) {
          this.updatingIndex = true;
 
          try {
-            long now = this.f_58857_.m_46467_();
-            long topology = WarehouseNetwork.revision(this.f_58857_);
+            long now = this.level.getGameTime();
+            long topology = WarehouseNetwork.revision(this.level);
             if (topology != this.topologyRevision || now >= this.nextMemberCheck) {
                Set<BlockPos> previousKnown = new LinkedHashSet<>(this.knownStorages);
                Map<BlockPos, WarehouseStorageBlockEntity> found = new LinkedHashMap<>();
-               List<BlockEntity> loaded = WarehouseNetwork.loadedEntities(this.f_58857_, this.getBoundsMin(), this.getBoundsMax());
-               loaded.sort(Comparator.comparingLong(entity -> entity.m_58899_().m_121878_()));
+               List<BlockEntity> loaded = WarehouseNetwork.loadedEntities(this.level, this.getBoundsMin(), this.getBoundsMax());
+               loaded.sort(Comparator.comparingLong(entity -> entity.getBlockPos().asLong()));
 
                for (BlockEntity entity : loaded) {
                   if (entity instanceof WarehouseStorageBlockEntity) {
                      WarehouseStorageBlockEntity storage = (WarehouseStorageBlockEntity)entity;
                      if (storage.getMembership().findController(storage) == this) {
-                        found.put(storage.m_58899_(), storage);
-                        this.knownStorages.add(storage.m_58899_());
+                        found.put(storage.getBlockPos(), storage);
+                        this.knownStorages.add(storage.getBlockPos());
                      }
                   }
                }
@@ -352,7 +352,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
                for (BlockPos known : new ArrayList<>(this.knownStorages)) {
                   if (!this.containsWorkTarget(known)) {
                      this.knownStorages.remove(known);
-                  } else if (!this.f_58857_.m_46805_(known)) {
+                  } else if (!this.level.hasChunkAt(known)) {
                      offline++;
                   } else if (!found.containsKey(known)) {
                      this.knownStorages.remove(known);
@@ -364,10 +364,10 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
                   this.inventoryRevision++;
                }
 
-               this.topologyRevision = WarehouseNetwork.revision(this.f_58857_);
+               this.topologyRevision = WarehouseNetwork.revision(this.level);
                this.nextMemberCheck = now + 20L;
                if (!previousKnown.equals(this.knownStorages)) {
-                  this.m_6596_();
+                  this.setChanged();
                }
             }
 
@@ -397,7 +397,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
                      this.totalSlots += (int)(capacity / 64L);
 
                      for (WarehouseEntry entryx : current) {
-                        if (!entryx.stack().m_41619_() && entryx.count() > 0L) {
+                        if (!entryx.stack().isEmpty() && entryx.count() > 0L) {
                            this.occupiedSlots++;
                            WarehouseItemKey key = new WarehouseItemKey(entryx.stack());
                            this.totals.merge(key, entryx.count(), Long::sum);
@@ -427,7 +427,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
          this.totalSlots -= (int)(capacity / 64L);
 
          for (WarehouseEntry entry : old) {
-            if (!entry.stack().m_41619_() && entry.count() > 0L) {
+            if (!entry.stack().isEmpty() && entry.count() > 0L) {
                this.occupiedSlots--;
                WarehouseItemKey key = new WarehouseItemKey(entry.stack());
                long remaining = this.totals.getOrDefault(key, 0L) - entry.count();
@@ -456,7 +456,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
          return false;
       } else {
          for (int i = 0; i < a.size(); i++) {
-            if (a.get(i).count() != b.get(i).count() || !ItemStack.m_150942_(a.get(i).stack(), b.get(i).stack())) {
+            if (a.get(i).count() != b.get(i).count() || !ItemStack.isSameItemSameTags(a.get(i).stack(), b.get(i).stack())) {
                return false;
             }
          }
@@ -466,13 +466,13 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
    }
 
    public boolean exchange(List<ItemStack> requirements, List<ItemStack> deposits, boolean simulate) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
+      if (this.level != null && !this.level.isClientSide) {
          List<WarehouseStorageBlockEntity> storages = this.findStorageBlocks();
          Map<WarehouseItemKey, Long> requiredTotals = new HashMap<>();
 
          for (ItemStack required : requirements) {
-            if (!required.m_41619_()) {
-               requiredTotals.merge(new WarehouseItemKey(required), (long)required.m_41613_(), Long::sum);
+            if (!required.isEmpty()) {
+               requiredTotals.merge(new WarehouseItemKey(required), (long)required.getCount(), Long::sum);
             }
          }
 
@@ -495,7 +495,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
          }
 
          for (ItemStack requiredxx : requirements) {
-            long missing = (long)requiredxx.m_41613_();
+            long missing = (long)requiredxx.getCount();
             if (missing < 0L) {
                return false;
             }
@@ -520,8 +520,8 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
          }
 
          for (ItemStack deposit : deposits) {
-            if (!deposit.m_41619_()) {
-               long remaining = (long)deposit.m_41613_();
+            if (!deposit.isEmpty()) {
+               long remaining = (long)deposit.getCount();
                WarehouseItemKey key = new WarehouseItemKey(deposit);
 
                for (WarehouseStorageBlockEntity destination : this.destinations(
@@ -569,7 +569,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
    @Override
    public BlockPos getBoundsMin() {
       if (this.boundsMin == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMin;
@@ -578,7 +578,7 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
    @Override
    public BlockPos getBoundsMax() {
       if (this.boundsMax == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMax;
@@ -586,20 +586,20 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
 
    public void adjustBounds(int minXDelta, int maxXDelta, int minZDelta, int maxZDelta) {
       WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjust(
-         this.f_58858_, this.getBoundsMin(), this.getBoundsMax(), 16, minXDelta, maxXDelta, minZDelta, maxZDelta
+         this.worldPosition, this.getBoundsMin(), this.getBoundsMax(), 16, minXDelta, maxXDelta, minZDelta, maxZDelta
       );
       if (adjusted != null) {
          this.boundsMin = adjusted.min();
          this.boundsMax = adjusted.max();
          this.topologyRevision = Long.MIN_VALUE;
-         WarehouseNetwork.changed(this.f_58857_);
-         this.m_6596_();
-         if (this.f_58857_ != null) {
-            if (this.f_58857_ instanceof ServerLevel serverLevel) {
-               serverLevel.m_46745_(this.f_58858_).m_8092_(true);
+         WarehouseNetwork.changed(this.level);
+         this.setChanged();
+         if (this.level != null) {
+            if (this.level instanceof ServerLevel serverLevel) {
+               serverLevel.getChunkAt(this.worldPosition).setUnsaved(true);
             }
 
-            this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+            this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
          }
       }
    }
@@ -608,54 +608,54 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
    public boolean containsWorkTarget(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123342_() >= min.m_123342_()
-         && pos.m_123342_() <= max.m_123342_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_();
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getY() >= min.getY()
+         && pos.getY() <= max.getY()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ();
    }
 
    private void resetDefaultBounds(BlockPos pos, BlockState state) {
-      Direction facing = state.m_61138_(WarehouseBlock.FACING) ? ((Direction)state.m_61143_(WarehouseBlock.FACING)).m_122424_() : Direction.SOUTH;
-      BlockPos near = pos.m_121945_(facing);
-      BlockPos far = pos.m_5484_(facing, 5);
-      int minY = pos.m_123342_();
-      int maxY = pos.m_123342_() + 4 - 1;
-      if (facing.m_122434_() == Axis.Z) {
-         this.boundsMin = new BlockPos(pos.m_123341_() - 2, minY, Math.min(near.m_123343_(), far.m_123343_()));
-         this.boundsMax = new BlockPos(pos.m_123341_() + 2, maxY, Math.max(near.m_123343_(), far.m_123343_()));
+      Direction facing = state.hasProperty(WarehouseBlock.FACING) ? ((Direction)state.getValue(WarehouseBlock.FACING)).getOpposite() : Direction.SOUTH;
+      BlockPos near = pos.relative(facing);
+      BlockPos far = pos.relative(facing, 5);
+      int minY = pos.getY();
+      int maxY = pos.getY() + 4 - 1;
+      if (facing.getAxis() == Axis.Z) {
+         this.boundsMin = new BlockPos(pos.getX() - 2, minY, Math.min(near.getZ(), far.getZ()));
+         this.boundsMax = new BlockPos(pos.getX() + 2, maxY, Math.max(near.getZ(), far.getZ()));
       } else {
-         this.boundsMin = new BlockPos(Math.min(near.m_123341_(), far.m_123341_()), minY, pos.m_123343_() - 2);
-         this.boundsMax = new BlockPos(Math.max(near.m_123341_(), far.m_123341_()), maxY, pos.m_123343_() + 2);
+         this.boundsMin = new BlockPos(Math.min(near.getX(), far.getX()), minY, pos.getZ() - 2);
+         this.boundsMax = new BlockPos(Math.max(near.getX(), far.getX()), maxY, pos.getZ() + 2);
       }
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.inputItems);
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128388_("KnownWarehouseStorages", this.knownStorages.stream().mapToLong(BlockPos::m_121878_).toArray());
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.inputItems);
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putLongArray("KnownWarehouseStorages", this.knownStorages.stream().mapToLong(BlockPos::asLong).toArray());
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.inputItems);
-      boolean hasMin = tag.m_128441_("BoundsMin");
-      boolean hasMax = tag.m_128441_("BoundsMax");
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.inputItems);
+      boolean hasMin = tag.contains("BoundsMin");
+      boolean hasMax = tag.contains("BoundsMax");
       if (hasMin && hasMax) {
-         this.boundsMin = BlockPos.m_122022_(tag.m_128454_("BoundsMin"));
-         this.boundsMax = BlockPos.m_122022_(tag.m_128454_("BoundsMax"));
-         if ((this.f_58857_ == null || !this.f_58857_.f_46443_) && !WorksiteBoundsGeometry.hasValidSize(this.boundsMin, this.boundsMax, 16)) {
-            this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.boundsMin = BlockPos.of(tag.getLong("BoundsMin"));
+         this.boundsMax = BlockPos.of(tag.getLong("BoundsMax"));
+         if ((this.level == null || !this.level.isClientSide) && !WorksiteBoundsGeometry.hasValidSize(this.boundsMin, this.boundsMax, 16)) {
+            this.resetDefaultBounds(this.worldPosition, this.getBlockState());
          }
       }
 
       this.knownStorages.clear();
 
-      for (long position : tag.m_128467_("KnownWarehouseStorages")) {
-         this.knownStorages.add(BlockPos.m_122022_(position));
+      for (long position : tag.getLongArray("KnownWarehouseStorages")) {
+         this.knownStorages.add(BlockPos.of(position));
       }
 
       this.members.clear();
@@ -669,78 +669,78 @@ public class WarehouseControlBlockEntity extends BlockEntity implements Containe
       this.totalCapacity = 0L;
       this.topologyRevision = Long.MIN_VALUE;
       this.inventoryRevision++;
-      WarehouseNetwork.changed(this.f_58857_);
+      WarehouseNetwork.changed(this.level);
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
       return tag;
    }
 
    public void handleUpdateTag(CompoundTag tag) {
-      this.m_142466_(tag);
+      this.load(tag);
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return this.inputItems.size();
    }
 
-   public boolean m_7983_() {
-      return this.inputItems.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.inputItems.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return slot >= 0 && slot < this.inputItems.size() ? (ItemStack)this.inputItems.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return slot >= 0 && slot < this.inputItems.size() ? (ItemStack)this.inputItems.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = slot >= 0 && slot < this.inputItems.size() ? ContainerHelper.m_18969_(this.inputItems, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = slot >= 0 && slot < this.inputItems.size() ? ContainerHelper.removeItem(this.inputItems, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return slot >= 0 && slot < this.inputItems.size() ? ContainerHelper.m_18966_(this.inputItems, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return slot >= 0 && slot < this.inputItems.size() ? ContainerHelper.takeItem(this.inputItems, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (slot >= 0 && slot < this.inputItems.size()) {
          this.inputItems.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > Math.min(this.m_6893_(), stack.m_41741_())) {
-            stack.m_41764_(Math.min(this.m_6893_(), stack.m_41741_()));
+         if (!stack.isEmpty() && stack.getCount() > Math.min(this.getMaxStackSize(), stack.getMaxStackSize())) {
+            stack.setCount(Math.min(this.getMaxStackSize(), stack.getMaxStackSize()));
          }
 
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.inputItems.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.warehouse_control");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.warehouse_control");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new WarehouseControlMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new WarehouseControlMenu(containerId, playerInventory, this.worldPosition);
    }
 }

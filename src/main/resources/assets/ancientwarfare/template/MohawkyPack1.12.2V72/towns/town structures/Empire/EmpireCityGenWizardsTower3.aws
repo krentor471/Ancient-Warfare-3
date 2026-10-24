@@ -4406,7 +4406,7 @@ rule:
 plugin=blockTile
 number=259
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:2,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/beast_treasure_hoard",spawnEntity:1b,entity:"minecraft:illusion_illager"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:2,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/castle_treasury_medium_value",spawnEntity:1b,entity:"minecraft:illusion_illager"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 

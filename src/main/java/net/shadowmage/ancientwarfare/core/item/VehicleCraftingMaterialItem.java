@@ -18,8 +18,8 @@ public class VehicleCraftingMaterialItem extends Item {
       this.materialType = materialType;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_(this.materialType.tooltipKey).m_130940_(ChatFormatting.GRAY));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable(this.materialType.tooltipKey).withStyle(ChatFormatting.GRAY));
    }
 
    public static enum MaterialType {

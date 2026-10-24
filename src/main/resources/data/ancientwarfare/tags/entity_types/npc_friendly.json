@@ -22,8 +22,6 @@
     "minecraft:turtle",
     "minecraft:axolotl",
     "minecraft:strider",
-    {"id":"iceandfire:hippocampus","required":false},
-    {"id":"iceandfire:pixie","required":false},
     {"id":"mowziesmobs:umvuthana_follower_player","required":false},
     {"id":"mowziesmobs:umvuthana_crane_player","required":false},
     {"id":"grimoireofgaia:trader","required":false},

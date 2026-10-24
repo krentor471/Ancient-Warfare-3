@@ -18,6 +18,7 @@ import net.shadowmage.ancientwarfare.core.block.ResearchStationBlock;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcWorkType;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
+import net.shadowmage.ancientwarfare.core.common.research.ResearchBookData;
 import net.shadowmage.ancientwarfare.core.common.research.ResearchResource;
 import net.shadowmage.ancientwarfare.core.common.worksite.WorkSite;
 import net.shadowmage.ancientwarfare.core.common.worksite.WorkerAccess;
@@ -31,7 +32,23 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    public static final int BOOK_SLOT = 0;
    public static final int RESOURCE_SLOT_START = 1;
    public static final int SLOT_COUNT = 10;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(10, ItemStack.f_41583_);
+   /** Science a scribe gathers with each stretch of work at the desk, with a wooden quill and no shelves about. */
+   public static final float SCIENCE_PER_EFFORT = 1.0F;
+   /** Science one sheet of paper and one ink sac from a chest beside the desk are good for. */
+   public static final int SCIENCE_PER_SUPPLY = 20;
+   /** Shelves counted within this many blocks of the desk; this many or more make the room a scriptorium. */
+   private static final int SHELF_RANGE = 4;
+   private static final int SCRIPTORIUM_SHELVES = 6;
+   private static final int MAX_SHELVES = 20;
+   private static final float SCRIPTORIUM_BONUS = 0.25F;
+   private static final float SHELF_BONUS = 0.03F;
+   private static final int SUPPLY_RANGE = 2;
+   private final NonNullList<ItemStack> items = NonNullList.withSize(10, ItemStack.EMPTY);
+   /** Science paid for with paper and ink but not yet gathered. */
+   private int supplied;
+   private float scienceFraction;
+   private float roomBonus = -1.0F;
+   private long roomCheckedAt;
 
    public ResearchStationBlockEntity(BlockPos pos, BlockState state) {
       super(AWCoreRegistryAccess.blockEntityType(AWCoreIds.RESEARCH_STATION), pos, state);
@@ -42,16 +59,21 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    }
 
    private void tickResearch() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
+      if (this.level != null && !this.level.isClientSide) {
          ItemStack book = (ItemStack)this.items.get(0);
-         if (!book.m_41619_() && ResearchBookItem.getResearcherName(book) != null) {
+         if (!book.isEmpty() && ResearchBookItem.getResearcherName(book) != null) {
             if (ResearchBookItem.getCurrentResearch(book) == null) {
                this.startNextQueuedResearch(book);
             }
 
             if (ResearchBookItem.getCurrentResearch(book) != null) {
                ResearchBookItem.addProgress(book, 1);
-               this.m_6596_();
+               this.setChanged();
+            }
+
+            if (this.level.getGameTime() % 20L == 0L && this.level instanceof net.minecraft.server.level.ServerLevel server) {
+               net.shadowmage.ancientwarfare.core.research.PlayerResearch.learn(server, ResearchBookItem.getResearcherName(book), ResearchBookItem.getCompletedResearch(book));
+               ResearchBookData.setScienceScale(book, net.shadowmage.ancientwarfare.core.research.PlayerResearch.scienceScale(server, ResearchBookItem.getResearcherName(book)));
             }
          }
       }
@@ -60,9 +82,10 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    private void startNextQueuedResearch(ItemStack book) {
       String nextId = ResearchBookItem.peekNextQueuedResearch(book);
       ResearchGoal next = nextId == null ? null : ResearchRegistry.get(nextId);
-      if (next != null && this.consumeResearchResources(next)) {
+      if (next != null && ResearchBookData.getScience(book) >= ResearchBookData.scienceCost(book, next) && this.consumeResearchResources(next)) {
+         ResearchBookData.takeScience(book, ResearchBookData.scienceCost(book, next));
          ResearchBookItem.startNextQueuedResearch(book);
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -73,7 +96,7 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
          for (int slot = 1; slot < 10; slot++) {
             ItemStack stack = (ItemStack)this.items.get(slot);
             if (requirement.matches(stack)) {
-               available += stack.m_41613_();
+               available += stack.getCount();
             }
          }
 
@@ -88,43 +111,133 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
          for (int slotx = 1; slotx < 10 && remaining > 0; slotx++) {
             ItemStack stack = (ItemStack)this.items.get(slotx);
             if (requirement.matches(stack)) {
-               int removed = Math.min(remaining, stack.m_41613_());
-               stack.m_41774_(removed);
+               int removed = Math.min(remaining, stack.getCount());
+               stack.shrink(removed);
                remaining -= removed;
-               if (stack.m_41619_()) {
-                  this.items.set(slotx, ItemStack.f_41583_);
+               if (stack.isEmpty()) {
+                  this.items.set(slotx, ItemStack.EMPTY);
                }
             }
          }
       }
 
-      this.m_6596_();
+      this.setChanged();
       return true;
    }
 
+   /** A scribe always has work at a desk with a named book: when there is nothing to study, he gathers science. */
    @Override
    public boolean hasWork() {
       ItemStack book = (ItemStack)this.items.get(0);
-      return !book.m_41619_() && ResearchBookItem.getResearcherName(book) != null
-         ? ResearchBookItem.getCurrentResearch(book) != null || ResearchBookItem.peekNextQueuedResearch(book) != null
-         : false;
+      return !book.isEmpty() && ResearchBookItem.getResearcherName(book) != null;
    }
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType())) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType())) {
          ItemStack book = (ItemStack)this.items.get(0);
-         if (!book.m_41619_() && ResearchBookItem.getResearcherName(book) != null) {
+         if (!book.isEmpty() && ResearchBookItem.getResearcherName(book) != null) {
             if (ResearchBookItem.getCurrentResearch(book) == null) {
                this.startNextQueuedResearch(book);
             }
 
+            int effort = Math.max(1, Math.round(worker.getWorkEffectiveness(this.getWorkType())));
             if (ResearchBookItem.getCurrentResearch(book) != null) {
-               ResearchBookItem.addProgress(book, Math.max(1, Math.round(worker.getWorkEffectiveness(this.getWorkType()))));
-               this.m_6596_();
+               ResearchBookItem.addProgress(book, effort);
             }
+
+            this.gatherScience(book, worker, effort);
+            this.setChanged();
          }
       }
+   }
+
+   /**
+    * The scribe writes: the science he gathers grows with his quill and with the shelves about the
+    * desk, and he writes on paper with ink from a chest beside it. Without them he gathers nothing,
+    * and the book says so.
+    */
+   private void gatherScience(ItemStack book, WorkerAccess worker, int effort) {
+      float quill = worker instanceof net.minecraft.world.entity.LivingEntity scribe
+         ? net.shadowmage.ancientwarfare.core.item.QuillItem.scienceMultiplier(scribe.getMainHandItem())
+         : 1.0F;
+      if (this.roomBonus < 0.0F || this.level.getGameTime() - this.roomCheckedAt > 200L) {
+         this.roomBonus = roomBonus(this.level, this.worldPosition);
+         this.roomCheckedAt = this.level.getGameTime();
+      }
+
+      this.scienceFraction += effort * SCIENCE_PER_EFFORT * quill * (1.0F + this.roomBonus);
+      int whole = (int)this.scienceFraction;
+      if (whole <= 0) {
+         return;
+      }
+
+      if (this.supplied < whole && !this.takeSupplies()) {
+         ResearchBookData.setStarved(book, true);
+         this.scienceFraction = Math.min(this.scienceFraction, 1.0F);
+         return;
+      }
+
+      this.scienceFraction -= whole;
+      this.supplied -= whole;
+      ResearchBookData.setStarved(book, false);
+      ResearchBookData.addScience(book, whole);
+   }
+
+   private boolean takeSupplies() {
+      Container paper = null;
+      int paperSlot = -1;
+      Container ink = null;
+      int inkSlot = -1;
+      for (BlockPos pos : BlockPos.betweenClosed(this.worldPosition.offset(-SUPPLY_RANGE, -1, -SUPPLY_RANGE), this.worldPosition.offset(SUPPLY_RANGE, 1, SUPPLY_RANGE))) {
+         if (pos.equals(this.worldPosition) || !(this.level.getBlockEntity(pos) instanceof Container container)) {
+            continue;
+         }
+
+         for (int slot = 0; slot < container.getContainerSize() && (paper == null || ink == null); slot++) {
+            ItemStack stack = container.getItem(slot);
+            if (paper == null && stack.is(net.minecraft.world.item.Items.PAPER)) {
+               paper = container;
+               paperSlot = slot;
+            } else if (ink == null && (stack.is(net.minecraft.world.item.Items.INK_SAC) || stack.is(net.minecraft.world.item.Items.BLACK_DYE))) {
+               ink = container;
+               inkSlot = slot;
+            }
+         }
+
+         if (paper != null && ink != null) {
+            paper.removeItem(paperSlot, 1);
+            ink.removeItem(inkSlot, 1);
+            paper.setChanged();
+            ink.setChanged();
+            this.supplied += SCIENCE_PER_SUPPLY;
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   /** The bonus the room gives the scribes: a little for every bookshelf near the desk, and more when there are enough to call it a scriptorium. */
+   public static float roomBonus(Level level, BlockPos desk) {
+      int shelves = shelves(level, desk);
+      return (shelves >= SCRIPTORIUM_SHELVES ? SCRIPTORIUM_BONUS : 0.0F) + SHELF_BONUS * Math.min(shelves, MAX_SHELVES);
+   }
+
+   public static boolean isScriptorium(Level level, BlockPos desk) {
+      return shelves(level, desk) >= SCRIPTORIUM_SHELVES;
+   }
+
+   private static int shelves(Level level, BlockPos desk) {
+      int shelves = 0;
+      for (BlockPos pos : BlockPos.betweenClosed(desk.offset(-SHELF_RANGE, -1, -SHELF_RANGE), desk.offset(SHELF_RANGE, 3, SHELF_RANGE))) {
+         BlockState state = level.getBlockState(pos);
+         if (state.is(net.minecraft.world.level.block.Blocks.BOOKSHELF) || state.is(net.minecraft.world.level.block.Blocks.CHISELED_BOOKSHELF)) {
+            shelves++;
+         }
+      }
+
+      return shelves;
    }
 
    @Override
@@ -132,96 +245,98 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
       return NpcWorkType.RESEARCH;
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
+      tag.putInt("ScienceSupplied", this.supplied);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      this.supplied = tag.getInt("ScienceSupplied");
       this.updateBookState();
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 10;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
+   public ItemStack removeItem(int slot, int amount) {
       if (this.isValidSlot(slot) && amount > 0) {
-         ItemStack removed = ContainerHelper.m_18969_(this.items, slot, amount);
-         if (!removed.m_41619_()) {
-            this.m_6596_();
+         ItemStack removed = ContainerHelper.removeItem(this.items, slot, amount);
+         if (!removed.isEmpty()) {
+            this.setChanged();
             this.updateBookState();
          }
 
          return removed;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
-   public ItemStack m_8016_(int slot) {
+   public ItemStack removeItemNoUpdate(int slot) {
       if (!this.isValidSlot(slot)) {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       } else {
-         ItemStack stack = ContainerHelper.m_18966_(this.items, slot);
+         ItemStack stack = ContainerHelper.takeItem(this.items, slot);
          this.updateBookState();
          return stack;
       }
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         if (slot == 0 && !stack.m_41619_() && stack.m_41613_() > 1) {
-            stack.m_41764_(1);
+         if (slot == 0 && !stack.isEmpty() && stack.getCount() > 1) {
+            stack.setCount(1);
          }
 
-         this.m_6596_();
+         this.setChanged();
          this.updateBookState();
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
       this.updateBookState();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.research_station");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.research_station");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new ResearchStationMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new ResearchStationMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public NonNullList<ItemStack> getDrops() {
-      NonNullList<ItemStack> drops = NonNullList.m_122779_();
+      NonNullList<ItemStack> drops = NonNullList.create();
 
       for (ItemStack stack : this.items) {
-         if (!stack.m_41619_()) {
-            drops.add(stack.m_41777_());
+         if (!stack.isEmpty()) {
+            drops.add(stack.copy());
          }
       }
 
@@ -233,11 +348,11 @@ public class ResearchStationBlockEntity extends BlockEntity implements Container
    }
 
    private void updateBookState() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         BlockState state = this.m_58900_();
-         boolean hasBook = !((ItemStack)this.items.get(0)).m_41619_();
-         if (state.m_61138_(ResearchStationBlock.HAS_BOOK) && (Boolean)state.m_61143_(ResearchStationBlock.HAS_BOOK) != hasBook) {
-            this.f_58857_.m_7731_(this.f_58858_, (BlockState)state.m_61124_(ResearchStationBlock.HAS_BOOK, hasBook), 3);
+      if (this.level != null && !this.level.isClientSide) {
+         BlockState state = this.getBlockState();
+         boolean hasBook = !((ItemStack)this.items.get(0)).isEmpty();
+         if (state.hasProperty(ResearchStationBlock.HAS_BOOK) && (Boolean)state.getValue(ResearchStationBlock.HAS_BOOK) != hasBook) {
+            this.level.setBlock(this.worldPosition, (BlockState)state.setValue(ResearchStationBlock.HAS_BOOK, hasBook), 3);
          }
       }
    }

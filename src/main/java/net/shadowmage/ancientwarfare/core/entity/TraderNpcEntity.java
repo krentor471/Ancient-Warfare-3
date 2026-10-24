@@ -28,48 +28,48 @@ public class TraderNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 20.0).m_22268_(Attributes.f_22279_, 0.25).m_22268_(Attributes.f_22277_, 24.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.25).add(Attributes.FOLLOW_RANGE, 24.0);
    }
 
-   protected void m_8099_() {
-      this.f_21345_.m_25352_(0, new FloatGoal(this));
-      this.f_21345_.m_25352_(2, new TraderNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
-      this.f_21345_.m_25352_(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
-      this.f_21345_.m_25352_(7, new RandomLookAroundGoal(this));
+   protected void registerGoals() {
+      this.goalSelector.addGoal(0, new FloatGoal(this));
+      this.goalSelector.addGoal(2, new TraderNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+      this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
    }
 
    @Override
-   public void m_8119_() {
-      if (!this.m_9236_().f_46443_ && this.getCurrentCommand() == NpcCommandType.NONE && !this.isGettingFood() && !this.isGuiInteractionPaused()) {
-         this.m_21573_().m_26573_();
+   public void tick() {
+      if (!this.level().isClientSide && this.getCurrentCommand() == NpcCommandType.NONE && !this.isGettingFood() && !this.isGuiInteractionPaused()) {
+         this.getNavigation().stop();
       }
 
-      super.m_8119_();
+      super.tick();
    }
 
-   protected InteractionResult m_6071_(Player player, InteractionHand hand) {
+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
       if (this.tryAcceptFood(player, hand)) {
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
-      } else if (player.m_21120_(hand).m_41720_() instanceof CommandBatonItem) {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.m_21120_(hand), player, this);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
+            CommandBatonItem.toggleNpcSelection(player.getItemInHand(hand), player, this);
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else {
-         if (!this.m_9236_().f_46443_) {
+         if (!this.level().isClientSide) {
             if (this.hasCommandPermission(player)) {
                AWCorePlatform.openMenu(
                   player,
-                  new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.m_5446_()),
-                  buffer -> buffer.writeInt(this.m_19879_())
+                  new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.getDisplayName()),
+                  buffer -> buffer.writeInt(this.getId())
                );
             } else {
-               player.m_5661_(Component.m_237115_("guistrings.npc.trade.not_ported_yet"), true);
+               player.displayClientMessage(Component.translatable("guistrings.npc.trade.not_ported_yet"), true);
             }
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
    }
 
@@ -84,8 +84,8 @@ public class TraderNpcEntity extends PlayerOwnedNpcEntity {
    }
 
    @Override
-   public Component m_5677_() {
-      return Component.m_237115_("entity.ancientwarfare.trader");
+   public Component getTypeName() {
+      return Component.translatable("entity.ancientwarfare.trader");
    }
 
    private static class MoveToCommandGoal extends Goal {
@@ -98,45 +98,45 @@ public class TraderNpcEntity extends PlayerOwnedNpcEntity {
          this.trader = trader;
          this.speedModifier = speedModifier;
          this.stopDistanceSq = stopDistance * stopDistance;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.trader.getCurrentCommand() != NpcCommandType.MOVE) {
             return false;
          } else {
             this.target = this.trader.getCommandTarget();
-            return !BlockPos.f_121853_.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
+            return !BlockPos.ZERO.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.trader.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() > this.stopDistanceSq;
       }
 
-      public void m_8037_() {
-         this.trader.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+      public void tick() {
+         this.trader.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
          this.trader
-            .m_21573_()
-            .m_26519_(
-               (double)this.target.m_123341_() + 0.5,
-               (double)this.target.m_123342_(),
-               (double)this.target.m_123343_() + 0.5,
+            .getNavigation()
+            .moveTo(
+               (double)this.target.getX() + 0.5,
+               (double)this.target.getY(),
+               (double)this.target.getZ() + 0.5,
                this.trader.playerWalkNavigationSpeed()
             );
       }
 
-      public void m_8041_() {
+      public void stop() {
          if (this.trader.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
-            this.trader.clearCommand();
+            this.trader.completeMoveCommand();
          }
 
          this.target = null;
-         this.trader.m_21573_().m_26573_();
+         this.trader.getNavigation().stop();
       }
 
       private double distanceToTargetSq() {
-         return this.trader.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+         return this.trader.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
       }
    }
 }

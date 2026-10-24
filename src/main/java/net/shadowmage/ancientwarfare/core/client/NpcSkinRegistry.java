@@ -64,16 +64,16 @@ public final class NpcSkinRegistry {
    private static void load() {
       if (!loaded) {
          loaded = true;
-         Minecraft minecraft = Minecraft.m_91087_();
-         if (minecraft != null && minecraft.m_91098_() != null) {
+         Minecraft minecraft = Minecraft.getInstance();
+         if (minecraft != null && minecraft.getResourceManager() != null) {
             try {
-               Resource resource = (Resource)minecraft.m_91098_().m_213713_(SKIN_META).orElse(null);
+               Resource resource = (Resource)minecraft.getResourceManager().getResource(SKIN_META).orElse(null);
                if (resource == null) {
                   return;
                }
 
                String line;
-               try (BufferedReader reader = resource.m_215508_()) {
+               try (BufferedReader reader = resource.openAsReader()) {
                   while ((line = reader.readLine()) != null) {
                      addSkin(line);
                   }
@@ -96,10 +96,10 @@ public final class NpcSkinRegistry {
             String fileName = trimmed.substring(separator + 1).trim();
             if (!key.isEmpty() && !fileName.isEmpty()) {
                String texturePath = "textures/entity/npc/skin_pack/" + fileName;
-               ResourceLocation texture = ResourceLocation.m_135820_("ancientwarfare:" + texturePath);
+               ResourceLocation texture = ResourceLocation.tryParse("ancientwarfare:" + texturePath);
                if (texture != null) {
-                  Minecraft minecraft = Minecraft.m_91087_();
-                  if (minecraft != null && minecraft.m_91098_().m_213713_(texture).isPresent()) {
+                  Minecraft minecraft = Minecraft.getInstance();
+                  if (minecraft != null && minecraft.getResourceManager().getResource(texture).isPresent()) {
                      SKINS.putIfAbsent(key, texture);
                   }
                }
@@ -109,15 +109,15 @@ public final class NpcSkinRegistry {
    }
 
    private static void addLooseSkinFiles(Minecraft minecraft) {
-      minecraft.m_91098_()
-         .m_214159_(
-            "textures/entity/npc/skin_pack/".substring(0, "textures/entity/npc/skin_pack/".length() - 1), resource -> resource.m_135815_().endsWith(".png")
+      minecraft.getResourceManager()
+         .listResources(
+            "textures/entity/npc/skin_pack/".substring(0, "textures/entity/npc/skin_pack/".length() - 1), resource -> resource.getPath().endsWith(".png")
          )
          .keySet()
          .stream()
-         .sorted(Comparator.comparing(ResourceLocation::m_135815_))
+         .sorted(Comparator.comparing(ResourceLocation::getPath))
          .forEach(texture -> {
-            String path = texture.m_135815_();
+            String path = texture.getPath();
             int fileNameStart = path.lastIndexOf(47) + 1;
             String fileName = path.substring(fileNameStart);
             String skinName = fileName.substring(0, fileName.length() - ".png".length());

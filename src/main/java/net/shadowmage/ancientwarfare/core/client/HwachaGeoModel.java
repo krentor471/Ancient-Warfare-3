@@ -34,10 +34,10 @@ public class HwachaGeoModel extends GeoModel<HwachaEntity> {
    public void handleAnimations(HwachaEntity animatable, long instanceId, AnimationState<HwachaEntity> state) {
       super.handleAnimations(animatable, instanceId, state);
       float partialTick = state.getPartialTick();
-      float wheel = Mth.m_14179_(partialTick, animatable.wheelRotationPrev, animatable.wheelRotation);
+      float wheel = Mth.lerp(partialTick, animatable.wheelRotationPrev, animatable.wheelRotation);
       this.setRotX("FRWheelPivot", wheel);
       this.setRotX("FLWheelPivot", wheel);
-      float pitch = animatable.m_20184_().m_165925_() > 4.0E-4 ? 8.0F : 39.0F;
+      float pitch = animatable.getDeltaMovement().horizontalDistanceSqr() > 4.0E-4 ? 8.0F : 39.0F;
       this.setRotX("frontAxle", pitch);
    }
 

@@ -35,20 +35,20 @@ public class WarehouseControlScreen extends LegacyContainerScreen<WarehouseContr
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
+   protected void init() {
+      super.init();
       this.sortButton = this.legacyButton("sort type", 8, 8, 110, 12, this.sortMessage(), button -> {
          this.clickButton(0);
-         button.m_93666_(this.sortMessage());
+         button.setMessage(this.sortMessage());
       });
       this.orderCheckbox = this.addLegacyWidget(
          "sort order",
          new LegacyCheckbox(
-            this.f_97735_ + 122,
-            this.f_97736_ + 6,
+            this.leftPos + 122,
+            this.topPos + 6,
             16,
             this.fittedOrderMessage(),
-            !((WarehouseControlMenu)this.f_97732_).isDescending(),
+            !((WarehouseControlMenu)this.menu).isDescending(),
             checked -> this.clickButton(2)
          ),
          122,
@@ -56,62 +56,62 @@ public class WarehouseControlScreen extends LegacyContainerScreen<WarehouseContr
          16,
          16
       );
-      this.orderCheckbox.m_257544_(Tooltip.m_257550_(this.orderMessage()));
-      this.searchBox = new EditBox(this.f_96547_, this.f_97735_ + 8, this.f_97736_ + 24, 162, 12, Component.m_237115_("guistrings.automation.search"));
-      this.searchBox.m_94199_(64);
-      this.searchBox.m_94144_(((WarehouseControlMenu)this.f_97732_).getSearch());
-      this.searchBox.m_94151_(value -> {
-         ((WarehouseControlMenu)this.f_97732_).setSearch(value);
+      this.orderCheckbox.setTooltip(Tooltip.create(this.orderMessage()));
+      this.searchBox = new EditBox(this.font, this.leftPos + 8, this.topPos + 24, 162, 12, Component.translatable("guistrings.automation.search"));
+      this.searchBox.setMaxLength(64);
+      this.searchBox.setValue(((WarehouseControlMenu)this.menu).getSearch());
+      this.searchBox.setResponder(value -> {
+         ((WarehouseControlMenu)this.menu).setSearch(value);
          AWCorePlatform.setWarehouseSearch(value);
       });
       this.addLegacyWidget("search", this.searchBox, 8, 24, 162, 12);
-      this.legacyButton("adjust bounds", 8, 220, 40, 12, Component.m_237115_("guistrings.automation.bounds"), button -> {
-         if (this.f_96541_.f_91072_ != null) {
-            this.f_96541_.f_91072_.m_105208_(((WarehouseControlMenu)this.f_97732_).f_38840_, 1);
+      this.legacyButton("adjust bounds", 8, 220, 40, 12, Component.translatable("guistrings.automation.bounds"), button -> {
+         if (this.minecraft.gameMode != null) {
+            this.minecraft.gameMode.handleInventoryButtonClick(((WarehouseControlMenu)this.menu).containerId, 1);
          }
       });
       this.registerLayoutRect("warehouse item viewport", 0, 38, 178, 96, false);
    }
 
    private void clickButton(int id) {
-      ((WarehouseControlMenu)this.f_97732_).m_6366_(null, id);
-      if (this.f_96541_.f_91072_ != null) {
-         this.f_96541_.f_91072_.m_105208_(((WarehouseControlMenu)this.f_97732_).f_38840_, id);
+      ((WarehouseControlMenu)this.menu).clickMenuButton(null, id);
+      if (this.minecraft.gameMode != null) {
+         this.minecraft.gameMode.handleInventoryButtonClick(((WarehouseControlMenu)this.menu).containerId, id);
       }
    }
 
    private Component sortMessage() {
-      return Component.m_237110_(
+      return Component.translatable(
          "guistrings.automation.sort_type",
-         new Object[]{Component.m_237115_("guistrings.automation.sort." + ((WarehouseControlMenu)this.f_97732_).getSortType().name().toLowerCase(Locale.ROOT))}
+         new Object[]{Component.translatable("guistrings.automation.sort." + ((WarehouseControlMenu)this.menu).getSortType().name().toLowerCase(Locale.ROOT))}
       );
    }
 
    private Component orderMessage() {
-      return Component.m_237115_(
-         ((WarehouseControlMenu)this.f_97732_).isDescending() ? "guistrings.automation.descending_short" : "guistrings.automation.ascending_short"
+      return Component.translatable(
+         ((WarehouseControlMenu)this.menu).isDescending() ? "guistrings.automation.descending_short" : "guistrings.automation.ascending_short"
       );
    }
 
    private Component fittedOrderMessage() {
       String label = this.orderMessage().getString();
-      int width = this.f_97726_ - 4 - 140;
-      if (this.f_96547_.m_92895_(label) <= width) {
-         return Component.m_237113_(label);
+      int width = this.imageWidth - 4 - 140;
+      if (this.font.width(label) <= width) {
+         return Component.literal(label);
       } else {
          String suffix = "...";
-         return Component.m_237113_(this.f_96547_.m_92834_(label, Math.max(0, width - this.f_96547_.m_92895_(suffix))) + suffix);
+         return Component.literal(this.font.plainSubstrByWidth(label, Math.max(0, width - this.font.width(suffix))) + suffix);
       }
    }
 
    @Override
    protected void renderLegacyBackground(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      LegacyGuiStyle.background(graphics, this.f_97735_, this.f_97736_ + 38, this.f_97726_, 96);
+      LegacyGuiStyle.background(graphics, this.leftPos, this.topPos + 38, this.imageWidth, 96);
 
       for (int index = 0; index < 45; index++) {
-         Slot slot = ((WarehouseControlMenu)this.f_97732_).m_38853_(index);
-         if (slot.m_6657_()) {
-            LegacyGuiStyle.slot(graphics, this.f_97735_, this.f_97736_, slot.f_40220_, slot.f_40221_);
+         Slot slot = ((WarehouseControlMenu)this.menu).getSlot(index);
+         if (slot.hasItem()) {
+            LegacyGuiStyle.slot(graphics, this.leftPos, this.topPos, slot.x, slot.y);
          }
       }
 
@@ -122,28 +122,28 @@ public class WarehouseControlScreen extends LegacyContainerScreen<WarehouseContr
 
    @Override
    protected boolean renderMenuSlotBackground(Slot slot) {
-      return ((WarehouseControlMenu)this.f_97732_).f_38839_.indexOf(slot) < 45 ? slot.m_6657_() : true;
+      return ((WarehouseControlMenu)this.menu).slots.indexOf(slot) < 45 ? slot.hasItem() : true;
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      this.sortButton.m_93666_(this.sortMessage());
-      this.orderCheckbox.setChecked(!((WarehouseControlMenu)this.f_97732_).isDescending());
-      this.orderCheckbox.m_93666_(this.fittedOrderMessage());
-      this.orderCheckbox.m_257544_(Tooltip.m_257550_(this.orderMessage()));
-      int color = ((WarehouseControlMenu)this.f_97732_).getTotalCapacity() > 0L
-            && ((WarehouseControlMenu)this.f_97732_).getTotalItemCount() >= ((WarehouseControlMenu)this.f_97732_).getTotalCapacity()
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      this.sortButton.setMessage(this.sortMessage());
+      this.orderCheckbox.setChecked(!((WarehouseControlMenu)this.menu).isDescending());
+      this.orderCheckbox.setMessage(this.fittedOrderMessage());
+      this.orderCheckbox.setTooltip(Tooltip.create(this.orderMessage()));
+      int color = ((WarehouseControlMenu)this.menu).getTotalCapacity() > 0L
+            && ((WarehouseControlMenu)this.menu).getTotalItemCount() >= ((WarehouseControlMenu)this.menu).getTotalCapacity()
          ? -52429
          : -12566464;
-      Component storage = Component.m_237110_(
+      Component storage = Component.translatable(
          "guistrings.warehouse.capacity",
          new Object[]{
-            abbreviateCount(((WarehouseControlMenu)this.f_97732_).getTotalItemCount()),
-            abbreviateCount(((WarehouseControlMenu)this.f_97732_).getTotalCapacity())
+            abbreviateCount(((WarehouseControlMenu)this.menu).getTotalItemCount()),
+            abbreviateCount(((WarehouseControlMenu)this.menu).getTotalCapacity())
          }
       );
       this.drawFittedLabel(graphics, storage, 52, 221, 118, color);
-      if (((WarehouseControlMenu)this.f_97732_).getOfflineStorageCount() > 0) {
-         graphics.m_280056_(this.f_96547_, "!", 171, 221, -5215488, false);
+      if (((WarehouseControlMenu)this.menu).getOfflineStorageCount() > 0) {
+         graphics.drawString(this.font, "!", 171, 221, -5215488, false);
       }
    }
 
@@ -153,23 +153,23 @@ public class WarehouseControlScreen extends LegacyContainerScreen<WarehouseContr
    }
 
    private void renderScaledDisplayCounts(GuiGraphics graphics) {
-      graphics.m_280262_();
+      graphics.flush();
       RenderSystem.disableDepthTest();
 
       for (int index = 0; index < 45; index++) {
-         ItemStack stack = ((WarehouseControlMenu)this.f_97732_).m_38853_(index).m_7993_();
-         long quantity = ((WarehouseControlMenu)this.f_97732_).getDisplayCount(index);
-         if (!stack.m_41619_() && quantity > 1L) {
-            int x = this.f_97735_ + 4 + index % 9 * 18;
-            int y = this.f_97736_ + 42 + index / 9 * 18;
+         ItemStack stack = ((WarehouseControlMenu)this.menu).getSlot(index).getItem();
+         long quantity = ((WarehouseControlMenu)this.menu).getDisplayCount(index);
+         if (!stack.isEmpty() && quantity > 1L) {
+            int x = this.leftPos + 4 + index % 9 * 18;
+            int y = this.topPos + 42 + index / 9 * 18;
             String count = abbreviateCount(quantity);
-            int textWidth = this.f_96547_.m_92895_(count);
+            int textWidth = this.font.width(count);
             float scale = Math.min(1.0F, 18.0F / (float)Math.max(1, textWidth));
-            graphics.m_280168_().m_85836_();
-            graphics.m_280168_().m_252880_((float)(x + 16) - (float)textWidth * scale, (float)(y + 16) - 8.0F * scale, 300.0F);
-            graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-            graphics.m_280056_(this.f_96547_, count, 0, 0, -1, true);
-            graphics.m_280168_().m_85849_();
+            graphics.pose().pushPose();
+            graphics.pose().translate((float)(x + 16) - (float)textWidth * scale, (float)(y + 16) - 8.0F * scale, 300.0F);
+            graphics.pose().scale(scale, scale, 1.0F);
+            graphics.drawString(this.font, count, 0, 0, -1, true);
+            graphics.pose().popPose();
          }
       }
 
@@ -177,41 +177,41 @@ public class WarehouseControlScreen extends LegacyContainerScreen<WarehouseContr
    }
 
    private void drawFittedLabel(GuiGraphics graphics, Component text, int x, int y, int width, int color) {
-      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.f_96547_.m_92852_(text)));
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_((float)x, (float)y, 0.0F);
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, text, 0, 0, color, false);
-      graphics.m_280168_().m_85849_();
+      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.font.width(text)));
+      graphics.pose().pushPose();
+      graphics.pose().translate((float)x, (float)y, 0.0F);
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, text, 0, 0, color, false);
+      graphics.pose().popPose();
    }
 
-   protected void m_280072_(GuiGraphics graphics, int mouseX, int mouseY) {
-      if (inside((double)mouseX, (double)mouseY, this.f_97735_ + 140, this.f_97736_ + 6, this.f_97726_ - 4 - 140, 16)) {
-         graphics.m_280557_(this.f_96547_, this.orderMessage(), mouseX, mouseY);
+   protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+      if (inside((double)mouseX, (double)mouseY, this.leftPos + 140, this.topPos + 6, this.imageWidth - 4 - 140, 16)) {
+         graphics.renderTooltip(this.font, this.orderMessage(), mouseX, mouseY);
       } else {
-         int index = this.f_97734_ == null ? -1 : ((WarehouseControlMenu)this.f_97732_).f_38839_.indexOf(this.f_97734_);
-         if (((WarehouseControlMenu)this.f_97732_).m_142621_().m_41619_() && index >= 0 && index < 45 && this.f_97734_.m_6657_()) {
-            ItemStack stack = this.f_97734_.m_7993_();
-            List<Component> lines = new ArrayList<>(this.m_280553_(stack));
-            lines.add(Component.m_237110_("guistrings.warehouse.item_count", new Object[]{((WarehouseControlMenu)this.f_97732_).getDisplayCount(index)}));
-            graphics.m_280677_(this.f_96547_, lines, stack.m_150921_(), mouseX, mouseY);
-         } else if (inside((double)mouseX, (double)mouseY, this.f_97735_ + 52, this.f_97736_ + 220, 118, 13)) {
+         int index = this.hoveredSlot == null ? -1 : ((WarehouseControlMenu)this.menu).slots.indexOf(this.hoveredSlot);
+         if (((WarehouseControlMenu)this.menu).getCarried().isEmpty() && index >= 0 && index < 45 && this.hoveredSlot.hasItem()) {
+            ItemStack stack = this.hoveredSlot.getItem();
+            List<Component> lines = new ArrayList<>(this.getTooltipFromContainerItem(stack));
+            lines.add(Component.translatable("guistrings.warehouse.item_count", new Object[]{((WarehouseControlMenu)this.menu).getDisplayCount(index)}));
+            graphics.renderTooltip(this.font, lines, stack.getTooltipImage(), mouseX, mouseY);
+         } else if (inside((double)mouseX, (double)mouseY, this.leftPos + 52, this.topPos + 220, 118, 13)) {
             List<Component> lines = new ArrayList<>();
             lines.add(
-               Component.m_237110_(
+               Component.translatable(
                   "guistrings.warehouse.capacity",
-                  new Object[]{((WarehouseControlMenu)this.f_97732_).getTotalItemCount(), ((WarehouseControlMenu)this.f_97732_).getTotalCapacity()}
+                  new Object[]{((WarehouseControlMenu)this.menu).getTotalItemCount(), ((WarehouseControlMenu)this.menu).getTotalCapacity()}
                )
             );
-            if (((WarehouseControlMenu)this.f_97732_).getOfflineStorageCount() > 0) {
+            if (((WarehouseControlMenu)this.menu).getOfflineStorageCount() > 0) {
                lines.add(
-                  Component.m_237110_("guistrings.warehouse.offline_storage", new Object[]{((WarehouseControlMenu)this.f_97732_).getOfflineStorageCount()})
+                  Component.translatable("guistrings.warehouse.offline_storage", new Object[]{((WarehouseControlMenu)this.menu).getOfflineStorageCount()})
                );
             }
 
-            graphics.m_280677_(this.f_96547_, lines, Optional.empty(), mouseX, mouseY);
+            graphics.renderTooltip(this.font, lines, Optional.empty(), mouseX, mouseY);
          } else {
-            super.m_280072_(graphics, mouseX, mouseY);
+            super.renderTooltip(graphics, mouseX, mouseY);
          }
       }
    }
@@ -237,66 +237,66 @@ public class WarehouseControlScreen extends LegacyContainerScreen<WarehouseContr
       }
    }
 
-   public boolean m_6050_(double mouseX, double mouseY, double delta) {
+   public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
       if (this.hasScrollableContent() && this.insideViewport(mouseX, mouseY)) {
          this.clickButton(delta > 0.0 ? 3 : 4);
          return true;
       } else {
-         return super.m_6050_(mouseX, mouseY, delta);
+         return super.mouseScrolled(mouseX, mouseY, delta);
       }
    }
 
-   protected void m_6597_(Slot slot, int slotId, int button, ClickType clickType) {
+   protected void slotClicked(Slot slot, int slotId, int button, ClickType clickType) {
       if (slotId >= 0 && slotId < 45) {
          if (clickType == ClickType.PICKUP || clickType == ClickType.QUICK_MOVE || clickType == ClickType.THROW || clickType == ClickType.CLONE) {
             AWCorePlatform.clickWarehouseEntry(
-               ((WarehouseControlMenu)this.f_97732_).f_38840_,
+               ((WarehouseControlMenu)this.menu).containerId,
                slotId,
                button,
                clickType,
-               ((WarehouseControlMenu)this.f_97732_).m_38853_(slotId).m_7993_().m_41777_(),
-               ((WarehouseControlMenu)this.f_97732_).m_142621_().m_41777_()
+               ((WarehouseControlMenu)this.menu).getSlot(slotId).getItem().copy(),
+               ((WarehouseControlMenu)this.menu).getCarried().copy()
             );
          }
       } else {
-         super.m_6597_(slot, slotId, button, clickType);
+         super.slotClicked(slot, slotId, button, clickType);
       }
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
-      if (this.hasScrollableContent() && button == 0 && inside(mouseX, mouseY, this.f_97735_ + 166, this.f_97736_ + 38, 12, 96)) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
+      if (this.hasScrollableContent() && button == 0 && inside(mouseX, mouseY, this.leftPos + 166, this.topPos + 38, 12, 96)) {
          this.draggingScrollbar = true;
          this.scrollToMouse(mouseY);
          return true;
       } else {
-         return super.m_6375_(mouseX, mouseY, button);
+         return super.mouseClicked(mouseX, mouseY, button);
       }
    }
 
-   public boolean m_7979_(double mouseX, double mouseY, int button, double dragX, double dragY) {
+   public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
       if (this.draggingScrollbar && this.hasScrollableContent()) {
          this.scrollToMouse(mouseY);
          return true;
       } else {
-         return super.m_7979_(mouseX, mouseY, button, dragX, dragY);
+         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
       }
    }
 
-   public boolean m_6348_(double mouseX, double mouseY, int button) {
+   public boolean mouseReleased(double mouseX, double mouseY, int button) {
       this.draggingScrollbar = false;
-      return super.m_6348_(mouseX, mouseY, button);
+      return super.mouseReleased(mouseX, mouseY, button);
    }
 
    private void drawScrollbar(GuiGraphics graphics) {
-      LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, this.f_97735_ + 166, this.f_97736_ + 38, 12, 96, 80, 120, 40, 128);
+      LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, this.leftPos + 166, this.topPos + 38, 12, 96, 80, 120, 40, 128);
       int thumbHeight = this.thumbHeight();
-      int thumbY = this.f_97736_ + 38 + 1;
-      int max = ((WarehouseControlMenu)this.f_97732_).getMaxScrollOffset();
+      int thumbY = this.topPos + 38 + 1;
+      int max = ((WarehouseControlMenu)this.menu).getMaxScrollOffset();
       if (max > 0) {
-         thumbY += (int)((double)(94 - thumbHeight) * ((double)((WarehouseControlMenu)this.f_97732_).getScrollOffset() / (double)max));
+         thumbY += (int)((double)(94 - thumbHeight) * ((double)((WarehouseControlMenu)this.menu).getScrollOffset() / (double)max));
       }
 
-      LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, this.f_97735_ + 166 + 1, thumbY, 10, thumbHeight, 120, 120, 32, 128);
+      LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, this.leftPos + 166 + 1, thumbY, 10, thumbHeight, 120, 120, 32, 128);
    }
 
    private int thumbHeight() {
@@ -304,17 +304,17 @@ public class WarehouseControlScreen extends LegacyContainerScreen<WarehouseContr
    }
 
    private void scrollToMouse(double mouseY) {
-      int max = ((WarehouseControlMenu)this.f_97732_).getMaxScrollOffset();
+      int max = ((WarehouseControlMenu)this.menu).getMaxScrollOffset();
       int thumbHeight = this.thumbHeight();
       double track = Math.max(1.0, (double)(94 - thumbHeight));
-      double position = mouseY - (double)(this.f_97736_ + 38 + 1) - (double)thumbHeight / 2.0;
+      double position = mouseY - (double)(this.topPos + 38 + 1) - (double)thumbHeight / 2.0;
       int rows = (int)Math.round(Math.max(0.0, Math.min(1.0, position / track)) * ((double)max / 9.0));
-      ((WarehouseControlMenu)this.f_97732_).scrollToRow(rows);
+      ((WarehouseControlMenu)this.menu).scrollToRow(rows);
       AWCorePlatform.setWarehouseScrollRow(rows);
    }
 
    private int contentHeight() {
-      long count = (long)((WarehouseControlMenu)this.f_97732_).getMatchedItemCount();
+      long count = (long)((WarehouseControlMenu)this.menu).getMatchedItemCount();
       long rows = count == 0L ? 0L : (count + 9L - 1L) / 9L;
       return (int)Math.min(2147483647L, 22L + Math.max(0L, rows - 1L) * 18L);
    }
@@ -324,7 +324,7 @@ public class WarehouseControlScreen extends LegacyContainerScreen<WarehouseContr
    }
 
    private boolean insideViewport(double x, double y) {
-      return inside(x, y, this.f_97735_, this.f_97736_ + 38, this.f_97726_, 96);
+      return inside(x, y, this.leftPos, this.topPos + 38, this.imageWidth, 96);
    }
 
    private static boolean inside(double x, double y, int left, int top, int width, int height) {

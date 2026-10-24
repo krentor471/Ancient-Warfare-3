@@ -63,7 +63,7 @@ public final class FactionTradeListRegistry {
          } else {
             removeInputs(player, trade.inputs());
             addOutputs(player, trade.outputs());
-            player.m_150109_().m_6596_();
+            player.getInventory().setChanged();
             return FactionTradeListRegistry.TradeResult.SUCCESS;
          }
       } else {
@@ -76,18 +76,18 @@ public final class FactionTradeListRegistry {
    }
 
    public static List<FactionTradeListRegistry.FactionTradeEntry> readLegacyTradeList(CompoundTag rootTag) {
-      if (!rootTag.m_128425_("tradeList", 10)) {
+      if (!rootTag.contains("tradeList", 10)) {
          return List.of();
       } else {
-         CompoundTag tradeListTag = rootTag.m_128469_("tradeList");
-         if (!tradeListTag.m_128425_("tradeList", 9)) {
+         CompoundTag tradeListTag = rootTag.getCompound("tradeList");
+         if (!tradeListTag.contains("tradeList", 9)) {
             return List.of();
          } else {
             List<FactionTradeListRegistry.FactionTradeEntry> trades = new ArrayList<>();
-            ListTag entries = tradeListTag.m_128437_("tradeList", 10);
+            ListTag entries = tradeListTag.getList("tradeList", 10);
 
             for (int i = 0; i < entries.size() && trades.size() < 128; i++) {
-               CompoundTag entry = entries.m_128728_(i);
+               CompoundTag entry = entries.getCompound(i);
                List<ItemStack> inputs = readLegacyStacks(entry, "inputItems");
                List<ItemStack> outputs = readLegacyStacks(entry, "outputItems");
                if (containsStack(inputs) && containsStack(outputs)) {
@@ -101,14 +101,14 @@ public final class FactionTradeListRegistry {
    }
 
    public static List<FactionTradeListRegistry.FactionTradeEntry> readSavedTrades(CompoundTag rootTag, String key) {
-      if (!rootTag.m_128425_(key, 9)) {
+      if (!rootTag.contains(key, 9)) {
          return List.of();
       } else {
          List<FactionTradeListRegistry.FactionTradeEntry> trades = new ArrayList<>();
-         ListTag entries = rootTag.m_128437_(key, 10);
+         ListTag entries = rootTag.getList(key, 10);
 
          for (int i = 0; i < entries.size() && trades.size() < 128; i++) {
-            CompoundTag entry = entries.m_128728_(i);
+            CompoundTag entry = entries.getCompound(i);
             List<ItemStack> inputs = readSavedStacks(entry, "inputs");
             List<ItemStack> outputs = readSavedStacks(entry, "outputs");
             if (containsStack(inputs) && containsStack(outputs)) {
@@ -139,7 +139,7 @@ public final class FactionTradeListRegistry {
 
             if (lowestPrice < highestPrice && candidate.coinCount() == highestPrice) {
                List<ItemStack> outputs = new ArrayList<>(repaired.get(i).outputs());
-               outputs.set(candidate.outputSlot(), new ItemStack(Items.f_42437_, candidate.outputCount()));
+               outputs.set(candidate.outputSlot(), new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, candidate.outputCount()));
                repaired.set(i, new FactionTradeListRegistry.FactionTradeEntry(repaired.get(i).inputs(), outputs));
             }
          }
@@ -156,12 +156,12 @@ public final class FactionTradeListRegistry {
          writeSavedStacks(entry, "outputs", trade.outputs());
          entries.add(entry);
       });
-      rootTag.m_128365_(key, entries);
+      rootTag.put(key, entries);
    }
 
    public static void writeTrades(FriendlyByteBuf buffer, List<FactionTradeListRegistry.FactionTradeEntry> trades) {
       int count = Math.min(128, trades.size());
-      buffer.m_130130_(count);
+      buffer.writeVarInt(count);
 
       for (int i = 0; i < count; i++) {
          writeStacks(buffer, trades.get(i).inputs());
@@ -170,7 +170,7 @@ public final class FactionTradeListRegistry {
    }
 
    public static List<FactionTradeListRegistry.FactionTradeEntry> readTrades(FriendlyByteBuf buffer) {
-      int count = Math.min(128, Math.max(0, buffer.m_130242_()));
+      int count = Math.min(128, Math.max(0, buffer.readVarInt()));
       List<FactionTradeListRegistry.FactionTradeEntry> trades = new ArrayList<>(count);
 
       for (int i = 0; i < count; i++) {
@@ -220,7 +220,7 @@ public final class FactionTradeListRegistry {
          }
 
          ItemStack stack = parseStack(element.getAsJsonObject());
-         if (stack.m_41619_()) {
+         if (stack.isEmpty()) {
             return List.of();
          }
 
@@ -240,12 +240,12 @@ public final class FactionTradeListRegistry {
 
       String resolvedName = rawName;
       ItemStack stack = createLegacyStack(rawName, data, Math.max(1, getInt(object, "count").orElse(1)));
-      if (stack.m_41619_()) {
-         return ItemStack.f_41583_;
+      if (stack.isEmpty()) {
+         return ItemStack.EMPTY;
       } else {
          Optional.of(legacyNbt).filter(nbt -> !nbt.isBlank()).ifPresent(nbt -> {
             try {
-               applyCompatibleTag(stack, TagParser.m_129359_(nbt));
+               applyCompatibleTag(stack, TagParser.parseTag(nbt));
             } catch (Exception var4x) {
                AncientWarfareCore.LOG.debug("Ignoring invalid legacy trade NBT for {}: {}", resolvedName, nbt);
             }
@@ -255,37 +255,37 @@ public final class FactionTradeListRegistry {
    }
 
    private static List<ItemStack> readLegacyStacks(CompoundTag trade, String key) {
-      if (!trade.m_128425_(key, 9)) {
+      if (!trade.contains(key, 9)) {
          return List.of();
       } else {
          List<ItemStack> stacks = emptyGrid();
-         ListTag list = trade.m_128437_(key, 10);
+         ListTag list = trade.getList(key, 10);
 
          for (int i = 0; i < list.size(); i++) {
-            CompoundTag oldStack = list.m_128728_(i);
-            String rawId = oldStack.m_128461_("id");
-            if ("minecraft:spawn_egg".equalsIgnoreCase(rawId) && oldStack.m_128425_("tag", 10)) {
-               CompoundTag itemTag = oldStack.m_128469_("tag");
-               if (itemTag.m_128425_("EntityTag", 10)) {
-                  String entity = itemTag.m_128469_("EntityTag").m_128461_("id");
+            CompoundTag oldStack = list.getCompound(i);
+            String rawId = oldStack.getString("id");
+            if ("minecraft:spawn_egg".equalsIgnoreCase(rawId) && oldStack.contains("tag", 10)) {
+               CompoundTag itemTag = oldStack.getCompound("tag");
+               if (itemTag.contains("EntityTag", 10)) {
+                  String entity = itemTag.getCompound("EntityTag").getString("id");
                   if (!entity.isBlank()) {
                      rawId = entity + "_spawn_egg";
                   }
                }
             }
 
-            int data = oldStack.m_128425_("Damage", 99) ? oldStack.m_128451_("Damage") : 0;
-            int count = oldStack.m_128425_("Count", 99) ? oldStack.m_128451_("Count") : 1;
+            int data = oldStack.contains("Damage", 99) ? oldStack.getInt("Damage") : 0;
+            int count = oldStack.contains("Count", 99) ? oldStack.getInt("Count") : 1;
             ItemStack stack = createLegacyStack(rawId, data, Math.max(1, count));
-            if (stack.m_41619_()) {
+            if (stack.isEmpty()) {
                return List.of();
             }
 
-            if (oldStack.m_128425_("tag", 10)) {
-               applyCompatibleTag(stack, oldStack.m_128469_("tag"));
+            if (oldStack.contains("tag", 10)) {
+               applyCompatibleTag(stack, oldStack.getCompound("tag"));
             }
 
-            int slot = oldStack.m_128425_("slot", 99) ? oldStack.m_128451_("slot") : i;
+            int slot = oldStack.contains("slot", 99) ? oldStack.getInt("slot") : i;
             putInGrid(stacks, slot, stack);
          }
 
@@ -294,35 +294,35 @@ public final class FactionTradeListRegistry {
    }
 
    private static ItemStack createLegacyStack(String rawId, int data, int count) {
-      ResourceLocation id = ResourceLocation.m_135820_(normalizeItemId(rawId, data));
+      ResourceLocation id = ResourceLocation.tryParse(normalizeItemId(rawId, data));
       if (id == null) {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       } else {
-         Item item = BuiltInRegistries.f_257033_.m_6612_(id).orElse(Items.f_41852_);
-         return item == Items.f_41852_ ? ItemStack.f_41583_ : new ItemStack(item, count);
+         Item item = BuiltInRegistries.ITEM.getOptional(id).orElse(Items.AIR);
+         return item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item, count);
       }
    }
 
    private static void applyCompatibleTag(ItemStack stack, CompoundTag source) {
-      CompoundTag tag = source.m_6426_();
-      ResourceLocation itemId = BuiltInRegistries.f_257033_.m_7981_(stack.m_41720_());
+      CompoundTag tag = source.copy();
+      ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
       if ("ancientwarfare:coin".equals(itemId.toString())) {
-         String metal = tag.m_128461_("metal").toLowerCase(Locale.ROOT);
+         String metal = tag.getString("metal").toLowerCase(Locale.ROOT);
          tag = new CompoundTag();
 
-         tag.m_128359_("metal", switch (metal) {
+         tag.putString("metal", switch (metal) {
             case "silver", "gold" -> metal;
             default -> "copper";
          });
       }
 
-      if (!tag.m_128456_()) {
-         stack.m_41751_(tag);
+      if (!tag.isEmpty()) {
+         stack.setTag(tag);
       }
    }
 
    private static FactionTradeListRegistry.TradeResult transactionResult(Player player, FactionTradeListRegistry.FactionTradeEntry trade) {
-      List<ItemStack> simulation = copyPlayerInventory(player.m_150109_());
+      List<ItemStack> simulation = copyPlayerInventory(player.getInventory());
       if (!consumeSimulated(simulation, trade.inputs())) {
          return FactionTradeListRegistry.TradeResult.MISSING_INPUTS;
       } else {
@@ -335,12 +335,12 @@ public final class FactionTradeListRegistry {
    private static List<ItemStack> copyPlayerInventory(Inventory inventory) {
       List<ItemStack> simulation = new ArrayList<>(36);
 
-      for (int slot = 0; slot < Math.min(36, inventory.m_6643_()); slot++) {
-         simulation.add(inventory.m_8020_(slot).m_41777_());
+      for (int slot = 0; slot < Math.min(36, inventory.getContainerSize()); slot++) {
+         simulation.add(inventory.getItem(slot).copy());
       }
 
       while (simulation.size() < 36) {
-         simulation.add(ItemStack.f_41583_);
+         simulation.add(ItemStack.EMPTY);
       }
 
       return simulation;
@@ -348,13 +348,13 @@ public final class FactionTradeListRegistry {
 
    private static boolean consumeSimulated(List<ItemStack> inventory, List<ItemStack> inputs) {
       for (ItemStack input : inputs) {
-         if (!input.m_41619_()) {
-            int remaining = input.m_41613_();
+         if (!input.isEmpty()) {
+            int remaining = input.getCount();
 
             for (ItemStack stack : inventory) {
                if (matchesTradeStack(stack, input)) {
-                  int removed = Math.min(remaining, stack.m_41613_());
-                  stack.m_41774_(removed);
+                  int removed = Math.min(remaining, stack.getCount());
+                  stack.shrink(removed);
                   remaining -= removed;
                   if (remaining <= 0) {
                      break;
@@ -373,7 +373,7 @@ public final class FactionTradeListRegistry {
 
    private static boolean insertAllSimulated(List<ItemStack> inventory, List<ItemStack> outputs) {
       for (ItemStack output : outputs) {
-         if (!output.m_41619_() && !insertSimulated(inventory, output.m_41777_())) {
+         if (!output.isEmpty() && !insertSimulated(inventory, output.copy())) {
             return false;
          }
       }
@@ -383,24 +383,24 @@ public final class FactionTradeListRegistry {
 
    private static boolean insertSimulated(List<ItemStack> inventory, ItemStack stack) {
       for (ItemStack existing : inventory) {
-         if (matchesTradeStack(existing, stack) && existing.m_41613_() < existing.m_41741_()) {
-            int moved = Math.min(stack.m_41613_(), existing.m_41741_() - existing.m_41613_());
-            existing.m_41769_(moved);
-            stack.m_41774_(moved);
-            if (stack.m_41619_()) {
+         if (matchesTradeStack(existing, stack) && existing.getCount() < existing.getMaxStackSize()) {
+            int moved = Math.min(stack.getCount(), existing.getMaxStackSize() - existing.getCount());
+            existing.grow(moved);
+            stack.shrink(moved);
+            if (stack.isEmpty()) {
                return true;
             }
          }
       }
 
       for (int i = 0; i < inventory.size(); i++) {
-         if (inventory.get(i).m_41619_()) {
-            int moved = Math.min(stack.m_41613_(), stack.m_41741_());
-            ItemStack inserted = stack.m_41777_();
-            inserted.m_41764_(moved);
+         if (inventory.get(i).isEmpty()) {
+            int moved = Math.min(stack.getCount(), stack.getMaxStackSize());
+            ItemStack inserted = stack.copy();
+            inserted.setCount(moved);
             inventory.set(i, inserted);
-            stack.m_41774_(moved);
-            if (stack.m_41619_()) {
+            stack.shrink(moved);
+            if (stack.isEmpty()) {
                return true;
             }
          }
@@ -410,11 +410,11 @@ public final class FactionTradeListRegistry {
    }
 
    private static boolean matchesTradeStack(ItemStack stack, ItemStack required) {
-      if (!stack.m_41619_() && !required.m_41619_() && stack.m_150930_(required.m_41720_())) {
-         ResourceLocation itemId = BuiltInRegistries.f_257033_.m_7981_(required.m_41720_());
+      if (!stack.isEmpty() && !required.isEmpty() && stack.is(required.getItem())) {
+         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(required.getItem());
          return "ancientwarfare:coin".equals(itemId.toString())
             ? CoinItem.getMetal(stack) == CoinItem.getMetal(required)
-            : ItemStack.m_150942_(stack, required);
+            : ItemStack.isSameItemSameTags(stack, required);
       } else {
          return false;
       }
@@ -422,14 +422,14 @@ public final class FactionTradeListRegistry {
 
    private static void removeInputs(Player player, List<ItemStack> inputs) {
       for (ItemStack input : inputs) {
-         if (!input.m_41619_()) {
-            int remaining = input.m_41613_();
+         if (!input.isEmpty()) {
+            int remaining = input.getCount();
 
-            for (int slot = 0; slot < Math.min(36, player.m_150109_().m_6643_()) && remaining > 0; slot++) {
-               ItemStack stack = player.m_150109_().m_8020_(slot);
+            for (int slot = 0; slot < Math.min(36, player.getInventory().getContainerSize()) && remaining > 0; slot++) {
+               ItemStack stack = player.getInventory().getItem(slot);
                if (matchesTradeStack(stack, input)) {
-                  int removed = Math.min(remaining, stack.m_41613_());
-                  stack.m_41774_(removed);
+                  int removed = Math.min(remaining, stack.getCount());
+                  stack.shrink(removed);
                   remaining -= removed;
                }
             }
@@ -439,8 +439,8 @@ public final class FactionTradeListRegistry {
 
    private static void addOutputs(Player player, List<ItemStack> outputs) {
       for (ItemStack output : outputs) {
-         if (!output.m_41619_()) {
-            player.m_150109_().m_36054_(output.m_41777_());
+         if (!output.isEmpty()) {
+            player.getInventory().add(output.copy());
          }
       }
    }
@@ -527,9 +527,9 @@ public final class FactionTradeListRegistry {
 
    private static String spawnEggId(String nbt) {
       try {
-         CompoundTag tag = TagParser.m_129359_(nbt);
-         if (tag.m_128425_("EntityTag", 10)) {
-            String entity = tag.m_128469_("EntityTag").m_128461_("id");
+         CompoundTag tag = TagParser.parseTag(nbt);
+         if (tag.contains("EntityTag", 10)) {
+            String entity = tag.getCompound("EntityTag").getString("id");
             if (!entity.isBlank()) {
                return entity + "_spawn_egg";
             }
@@ -661,23 +661,23 @@ public final class FactionTradeListRegistry {
 
       for (int slot = 0; slot < Math.min(9, stacks.size()); slot++) {
          ItemStack stack = stacks.get(slot);
-         if (!stack.m_41619_()) {
-            CompoundTag stackTag = stack.m_41739_(new CompoundTag());
-            stackTag.m_128405_("slot", slot);
+         if (!stack.isEmpty()) {
+            CompoundTag stackTag = stack.save(new CompoundTag());
+            stackTag.putInt("slot", slot);
             list.add(stackTag);
          }
       }
 
-      parent.m_128365_(key, list);
+      parent.put(key, list);
    }
 
    private static List<ItemStack> readSavedStacks(CompoundTag parent, String key) {
       List<ItemStack> stacks = emptyGrid();
-      ListTag list = parent.m_128437_(key, 10);
+      ListTag list = parent.getList(key, 10);
 
       for (int i = 0; i < list.size(); i++) {
-         CompoundTag stackTag = list.m_128728_(i);
-         putInGrid(stacks, stackTag.m_128451_("slot"), ItemStack.m_41712_(stackTag));
+         CompoundTag stackTag = list.getCompound(i);
+         putInGrid(stacks, stackTag.getInt("slot"), ItemStack.of(stackTag));
       }
 
       return stacks;
@@ -685,19 +685,19 @@ public final class FactionTradeListRegistry {
 
    private static void writeStacks(FriendlyByteBuf buffer, List<ItemStack> stacks) {
       int count = Math.min(9, stacks.size());
-      buffer.m_130130_(count);
+      buffer.writeVarInt(count);
 
       for (int i = 0; i < count; i++) {
-         buffer.m_130055_(stacks.get(i));
+         buffer.writeItem(stacks.get(i));
       }
    }
 
    private static List<ItemStack> readStacks(FriendlyByteBuf buffer) {
-      int count = Math.min(9, Math.max(0, buffer.m_130242_()));
+      int count = Math.min(9, Math.max(0, buffer.readVarInt()));
       List<ItemStack> stacks = new ArrayList<>(count);
 
       for (int i = 0; i < count; i++) {
-         stacks.add(buffer.m_130267_());
+         stacks.add(buffer.readItem());
       }
 
       return stacks;
@@ -707,19 +707,19 @@ public final class FactionTradeListRegistry {
       List<ItemStack> stacks = new ArrayList<>(9);
 
       for (int i = 0; i < 9; i++) {
-         stacks.add(ItemStack.f_41583_);
+         stacks.add(ItemStack.EMPTY);
       }
 
       return stacks;
    }
 
    private static void putInGrid(List<ItemStack> grid, int preferredSlot, ItemStack stack) {
-      if (!stack.m_41619_()) {
-         if (preferredSlot >= 0 && preferredSlot < grid.size() && grid.get(preferredSlot).m_41619_()) {
+      if (!stack.isEmpty()) {
+         if (preferredSlot >= 0 && preferredSlot < grid.size() && grid.get(preferredSlot).isEmpty()) {
             grid.set(preferredSlot, stack);
          } else {
             for (int i = 0; i < grid.size(); i++) {
-               if (grid.get(i).m_41619_()) {
+               if (grid.get(i).isEmpty()) {
                   grid.set(i, stack);
                   return;
                }
@@ -729,7 +729,7 @@ public final class FactionTradeListRegistry {
    }
 
    private static boolean containsStack(List<ItemStack> stacks) {
-      return stacks.stream().anyMatch(stack -> !stack.m_41619_());
+      return stacks.stream().anyMatch(stack -> !stack.isEmpty());
    }
 
    private static FactionTradeListRegistry.GoldenAppleTrade goldenAppleTrade(FactionTradeListRegistry.FactionTradeEntry trade) {
@@ -738,13 +738,13 @@ public final class FactionTradeListRegistry {
 
       for (int slot = 0; slot < trade.outputs().size(); slot++) {
          ItemStack output = trade.outputs().get(slot);
-         if (!output.m_41619_()) {
-            if (outputSlot >= 0 || !output.m_150930_(Items.f_42436_)) {
+         if (!output.isEmpty()) {
+            if (outputSlot >= 0 || !output.is(Items.GOLDEN_APPLE)) {
                return null;
             }
 
             outputSlot = slot;
-            outputCount = output.m_41613_();
+            outputCount = output.getCount();
          }
       }
 
@@ -755,19 +755,19 @@ public final class FactionTradeListRegistry {
          int coinCount = 0;
 
          for (ItemStack input : trade.inputs()) {
-            if (!input.m_41619_()) {
-               ResourceLocation inputId = BuiltInRegistries.f_257033_.m_7981_(input.m_41720_());
+            if (!input.isEmpty()) {
+               ResourceLocation inputId = BuiltInRegistries.ITEM.getKey(input.getItem());
                if (!"ancientwarfare:coin".equals(inputId.toString())) {
                   return null;
                }
 
-               String metal = input.m_41782_() ? input.m_41783_().m_128461_("metal").toLowerCase(Locale.ROOT) : "copper";
+               String metal = input.hasTag() ? input.getTag().getString("metal").toLowerCase(Locale.ROOT) : "copper";
                if (coinMetal != null && !coinMetal.equals(metal)) {
                   return null;
                }
 
                coinMetal = metal;
-               coinCount += input.m_41613_();
+               coinCount += input.getCount();
             }
          }
 
@@ -776,7 +776,7 @@ public final class FactionTradeListRegistry {
    }
 
    private static List<ItemStack> copyStacks(List<ItemStack> source) {
-      return source.stream().<ItemStack>map(ItemStack::m_41777_).toList();
+      return source.stream().<ItemStack>map(ItemStack::copy).toList();
    }
 
    private static JsonArray array(JsonObject parent, String name) {

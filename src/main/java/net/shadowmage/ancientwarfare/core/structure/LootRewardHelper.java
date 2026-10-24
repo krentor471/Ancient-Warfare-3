@@ -20,12 +20,12 @@ public final class LootRewardHelper {
 
    public static List<ItemStack> getLootWithoutDuplicateResearch(LootTable table, LootParams params, long seed, Set<String> seenResearch) {
       if (!AWCorePlatform.gameplayConfig().preventDuplicateResearchNotes()) {
-         return table.m_287214_(params, seed);
+         return table.getRandomItems(params, seed);
       } else {
          List<ItemStack> lastResult = List.of();
 
          for (int attempt = 0; attempt < 32; attempt++) {
-            List<ItemStack> candidate = table.m_287214_(params, seed + -7046029254386353131L * (long)attempt);
+            List<ItemStack> candidate = table.getRandomItems(params, seed + -7046029254386353131L * (long)attempt);
             Set<String> candidateResearch = collectResearchIds(candidate);
             if (!containsDuplicateResearch(candidate, candidateResearch) && candidateResearch.stream().noneMatch(seenResearch::contains)) {
                seenResearch.addAll(candidateResearch);
@@ -50,23 +50,23 @@ public final class LootRewardHelper {
 
    public static List<ItemStack> scaleItemCounts(List<ItemStack> generated, double multiplier, long seed) {
       if (!generated.isEmpty() && multiplier != 1.0) {
-         RandomSource random = RandomSource.m_216335_(seed);
+         RandomSource random = RandomSource.create(seed);
          List<ItemStack> scaled = new ArrayList<>();
 
          for (ItemStack stack : generated) {
-            double exact = (double)stack.m_41613_() * Math.max(0.0, multiplier);
+            double exact = (double)stack.getCount() * Math.max(0.0, multiplier);
             long count = (long)Math.floor(exact);
-            if (random.m_188500_() < exact - (double)count && count < Long.MAX_VALUE) {
+            if (random.nextDouble() < exact - (double)count && count < Long.MAX_VALUE) {
                count++;
             }
 
             long remaining = count;
 
             while (remaining > 0L) {
-               ItemStack split = stack.m_41777_();
-               split.m_41764_((int)Math.min(remaining, (long)split.m_41741_()));
+               ItemStack split = stack.copy();
+               split.setCount((int)Math.min(remaining, (long)split.getMaxStackSize()));
                scaled.add(split);
-               remaining -= (long)split.m_41613_();
+               remaining -= (long)split.getCount();
             }
          }
 
@@ -102,14 +102,14 @@ public final class LootRewardHelper {
    }
 
    private static String researchId(ItemStack stack) {
-      if (!(stack.m_41720_() instanceof ResearchNoteItem)) {
+      if (!(stack.getItem() instanceof ResearchNoteItem)) {
          return null;
       } else {
          String researchId = ResearchNoteItem.getResearchId(stack);
          if (researchId != null) {
             return researchId;
          } else {
-            return stack.m_41782_() && stack.m_41783_().m_128441_("researchName") ? stack.m_41783_().m_128461_("researchName") : null;
+            return stack.hasTag() && stack.getTag().contains("researchName") ? stack.getTag().getString("researchName") : null;
          }
       }
    }

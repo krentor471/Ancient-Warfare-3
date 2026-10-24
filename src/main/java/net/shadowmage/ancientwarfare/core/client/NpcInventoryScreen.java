@@ -29,14 +29,14 @@ public class NpcInventoryScreen extends AbstractContainerScreen<NpcInventoryMenu
 
    public NpcInventoryScreen(NpcInventoryMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title);
-      this.f_97726_ = 178;
-      this.f_97727_ = 202;
-      this.f_97730_ = 8;
-      this.f_97731_ = 10000;
+      this.imageWidth = 178;
+      this.imageHeight = 202;
+      this.inventoryLabelX = 8;
+      this.inventoryLabelY = 10000;
    }
 
-   protected void m_7286_(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      graphics.m_280218_(BACKGROUND, this.f_97735_, this.f_97736_, 0, 0, this.f_97726_, this.f_97727_);
+   protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+      graphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
       this.drawDecorativeSlot(graphics, 8, 8);
       this.drawDecorativeSlot(graphics, 8, 26);
       this.drawDecorativeSlot(graphics, 8, 44);
@@ -48,62 +48,62 @@ public class NpcInventoryScreen extends AbstractContainerScreen<NpcInventoryMenu
       this.drawDecorativeSlot(graphics, 44, 80);
       this.drawLegacySlotHints(graphics);
       this.drawPlayerInventorySlots(graphics);
-      graphics.m_280509_(this.f_97735_ + 75, this.f_97736_ + 8, this.f_97735_ + 170, this.f_97736_ + 20, -16777216);
-      this.drawTexturedButton(graphics, 75, 20, 95, 12, ((NpcInventoryMenu)this.f_97732_).getSkinButtonLabel(), this.pressedButton == -100);
-      Component followButtonLabel = Component.m_237115_(
-         ((NpcInventoryMenu)this.f_97732_).isFollowing() ? "guistrings.npc.stop_follow" : "guistrings.npc.togglefollow"
+      graphics.fill(this.leftPos + 75, this.topPos + 8, this.leftPos + 170, this.topPos + 20, -16777216);
+      this.drawTexturedButton(graphics, 75, 20, 95, 12, ((NpcInventoryMenu)this.menu).getSkinButtonLabel(), this.pressedButton == -100);
+      Component followButtonLabel = Component.translatable(
+         ((NpcInventoryMenu)this.menu).isFollowing() ? "guistrings.npc.stop_follow" : "guistrings.npc.togglefollow"
       );
       this.drawTexturedButton(graphics, 84, 36, 75, 12, followButtonLabel, this.pressedButton == 0);
-      Component homeButtonLabel = Component.m_237115_(((NpcInventoryMenu)this.f_97732_).hasHome() ? "guistrings.npc.clear_home" : "guistrings.npc.set_home");
+      Component homeButtonLabel = Component.translatable(((NpcInventoryMenu)this.menu).hasHome() ? "guistrings.npc.clear_home" : "guistrings.npc.set_home");
       this.drawTexturedButton(graphics, 84, 48, 75, 12, homeButtonLabel, this.pressedButton == 1);
       int nextButtonY = 60;
-      if (((NpcInventoryMenu)this.f_97732_).canOpenTradeOrderGui()) {
-         this.drawTexturedButton(graphics, 84, nextButtonY, 75, 12, Component.m_237115_("guistrings.npc.trade_order.edit"), this.pressedButton == 6);
+      if (((NpcInventoryMenu)this.menu).canOpenTradeOrderGui()) {
+         this.drawTexturedButton(graphics, 84, nextButtonY, 75, 12, Component.translatable("guistrings.npc.trade_order.edit"), this.pressedButton == 6);
          nextButtonY += 12;
       }
 
-      if (((NpcInventoryMenu)this.f_97732_).isBard()) {
-         this.drawTexturedButton(graphics, 84, nextButtonY, 75, 12, Component.m_237115_("guistrings.npc.advanced_gui"), this.pressedButton == 5);
+      if (((NpcInventoryMenu)this.menu).isBard()) {
+         this.drawTexturedButton(graphics, 84, nextButtonY, 75, 12, Component.translatable("guistrings.npc.advanced_gui"), this.pressedButton == 5);
          nextButtonY += 12;
       }
 
-      if (((NpcInventoryMenu)this.f_97732_).canRepack(this.f_96541_.f_91074_)) {
-         this.drawTexturedButton(graphics, 84, nextButtonY, 75, 12, Component.m_237115_("guistrings.npc.repack"), this.pressedButton == 3);
+      if (((NpcInventoryMenu)this.menu).canRepack(this.minecraft.player)) {
+         this.drawTexturedButton(graphics, 84, nextButtonY, 75, 12, Component.translatable("guistrings.npc.repack"), this.pressedButton == 3);
          nextButtonY += 12;
       }
 
-      if (((NpcInventoryMenu)this.f_97732_).canOpenCreativeGui(this.f_96541_.f_91074_)) {
-         this.drawTexturedButton(graphics, 84, nextButtonY, 75, 12, Component.m_237115_("guistrings.npc.creative_gui"), this.pressedButton == 4);
+      if (((NpcInventoryMenu)this.menu).canOpenCreativeGui(this.minecraft.player)) {
+         this.drawTexturedButton(graphics, 84, nextButtonY, 75, 12, Component.translatable("guistrings.npc.creative_gui"), this.pressedButton == 4);
       }
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("guistrings.npc.npc_name"), 48, 9, 16777215, false);
-      this.drawFittedString(graphics, ((NpcInventoryMenu)this.f_97732_).getNpcDisplayName(), 77, 9, 91);
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("guistrings.npc.npc_texture"), 48, 21, 16777215, false);
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      graphics.drawString(this.font, Component.translatable("guistrings.npc.npc_name"), 48, 9, 16777215, false);
+      this.drawFittedString(graphics, ((NpcInventoryMenu)this.menu).getNpcDisplayName(), 77, 9, 91);
+      graphics.drawString(this.font, Component.translatable("guistrings.npc.npc_texture"), 48, 21, 16777215, false);
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
-      this.m_280072_(graphics, mouseX, mouseY);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
+      super.render(graphics, mouseX, mouseY, partialTick);
+      this.renderTooltip(graphics, mouseX, mouseY);
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
       if (button == 0) {
-         int localX = (int)mouseX - this.f_97735_;
-         int localY = (int)mouseY - this.f_97736_;
+         int localX = (int)mouseX - this.leftPos;
+         int localY = (int)mouseY - this.topPos;
          int clicked = this.getButtonAt(localX, localY);
          if (clicked == -100) {
             this.pressedButton = clicked;
-            this.f_96541_.m_91106_().m_120367_(SimpleSoundInstance.m_263171_(SoundEvents.f_12490_, 1.0F));
-            this.f_96541_
-               .m_91152_(
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            this.minecraft
+               .setScreen(
                   new NpcSkinSelectionScreen(
                      this,
-                     ((NpcInventoryMenu)this.f_97732_).getNpcEntityId(),
-                     ((NpcInventoryMenu)this.f_97732_).getSkinName(),
-                     ((NpcInventoryMenu)this.f_97732_).isAlexModel()
+                     ((NpcInventoryMenu)this.menu).getNpcEntityId(),
+                     ((NpcInventoryMenu)this.menu).getSkinName(),
+                     ((NpcInventoryMenu)this.menu).isAlexModel()
                   )
                );
             return true;
@@ -111,21 +111,21 @@ public class NpcInventoryScreen extends AbstractContainerScreen<NpcInventoryMenu
 
          if (clicked >= 0) {
             this.pressedButton = clicked;
-            this.f_96541_.m_91106_().m_120367_(SimpleSoundInstance.m_263171_(SoundEvents.f_12490_, 1.0F));
-            if (this.f_96541_.f_91072_ != null) {
-               this.f_96541_.f_91072_.m_105208_(((NpcInventoryMenu)this.f_97732_).f_38840_, clicked);
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            if (this.minecraft.gameMode != null) {
+               this.minecraft.gameMode.handleInventoryButtonClick(((NpcInventoryMenu)this.menu).containerId, clicked);
             }
 
             return true;
          }
       }
 
-      return super.m_6375_(mouseX, mouseY, button);
+      return super.mouseClicked(mouseX, mouseY, button);
    }
 
-   public boolean m_6348_(double mouseX, double mouseY, int button) {
+   public boolean mouseReleased(double mouseX, double mouseY, int button) {
       this.pressedButton = -1;
-      return super.m_6348_(mouseX, mouseY, button);
+      return super.mouseReleased(mouseX, mouseY, button);
    }
 
    private int getButtonAt(int x, int y) {
@@ -137,7 +137,7 @@ public class NpcInventoryScreen extends AbstractContainerScreen<NpcInventoryMenu
          return 1;
       } else {
          int nextButtonY = 60;
-         if (((NpcInventoryMenu)this.f_97732_).canOpenTradeOrderGui()) {
+         if (((NpcInventoryMenu)this.menu).canOpenTradeOrderGui()) {
             if (this.inside(x, y, 84, nextButtonY, 75, 12)) {
                return 6;
             }
@@ -145,7 +145,7 @@ public class NpcInventoryScreen extends AbstractContainerScreen<NpcInventoryMenu
             nextButtonY += 12;
          }
 
-         if (((NpcInventoryMenu)this.f_97732_).isBard()) {
+         if (((NpcInventoryMenu)this.menu).isBard()) {
             if (this.inside(x, y, 84, nextButtonY, 75, 12)) {
                return 5;
             }
@@ -153,7 +153,7 @@ public class NpcInventoryScreen extends AbstractContainerScreen<NpcInventoryMenu
             nextButtonY += 12;
          }
 
-         if (((NpcInventoryMenu)this.f_97732_).canRepack(this.f_96541_.f_91074_)) {
+         if (((NpcInventoryMenu)this.menu).canRepack(this.minecraft.player)) {
             if (this.inside(x, y, 84, nextButtonY, 75, 12)) {
                return 3;
             }
@@ -161,7 +161,7 @@ public class NpcInventoryScreen extends AbstractContainerScreen<NpcInventoryMenu
             nextButtonY += 12;
          }
 
-         return ((NpcInventoryMenu)this.f_97732_).canOpenCreativeGui(this.f_96541_.f_91074_) && this.inside(x, y, 84, nextButtonY, 75, 12) ? 4 : -1;
+         return ((NpcInventoryMenu)this.menu).canOpenCreativeGui(this.minecraft.player) && this.inside(x, y, 84, nextButtonY, 75, 12) ? 4 : -1;
       }
    }
 
@@ -182,75 +182,75 @@ public class NpcInventoryScreen extends AbstractContainerScreen<NpcInventoryMenu
    }
 
    private void drawLegacySlotHints(GuiGraphics graphics) {
-      ItemStack toolOrWeapon = new ItemStack(((NpcInventoryMenu)this.f_97732_).isCombatNpc() ? Items.f_42383_ : Items.f_42385_);
+      ItemStack toolOrWeapon = new ItemStack(((NpcInventoryMenu)this.menu).isCombatNpc() ? Items.IRON_SWORD : Items.IRON_PICKAXE);
       this.drawHintItem(graphics, toolOrWeapon, 26, 8);
       this.drawHintItem(graphics, new ItemStack(AWCoreRegistryAccess.item(AWCoreIds.WOODEN_SHIELD)), 26, 26);
-      this.drawHintItem(graphics, new ItemStack(Items.f_42468_), 26, 44);
-      this.drawHintItem(graphics, new ItemStack(Items.f_42469_), 26, 62);
-      this.drawHintItem(graphics, new ItemStack(Items.f_42470_), 26, 80);
-      this.drawHintItem(graphics, new ItemStack(Items.f_42471_), 26, 98);
+      this.drawHintItem(graphics, new ItemStack(Items.IRON_HELMET), 26, 44);
+      this.drawHintItem(graphics, new ItemStack(Items.IRON_CHESTPLATE), 26, 62);
+      this.drawHintItem(graphics, new ItemStack(Items.IRON_LEGGINGS), 26, 80);
+      this.drawHintItem(graphics, new ItemStack(Items.IRON_BOOTS), 26, 98);
       this.drawHintItem(graphics, new ItemStack(AWCoreRegistryAccess.item(AWCoreIds.ROUTING_ORDER)), 64, 44);
       this.drawHintItem(graphics, new ItemStack(AWCoreRegistryAccess.item(AWCoreIds.UPKEEP_ORDER)), 64, 62);
-      this.drawHintItem(graphics, new ItemStack(Items.f_42406_), 64, 80);
+      this.drawHintItem(graphics, new ItemStack(Items.BREAD), 64, 80);
    }
 
    private void drawHintItem(GuiGraphics graphics, ItemStack stack, int x, int y) {
-      graphics.m_280480_(stack, this.f_97735_ + x, this.f_97736_ + y);
+      graphics.renderItem(stack, this.leftPos + x, this.topPos + y);
    }
 
    private void drawDecorativeSlot(GuiGraphics graphics, int x, int y) {
-      graphics.m_280218_(WIDGETS, this.f_97735_ + x - 1, this.f_97736_ + y - 1, 152, 120, 18, 18);
+      graphics.blit(WIDGETS, this.leftPos + x - 1, this.topPos + y - 1, 152, 120, 18, 18);
    }
 
    private void drawTexturedButton(GuiGraphics graphics, int x, int y, int width, int height, Component label, boolean pressed) {
       this.drawNineSlice(graphics, x, y, width, height, 0, pressed ? 80 : 40, 256, 40);
-      int textWidth = this.f_96547_.m_92852_(label);
+      int textWidth = this.font.width(label);
       if (textWidth <= width - 6) {
-         graphics.m_280614_(this.f_96547_, label, this.f_97735_ + x + (width - textWidth) / 2, this.f_97736_ + y + (height - 8) / 2, 16777215, false);
+         graphics.drawString(this.font, label, this.leftPos + x + (width - textWidth) / 2, this.topPos + y + (height - 8) / 2, 16777215, false);
       } else {
          float scale = (float)(width - 6) / (float)textWidth;
-         graphics.m_280168_().m_85836_();
-         graphics.m_280168_().m_252880_((float)(this.f_97735_ + x + 3), (float)(this.f_97736_ + y + 4), 0.0F);
-         graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-         graphics.m_280614_(this.f_96547_, label, 0, 0, 16777215, false);
-         graphics.m_280168_().m_85849_();
+         graphics.pose().pushPose();
+         graphics.pose().translate((float)(this.leftPos + x + 3), (float)(this.topPos + y + 4), 0.0F);
+         graphics.pose().scale(scale, scale, 1.0F);
+         graphics.drawString(this.font, label, 0, 0, 16777215, false);
+         graphics.pose().popPose();
       }
    }
 
    private void drawFittedString(GuiGraphics graphics, Component text, int x, int y, int maxWidth) {
-      int textWidth = this.f_96547_.m_92852_(text);
+      int textWidth = this.font.width(text);
       if (textWidth <= maxWidth) {
-         graphics.m_280614_(this.f_96547_, text, x, y, 16777215, false);
+         graphics.drawString(this.font, text, x, y, 16777215, false);
       } else {
          float scale = (float)maxWidth / (float)textWidth;
-         graphics.m_280168_().m_85836_();
-         graphics.m_280168_().m_252880_((float)x, (float)(y + 1), 0.0F);
-         graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-         graphics.m_280614_(this.f_96547_, text, 0, 0, 16777215, false);
-         graphics.m_280168_().m_85849_();
+         graphics.pose().pushPose();
+         graphics.pose().translate((float)x, (float)(y + 1), 0.0F);
+         graphics.pose().scale(scale, scale, 1.0F);
+         graphics.drawString(this.font, text, 0, 0, 16777215, false);
+         graphics.pose().popPose();
       }
    }
 
    private void drawSmallLabel(GuiGraphics graphics, Component text, int x, int y, int maxWidth) {
-      int textWidth = this.f_96547_.m_92852_(text);
+      int textWidth = this.font.width(text);
       float scale = textWidth <= maxWidth ? 0.65F : Math.min(0.65F, (float)maxWidth / (float)textWidth);
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_((float)x, (float)y, 0.0F);
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, text, 0, 0, -1513240, false);
-      graphics.m_280168_().m_85849_();
+      graphics.pose().pushPose();
+      graphics.pose().translate((float)x, (float)y, 0.0F);
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, text, 0, 0, -1513240, false);
+      graphics.pose().popPose();
    }
 
    private void drawNineSlice(GuiGraphics graphics, int x, int y, int width, int height, int u, int v, int texWidth, int texHeight) {
       int halfWidth = width / 2;
       int halfHeight = height / 2;
-      graphics.m_280218_(WIDGETS, this.f_97735_ + x, this.f_97736_ + y, u, v, halfWidth, halfHeight);
-      graphics.m_280218_(WIDGETS, this.f_97735_ + x + halfWidth, this.f_97736_ + y, u + texWidth - (width - halfWidth), v, width - halfWidth, halfHeight);
-      graphics.m_280218_(WIDGETS, this.f_97735_ + x, this.f_97736_ + y + halfHeight, u, v + texHeight - (height - halfHeight), halfWidth, height - halfHeight);
-      graphics.m_280218_(
+      graphics.blit(WIDGETS, this.leftPos + x, this.topPos + y, u, v, halfWidth, halfHeight);
+      graphics.blit(WIDGETS, this.leftPos + x + halfWidth, this.topPos + y, u + texWidth - (width - halfWidth), v, width - halfWidth, halfHeight);
+      graphics.blit(WIDGETS, this.leftPos + x, this.topPos + y + halfHeight, u, v + texHeight - (height - halfHeight), halfWidth, height - halfHeight);
+      graphics.blit(
          WIDGETS,
-         this.f_97735_ + x + halfWidth,
-         this.f_97736_ + y + halfHeight,
+         this.leftPos + x + halfWidth,
+         this.topPos + y + halfHeight,
          u + texWidth - (width - halfWidth),
          v + texHeight - (height - halfHeight),
          width - halfWidth,

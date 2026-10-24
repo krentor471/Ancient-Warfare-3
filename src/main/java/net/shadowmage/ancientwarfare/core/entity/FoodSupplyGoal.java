@@ -9,18 +9,18 @@ final class FoodSupplyGoal extends Goal {
 
    FoodSupplyGoal(PlayerOwnedNpcEntity npc) {
       this.npc = npc;
-      this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+      this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
    }
 
-   public boolean m_8036_() {
-      return !this.npc.m_9236_().f_46443_ && this.npc.isGettingFood() && !this.npc.m_5803_() && !this.npc.isFoodSupplyBlockedByDeployment();
+   public boolean canUse() {
+      return !this.npc.level().isClientSide && this.npc.isGettingFood() && !this.npc.isSleeping() && !this.npc.isFoodSupplyBlockedByDeployment();
    }
 
-   public boolean m_8045_() {
-      return this.m_8036_();
+   public boolean canContinueToUse() {
+      return this.canUse();
    }
 
-   public void m_8041_() {
-      this.npc.m_21573_().m_26573_();
+   public void stop() {
+      this.npc.getNavigation().stop();
    }
 }

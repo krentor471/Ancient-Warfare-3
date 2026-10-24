@@ -25,7 +25,7 @@ public class BackpackItem extends Item {
    public static final int MAX_LEVEL = 3;
 
    public BackpackItem() {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
    }
 
    public static int getLevel(ItemStack stack) {
@@ -46,28 +46,28 @@ public class BackpackItem extends Item {
       return BackpackData.getSlotCount(stack);
    }
 
-   public Component m_7626_(ItemStack stack) {
-      return Component.m_237115_("item.ancientwarfare.backpack." + getLevel(stack));
+   public Component getName(ItemStack stack) {
+      return Component.translatable("item.ancientwarfare.backpack." + getLevel(stack));
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
-      ItemStack stack = player.m_21120_(hand);
-      if (!level.f_46443_) {
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+      ItemStack stack = player.getItemInHand(hand);
+      if (!level.isClientSide) {
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(
                (containerId, inventory, openedPlayer) -> new BackpackMenu(containerId, inventory, hand),
-               Component.m_237115_("container.ancientwarfare.backpack")
+               Component.translatable("container.ancientwarfare.backpack")
             ),
-            buffer -> buffer.m_130068_(hand)
+            buffer -> buffer.writeEnum(hand)
          );
       }
 
-      return InteractionResultHolder.m_19092_(stack, level.f_46443_);
+      return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237110_("tooltip.ancientwarfare.backpack.size", new Object[]{getSlotCount(stack)}).m_130940_(ChatFormatting.GRAY));
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.backpack.open").m_130940_(ChatFormatting.DARK_GRAY));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.backpack.size", new Object[]{getSlotCount(stack)}).withStyle(ChatFormatting.GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.backpack.open").withStyle(ChatFormatting.DARK_GRAY));
    }
 }

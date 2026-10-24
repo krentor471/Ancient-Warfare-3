@@ -17,24 +17,24 @@ import net.shadowmage.ancientwarfare.core.menu.ManualMenu;
 
 public class ManualItem extends Item {
    public ManualItem() {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
-      ItemStack stack = player.m_21120_(hand);
-      if (!level.f_46443_) {
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+      ItemStack stack = player.getItemInHand(hand);
+      if (!level.isClientSide) {
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(
-               (containerId, inventory, openedPlayer) -> new ManualMenu(containerId), Component.m_237115_("container.ancientwarfare.manual")
+               (containerId, inventory, openedPlayer) -> new ManualMenu(containerId), Component.translatable("container.ancientwarfare.manual")
             )
          );
       }
 
-      return InteractionResultHolder.m_19092_(stack, level.f_46443_);
+      return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_("item.manual.tooltip"));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("item.manual.tooltip"));
    }
 }

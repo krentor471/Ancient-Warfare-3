@@ -20,7 +20,7 @@ import net.shadowmage.ancientwarfare.core.tile.FlywheelStorageBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class FlywheelStorageBlock extends BaseEntityBlock {
-   private static final VoxelShape SHAPE = m_49796_(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+   private static final VoxelShape SHAPE = box(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
    private final TorqueTier tier;
 
    public FlywheelStorageBlock(Properties properties, TorqueTier tier) {
@@ -33,27 +33,27 @@ public class FlywheelStorageBlock extends BaseEntityBlock {
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return new FlywheelStorageBlockEntity(pos, state);
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if (!player.m_21120_(hand).m_41619_()) {
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if (!player.getItemInHand(hand).isEmpty()) {
          return InteractionResult.PASS;
       } else {
-         if (!level.f_46443_ && level.m_7702_(pos) instanceof FlywheelStorageBlockEntity storage) {
-            player.m_5661_(Component.m_237110_("guistrings.automation.flywheel.storage", new Object[]{String.format("%.2f", storage.getStoredTorque())}), true);
+         if (!level.isClientSide && level.getBlockEntity(pos) instanceof FlywheelStorageBlockEntity storage) {
+            player.displayClientMessage(Component.translatable("guistrings.automation.flywheel.storage", new Object[]{String.format("%.2f", storage.getStoredTorque())}), true);
          }
 
-         return InteractionResult.m_19078_(level.f_46443_);
+         return InteractionResult.sidedSuccess(level.isClientSide);
       }
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.ENTITYBLOCK_ANIMATED;
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return SHAPE;
    }
 }

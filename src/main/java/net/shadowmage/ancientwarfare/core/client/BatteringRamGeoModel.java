@@ -33,7 +33,7 @@ public class BatteringRamGeoModel extends GeoModel<BatteringRamEntity> {
 
    public void handleAnimations(BatteringRamEntity animatable, long instanceId, AnimationState<BatteringRamEntity> state) {
       super.handleAnimations(animatable, instanceId, state);
-      float wheel = Mth.m_14179_(state.getPartialTick(), animatable.wheelRotationPrev, animatable.wheelRotation);
+      float wheel = Mth.lerp(state.getPartialTick(), animatable.wheelRotationPrev, animatable.wheelRotation);
       this.setRotX("FRWheelPivot", wheel);
       this.setRotX("FLWheelPivot", wheel);
       this.setRotX("RRWheelPivot", wheel);
@@ -42,13 +42,13 @@ public class BatteringRamGeoModel extends GeoModel<BatteringRamEntity> {
       int ticks = animatable.getAttackAnimationTicks();
       if (ticks > 0) {
          float elapsed = 16.0F - (float)ticks + state.getPartialTick();
-         float progress = Mth.m_14036_(elapsed / 16.0F, 0.0F, 1.0F);
+         float progress = Mth.clamp(elapsed / 16.0F, 0.0F, 1.0F);
          if (progress < 0.34F) {
-            log = Mth.m_14179_(progress / 0.34F, 0.0F, 30.0F);
+            log = Mth.lerp(progress / 0.34F, 0.0F, 30.0F);
          } else if (progress < 0.68F) {
-            log = Mth.m_14179_((progress - 0.34F) / 0.34F, 30.0F, -30.0F);
+            log = Mth.lerp((progress - 0.34F) / 0.34F, 30.0F, -30.0F);
          } else {
-            log = Mth.m_14179_((progress - 0.68F) / 0.32F, -30.0F, 0.0F);
+            log = Mth.lerp((progress - 0.68F) / 0.32F, -30.0F, 0.0F);
          }
       }
 

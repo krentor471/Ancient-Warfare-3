@@ -19,24 +19,24 @@ public class AdvancedLootChestBlockItem extends BlockItem {
       super(block, properties);
    }
 
-   protected BlockState m_5965_(BlockPlaceContext context) {
-      return Blocks.f_50087_.m_5573_(context);
+   protected BlockState getPlacementState(BlockPlaceContext context) {
+      return Blocks.CHEST.getStateForPlacement(context);
    }
 
-   public InteractionResult m_40576_(BlockPlaceContext context) {
-      InteractionResult result = super.m_40576_(context);
+   public InteractionResult place(BlockPlaceContext context) {
+      InteractionResult result = super.place(context);
       AncientWarfareCore.LOG
          .debug(
             "Advanced loot chest item place: pos={}, result={}, placedBlock={}, placedEntity={}",
             new Object[]{
-               context.m_8083_(),
+               context.getClickedPos(),
                result,
-               context.m_43725_().m_8055_(context.m_8083_()).m_60734_(),
-               context.m_43725_().m_7702_(context.m_8083_()) == null ? "null" : context.m_43725_().m_7702_(context.m_8083_()).getClass().getSimpleName()
+               context.getLevel().getBlockState(context.getClickedPos()).getBlock(),
+               context.getLevel().getBlockEntity(context.getClickedPos()) == null ? "null" : context.getLevel().getBlockEntity(context.getClickedPos()).getClass().getSimpleName()
             }
          );
-      if (result.m_19077_() && !context.m_43725_().f_46443_ && context.m_43725_().m_7702_(context.m_8083_()) instanceof ChestBlockEntity chest) {
-         AdvancedLootChestBlock.configureLoot(chest, DEFAULT_LOOT, 1, context.m_43725_().f_46441_.m_188505_());
+      if (result.consumesAction() && !context.getLevel().isClientSide && context.getLevel().getBlockEntity(context.getClickedPos()) instanceof ChestBlockEntity chest) {
+         AdvancedLootChestBlock.configureLoot(chest, DEFAULT_LOOT, 1, context.getLevel().random.nextLong());
       }
 
       return result;

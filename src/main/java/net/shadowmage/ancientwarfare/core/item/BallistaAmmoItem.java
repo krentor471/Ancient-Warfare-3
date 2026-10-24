@@ -8,7 +8,7 @@ public class BallistaAmmoItem extends Item {
    private final BallistaAmmoType ammoType;
 
    public BallistaAmmoItem(BallistaAmmoType ammoType) {
-      super(new Properties().m_41487_(16));
+      super(new Properties().stacksTo(16));
       this.ammoType = ammoType;
    }
 
@@ -17,6 +17,6 @@ public class BallistaAmmoItem extends Item {
    }
 
    public static BallistaAmmoType ammoType(ItemStack stack) {
-      return stack.m_41720_() instanceof BallistaAmmoItem ammo ? ammo.ammoType() : null;
+      return stack.getItem() instanceof BallistaAmmoItem ammo ? ammo.ammoType() : null;
    }
 }

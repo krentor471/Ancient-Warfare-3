@@ -28,8 +28,8 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class TallStructureDecorBlock extends HorizontalDirectionalBlock {
-   public static final DirectionProperty FACING = HorizontalDirectionalBlock.f_54117_;
-   public static final EnumProperty<DoubleBlockHalf> HALF = EnumProperty.m_61587_("half", DoubleBlockHalf.class);
+   public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+   public static final EnumProperty<DoubleBlockHalf> HALF = EnumProperty.create("half", DoubleBlockHalf.class);
    private final Map<Direction, VoxelShape> lowerShapes;
    private final Map<Direction, VoxelShape> upperShapes;
    private final boolean renderUpper;
@@ -43,61 +43,61 @@ public class TallStructureDecorBlock extends HorizontalDirectionalBlock {
       this.lowerShapes = lowerShapes;
       this.upperShapes = upperShapes;
       this.renderUpper = renderUpper;
-      this.m_49959_((BlockState)((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH)).m_61124_(HALF, DoubleBlockHalf.LOWER));
+      this.registerDefaultState((BlockState)((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH)).setValue(HALF, DoubleBlockHalf.LOWER));
    }
 
-   public BlockState m_5573_(BlockPlaceContext context) {
-      BlockPos pos = context.m_8083_();
-      return pos.m_123342_() < context.m_43725_().m_151558_() - 1 && context.m_43725_().m_8055_(pos.m_7494_()).m_60629_(context)
-         ? (BlockState)((BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_().m_122424_())).m_61124_(HALF, DoubleBlockHalf.LOWER)
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      BlockPos pos = context.getClickedPos();
+      return pos.getY() < context.getLevel().getMaxBuildHeight() - 1 && context.getLevel().getBlockState(pos.above()).canBeReplaced(context)
+         ? (BlockState)((BlockState)this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite())).setValue(HALF, DoubleBlockHalf.LOWER)
          : null;
    }
 
-   public void m_6402_(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
-      level.m_7731_(pos.m_7494_(), (BlockState)state.m_61124_(HALF, DoubleBlockHalf.UPPER), 3);
+   public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+      level.setBlock(pos.above(), (BlockState)state.setValue(HALF, DoubleBlockHalf.UPPER), 3);
    }
 
-   public void m_5707_(Level level, BlockPos pos, BlockState state, Player player) {
-      DoubleBlockHalf half = (DoubleBlockHalf)state.m_61143_(HALF);
-      BlockPos otherPos = half == DoubleBlockHalf.LOWER ? pos.m_7494_() : pos.m_7495_();
-      BlockState otherState = level.m_8055_(otherPos);
-      if (otherState.m_60713_(this) && otherState.m_61143_(HALF) != half) {
-         level.m_46953_(otherPos, false, player);
+   public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+      DoubleBlockHalf half = (DoubleBlockHalf)state.getValue(HALF);
+      BlockPos otherPos = half == DoubleBlockHalf.LOWER ? pos.above() : pos.below();
+      BlockState otherState = level.getBlockState(otherPos);
+      if (otherState.is(this) && otherState.getValue(HALF) != half) {
+         level.destroyBlock(otherPos, false, player);
       }
 
-      super.m_5707_(level, pos, state, player);
+      super.playerWillDestroy(level, pos, state, player);
    }
 
-   public BlockState m_7417_(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-      DoubleBlockHalf half = (DoubleBlockHalf)state.m_61143_(HALF);
+   public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+      DoubleBlockHalf half = (DoubleBlockHalf)state.getValue(HALF);
       Direction neededDirection = half == DoubleBlockHalf.LOWER ? Direction.UP : Direction.DOWN;
-      return direction != neededDirection || neighborState.m_60713_(this) && neighborState.m_61143_(HALF) != half
-         ? super.m_7417_(state, direction, neighborState, level, pos, neighborPos)
-         : Blocks.f_50016_.m_49966_();
+      return direction != neededDirection || neighborState.is(this) && neighborState.getValue(HALF) != half
+         ? super.updateShape(state, direction, neighborState, level, pos, neighborPos)
+         : Blocks.AIR.defaultBlockState();
    }
 
-   public RenderShape m_7514_(BlockState state) {
-      return state.m_61143_(HALF) != DoubleBlockHalf.LOWER && !this.renderUpper ? RenderShape.INVISIBLE : RenderShape.MODEL;
+   public RenderShape getRenderShape(BlockState state) {
+      return state.getValue(HALF) != DoubleBlockHalf.LOWER && !this.renderUpper ? RenderShape.INVISIBLE : RenderShape.MODEL;
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-      Map<Direction, VoxelShape> shapes = state.m_61143_(HALF) == DoubleBlockHalf.LOWER ? this.lowerShapes : this.upperShapes;
-      return shapes.getOrDefault(state.m_61143_(FACING), Shapes.m_83144_());
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+      Map<Direction, VoxelShape> shapes = state.getValue(HALF) == DoubleBlockHalf.LOWER ? this.lowerShapes : this.upperShapes;
+      return shapes.getOrDefault(state.getValue(FACING), Shapes.block());
    }
 
-   public VoxelShape m_5939_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-      return this.m_5940_(state, level, pos, context);
+   public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+      return this.getShape(state, level, pos, context);
    }
 
-   public BlockState m_6843_(BlockState state, Rotation rotation) {
-      return (BlockState)state.m_61124_(FACING, rotation.m_55954_((Direction)state.m_61143_(FACING)));
+   public BlockState rotate(BlockState state, Rotation rotation) {
+      return (BlockState)state.setValue(FACING, rotation.rotate((Direction)state.getValue(FACING)));
    }
 
-   public BlockState m_6943_(BlockState state, Mirror mirror) {
-      return state.m_60717_(mirror.m_54846_((Direction)state.m_61143_(FACING)));
+   public BlockState mirror(BlockState state, Mirror mirror) {
+      return state.rotate(mirror.getRotation((Direction)state.getValue(FACING)));
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING, HALF});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{FACING, HALF});
    }
 }

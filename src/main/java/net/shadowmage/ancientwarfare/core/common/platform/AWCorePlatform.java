@@ -349,16 +349,6 @@ public final class AWCorePlatform {
       }
 
       @Override
-      public boolean iceAndFireBonusLoot() {
-         return true;
-      }
-
-      @Override
-      public boolean slashBladeBonusLoot() {
-         return true;
-      }
-
-      @Override
       public boolean fillUnconfiguredStructureContainers() {
          return true;
       }

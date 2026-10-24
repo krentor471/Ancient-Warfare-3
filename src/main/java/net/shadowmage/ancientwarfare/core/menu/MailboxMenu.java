@@ -21,64 +21,64 @@ public class MailboxMenu extends AbstractContainerMenu {
       this.box = b;
 
       for (int i = 0; i < 18; i++) {
-         this.m_38897_(new Slot(b.sendContainer(), i, 8 + i % 9 * 18, 20 + i / 9 * 18) {
-            public boolean m_5857_(ItemStack stack) {
+         this.addSlot(new Slot(b.sendContainer(), i, 8 + i % 9 * 18, 20 + i / 9 * 18) {
+            public boolean mayPlace(ItemStack stack) {
                return false;
             }
          });
       }
 
       for (int i = 0; i < 18; i++) {
-         this.m_38897_(new Slot(b.receivedContainer(), i, 8 + i % 9 * 18, 68 + i / 9 * 18));
+         this.addSlot(new Slot(b.receivedContainer(), i, 8 + i % 9 * 18, 68 + i / 9 * 18));
       }
 
       for (int r = 0; r < 3; r++) {
          for (int c = 0; c < 9; c++) {
-            this.m_38897_(new Slot(inv, c + r * 9 + 9, 8 + c * 18, 116 + r * 18));
+            this.addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, 116 + r * 18));
          }
       }
 
       for (int c = 0; c < 9; c++) {
-         this.m_38897_(new Slot(inv, c, 8 + c * 18, 174));
+         this.addSlot(new Slot(inv, c, 8 + c * 18, 174));
       }
    }
 
-   public boolean m_6366_(Player p, int id) {
-      if (id == 0 && !p.m_9236_().f_46443_) {
+   public boolean clickMenuButton(Player p, int id) {
+      if (id == 0 && !p.level().isClientSide) {
          AWCorePlatform.openMenu(
             p,
             new SimpleMenuProvider(
-               (cid, inv, pl) -> new WorksiteSideConfigMenu(cid, inv, this.box.m_58899_()),
-               Component.m_237115_("container.ancientwarfare.worksite_side_config")
+               (cid, inv, pl) -> new WorksiteSideConfigMenu(cid, inv, this.box.getBlockPos()),
+               Component.translatable("container.ancientwarfare.worksite_side_config")
             ),
-            buf -> buf.m_130064_(this.box.m_58899_())
+            buf -> buf.writeBlockPos(this.box.getBlockPos())
          );
          return true;
       } else {
-         return super.m_6366_(p, id);
+         return super.clickMenuButton(p, id);
       }
    }
 
-   public boolean m_6875_(Player p) {
+   public boolean stillValid(Player p) {
       return this.box.stillValid(p);
    }
 
-   public ItemStack m_7648_(Player p, int i) {
-      if (i >= 0 && i < this.f_38839_.size() && ((Slot)this.f_38839_.get(i)).m_6657_()) {
-         ItemStack original = ((Slot)this.f_38839_.get(i)).m_7993_().m_41777_();
-         ItemStack st = ((Slot)this.f_38839_.get(i)).m_7993_();
+   public ItemStack quickMoveStack(Player p, int i) {
+      if (i >= 0 && i < this.slots.size() && ((Slot)this.slots.get(i)).hasItem()) {
+         ItemStack original = ((Slot)this.slots.get(i)).getItem().copy();
+         ItemStack st = ((Slot)this.slots.get(i)).getItem();
          if (i < 36) {
-            if (!this.m_38903_(st, 36, this.f_38839_.size(), true)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(st, 36, this.slots.size(), true)) {
+               return ItemStack.EMPTY;
             }
-         } else if (!this.m_38903_(st, 0, 36, false)) {
-            return ItemStack.f_41583_;
+         } else if (!this.moveItemStackTo(st, 0, 36, false)) {
+            return ItemStack.EMPTY;
          }
 
-         ((Slot)this.f_38839_.get(i)).m_6654_();
+         ((Slot)this.slots.get(i)).setChanged();
          return original;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 }

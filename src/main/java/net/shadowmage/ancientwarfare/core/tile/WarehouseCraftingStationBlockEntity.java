@@ -33,7 +33,7 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
    public static final int SLOT_COUNT = 19;
    private static final int WORK_COST = 100;
    private static final int WORKER_ENERGY_PER_VISIT = 1600;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(19, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(19, ItemStack.EMPTY);
    private final WarehouseMembership membership = new WarehouseMembership();
    private ResourceLocation selectedRecipeId;
    private boolean autoStoreOutput;
@@ -52,15 +52,15 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
    }
 
    public static void serverTick(Level level, BlockPos pos, BlockState state, WarehouseCraftingStationBlockEntity station) {
-      if (!level.f_46443_ && station.storedEnergy >= 100) {
+      if (!level.isClientSide && station.storedEnergy >= 100) {
          int processed;
          for (processed = 0; station.storedEnergy >= 100 && processed < 1 && station.craftToOutput(); processed++) {
             station.storedEnergy -= 100;
          }
 
          if (processed > 0) {
-            station.m_6596_();
-            level.m_7260_(pos, state, state, 3);
+            station.setChanged();
+            level.sendBlockUpdated(pos, state, state, 3);
          }
       }
    }
@@ -90,34 +90,34 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
    public void setAutoStoreOutput(boolean autoStoreOutput) {
       if (this.autoStoreOutput != autoStoreOutput) {
          this.autoStoreOutput = autoStoreOutput;
-         this.m_6596_();
-         if (this.f_58857_ != null) {
-            this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 2);
+         this.setChanged();
+         if (this.level != null) {
+            this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 2);
          }
       }
    }
 
    public boolean canAcceptOutput(ItemStack stack) {
-      if (stack.m_41619_()) {
+      if (stack.isEmpty()) {
          return false;
       } else {
-         ItemStack remaining = stack.m_41777_();
+         ItemStack remaining = stack.copy();
 
          for (int slot = 10; slot < 19; slot++) {
             ItemStack existing = (ItemStack)this.items.get(slot);
-            if (!existing.m_41619_() && ItemStack.m_150942_(existing, remaining)) {
-               int moved = Math.min(remaining.m_41613_(), existing.m_41741_() - existing.m_41613_());
-               remaining.m_41774_(Math.max(0, moved));
+            if (!existing.isEmpty() && ItemStack.isSameItemSameTags(existing, remaining)) {
+               int moved = Math.min(remaining.getCount(), existing.getMaxStackSize() - existing.getCount());
+               remaining.shrink(Math.max(0, moved));
             }
          }
 
-         for (int slotx = 10; slotx < 19 && !remaining.m_41619_(); slotx++) {
-            if (((ItemStack)this.items.get(slotx)).m_41619_()) {
-               remaining.m_41774_(Math.min(remaining.m_41613_(), remaining.m_41741_()));
+         for (int slotx = 10; slotx < 19 && !remaining.isEmpty(); slotx++) {
+            if (((ItemStack)this.items.get(slotx)).isEmpty()) {
+               remaining.shrink(Math.min(remaining.getCount(), remaining.getMaxStackSize()));
             }
          }
 
-         return remaining.m_41619_();
+         return remaining.isEmpty();
       }
    }
 
@@ -125,29 +125,29 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
       if (!this.canAcceptOutput(stack)) {
          return false;
       } else {
-         ItemStack remaining = stack.m_41777_();
+         ItemStack remaining = stack.copy();
 
-         for (int slot = 10; slot < 19 && !remaining.m_41619_(); slot++) {
+         for (int slot = 10; slot < 19 && !remaining.isEmpty(); slot++) {
             ItemStack existing = (ItemStack)this.items.get(slot);
-            if (!existing.m_41619_() && ItemStack.m_150942_(existing, remaining)) {
-               int moved = Math.min(remaining.m_41613_(), existing.m_41741_() - existing.m_41613_());
+            if (!existing.isEmpty() && ItemStack.isSameItemSameTags(existing, remaining)) {
+               int moved = Math.min(remaining.getCount(), existing.getMaxStackSize() - existing.getCount());
                if (moved > 0) {
-                  existing.m_41769_(moved);
-                  remaining.m_41774_(moved);
+                  existing.grow(moved);
+                  remaining.shrink(moved);
                }
             }
          }
 
-         for (int slotx = 10; slotx < 19 && !remaining.m_41619_(); slotx++) {
-            if (((ItemStack)this.items.get(slotx)).m_41619_()) {
-               int moved = Math.min(remaining.m_41613_(), remaining.m_41741_());
-               this.items.set(slotx, remaining.m_255036_(moved));
-               remaining.m_41774_(moved);
+         for (int slotx = 10; slotx < 19 && !remaining.isEmpty(); slotx++) {
+            if (((ItemStack)this.items.get(slotx)).isEmpty()) {
+               int moved = Math.min(remaining.getCount(), remaining.getMaxStackSize());
+               this.items.set(slotx, remaining.copyWithCount(moved));
+               remaining.shrink(moved);
             }
          }
 
-         if (remaining.m_41619_()) {
-            this.m_6596_();
+         if (remaining.isEmpty()) {
+            this.setChanged();
             return true;
          } else {
             return false;
@@ -156,19 +156,19 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
    }
 
    public boolean craftToOutput() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
+      if (this.level != null && !this.level.isClientSide) {
          WarehouseControlBlockEntity warehouse = this.getWarehouse();
          long revision = warehouse == null ? Long.MIN_VALUE : warehouse.getInventoryRevision();
-         if (this.f_58857_.m_46467_() < this.nextCraftRetry && revision == this.failedWarehouseRevision && this.contentsRevision == this.failedContentsRevision
+         if (this.level.getGameTime() < this.nextCraftRetry && revision == this.failedWarehouseRevision && this.contentsRevision == this.failedContentsRevision
             )
           {
             return false;
          } else {
-            boolean crafted = WarehouseCraftingStationMenu.craftTemplateToOutput(this.f_58857_, this, null);
+            boolean crafted = WarehouseCraftingStationMenu.craftTemplateToOutput(this.level, this, null);
             if (!crafted) {
                this.failedWarehouseRevision = revision;
                this.failedContentsRevision = this.contentsRevision;
-               this.nextCraftRetry = this.f_58857_.m_46467_() + 20L;
+               this.nextCraftRetry = this.level.getGameTime() + 20L;
             }
 
             return crafted;
@@ -180,18 +180,18 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
 
    @Override
    public boolean hasWork() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && this.storedEnergy < this.getMaxEnergy()) {
+      if (this.level != null && !this.level.isClientSide && this.storedEnergy < this.getMaxEnergy()) {
          WarehouseControlBlockEntity warehouse = this.getWarehouse();
          long revision = warehouse == null ? Long.MIN_VALUE : warehouse.getInventoryRevision();
          if (warehouse != this.checkedWarehouse
             || revision != this.checkedWarehouseRevision
             || this.contentsRevision != this.checkedContentsRevision
-            || this.f_58857_.m_46467_() >= this.nextAvailabilityCheck) {
-            this.craftingAvailable = WarehouseCraftingStationMenu.canCraftTemplate(this.f_58857_, this, true);
+            || this.level.getGameTime() >= this.nextAvailabilityCheck) {
+            this.craftingAvailable = WarehouseCraftingStationMenu.canCraftTemplate(this.level, this, true);
             this.checkedWarehouse = warehouse;
             this.checkedWarehouseRevision = revision;
             this.checkedContentsRevision = this.contentsRevision;
-            this.nextAvailabilityCheck = this.f_58857_.m_46467_() + 20L;
+            this.nextAvailabilityCheck = this.level.getGameTime() + 20L;
          }
 
          return this.craftingAvailable;
@@ -202,7 +202,7 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
          this.storedEnergy = Math.min(
             this.getMaxEnergy(), this.storedEnergy + Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())))
          );
@@ -211,8 +211,8 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
             this.storedEnergy -= 100;
          }
 
-         this.m_6596_();
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+         this.setChanged();
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 
@@ -227,93 +227,93 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
    }
 
    @Override
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
       this.membership.save(tag);
-      tag.m_128379_("AutoStoreOutput", this.autoStoreOutput);
+      tag.putBoolean("AutoStoreOutput", this.autoStoreOutput);
       if (this.selectedRecipeId != null) {
-         tag.m_128359_("SelectedRecipe", this.selectedRecipeId.toString());
+         tag.putString("SelectedRecipe", this.selectedRecipeId.toString());
       }
    }
 
    @Override
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
       this.membership.load(tag);
-      this.autoStoreOutput = tag.m_128471_("AutoStoreOutput");
-      this.selectedRecipeId = tag.m_128441_("SelectedRecipe") ? ResourceLocation.m_135820_(tag.m_128461_("SelectedRecipe")) : null;
+      this.autoStoreOutput = tag.getBoolean("AutoStoreOutput");
+      this.selectedRecipeId = tag.contains("SelectedRecipe") ? ResourceLocation.tryParse(tag.getString("SelectedRecipe")) : null;
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      return this.m_187482_();
+   public CompoundTag getUpdateTag() {
+      return this.saveWithoutMetadata();
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return this.items.size();
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return slot >= 0 && slot < this.items.size() ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return slot >= 0 && slot < this.items.size() ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = slot >= 0 && slot < this.items.size() ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = slot >= 0 && slot < this.items.size() ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      ItemStack removed = slot >= 0 && slot < this.items.size() ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItemNoUpdate(int slot) {
+      ItemStack removed = slot >= 0 && slot < this.items.size() ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (slot >= 0 && slot < this.items.size()) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > Math.min(this.m_6893_(), stack.m_41741_())) {
-            stack.m_41764_(Math.min(this.m_6893_(), stack.m_41741_()));
+         if (!stack.isEmpty() && stack.getCount() > Math.min(this.getMaxStackSize(), stack.getMaxStackSize())) {
+            stack.setCount(Math.min(this.getMaxStackSize(), stack.getMaxStackSize()));
          }
 
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.warehouse_crafting");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.warehouse_crafting");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new WarehouseCraftingStationMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new WarehouseCraftingStationMenu(containerId, playerInventory, this.worldPosition);
    }
 
    @Override
@@ -324,12 +324,12 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
    @Override
    public void setSelectedRecipeId(ResourceLocation recipeId) {
       this.selectedRecipeId = recipeId;
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public void m_6596_() {
+   public void setChanged() {
       this.contentsRevision++;
-      super.m_6596_();
+      super.setChanged();
    }
 
    @Override
@@ -347,7 +347,7 @@ public class WarehouseCraftingStationBlockEntity extends BasicWorksiteBlockEntit
       return slot == 0;
    }
 
-   public boolean m_7013_(int slot, ItemStack stack) {
-      return slot != 0 || stack.m_41720_() instanceof ResearchBookItem;
+   public boolean canPlaceItem(int slot, ItemStack stack) {
+      return slot != 0 || stack.getItem() instanceof ResearchBookItem;
    }
 }

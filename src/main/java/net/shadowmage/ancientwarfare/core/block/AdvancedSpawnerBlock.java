@@ -23,35 +23,35 @@ import net.shadowmage.ancientwarfare.core.tile.AdvancedSpawnerBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class AdvancedSpawnerBlock extends BaseEntityBlock {
-   private static final VoxelShape SHAPE = m_49796_(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+   private static final VoxelShape SHAPE = box(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
 
    public AdvancedSpawnerBlock(Properties properties) {
       super(properties);
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return new AdvancedSpawnerBlockEntity(pos, state);
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState state, BlockEntityType<T> type) {
-      return level.f_46443_ ? null : m_152132_(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.ADVANCED_SPAWNER), AdvancedSpawnerBlockEntity::serverTick);
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+      return level.isClientSide ? null : createTickerHelper(type, AWCoreRegistryAccess.blockEntityType(AWCoreIds.ADVANCED_SPAWNER), AdvancedSpawnerBlockEntity::serverTick);
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if (!level.f_46443_ && level.m_7702_(pos) instanceof AdvancedSpawnerBlockEntity spawner) {
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if (!level.isClientSide && level.getBlockEntity(pos) instanceof AdvancedSpawnerBlockEntity spawner) {
          AWCorePlatform.openBlockMenu(player, spawner, pos);
       }
 
-      return InteractionResult.m_19078_(level.f_46443_);
+      return InteractionResult.sidedSuccess(level.isClientSide);
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.INVISIBLE;
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return SHAPE;
    }
 }

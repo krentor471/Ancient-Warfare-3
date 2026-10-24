@@ -3,7 +3,6 @@ package net.shadowmage.ancientwarfare.core.structure;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import net.minecraft.core.BlockPos;
@@ -147,10 +146,10 @@ public final class StructureEmptyContainerLootResolver {
       for (int dx = -4; dx <= 4; dx++) {
          for (int dy = -3; dy <= 3; dy++) {
             for (int dz = -4; dz <= 4; dz++) {
-               cursor.m_122178_(pos.m_123341_() + dx, pos.m_123342_() + dy, pos.m_123343_() + dz);
-               BlockState state = level.m_8055_(cursor);
-               ResourceLocation id = BuiltInRegistries.f_256975_.m_7981_(state.m_60734_());
-               String name = id == null ? "" : id.m_135815_();
+               cursor.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
+               BlockState state = level.getBlockState(cursor);
+               ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+               String name = id == null ? "" : id.getPath();
                if (has(name, "bookshelf", "lectern")) {
                   counts.books++;
                }
@@ -305,8 +304,25 @@ public final class StructureEmptyContainerLootResolver {
       return false;
    }
 
+   /**
+    * Letters and digits only, lower case. Called with the same handful of words for every container
+    * of every generated structure, so a regular expression here showed up plainly in a profile.
+    */
    private static String normalize(String text) {
-      return text == null ? "" : text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+      if (text == null) {
+         return "";
+      }
+
+      StringBuilder plain = new StringBuilder(text.length());
+
+      for (int index = 0; index < text.length(); index++) {
+         char letter = Character.toLowerCase(text.charAt(index));
+         if (letter >= 'a' && letter <= 'z' || letter >= '0' && letter <= '9') {
+            plain.append(letter);
+         }
+      }
+
+      return plain.toString();
    }
 
    private static Map<String, String> factionMap() {
@@ -314,47 +330,21 @@ public final class StructureEmptyContainerLootResolver {
 
       for (String name : List.of(
          "witchbane",
-         "minossian",
-         "lizardman",
          "barbarian",
-         "rakshasa",
-         "guardian",
-         "wizardly",
          "sealsker",
          "sarkonid",
          "buffloka",
-         "vampire",
          "amazon",
          "brigand",
-         "gremlin",
-         "ishtari",
          "smingol",
          "vyncan",
          "xoltec",
          "zimba",
          "empire",
          "norska",
-         "goblin",
-         "undead",
          "pirate",
-         "icelord",
-         "monster",
-         "dwarf",
-         "coven",
-         "malice",
-         "giant",
-         "gnome",
-         "hobbit",
-         "klown",
          "kong",
-         "orc",
-         "elf",
-         "ent",
-         "demon",
-         "beast",
-         "guild",
-         "evil",
-         "good"
+         "guild"
       )) {
          result.put(name, name);
       }

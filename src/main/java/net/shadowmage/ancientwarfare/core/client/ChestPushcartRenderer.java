@@ -27,21 +27,21 @@ public class ChestPushcartRenderer extends EntityRenderer<ChestPushcartEntity> {
 
    public ChestPushcartRenderer(Context context) {
       super(context);
-      this.f_114477_ = 0.8F;
-      this.model = new ChestPushcartModel(context.m_174023_(LAYER));
+      this.shadowRadius = 0.8F;
+      this.model = new ChestPushcartModel(context.bakeLayer(LAYER));
    }
 
    public void render(ChestPushcartEntity entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-      poseStack.m_85836_();
-      poseStack.m_252781_(Axis.f_252436_.m_252977_(180.0F - Mth.m_14179_(partialTick, entity.f_19859_, entity.m_146908_())));
-      poseStack.m_85837_(0.0, 0.0, 0.0);
-      poseStack.m_85841_(1.0F, 1.0F, 1.0F);
-      this.model.setupAnim(entity, 0.0F, 0.0F, (float)entity.f_19797_ + partialTick, 0.0F, 0.0F);
-      this.model.renderBody(poseStack, bufferSource.m_6299_(this.model.m_103119_(this.getTextureLocation(entity))), packedLight, OverlayTexture.f_118083_);
-      this.model.renderCrates(poseStack, bufferSource.m_6299_(this.model.m_103119_(CRATE_TEXTURE)), packedLight, OverlayTexture.f_118083_);
-      this.model.renderWheels(poseStack, bufferSource.m_6299_(this.model.m_103119_(WHEEL_TEXTURE)), packedLight, OverlayTexture.f_118083_);
-      poseStack.m_85849_();
-      super.m_7392_(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+      poseStack.pushPose();
+      poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - Mth.lerp(partialTick, entity.yRotO, entity.getYRot())));
+      poseStack.translate(0.0, 0.0, 0.0);
+      poseStack.scale(1.0F, 1.0F, 1.0F);
+      this.model.setupAnim(entity, 0.0F, 0.0F, (float)entity.tickCount + partialTick, 0.0F, 0.0F);
+      this.model.renderBody(poseStack, bufferSource.getBuffer(this.model.renderType(this.getTextureLocation(entity))), packedLight, OverlayTexture.NO_OVERLAY);
+      this.model.renderCrates(poseStack, bufferSource.getBuffer(this.model.renderType(CRATE_TEXTURE)), packedLight, OverlayTexture.NO_OVERLAY);
+      this.model.renderWheels(poseStack, bufferSource.getBuffer(this.model.renderType(WHEEL_TEXTURE)), packedLight, OverlayTexture.NO_OVERLAY);
+      poseStack.popPose();
+      super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
    }
 
    public ResourceLocation getTextureLocation(ChestPushcartEntity entity) {

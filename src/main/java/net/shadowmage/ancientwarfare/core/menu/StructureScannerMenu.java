@@ -28,7 +28,7 @@ public class StructureScannerMenu extends AbstractContainerMenu {
       this(
          id,
          inventory,
-         buffer.m_130135_(),
+         buffer.readBlockPos(),
          new StructureScannerMenu.ScannerState(readOptionalPos(buffer), readOptionalPos(buffer), readOptionalPos(buffer)),
          readNames(buffer)
       );
@@ -44,30 +44,30 @@ public class StructureScannerMenu extends AbstractContainerMenu {
    }
 
    private static StructureScannerMenu.ScannerState scannerState(Inventory inventory) {
-      ItemStack scanner = inventory.f_35978_.m_21205_().m_150930_(AWCoreRegistryAccess.item(AWCoreIds.STRUCTURE_SCANNER))
-         ? inventory.f_35978_.m_21205_()
-         : inventory.f_35978_.m_21206_();
-      CompoundTag tag = scanner.m_41783_();
+      ItemStack scanner = inventory.player.getMainHandItem().is(AWCoreRegistryAccess.item(AWCoreIds.STRUCTURE_SCANNER))
+         ? inventory.player.getMainHandItem()
+         : inventory.player.getOffhandItem();
+      CompoundTag tag = scanner.getTag();
       return new StructureScannerMenu.ScannerState(optionalPos(tag, "FirstPos"), optionalPos(tag, "SecondPos"), optionalPos(tag, "BuildOrigin"));
    }
 
    private static BlockPos optionalPos(CompoundTag tag, String key) {
-      return tag != null && tag.m_128441_(key) ? BlockPos.m_122022_(tag.m_128454_(key)) : null;
+      return tag != null && tag.contains(key) ? BlockPos.of(tag.getLong(key)) : null;
    }
 
    private static BlockPos readOptionalPos(FriendlyByteBuf buffer) {
-      return buffer.readBoolean() ? buffer.m_130135_() : null;
+      return buffer.readBoolean() ? buffer.readBlockPos() : null;
    }
 
    private static List<String> readNames(FriendlyByteBuf buffer) {
-      int count = Math.min(512, buffer.m_130242_());
+      int count = Math.min(512, buffer.readVarInt());
       return Collections.nCopies(count, "");
    }
 
    public static void writeOptionalPos(FriendlyByteBuf buffer, BlockPos pos) {
       buffer.writeBoolean(pos != null);
       if (pos != null) {
-         buffer.m_130064_(pos);
+         buffer.writeBlockPos(pos);
       }
    }
 
@@ -91,12 +91,12 @@ public class StructureScannerMenu extends AbstractContainerMenu {
       return this.templateNames;
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.STRUCTURE_SCANNER_BLOCK));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.STRUCTURE_SCANNER_BLOCK));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 
    public static record ScannerState(BlockPos first, BlockPos second, BlockPos origin) {

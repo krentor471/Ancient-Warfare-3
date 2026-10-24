@@ -34,7 +34,7 @@ public class BallistaBoatGeoModel extends GeoModel<BallistaBoatEntity> {
    public void handleAnimations(BallistaBoatEntity animatable, long instanceId, AnimationState<BallistaBoatEntity> animationState) {
       super.handleAnimations(animatable, instanceId, animationState);
       float partialTick = animationState.getPartialTick();
-      float paddleAngle = Mth.m_14179_(partialTick, animatable.wheelRotationPrev, animatable.wheelRotation);
+      float paddleAngle = Mth.lerp(partialTick, animatable.wheelRotationPrev, animatable.wheelRotation);
       this.setRotationX("padleAxle", paddleAngle);
       CoreGeoBone turret = this.getAnimationProcessor().getBone("armMain");
       if (turret != null) {
@@ -45,11 +45,11 @@ public class BallistaBoatGeoModel extends GeoModel<BallistaBoatEntity> {
       int animationTicks = animatable.getFireAnimationTicks();
       float bowAngle = 67.5F;
       if (animationTicks > 25) {
-         float releaseProgress = Mth.m_14036_(((float)(30 - animationTicks) + partialTick) / 5.0F, 0.0F, 1.0F);
-         bowAngle = Mth.m_14179_(releaseProgress, 67.5F, 30.0F);
+         float releaseProgress = Mth.clamp(((float)(30 - animationTicks) + partialTick) / 5.0F, 0.0F, 1.0F);
+         bowAngle = Mth.lerp(releaseProgress, 67.5F, 30.0F);
       } else if (animationTicks > 0) {
-         float reloadProgress = Mth.m_14036_(((float)(25 - animationTicks) + partialTick) / 25.0F, 0.0F, 1.0F);
-         bowAngle = Mth.m_14179_(reloadProgress, 30.0F, 67.5F);
+         float reloadProgress = Mth.clamp(((float)(25 - animationTicks) + partialTick) / 25.0F, 0.0F, 1.0F);
+         bowAngle = Mth.lerp(reloadProgress, 30.0F, 67.5F);
       }
 
       float stringAngle = getLegacyStringAngle(bowAngle);

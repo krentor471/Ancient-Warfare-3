@@ -13,7 +13,7 @@ public final class StructureLootTierResolver {
    }
 
    public static ResourceLocation resolveLegacyTable(String oldTable) {
-      return resolveLegacyTable(ResourceLocation.m_135820_(oldTable), oldTable);
+      return resolveLegacyTable(ResourceLocation.tryParse(oldTable), oldTable);
    }
 
    public static ResourceLocation resolveStoredTable(ResourceLocation table) {
@@ -22,7 +22,7 @@ public final class StructureLootTierResolver {
 
    private static ResourceLocation resolveLegacyTable(ResourceLocation parsed, String rawName) {
       if (parsed != null) {
-         String namespace = parsed.m_135827_();
+         String namespace = parsed.getNamespace();
          if ("ancientwarfare".equals(namespace) || "minecraft".equals(namespace)) {
             return parsed;
          }
@@ -31,7 +31,7 @@ public final class StructureLootTierResolver {
             || "ancientwarfarestructure".equals(namespace)
             || "ancientwarfarevehicle".equals(namespace)
             || "ancientwarfareautomation".equals(namespace)) {
-            return new ResourceLocation("ancientwarfare", parsed.m_135815_());
+            return new ResourceLocation("ancientwarfare", parsed.getPath());
          }
       }
 

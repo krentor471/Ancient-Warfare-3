@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:flat_cache",
+  "argument": {
+    "type": "ancientwarfare:continent",
+    "radius": 5200.0,
+    "input": {
+      "type": "minecraft:shifted_noise",
+      "noise": "minecraft:continentalness",
+      "shift_x": "minecraft:shift_x",
+      "shift_y": 0.0,
+      "shift_z": "minecraft:shift_z",
+      "xz_scale": 0.25,
+      "y_scale": 0.0
+    }
+  }
+}

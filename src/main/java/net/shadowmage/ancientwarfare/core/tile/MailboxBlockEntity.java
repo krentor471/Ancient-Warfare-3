@@ -33,8 +33,8 @@ import net.shadowmage.ancientwarfare.core.menu.MailboxMenu;
 public class MailboxBlockEntity extends BlockEntity implements MenuProvider, SideConfigurableWorksite, PlatformItemHandlerProvider {
    public static final int SEND_SLOTS = 18;
    public static final int RECEIVE_SLOTS = 18;
-   private final NonNullList<ItemStack> send = NonNullList.m_122780_(18, ItemStack.f_41583_);
-   private final NonNullList<ItemStack> received = NonNullList.m_122780_(18, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> send = NonNullList.withSize(18, ItemStack.EMPTY);
+   private final NonNullList<ItemStack> received = NonNullList.withSize(18, ItemStack.EMPTY);
    private final EnumMap<WorksiteRelativeSide, WorksiteInventoryAccess> sides = new EnumMap<>(WorksiteRelativeSide.class);
    private String name = "";
    private String target = "";
@@ -81,24 +81,24 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
 
    public void setMailboxName(String name) {
       this.name = name == null ? "" : name.trim();
-      this.m_6596_();
+      this.setChanged();
    }
 
    public void setTargetName(String target) {
       this.target = target == null ? "" : target.trim();
-      this.m_6596_();
+      this.setChanged();
    }
 
    public void setPrivateBox(boolean privateBox) {
       this.privateBox = privateBox;
       this.name = "";
       this.target = "";
-      this.m_6596_();
+      this.setChanged();
    }
 
    public void setAutoExport(boolean autoExport) {
       this.autoExport = autoExport;
-      this.m_6596_();
+      this.setChanged();
    }
 
    public String addressKey() {
@@ -119,7 +119,7 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
 
    public void setOwnerName(String ownerName) {
       this.ownerName = ownerName == null ? "" : ownerName;
-      this.m_6596_();
+      this.setChanged();
    }
 
    public String getOwnerNamePublic() {
@@ -129,11 +129,11 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
    public ItemStack insertReceived(ItemStack stack) {
       ItemStack remaining = stack;
 
-      for (int slot = 0; slot < 18 && !remaining.m_41619_(); slot++) {
+      for (int slot = 0; slot < 18 && !remaining.isEmpty(); slot++) {
          remaining = this.insert(this.send, slot, remaining, false);
       }
 
-      this.m_6596_();
+      this.setChanged();
       return remaining;
    }
 
@@ -146,18 +146,18 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
    }
 
    public boolean stillValid(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) < 64.0;
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) < 64.0;
    }
 
    public void sendNow() {
-      if (this.f_58857_ instanceof ServerLevel serverLevel && this.target != null && !this.target.isBlank()) {
+      if (this.level instanceof ServerLevel serverLevel && this.target != null && !this.target.isBlank()) {
          for (int slot = 0; slot < 18; slot++) {
             ItemStack stack = (ItemStack)this.received.get(slot);
-            if (!stack.m_41619_()) {
-               ItemStack remaining = MailboxData.get(serverLevel).deliver(this, this.target, stack.m_41777_());
-               int moved = stack.m_41613_() - remaining.m_41613_();
+            if (!stack.isEmpty()) {
+               ItemStack remaining = MailboxData.get(serverLevel).deliver(this, this.target, stack.copy());
+               int moved = stack.getCount() - remaining.getCount();
                if (moved > 0) {
                   this.extract(this.received, slot, moved, false);
                }
@@ -168,64 +168,64 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
       }
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.mailbox");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.mailbox");
    }
 
-   public AbstractContainerMenu m_7208_(int containerId, Inventory inventory, Player player) {
+   public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
       return new MailboxMenu(containerId, inventory, this);
    }
 
-   public CompoundTag m_5995_() {
+   public CompoundTag getUpdateTag() {
       CompoundTag tag = new CompoundTag();
-      this.m_183515_(tag);
+      this.saveAdditional(tag);
       return tag;
    }
 
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
    public void handleUpdateTag(CompoundTag tag) {
-      this.m_142466_(tag);
+      this.load(tag);
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128365_("Send", saveItems(this.send));
-      tag.m_128365_("Received", saveItems(this.received));
-      tag.m_128359_("Name", this.name);
-      tag.m_128359_("Target", this.target);
-      tag.m_128379_("Private", this.privateBox);
-      tag.m_128379_("Auto", this.autoExport);
-      tag.m_128359_("Owner", this.getOwnerName());
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.put("Send", saveItems(this.send));
+      tag.put("Received", saveItems(this.received));
+      tag.putString("Name", this.name);
+      tag.putString("Target", this.target);
+      tag.putBoolean("Private", this.privateBox);
+      tag.putBoolean("Auto", this.autoExport);
+      tag.putString("Owner", this.getOwnerName());
       CompoundTag sideTag = new CompoundTag();
-      this.sides.forEach((side, access) -> sideTag.m_128359_(side.name(), access.name()));
-      tag.m_128365_("Sides", sideTag);
+      this.sides.forEach((side, access) -> sideTag.putString(side.name(), access.name()));
+      tag.put("Sides", sideTag);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      if (tag.m_128441_("Send")) {
-         ContainerHelper.m_18980_(tag.m_128469_("Send"), this.send);
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      if (tag.contains("Send")) {
+         ContainerHelper.loadAllItems(tag.getCompound("Send"), this.send);
       }
 
-      if (tag.m_128441_("Received")) {
-         ContainerHelper.m_18980_(tag.m_128469_("Received"), this.received);
+      if (tag.contains("Received")) {
+         ContainerHelper.loadAllItems(tag.getCompound("Received"), this.received);
       }
 
-      this.name = tag.m_128461_("Name");
-      this.target = tag.m_128461_("Target");
-      this.privateBox = tag.m_128471_("Private");
-      this.autoExport = tag.m_128471_("Auto");
-      this.setOwnerName(tag.m_128461_("Owner"));
-      if (tag.m_128441_("Sides")) {
-         CompoundTag sideTag = tag.m_128469_("Sides");
+      this.name = tag.getString("Name");
+      this.target = tag.getString("Target");
+      this.privateBox = tag.getBoolean("Private");
+      this.autoExport = tag.getBoolean("Auto");
+      this.setOwnerName(tag.getString("Owner"));
+      if (tag.contains("Sides")) {
+         CompoundTag sideTag = tag.getCompound("Sides");
 
          for (WorksiteRelativeSide side : WorksiteRelativeSide.values()) {
-            if (sideTag.m_128441_(side.name())) {
+            if (sideTag.contains(side.name())) {
                try {
-                  this.sides.put(side, WorksiteInventoryAccess.valueOf(sideTag.m_128461_(side.name())));
+                  this.sides.put(side, WorksiteInventoryAccess.valueOf(sideTag.getString(side.name())));
                } catch (IllegalArgumentException var8) {
                   this.sides.put(side, WorksiteInventoryAccess.NONE);
                }
@@ -236,7 +236,7 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
 
    private static CompoundTag saveItems(NonNullList<ItemStack> items) {
       CompoundTag tag = new CompoundTag();
-      ContainerHelper.m_18973_(tag, items);
+      ContainerHelper.saveAllItems(tag, items);
       return tag;
    }
 
@@ -252,7 +252,7 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
       }
 
       this.sides.put(side, access);
-      this.m_6596_();
+      this.setChanged();
    }
 
    @Override
@@ -266,13 +266,13 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
       } else if (side == Direction.DOWN) {
          return WorksiteRelativeSide.BOTTOM;
       } else {
-         Direction front = (Direction)this.m_58900_().m_61143_(MailboxBlock.FACING);
+         Direction front = (Direction)this.getBlockState().getValue(MailboxBlock.FACING);
          if (side == front) {
             return WorksiteRelativeSide.FRONT;
-         } else if (side == front.m_122424_()) {
+         } else if (side == front.getOpposite()) {
             return WorksiteRelativeSide.BACK;
          } else {
-            return side == front.m_122428_() ? WorksiteRelativeSide.RIGHT : WorksiteRelativeSide.LEFT;
+            return side == front.getCounterClockWise() ? WorksiteRelativeSide.RIGHT : WorksiteRelativeSide.LEFT;
          }
       }
    }
@@ -288,28 +288,28 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
    }
 
    private ItemStack insert(NonNullList<ItemStack> items, int slot, ItemStack stack, boolean simulate) {
-      if (valid(slot, items) && !stack.m_41619_()) {
+      if (valid(slot, items) && !stack.isEmpty()) {
          ItemStack existing = (ItemStack)items.get(slot);
-         if (!existing.m_41619_() && !ItemStack.m_150942_(existing, stack)) {
+         if (!existing.isEmpty() && !ItemStack.isSameItemSameTags(existing, stack)) {
             return stack;
          } else {
-            int limit = Math.min(64, stack.m_41741_());
-            int moved = Math.min(stack.m_41613_(), existing.m_41619_() ? limit : limit - existing.m_41613_());
+            int limit = Math.min(64, stack.getMaxStackSize());
+            int moved = Math.min(stack.getCount(), existing.isEmpty() ? limit : limit - existing.getCount());
             if (moved <= 0) {
                return stack;
             } else {
                if (!simulate) {
-                  if (existing.m_41619_()) {
-                     items.set(slot, stack.m_255036_(moved));
+                  if (existing.isEmpty()) {
+                     items.set(slot, stack.copyWithCount(moved));
                   } else {
-                     existing.m_41769_(moved);
+                     existing.grow(moved);
                   }
 
-                  this.m_6596_();
+                  this.setChanged();
                }
 
-               ItemStack remaining = stack.m_41777_();
-               remaining.m_41774_(moved);
+               ItemStack remaining = stack.copy();
+               remaining.shrink(moved);
                return remaining;
             }
          }
@@ -321,23 +321,23 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
    private ItemStack extract(NonNullList<ItemStack> items, int slot, int amount, boolean simulate) {
       if (valid(slot, items) && amount > 0) {
          ItemStack existing = (ItemStack)items.get(slot);
-         if (existing.m_41619_()) {
-            return ItemStack.f_41583_;
+         if (existing.isEmpty()) {
+            return ItemStack.EMPTY;
          } else {
-            ItemStack result = existing.m_255036_(Math.min(amount, existing.m_41613_()));
+            ItemStack result = existing.copyWithCount(Math.min(amount, existing.getCount()));
             if (!simulate) {
-               existing.m_41774_(result.m_41613_());
-               if (existing.m_41619_()) {
-                  items.set(slot, ItemStack.f_41583_);
+               existing.shrink(result.getCount());
+               if (existing.isEmpty()) {
+                  items.set(slot, ItemStack.EMPTY);
                }
 
-               this.m_6596_();
+               this.setChanged();
             }
 
             return result;
          }
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 
@@ -352,50 +352,50 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
          this.items = items;
       }
 
-      public int m_6643_() {
+      public int getContainerSize() {
          return this.items.size();
       }
 
-      public boolean m_7983_() {
-         return this.items.stream().allMatch(ItemStack::m_41619_);
+      public boolean isEmpty() {
+         return this.items.stream().allMatch(ItemStack::isEmpty);
       }
 
-      public ItemStack m_8020_(int slot) {
-         return MailboxBlockEntity.valid(slot, this.items) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+      public ItemStack getItem(int slot) {
+         return MailboxBlockEntity.valid(slot, this.items) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
       }
 
-      public ItemStack m_7407_(int slot, int amount) {
+      public ItemStack removeItem(int slot, int amount) {
          return MailboxBlockEntity.this.extract(this.items, slot, amount, false);
       }
 
-      public ItemStack m_8016_(int slot) {
+      public ItemStack removeItemNoUpdate(int slot) {
          if (!MailboxBlockEntity.valid(slot, this.items)) {
-            return ItemStack.f_41583_;
+            return ItemStack.EMPTY;
          } else {
             ItemStack result = (ItemStack)this.items.get(slot);
-            this.items.set(slot, ItemStack.f_41583_);
+            this.items.set(slot, ItemStack.EMPTY);
             return result;
          }
       }
 
-      public void m_6836_(int slot, ItemStack stack) {
+      public void setItem(int slot, ItemStack stack) {
          if (MailboxBlockEntity.valid(slot, this.items)) {
             this.items.set(slot, stack);
-            this.m_6596_();
+            this.setChanged();
          }
       }
 
-      public void m_6596_() {
-         MailboxBlockEntity.this.m_6596_();
+      public void setChanged() {
+         MailboxBlockEntity.this.setChanged();
       }
 
-      public boolean m_6542_(Player player) {
+      public boolean stillValid(Player player) {
          return MailboxBlockEntity.this.stillValid(player);
       }
 
-      public void m_6211_() {
-         this.items.replaceAll(ignored -> ItemStack.f_41583_);
-         this.m_6596_();
+      public void clearContent() {
+         this.items.replaceAll(ignored -> ItemStack.EMPTY);
+         this.setChanged();
       }
    }
 
@@ -420,7 +420,7 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
       @Override
       public ItemStack getStackInSlot(int slot) {
          NonNullList<ItemStack> items = this.items();
-         return MailboxBlockEntity.valid(slot, items) ? (ItemStack)items.get(slot) : ItemStack.f_41583_;
+         return MailboxBlockEntity.valid(slot, items) ? (ItemStack)items.get(slot) : ItemStack.EMPTY;
       }
 
       @Override
@@ -434,7 +434,7 @@ public class MailboxBlockEntity extends BlockEntity implements MenuProvider, Sid
       public ItemStack extractItem(int slot, int amount, boolean simulate) {
          return MailboxBlockEntity.this.getSideAccess(MailboxBlockEntity.this.relativeSide(this.side)) == WorksiteInventoryAccess.OUTPUT
             ? MailboxBlockEntity.this.extract(MailboxBlockEntity.this.send, slot, amount, simulate)
-            : ItemStack.f_41583_;
+            : ItemStack.EMPTY;
       }
 
       @Override

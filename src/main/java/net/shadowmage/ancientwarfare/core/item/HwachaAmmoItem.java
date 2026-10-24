@@ -14,7 +14,7 @@ public class HwachaAmmoItem extends Item {
    private final HwachaAmmoType ammoType;
 
    public HwachaAmmoItem(HwachaAmmoType ammoType) {
-      super(new Properties().m_41487_(64));
+      super(new Properties().stacksTo(64));
       this.ammoType = ammoType;
    }
 
@@ -23,10 +23,10 @@ public class HwachaAmmoItem extends Item {
    }
 
    public static HwachaAmmoType ammoType(ItemStack stack) {
-      return stack.m_41720_() instanceof HwachaAmmoItem ammo ? ammo.ammoType() : null;
+      return stack.getItem() instanceof HwachaAmmoItem ammo ? ammo.ammoType() : null;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_(this.ammoType.effectTranslationKey()).m_130940_(ChatFormatting.GRAY));
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable(this.ammoType.effectTranslationKey()).withStyle(ChatFormatting.GRAY));
    }
 }

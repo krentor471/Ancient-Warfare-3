@@ -18,19 +18,19 @@ public class CombatOrderMenu extends AbstractContainerMenu {
 
    public CombatOrderMenu(int containerId, Inventory playerInventory, InteractionHand hand) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.COMBAT_ORDER_MENU), containerId);
-      this.player = playerInventory.f_35978_;
+      this.player = playerInventory.player;
       this.hand = hand;
    }
 
    public ItemStack getCombatOrderStack() {
-      return this.player.m_21120_(this.hand);
+      return this.player.getItemInHand(this.hand);
    }
 
    public List<BlockPos> getEntries() {
       return CombatOrderData.getEntries(this.getCombatOrderStack());
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       ItemStack stack = this.getCombatOrderStack();
       if (!AWCoreRegistryAccess.is(stack, AWCoreIds.COMBAT_ORDER)) {
          return false;
@@ -39,15 +39,15 @@ public class CombatOrderMenu extends AbstractContainerMenu {
       }
    }
 
-   public boolean m_6875_(Player player) {
-      return AWCoreRegistryAccess.is(player.m_21120_(this.hand), AWCoreIds.COMBAT_ORDER);
+   public boolean stillValid(Player player) {
+      return AWCoreRegistryAccess.is(player.getItemInHand(this.hand), AWCoreIds.COMBAT_ORDER);
    }
 
    public static int removeButton(int index) {
       return 10 + index;
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

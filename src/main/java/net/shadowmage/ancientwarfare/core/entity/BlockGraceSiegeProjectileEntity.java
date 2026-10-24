@@ -26,33 +26,33 @@ abstract class BlockGraceSiegeProjectileEntity extends ThrowableItemProjectile {
       this.blockGraceDistance = 6.0;
    }
 
-   public void m_8119_() {
-      if (this.m_9236_().f_46443_ && this.blockGraceOrigin == null) {
-         this.setBlockCollisionGraceOrigin(this.m_20182_());
+   public void tick() {
+      if (this.level().isClientSide && this.blockGraceOrigin == null) {
+         this.setBlockCollisionGraceOrigin(this.position());
       }
 
-      super.m_8119_();
+      super.tick();
    }
 
    protected final boolean ignoresBlockHit(BlockHitResult result) {
-      return this.blockGraceOrigin != null && result.m_82450_().m_82557_(this.blockGraceOrigin) <= this.blockGraceDistance * this.blockGraceDistance;
+      return this.blockGraceOrigin != null && result.getLocation().distanceToSqr(this.blockGraceOrigin) <= this.blockGraceDistance * this.blockGraceDistance;
    }
 
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
       if (this.blockGraceOrigin != null && this.blockGraceDistance > 0.0) {
-         tag.m_128347_("BlockGraceOriginX", this.blockGraceOrigin.f_82479_);
-         tag.m_128347_("BlockGraceOriginY", this.blockGraceOrigin.f_82480_);
-         tag.m_128347_("BlockGraceOriginZ", this.blockGraceOrigin.f_82481_);
-         tag.m_128347_("BlockGraceDistance", this.blockGraceDistance);
+         tag.putDouble("BlockGraceOriginX", this.blockGraceOrigin.x);
+         tag.putDouble("BlockGraceOriginY", this.blockGraceOrigin.y);
+         tag.putDouble("BlockGraceOriginZ", this.blockGraceOrigin.z);
+         tag.putDouble("BlockGraceDistance", this.blockGraceDistance);
       }
    }
 
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
-      if (tag.m_128441_("BlockGraceDistance")) {
-         this.blockGraceOrigin = new Vec3(tag.m_128459_("BlockGraceOriginX"), tag.m_128459_("BlockGraceOriginY"), tag.m_128459_("BlockGraceOriginZ"));
-         this.blockGraceDistance = Math.max(0.0, tag.m_128459_("BlockGraceDistance"));
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
+      if (tag.contains("BlockGraceDistance")) {
+         this.blockGraceOrigin = new Vec3(tag.getDouble("BlockGraceOriginX"), tag.getDouble("BlockGraceOriginY"), tag.getDouble("BlockGraceOriginZ"));
+         this.blockGraceDistance = Math.max(0.0, tag.getDouble("BlockGraceDistance"));
       }
    }
 }

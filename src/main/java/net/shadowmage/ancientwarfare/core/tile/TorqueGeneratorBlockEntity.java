@@ -50,7 +50,7 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    private static final double WINDMILL_MEDIUM_OUTPUT = 30.0;
    private static final double WINDMILL_LARGE_OUTPUT = 40.0;
    private final TorqueCell torqueCell;
-   private ItemStack fuel = ItemStack.f_41583_;
+   private ItemStack fuel = ItemStack.EMPTY;
    private int burnTime;
    private int burnTimeBase;
    private int validationCooldown;
@@ -76,15 +76,15 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    public boolean tryInsertFuel(Player player, InteractionHand hand, ItemStack held) {
-      if (!held.m_41619_() && this.getFuelBurnTime(held) > 0 && this.fuel.m_41619_()) {
-         ItemStack inserted = held.m_255036_(1);
+      if (!held.isEmpty() && this.getFuelBurnTime(held) > 0 && this.fuel.isEmpty()) {
+         ItemStack inserted = held.copyWithCount(1);
          this.fuel = inserted;
-         if (!player.m_150110_().f_35937_) {
-            held.m_41774_(1);
+         if (!player.getAbilities().instabuild) {
+            held.shrink(1);
          }
 
          this.tryStartBurning();
-         this.m_6596_();
+         this.setChanged();
          return true;
       } else {
          return false;
@@ -110,7 +110,7 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
          return "blades=" + this.bladeCount + " " + (this.validSetup ? "valid" : "invalid") + " seconds=" + this.tickCount;
       } else {
          return this.burnTimeBase <= 0
-            ? (this.fuel.m_41619_() ? "no fuel" : "ready") + " seconds=" + this.tickCount
+            ? (this.fuel.isEmpty() ? "no fuel" : "ready") + " seconds=" + this.tickCount
             : this.burnTime + "/" + this.burnTimeBase + " fuelTicks, seconds=" + this.tickCount;
       }
    }
@@ -118,18 +118,18 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    public AABB getRenderBoundingBox() {
       if (this.getKind() == TorqueGeneratorKind.WINDMILL) {
          int radius = Math.max(2, this.bladeCount + 2);
-         return new AABB(this.f_58858_.m_7918_(-radius, -radius, -radius), this.f_58858_.m_7918_(radius + 1, radius + 1, radius + 1));
+         return new AABB(this.worldPosition.offset(-radius, -radius, -radius), this.worldPosition.offset(radius + 1, radius + 1, radius + 1));
       } else {
          return this.getKind() == TorqueGeneratorKind.WATERWHEEL
-            ? new AABB(this.f_58858_.m_7918_(-3, -3, -3), this.f_58858_.m_7918_(4, 4, 4))
-            : new AABB(this.f_58858_);
+            ? new AABB(this.worldPosition.offset(-3, -3, -3), this.worldPosition.offset(4, 4, 4))
+            : new AABB(this.worldPosition);
       }
    }
 
    private void tickServer() {
       if (this.getKind() == TorqueGeneratorKind.STIRLING) {
          this.tickStirlingPerTick();
-         double output = this.transferPowerTo(this.getFacing()) + this.transferPowerTo(this.getFacing().m_122424_());
+         double output = this.transferPowerTo(this.getFacing()) + this.transferPowerTo(this.getFacing().getOpposite());
          this.stats = new TorqueStats(this.getTorqueStored(null), this.burnTime > 0 ? 1000.0 : 0.0, output, 0.0);
       } else if (this.logicCooldown++ >= 0) {
          this.logicCooldown = 0;
@@ -138,9 +138,9 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
             double before = this.torqueCell.getTorque();
             this.tickWindmill();
             double generated = Math.max(0.0, this.torqueCell.getTorque() - before);
-            double output = this.transferPowerTo(this.getFacing()) + this.transferPowerTo(this.getFacing().m_122424_());
+            double output = this.transferPowerTo(this.getFacing()) + this.transferPowerTo(this.getFacing().getOpposite());
             this.stats = new TorqueStats(this.getTorqueStored(null), generated, output, 0.0);
-            this.m_6596_();
+            this.setChanged();
          } else {
             double before = this.torqueCell.getTorque();
             switch (this.getKind()) {
@@ -150,11 +150,11 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
             }
 
             double generated = Math.max(0.0, this.torqueCell.getTorque() - before);
-            double output = this.transferPowerTo(this.getFacing()) + this.transferPowerTo(this.getFacing().m_122424_());
+            double output = this.transferPowerTo(this.getFacing()) + this.transferPowerTo(this.getFacing().getOpposite());
             double loss = 0.0;
             this.stats = new TorqueStats(this.getTorqueStored(null), generated, output, loss);
             if (generated > 0.0 || output > 0.0 || loss > 0.0) {
-               this.m_6596_();
+               this.setChanged();
             }
          }
       }
@@ -182,9 +182,9 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
       if (ticks <= 0) {
          return false;
       } else {
-         this.fuel.m_41774_(1);
-         if (this.fuel.m_41619_()) {
-            this.fuel = ItemStack.f_41583_;
+         this.fuel.shrink(1);
+         if (this.fuel.isEmpty()) {
+            this.fuel = ItemStack.EMPTY;
          }
 
          this.burnTime = ticks;
@@ -195,9 +195,9 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private void syncStirlingState() {
-      this.m_6596_();
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+      this.setChanged();
+      if (this.level != null && !this.level.isClientSide) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 
@@ -230,8 +230,8 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
          case 5 -> 30.0;
          case 7 -> 40.0;
       };
-      if (this.f_58857_ != null && !(base <= 0.0)) {
-         int y = this.f_58858_.m_123342_();
+      if (this.level != null && !(base <= 0.0)) {
+         int y = this.worldPosition.getY();
          double heightMultiplier = y <= 100 ? 1.0 : (y <= 150 ? 1.5 : (y <= 200 ? 2.0 : (y <= 250 ? 3.0 : 4.0)));
          return base * heightMultiplier;
       } else {
@@ -252,7 +252,7 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    public WindmillBladeBlockEntity.ToggleResult toggleWindmillAssembly() {
-      if (this.f_58857_ != null && this.getKind() == TorqueGeneratorKind.WINDMILL) {
+      if (this.level != null && this.getKind() == TorqueGeneratorKind.WINDMILL) {
          if (this.validSetup && this.windmillCenter != null) {
             this.restoreWindmillBlades();
             this.validSetup = false;
@@ -262,16 +262,16 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
             this.syncWindmillState();
             return WindmillBladeBlockEntity.ToggleResult.STOPPED;
          } else {
-            Direction preferredPlane = this.getFacing().m_122434_() == Axis.X ? Direction.SOUTH : Direction.EAST;
+            Direction preferredPlane = this.getFacing().getAxis() == Axis.X ? Direction.SOUTH : Direction.EAST;
             Direction facing = this.getFacing();
 
-            for (Direction side : new Direction[]{facing.m_122424_(), facing}) {
+            for (Direction side : new Direction[]{facing.getOpposite(), facing}) {
                WindmillBladeBlockEntity.StructureInfo structure = WindmillBladeBlockEntity.findStructureForGenerator(
-                  this.f_58857_, this.f_58858_.m_121945_(side), preferredPlane
+                  this.level, this.worldPosition.relative(side), preferredPlane
                );
                if (structure != null) {
                   for (BlockPos bladePos : structure.positions()) {
-                     this.f_58857_.m_7731_(bladePos, Blocks.f_50016_.m_49966_(), 11);
+                     this.level.setBlock(bladePos, Blocks.AIR.defaultBlockState(), 11);
                   }
 
                   this.windmillCenter = structure.center();
@@ -291,16 +291,16 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private void restoreWindmillBlades() {
-      if (this.f_58857_ != null && this.windmillCenter != null && this.bladeCount > 0) {
+      if (this.level != null && this.windmillCenter != null && this.bladeCount > 0) {
          int radius = (this.bladeCount - 1) / 2;
-         Direction bladeFacing = this.getFacing().m_122424_();
+         Direction bladeFacing = this.getFacing().getOpposite();
 
          for (int h = -radius; h <= radius; h++) {
             for (int v = -radius; v <= radius; v++) {
-               BlockPos pos = this.windmillCenter.m_5484_(this.windmillPlane, h).m_6630_(v);
-               this.f_58857_
-                  .m_7731_(
-                     pos, (BlockState)AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE).m_49966_().m_61124_(WindmillBladeBlock.FACING, bladeFacing), 11
+               BlockPos pos = this.windmillCenter.relative(this.windmillPlane, h).above(v);
+               this.level
+                  .setBlock(
+                     pos, (BlockState)AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE).defaultBlockState().setValue(WindmillBladeBlock.FACING, bladeFacing), 11
                   );
             }
          }
@@ -308,9 +308,9 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private void syncWindmillState() {
-      this.m_6596_();
-      if (this.f_58857_ != null) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+      this.setChanged();
+      if (this.level != null) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
       }
    }
 
@@ -344,27 +344,27 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private boolean validateWaterwheel() {
-      for (BlockPos pos : BlockPos.m_121940_(this.f_58858_.m_7918_(-2, -2, -2), this.f_58858_.m_7918_(2, 2, 2))) {
+      for (BlockPos pos : BlockPos.betweenClosed(this.worldPosition.offset(-2, -2, -2), this.worldPosition.offset(2, 2, 2))) {
          if (this.isWater(pos)) {
             return true;
          }
       }
 
-      Direction forward = this.getFacing().m_122424_();
-      BlockPos inner = this.f_58858_.m_121945_(forward);
-      if (this.isAir(inner) && this.isAir(inner.m_7494_())) {
-         Direction rightDirection = forward.m_122427_();
-         Direction leftDirection = forward.m_122428_();
-         BlockPos left = inner.m_121945_(leftDirection);
-         BlockPos right = inner.m_121945_(rightDirection);
-         boolean leftDownFlow = this.isWater(left) && this.isWater(left.m_7495_());
-         boolean rightDownFlow = this.isWater(right) && this.isWater(right.m_7495_());
-         if (leftDownFlow && this.isAir(right) && this.isAir(right.m_7494_())) {
+      Direction forward = this.getFacing().getOpposite();
+      BlockPos inner = this.worldPosition.relative(forward);
+      if (this.isAir(inner) && this.isAir(inner.above())) {
+         Direction rightDirection = forward.getClockWise();
+         Direction leftDirection = forward.getCounterClockWise();
+         BlockPos left = inner.relative(leftDirection);
+         BlockPos right = inner.relative(rightDirection);
+         boolean leftDownFlow = this.isWater(left) && this.isWater(left.below());
+         boolean rightDownFlow = this.isWater(right) && this.isWater(right.below());
+         if (leftDownFlow && this.isAir(right) && this.isAir(right.above())) {
             return true;
          } else {
-            return rightDownFlow && this.isAir(left) && this.isAir(left.m_7494_())
+            return rightDownFlow && this.isAir(left) && this.isAir(left.above())
                ? true
-               : this.isWater(left.m_7495_()) && this.isWater(right.m_7495_()) && this.isWater(inner.m_7495_());
+               : this.isWater(left.below()) && this.isWater(right.below()) && this.isWater(inner.below());
          }
       } else {
          return false;
@@ -372,15 +372,15 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private boolean isAir(BlockPos pos) {
-      return this.f_58857_ != null && this.f_58857_.m_8055_(pos).m_60795_();
+      return this.level != null && this.level.getBlockState(pos).isAir();
    }
 
    private boolean isWater(BlockPos pos) {
-      if (this.f_58857_ == null) {
+      if (this.level == null) {
          return false;
       } else {
-         FluidState fluid = this.f_58857_.m_6425_(pos);
-         return fluid.m_192917_(Fluids.f_76193_) || this.f_58857_.m_8055_(pos).m_60713_(Blocks.f_49990_);
+         FluidState fluid = this.level.getFluidState(pos);
+         return fluid.is(Fluids.WATER) || this.level.getBlockState(pos).is(Blocks.WATER);
       }
    }
 
@@ -389,9 +389,9 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private double transferPowerTo(Direction side) {
-      if (this.f_58857_ != null && this.canOutputTorque(side)) {
-         if (this.f_58857_.m_7702_(this.f_58858_.m_121945_(side)) instanceof TorqueAccess target) {
-            Direction targetSide = side.m_122424_();
+      if (this.level != null && this.canOutputTorque(side)) {
+         if (this.level.getBlockEntity(this.worldPosition.relative(side)) instanceof TorqueAccess target) {
+            Direction targetSide = side.getOpposite();
             if (!target.canInputTorque(targetSide)) {
                return 0.0;
             } else {
@@ -439,7 +439,7 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
 
    @Override
    public boolean canOutputTorque(Direction side) {
-      return side == this.getFacing() || side == this.getFacing().m_122424_();
+      return side == this.getFacing() || side == this.getFacing().getOpposite();
    }
 
    @Override
@@ -448,53 +448,53 @@ public class TorqueGeneratorBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private Direction getFacing() {
-      return this.m_58900_().m_61138_(TorqueGeneratorBlock.FACING) ? (Direction)this.m_58900_().m_61143_(TorqueGeneratorBlock.FACING) : Direction.NORTH;
+      return this.getBlockState().hasProperty(TorqueGeneratorBlock.FACING) ? (Direction)this.getBlockState().getValue(TorqueGeneratorBlock.FACING) : Direction.NORTH;
    }
 
    private TorqueGeneratorKind getKind() {
-      return this.m_58900_().m_60734_() instanceof TorqueGeneratorBlock block ? block.getKind() : TorqueGeneratorKind.STIRLING;
+      return this.getBlockState().getBlock() instanceof TorqueGeneratorBlock block ? block.getKind() : TorqueGeneratorKind.STIRLING;
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128347_("Torque", this.torqueCell.getTorque());
-      tag.m_128405_("BurnTime", this.burnTime);
-      tag.m_128405_("BurnTimeBase", this.burnTimeBase);
-      tag.m_128379_("ValidSetup", this.validSetup);
-      tag.m_128405_("BladeCount", this.bladeCount);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.putDouble("Torque", this.torqueCell.getTorque());
+      tag.putInt("BurnTime", this.burnTime);
+      tag.putInt("BurnTimeBase", this.burnTimeBase);
+      tag.putBoolean("ValidSetup", this.validSetup);
+      tag.putInt("BladeCount", this.bladeCount);
       if (this.windmillCenter != null) {
-         tag.m_128356_("WindmillCenter", this.windmillCenter.m_121878_());
+         tag.putLong("WindmillCenter", this.windmillCenter.asLong());
       }
 
-      tag.m_128344_("WindmillPlane", (byte)this.windmillPlane.m_122416_());
-      if (!this.fuel.m_41619_()) {
-         tag.m_128365_("Fuel", this.fuel.m_41739_(new CompoundTag()));
+      tag.putByte("WindmillPlane", (byte)this.windmillPlane.get2DDataValue());
+      if (!this.fuel.isEmpty()) {
+         tag.put("Fuel", this.fuel.save(new CompoundTag()));
       }
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.torqueCell.setTorque(tag.m_128459_("Torque"));
-      this.burnTime = tag.m_128451_("BurnTime");
-      this.burnTimeBase = tag.m_128451_("BurnTimeBase");
-      this.validSetup = tag.m_128471_("ValidSetup");
-      this.bladeCount = tag.m_128451_("BladeCount");
-      this.windmillCenter = tag.m_128441_("WindmillCenter") ? BlockPos.m_122022_(tag.m_128454_("WindmillCenter")) : null;
-      if (tag.m_128441_("WindmillPlane")) {
-         this.windmillPlane = Direction.m_122407_(tag.m_128445_("WindmillPlane"));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.torqueCell.setTorque(tag.getDouble("Torque"));
+      this.burnTime = tag.getInt("BurnTime");
+      this.burnTimeBase = tag.getInt("BurnTimeBase");
+      this.validSetup = tag.getBoolean("ValidSetup");
+      this.bladeCount = tag.getInt("BladeCount");
+      this.windmillCenter = tag.contains("WindmillCenter") ? BlockPos.of(tag.getLong("WindmillCenter")) : null;
+      if (tag.contains("WindmillPlane")) {
+         this.windmillPlane = Direction.from2DDataValue(tag.getByte("WindmillPlane"));
       }
 
-      this.fuel = tag.m_128441_("Fuel") ? ItemStack.m_41712_(tag.m_128469_("Fuel")) : ItemStack.f_41583_;
+      this.fuel = tag.contains("Fuel") ? ItemStack.of(tag.getCompound("Fuel")) : ItemStack.EMPTY;
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      this.m_183515_(tag);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      this.saveAdditional(tag);
       return tag;
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 }

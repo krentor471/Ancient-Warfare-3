@@ -30,23 +30,23 @@ public class GateEntityRenderer extends EntityRenderer<GateEntity> {
    private static final float IRON_BAR_THICKNESS = 0.1875F;
    private static final float DRAWBRIDGE_THICKNESS = 0.25F;
    private static final float TOP_HIDE_MARGIN = 0.475F;
-   private static final ThreadLocal<Integer> CURRENT_OVERLAY = ThreadLocal.withInitial(() -> OverlayTexture.f_118083_);
+   private static final ThreadLocal<Integer> CURRENT_OVERLAY = ThreadLocal.withInitial(() -> OverlayTexture.NO_OVERLAY);
 
    public GateEntityRenderer(Context context) {
       super(context);
-      this.f_114477_ = 0.0F;
+      this.shadowRadius = 0.0F;
    }
 
    public void render(GateEntity entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-      TextureAtlasSprite woodSprite = (TextureAtlasSprite)Minecraft.m_91087_().m_91258_(TextureAtlas.f_118259_).apply(WOOD_SPRITE);
-      TextureAtlasSprite metalSprite = (TextureAtlasSprite)Minecraft.m_91087_().m_91258_(TextureAtlas.f_118259_).apply(METAL_SPRITE);
-      VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110446_(InventoryMenu.f_39692_));
+      TextureAtlasSprite woodSprite = (TextureAtlasSprite)Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(WOOD_SPRITE);
+      TextureAtlasSprite metalSprite = (TextureAtlasSprite)Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(METAL_SPRITE);
+      VertexConsumer consumer = bufferSource.getBuffer(RenderType.entitySolid(InventoryMenu.BLOCK_ATLAS));
       int width = entity.widthBlocks();
       int height = entity.heightBlocks();
       float openProgress = entity.openProgress(partialTick);
-      poseStack.m_85836_();
+      poseStack.pushPose();
       CURRENT_OVERLAY.set(
-         entity.hurtTime() > 0 ? OverlayTexture.m_118093_(OverlayTexture.m_118088_(0.0F), OverlayTexture.m_118096_(true)) : OverlayTexture.f_118083_
+         entity.hurtTime() > 0 ? OverlayTexture.pack(OverlayTexture.u(0.0F), OverlayTexture.v(true)) : OverlayTexture.NO_OVERLAY
       );
 
       try {
@@ -55,12 +55,12 @@ public class GateEntityRenderer extends EntityRenderer<GateEntity> {
          CURRENT_OVERLAY.remove();
       }
 
-      poseStack.m_85849_();
-      super.m_7392_(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+      poseStack.popPose();
+      super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
    }
 
    public ResourceLocation getTextureLocation(GateEntity entity) {
-      return InventoryMenu.f_39692_;
+      return InventoryMenu.BLOCK_ATLAS;
    }
 
    private static void renderGate(
@@ -134,19 +134,19 @@ public class GateEntityRenderer extends EntityRenderer<GateEntity> {
       if (entity.isXAxisGate()) {
          renderWoodXAxisFrame(consumer, wood, poseStack, height, halfWidth, packedLight);
          renderCuboid(poseStack, consumer, metal, -halfWidth - 0.25F, 0.1875F, -0.3125F, halfWidth + 0.25F, 0.4375F, 0.3125F, packedLight);
-         poseStack.m_85836_();
-         float sign = entity.facing().m_122431_() >= 0 ? -1.0F : 1.0F;
-         poseStack.m_252781_(new Quaternionf(new AxisAngle4f((float)Math.toRadians((double)(angleDegrees * sign)), 1.0F, 0.0F, 0.0F)));
+         poseStack.pushPose();
+         float sign = entity.facing().getStepZ() >= 0 ? -1.0F : 1.0F;
+         poseStack.mulPose(new Quaternionf(new AxisAngle4f((float)Math.toRadians((double)(angleDegrees * sign)), 1.0F, 0.0F, 0.0F)));
          renderDrawbridgeXAxisDeck(consumer, wood, metal, poseStack, height, halfWidth, packedLight);
-         poseStack.m_85849_();
+         poseStack.popPose();
       } else {
          renderWoodZAxisFrame(consumer, wood, poseStack, height, halfWidth, packedLight);
          renderCuboid(poseStack, consumer, metal, -0.3125F, 0.1875F, -halfWidth - 0.25F, 0.3125F, 0.4375F, halfWidth + 0.25F, packedLight);
-         poseStack.m_85836_();
-         float sign = entity.facing().m_122429_() >= 0 ? 1.0F : -1.0F;
-         poseStack.m_252781_(new Quaternionf(new AxisAngle4f((float)Math.toRadians((double)(angleDegrees * sign)), 0.0F, 0.0F, 1.0F)));
+         poseStack.pushPose();
+         float sign = entity.facing().getStepX() >= 0 ? 1.0F : -1.0F;
+         poseStack.mulPose(new Quaternionf(new AxisAngle4f((float)Math.toRadians((double)(angleDegrees * sign)), 0.0F, 0.0F, 1.0F)));
          renderDrawbridgeZAxisDeck(consumer, wood, metal, poseStack, height, halfWidth, packedLight);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
    }
 
@@ -779,7 +779,7 @@ public class GateEntityRenderer extends EntityRenderer<GateEntity> {
       float maxZ,
       int packedLight
    ) {
-      Pose pose = poseStack.m_85850_();
+      Pose pose = poseStack.last();
       quad(pose, consumer, sprite, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, 0.0F, 0.0F, 1.0F, packedLight);
       quad(pose, consumer, sprite, maxX, minY, minZ, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, 0.0F, 0.0F, -1.0F, packedLight);
       quad(pose, consumer, sprite, minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ, -1.0F, 0.0F, 0.0F, packedLight);
@@ -809,10 +809,10 @@ public class GateEntityRenderer extends EntityRenderer<GateEntity> {
       float normalZ,
       int packedLight
    ) {
-      vertex(pose.m_252922_(), pose.m_252943_(), consumer, sprite, x1, y1, z1, 0.0F, 0.0F, normalX, normalY, normalZ, packedLight);
-      vertex(pose.m_252922_(), pose.m_252943_(), consumer, sprite, x2, y2, z2, 1.0F, 0.0F, normalX, normalY, normalZ, packedLight);
-      vertex(pose.m_252922_(), pose.m_252943_(), consumer, sprite, x3, y3, z3, 1.0F, 1.0F, normalX, normalY, normalZ, packedLight);
-      vertex(pose.m_252922_(), pose.m_252943_(), consumer, sprite, x4, y4, z4, 0.0F, 1.0F, normalX, normalY, normalZ, packedLight);
+      vertex(pose.pose(), pose.normal(), consumer, sprite, x1, y1, z1, 0.0F, 0.0F, normalX, normalY, normalZ, packedLight);
+      vertex(pose.pose(), pose.normal(), consumer, sprite, x2, y2, z2, 1.0F, 0.0F, normalX, normalY, normalZ, packedLight);
+      vertex(pose.pose(), pose.normal(), consumer, sprite, x3, y3, z3, 1.0F, 1.0F, normalX, normalY, normalZ, packedLight);
+      vertex(pose.pose(), pose.normal(), consumer, sprite, x4, y4, z4, 0.0F, 1.0F, normalX, normalY, normalZ, packedLight);
    }
 
    private static void vertex(
@@ -830,12 +830,12 @@ public class GateEntityRenderer extends EntityRenderer<GateEntity> {
       float normalZ,
       int packedLight
    ) {
-      consumer.m_252986_(matrix, x, y, z)
-         .m_6122_(255, 255, 255, 255)
-         .m_7421_(sprite.m_118367_((double)(u * 16.0F)), sprite.m_118393_((double)(v * 16.0F)))
-         .m_86008_(CURRENT_OVERLAY.get())
-         .m_85969_(packedLight)
-         .m_252939_(normalMatrix, normalX, normalY, normalZ)
-         .m_5752_();
+      consumer.vertex(matrix, x, y, z)
+         .color(255, 255, 255, 255)
+         .uv(sprite.getU((double)(u * 16.0F)), sprite.getV((double)(v * 16.0F)))
+         .overlayCoords(CURRENT_OVERLAY.get())
+         .uv2(packedLight)
+         .normal(normalMatrix, normalX, normalY, normalZ)
+         .endVertex();
    }
 }

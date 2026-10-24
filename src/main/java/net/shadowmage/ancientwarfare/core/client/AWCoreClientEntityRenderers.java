@@ -38,12 +38,9 @@ import net.shadowmage.ancientwarfare.core.entity.FactionPriestNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSiegeEngineerNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSoldierEliteNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionSoldierNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.FactionSpellcasterNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.FactionTraderNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.ModernSoldierNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.NpcBaseEntity;
 import net.shadowmage.ancientwarfare.core.entity.PriestNpcEntity;
-import net.shadowmage.ancientwarfare.core.entity.ShipCaptainNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.SiegeEngineerNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.TraderNpcEntity;
 import net.shadowmage.ancientwarfare.core.entity.WorkerNpcEntity;
@@ -123,12 +120,6 @@ public final class AWCoreClientEntityRenderers {
          AWCoreRegistryAccess.entityType(AWCoreIds.SIEGE_ENGINEER_NPC), AWCoreClientEntityRenderers.SiegeEngineerRenderer::new
       );
       AWCoreClientEntityRenderers.EntityRenderers.register(
-         AWCoreRegistryAccess.entityType(AWCoreIds.MODERN_SOLDIER_NPC), AWCoreClientEntityRenderers.ModernSoldierRenderer::new
-      );
-      AWCoreClientEntityRenderers.EntityRenderers.register(
-         AWCoreRegistryAccess.entityType(AWCoreIds.SHIP_CAPTAIN_NPC), AWCoreClientEntityRenderers.ShipCaptainRenderer::new
-      );
-      AWCoreClientEntityRenderers.EntityRenderers.register(
          AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SOLDIER_NPC), AWCoreClientEntityRenderers.FactionSoldierRenderer::new
       );
       AWCoreClientEntityRenderers.EntityRenderers.register(
@@ -165,9 +156,6 @@ public final class AWCoreClientEntityRenderers {
          AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_PRIEST_NPC), AWCoreClientEntityRenderers.FactionPriestRenderer::new
       );
       AWCoreClientEntityRenderers.EntityRenderers.register(
-         AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_SPELLCASTER_NPC), AWCoreClientEntityRenderers.FactionSpellcasterRenderer::new
-      );
-      AWCoreClientEntityRenderers.EntityRenderers.register(
          AWCoreRegistryAccess.entityType(AWCoreIds.FACTION_BARD_NPC), AWCoreClientEntityRenderers.FactionBardRenderer::new
       );
       AWCoreClientEntityRenderers.EntityRenderers.register(
@@ -177,7 +165,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class BardRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<BardNpcEntity> {
       private BardRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(BardNpcEntity entity) {
@@ -186,6 +174,7 @@ public final class AWCoreClientEntityRenderers {
    }
 
    private abstract static class BaseNpcRenderer<T extends NpcBaseEntity> extends HumanoidMobRenderer<T, HumanoidModel<T>> {
+      private static final double MORALE_BAR_RANGE_SQ = 32.0 * 32.0;
       private final HumanoidModel<T> wideModel;
       private final HumanoidModel<T> slimModel;
 
@@ -193,48 +182,86 @@ public final class AWCoreClientEntityRenderers {
          super(context, wideModel, 0.5F);
          this.wideModel = wideModel;
          this.slimModel = slimModel;
-         this.m_115326_(new ItemInHandLayer(this, context.m_234598_()));
-         this.m_115326_(
+         this.addLayer(new ItemInHandLayer(this, context.getItemInHandRenderer()));
+         this.addLayer(
             new HumanoidArmorLayer(
                this,
-               new HumanoidModel(context.m_174023_(ModelLayers.f_171164_)),
-               new HumanoidModel(context.m_174023_(ModelLayers.f_171165_)),
-               context.m_266367_()
+               new HumanoidModel(context.bakeLayer(ModelLayers.PLAYER_INNER_ARMOR)),
+               new HumanoidModel(context.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR)),
+               context.getModelManager()
             )
          );
       }
 
       public void render(T entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-         this.f_115290_ = entity.isAlexModel() ? this.slimModel : this.wideModel;
-         super.m_7392_(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+         this.model = entity.isAlexModel() ? this.slimModel : this.wideModel;
+         super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
          this.renderStatusIcons(entity, poseStack, bufferSource, packedLight);
       }
 
       private void renderStatusIcons(T entity, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-         if (this.f_114476_.f_114358_ != null
-            && !(this.f_114476_.m_114471_(entity) > 4096.0)
-            && Minecraft.m_91087_().f_91074_ != null
-            && Minecraft.m_91087_().f_91074_.m_142582_(entity)) {
+         if (this.entityRenderDispatcher.camera != null
+            && !(this.entityRenderDispatcher.distanceToSqr(entity) > 4096.0)
+            && Minecraft.getInstance().player != null
+            && Minecraft.getInstance().player.hasLineOfSight(entity)) {
             List<ResourceLocation> icons = this.statusIcons(entity.getStatusIconFlags());
-            if (!icons.isEmpty()) {
+            boolean routing = (entity.getStatusIconFlags() & NpcBaseEntity.ICON_ROUTING) != 0;
+            boolean moraleBar = entity.showsMorale()
+               && (routing || entity.getShownMorale() < 100)
+               && this.entityRenderDispatcher.distanceToSqr(entity) <= MORALE_BAR_RANGE_SQ;
+            if (!icons.isEmpty() || moraleBar) {
                float scale = 0.02666667F;
                float startX = -((float)icons.size() * 10.0F / 2.0F) * scale;
-               float y = entity.m_20206_() + 0.5F;
-               poseStack.m_85836_();
-               poseStack.m_85837_(0.0, (double)y, 0.0);
-               poseStack.m_252781_(this.f_114476_.m_253208_());
-               poseStack.m_85841_(-scale, -scale, scale);
+               float y = entity.getBbHeight() + 0.5F;
+               poseStack.pushPose();
+               poseStack.translate(0.0, (double)y, 0.0);
+               poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
+               poseStack.scale(-scale, -scale, scale);
 
                for (int i = 0; i < icons.size(); i++) {
                   ResourceLocation icon = icons.get(i);
-                  VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110473_(icon));
+                  VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityTranslucent(icon));
                   float x = startX / scale + (float)i * 20.0F;
                   this.drawIcon(poseStack, consumer, x, -16.0F, packedLight);
                }
 
-               poseStack.m_85849_();
+               if (moraleBar) {
+                  this.drawMoraleBar(poseStack, bufferSource, entity.getShownMorale(), routing, entity.tickCount, icons.isEmpty() ? -6.0F : -22.0F);
+               }
+
+               poseStack.popPose();
             }
          }
+      }
+
+      /**
+       * Morale under the icons: green when steady, yellow when shaken, red when about to break. A routing soldier's bar
+       * blinks red, so a fleeing man stands out from far off.
+       */
+      private void drawMoraleBar(PoseStack poseStack, MultiBufferSource bufferSource, int morale, boolean routing, int tickCount, float y) {
+         VertexConsumer consumer = bufferSource.getBuffer(RenderType.textBackground());
+         Matrix4f matrix = poseStack.last().pose();
+         float half = 16.0F;
+         float fill = -half + 2.0F * half * Math.max(0, Math.min(100, morale)) / 100.0F;
+         int light = 15728880;
+         int frame = routing && tickCount / 5 % 2 == 0 ? 0xFFFF2020 : 0xFF000000;
+         this.quad(consumer, matrix, -half - 1.0F, y - 1.0F, half + 1.0F, y + 5.0F, frame, light, 0.0F);
+         this.quad(consumer, matrix, -half, y, half, y + 4.0F, 0xFF404040, light, -0.01F);
+         int color = morale > 60 ? 0xFF30D030 : (morale > 35 ? 0xFFE8C020 : 0xFFE02020);
+         if (fill > -half) {
+            this.quad(consumer, matrix, -half, y, fill, y + 4.0F, color, light, -0.02F);
+         }
+      }
+
+      private void quad(VertexConsumer consumer, Matrix4f matrix, float x0, float y0, float x1, float y1, int argb, int light, float z) {
+         int a = argb >>> 24 & 0xFF;
+         int r = argb >> 16 & 0xFF;
+         int g = argb >> 8 & 0xFF;
+         int b = argb & 0xFF;
+         consumer.vertex(matrix, x0, y1, z).color(r, g, b, a).uv2(light).endVertex();
+         consumer.vertex(matrix, x1, y1, z).color(r, g, b, a).uv2(light).endVertex();
+         consumer.vertex(matrix, x1, y0, z).color(r, g, b, a).uv2(light).endVertex();
+         consumer.vertex(matrix, x0, y0, z).color(r, g, b, a).uv2(light).endVertex();
       }
 
       private List<ResourceLocation> statusIcons(int flags) {
@@ -253,6 +280,9 @@ public final class AWCoreClientEntityRenderers {
          this.addIcon(icons, flags, 2048, "task_flee");
          this.addIcon(icons, flags, 4096, "task_sleep");
          this.addIcon(icons, flags, 8192, "task_rain");
+         this.addIcon(icons, flags, NpcBaseEntity.ICON_RELOADING, "task_reload");
+         this.addIcon(icons, flags, NpcBaseEntity.ICON_AIMING, "task_aim");
+         this.addIcon(icons, flags, NpcBaseEntity.ICON_SHOOTING, "task_shoot");
          return icons;
       }
 
@@ -267,9 +297,9 @@ public final class AWCoreClientEntityRenderers {
       }
 
       private void drawIcon(PoseStack poseStack, VertexConsumer consumer, float x, float y, int packedLight) {
-         Pose pose = poseStack.m_85850_();
-         Matrix4f matrix = pose.m_252922_();
-         Matrix3f normal = pose.m_252943_();
+         Pose pose = poseStack.last();
+         Matrix4f matrix = pose.pose();
+         Matrix3f normal = pose.normal();
          float left = x - 8.0F;
          float right = x + 8.0F;
          float bottom = y + 16.0F;
@@ -280,13 +310,13 @@ public final class AWCoreClientEntityRenderers {
       }
 
       private void iconVertex(VertexConsumer consumer, Matrix4f matrix, Matrix3f normal, float x, float y, float u, float v, float normalZ, int packedLight) {
-         consumer.m_252986_(matrix, x, y, 0.0F)
-            .m_6122_(255, 255, 255, 255)
-            .m_7421_(u, v)
-            .m_86008_(OverlayTexture.f_118083_)
-            .m_85969_(packedLight)
-            .m_252939_(normal, 0.0F, 0.0F, normalZ)
-            .m_5752_();
+         consumer.vertex(matrix, x, y, 0.0F)
+            .color(255, 255, 255, 255)
+            .uv(u, v)
+            .overlayCoords(OverlayTexture.NO_OVERLAY)
+            .uv2(packedLight)
+            .normal(normal, 0.0F, 0.0F, normalZ)
+            .endVertex();
       }
    }
 
@@ -294,8 +324,8 @@ public final class AWCoreClientEntityRenderers {
       private CombatRenderer(Context context) {
          super(
             context,
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM))
          );
       }
 
@@ -306,7 +336,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class CourierRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<CourierNpcEntity> {
       private CourierRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(CourierNpcEntity entity) {
@@ -322,7 +352,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class FactionArcherEliteRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionArcherEliteNpcEntity> {
       private FactionArcherEliteRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionArcherEliteNpcEntity entity) {
@@ -332,7 +362,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class FactionArcherRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionArcherNpcEntity> {
       private FactionArcherRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionArcherNpcEntity entity) {
@@ -342,7 +372,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class FactionBardRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionBardNpcEntity> {
       private FactionBardRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionBardNpcEntity entity) {
@@ -354,8 +384,8 @@ public final class AWCoreClientEntityRenderers {
       private FactionCavalryRenderer(Context context) {
          super(
             context,
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM))
          );
       }
 
@@ -366,7 +396,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class FactionCivilianFemaleRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionCivilianFemaleNpcEntity> {
       private FactionCivilianFemaleRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionCivilianFemaleNpcEntity entity) {
@@ -376,7 +406,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class FactionCivilianMaleRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionCivilianMaleNpcEntity> {
       private FactionCivilianMaleRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionCivilianMaleNpcEntity entity) {
@@ -388,8 +418,8 @@ public final class AWCoreClientEntityRenderers {
       private FactionLeaderEliteRenderer(Context context) {
          super(
             context,
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM))
          );
       }
 
@@ -402,8 +432,8 @@ public final class AWCoreClientEntityRenderers {
       private FactionLeaderRenderer(Context context) {
          super(
             context,
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM))
          );
       }
 
@@ -414,7 +444,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class FactionMountedArcherRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionMountedArcherNpcEntity> {
       private FactionMountedArcherRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionMountedArcherNpcEntity entity) {
@@ -424,7 +454,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class FactionPriestRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionPriestNpcEntity> {
       private FactionPriestRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionPriestNpcEntity entity) {
@@ -434,7 +464,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class FactionSiegeEngineerRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionSiegeEngineerNpcEntity> {
       private FactionSiegeEngineerRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionSiegeEngineerNpcEntity entity) {
@@ -446,8 +476,8 @@ public final class AWCoreClientEntityRenderers {
       private FactionSoldierEliteRenderer(Context context) {
          super(
             context,
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM))
          );
       }
 
@@ -460,8 +490,8 @@ public final class AWCoreClientEntityRenderers {
       private FactionSoldierRenderer(Context context) {
          super(
             context,
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)),
-            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_))
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)),
+            new AWCoreClientEntityRenderers.ShieldingHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM))
          );
       }
 
@@ -470,19 +500,9 @@ public final class AWCoreClientEntityRenderers {
       }
    }
 
-   private static class FactionSpellcasterRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionSpellcasterNpcEntity> {
-      private FactionSpellcasterRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
-      }
-
-      public ResourceLocation getTextureLocation(FactionSpellcasterNpcEntity entity) {
-         return NpcSkinRegistry.textureFor(entity);
-      }
-   }
-
    private static class FactionTraderRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<FactionTraderNpcEntity> {
       private FactionTraderRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(FactionTraderNpcEntity entity) {
@@ -490,19 +510,9 @@ public final class AWCoreClientEntityRenderers {
       }
    }
 
-   private static class ModernSoldierRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<ModernSoldierNpcEntity> {
-      private ModernSoldierRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
-      }
-
-      public ResourceLocation getTextureLocation(ModernSoldierNpcEntity entity) {
-         return NpcSkinRegistry.textureFor(entity);
-      }
-   }
-
    private static class PriestRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<PriestNpcEntity> {
       private PriestRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(PriestNpcEntity entity) {
@@ -526,19 +536,9 @@ public final class AWCoreClientEntityRenderers {
       }
    }
 
-   private static class ShipCaptainRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<ShipCaptainNpcEntity> {
-      private ShipCaptainRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
-      }
-
-      public ResourceLocation getTextureLocation(ShipCaptainNpcEntity entity) {
-         return NpcSkinRegistry.textureFor(entity);
-      }
-   }
-
    private static class SiegeEngineerRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<SiegeEngineerNpcEntity> {
       private SiegeEngineerRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(SiegeEngineerNpcEntity entity) {
@@ -548,7 +548,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class TraderRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<TraderNpcEntity> {
       private TraderRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(TraderNpcEntity entity) {
@@ -558,7 +558,7 @@ public final class AWCoreClientEntityRenderers {
 
    private static class WorkerRenderer extends AWCoreClientEntityRenderers.BaseNpcRenderer<WorkerNpcEntity> {
       private WorkerRenderer(Context context) {
-         super(context, new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171162_)), new NpcHumanoidModel<>(context.m_174023_(ModelLayers.f_171166_)));
+         super(context, new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), new NpcHumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM)));
       }
 
       public ResourceLocation getTextureLocation(WorkerNpcEntity entity) {

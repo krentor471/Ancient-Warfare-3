@@ -32,7 +32,7 @@ public class AutoCraftingBlockEntity extends BasicWorksiteBlockEntity implements
    public static final int OUTPUT_SLOT_COUNT = 9;
    public static final int SLOT_COUNT = 37;
    private static final int WORK_COST = 100;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(37, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(37, ItemStack.EMPTY);
    private ResourceLocation selectedRecipeId;
 
    public AutoCraftingBlockEntity(BlockPos pos, BlockState state) {
@@ -40,25 +40,25 @@ public class AutoCraftingBlockEntity extends BasicWorksiteBlockEntity implements
    }
 
    public static void serverTick(Level level, BlockPos pos, BlockState state, AutoCraftingBlockEntity station) {
-      if (!level.f_46443_ && station.storedEnergy >= 100 && station.craftOnce()) {
+      if (!level.isClientSide && station.storedEnergy >= 100 && station.craftOnce()) {
          station.storedEnergy -= 100;
-         station.m_6596_();
-         level.m_7260_(pos, state, state, 3);
+         station.setChanged();
+         level.sendBlockUpdated(pos, state, state, 3);
       }
    }
 
    public boolean craftOnce() {
-      return this.f_58857_ != null && !this.f_58857_.f_46443_ && AutoCraftingMenu.craftOnce(this.f_58857_, this);
+      return this.level != null && !this.level.isClientSide && AutoCraftingMenu.craftOnce(this.level, this);
    }
 
    @Override
    public boolean hasWork() {
-      return this.storedEnergy < this.getMaxEnergy() && AutoCraftingMenu.canCraft(this.f_58857_, this);
+      return this.storedEnergy < this.getMaxEnergy() && AutoCraftingMenu.canCraft(this.level, this);
    }
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType()) && this.hasWork()) {
          this.storedEnergy = Math.min(
             this.getMaxEnergy(), this.storedEnergy + Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())))
          );
@@ -66,7 +66,7 @@ public class AutoCraftingBlockEntity extends BasicWorksiteBlockEntity implements
             this.storedEnergy -= 100;
          }
 
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -81,66 +81,66 @@ public class AutoCraftingBlockEntity extends BasicWorksiteBlockEntity implements
    }
 
    @Override
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
       if (this.selectedRecipeId != null) {
-         tag.m_128359_("SelectedRecipe", this.selectedRecipeId.toString());
+         tag.putString("SelectedRecipe", this.selectedRecipeId.toString());
       }
    }
 
    @Override
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      this.selectedRecipeId = tag.m_128441_("SelectedRecipe") ? ResourceLocation.m_135820_(tag.m_128461_("SelectedRecipe")) : null;
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      this.selectedRecipeId = tag.contains("SelectedRecipe") ? ResourceLocation.tryParse(tag.getString("SelectedRecipe")) : null;
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 37;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return slot >= 0 && slot < 37 ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return slot >= 0 && slot < 37 ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      return slot >= 0 && slot < 37 ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
+   public ItemStack removeItem(int slot, int amount) {
+      return slot >= 0 && slot < 37 ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return slot >= 0 && slot < 37 ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return slot >= 0 && slot < 37 ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (slot >= 0 && slot < 37) {
          this.items.set(slot, stack);
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("container.ancientwarfare.auto_crafting");
+   public Component getDisplayName() {
+      return Component.translatable("container.ancientwarfare.auto_crafting");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int id, Inventory inv, Player player) {
-      return new AutoCraftingMenu(id, inv, this.f_58858_);
+   public AbstractContainerMenu createMenu(int id, Inventory inv, Player player) {
+      return new AutoCraftingMenu(id, inv, this.worldPosition);
    }
 
    @Override
@@ -151,6 +151,6 @@ public class AutoCraftingBlockEntity extends BasicWorksiteBlockEntity implements
    @Override
    public void setSelectedRecipeId(ResourceLocation recipeId) {
       this.selectedRecipeId = recipeId;
-      this.m_6596_();
+      this.setChanged();
    }
 }

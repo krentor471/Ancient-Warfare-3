@@ -42,38 +42,38 @@ public class DraftingStationSelectScreen extends Screen {
    private boolean returningToParent;
 
    public DraftingStationSelectScreen(DraftingStationScreen parent) {
-      super(Component.m_237115_("gui.ancientwarfare.drafting.select"));
+      super(Component.translatable("gui.ancientwarfare.drafting.select"));
       this.parent = parent;
       this.candidate = parent.getMenu().templateCount() == 0 ? -1 : parent.selectedIndex();
       this.showingBuiltInTemplates = parent.getMenu().isBuiltInTemplate(this.candidate);
    }
 
-   protected void m_7856_() {
-      this.left = (this.f_96543_ - 400) / 2;
-      this.top = (this.f_96544_ - 240) / 2;
-      String query = this.search == null ? "" : this.search.m_94155_();
-      this.search = new EditBox(this.f_96547_, this.left + 10, this.top + 34, 220, 10, Component.m_237115_("guistrings.automation.search"));
-      this.search.m_94182_(false);
-      this.search.m_94199_(128);
-      this.search.m_94144_(query);
-      this.search.m_94151_(value -> this.listScroll = 0);
-      this.m_142416_(this.search);
-      this.playerTemplates = (LegacyTexturedButton)this.m_142416_(
+   protected void init() {
+      this.left = (this.width - 400) / 2;
+      this.top = (this.height - 240) / 2;
+      String query = this.search == null ? "" : this.search.getValue();
+      this.search = new EditBox(this.font, this.left + 10, this.top + 34, 220, 10, Component.translatable("guistrings.automation.search"));
+      this.search.setBordered(false);
+      this.search.setMaxLength(128);
+      this.search.setValue(query);
+      this.search.setResponder(value -> this.listScroll = 0);
+      this.addRenderableWidget(this.search);
+      this.playerTemplates = (LegacyTexturedButton)this.addRenderableWidget(
          new LegacyTexturedButton(
-            this.left + 8, this.top + 48, 112, 12, Component.m_237115_("gui.ancientwarfare.drafting.player_templates"), button -> this.setCategory(false)
+            this.left + 8, this.top + 48, 112, 12, Component.translatable("gui.ancientwarfare.drafting.player_templates"), button -> this.setCategory(false)
          )
       );
-      this.builtInTemplates = (LegacyTexturedButton)this.m_142416_(
+      this.builtInTemplates = (LegacyTexturedButton)this.addRenderableWidget(
          new LegacyTexturedButton(
-            this.left + 120, this.top + 48, 112, 12, Component.m_237115_("gui.ancientwarfare.drafting.builtin_templates"), button -> this.setCategory(true)
+            this.left + 120, this.top + 48, 112, 12, Component.translatable("gui.ancientwarfare.drafting.builtin_templates"), button -> this.setCategory(true)
          )
       );
-      this.m_142416_(
-         new LegacyTexturedButton(this.left + 277, this.top + 8, 55, 12, Component.m_237115_("gui.ancientwarfare.drafting.back"), button -> this.m_7379_())
+      this.addRenderableWidget(
+         new LegacyTexturedButton(this.left + 277, this.top + 8, 55, 12, Component.translatable("gui.ancientwarfare.drafting.back"), button -> this.onClose())
       );
-      this.done = (LegacyTexturedButton)this.m_142416_(
+      this.done = (LegacyTexturedButton)this.addRenderableWidget(
          new LegacyTexturedButton(
-            this.left + 337, this.top + 8, 55, 12, Component.m_237115_("gui.ancientwarfare.drafting.done"), button -> this.confirmSelection()
+            this.left + 337, this.top + 8, 55, 12, Component.translatable("gui.ancientwarfare.drafting.done"), button -> this.confirmSelection()
          )
       );
       this.updateButtons();
@@ -91,13 +91,13 @@ public class DraftingStationSelectScreen extends Screen {
    }
 
    private void updateButtons() {
-      this.playerTemplates.f_93623_ = this.showingBuiltInTemplates;
-      this.builtInTemplates.f_93623_ = !this.showingBuiltInTemplates;
-      this.done.f_93623_ = this.candidate >= 0 && this.candidate < this.menu().templateCount();
+      this.playerTemplates.active = this.showingBuiltInTemplates;
+      this.builtInTemplates.active = !this.showingBuiltInTemplates;
+      this.done.active = this.candidate >= 0 && this.candidate < this.menu().templateCount();
    }
 
    private List<Integer> filteredIndices() {
-      String query = this.search == null ? "" : this.search.m_94155_().toLowerCase(Locale.ROOT);
+      String query = this.search == null ? "" : this.search.getValue().toLowerCase(Locale.ROOT);
       List<String> names = this.menu().templateNames();
       List<Integer> result = new ArrayList<>();
 
@@ -145,19 +145,19 @@ public class DraftingStationSelectScreen extends Screen {
    private String candidateName() {
       return this.candidate >= 0 && this.candidate < this.menu().templateCount()
          ? this.menu().templateNames().get(this.candidate)
-         : Component.m_237115_("gui.ancientwarfare.drafting.none").getString();
+         : Component.translatable("gui.ancientwarfare.drafting.none").getString();
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
       LegacyGuiStyle.background(graphics, this.left, this.top, 400, 240);
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("gui.ancientwarfare.drafting.selected"), this.left + 8, this.top + 8, -1, false);
-      graphics.m_280056_(this.f_96547_, DraftingStationScreen.fittedText(this.f_96547_, this.candidateName(), 240), this.left + 8, this.top + 20, -1, false);
-      graphics.m_280509_(this.left + 8, this.top + 32, this.left + 232, this.top + 46, -1644826);
-      graphics.m_280509_(this.left + 9, this.top + 33, this.left + 231, this.top + 45, -16777216);
-      graphics.m_280056_(
-         this.f_96547_,
-         DraftingStationScreen.fittedText(this.f_96547_, Component.m_237115_("gui.ancientwarfare.drafting.materials").getString(), 128),
+      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.drafting.selected"), this.left + 8, this.top + 8, -1, false);
+      graphics.drawString(this.font, DraftingStationScreen.fittedText(this.font, this.candidateName(), 240), this.left + 8, this.top + 20, -1, false);
+      graphics.fill(this.left + 8, this.top + 32, this.left + 232, this.top + 46, -1644826);
+      graphics.fill(this.left + 9, this.top + 33, this.left + 231, this.top + 45, -16777216);
+      graphics.drawString(
+         this.font,
+         DraftingStationScreen.fittedText(this.font, Component.translatable("gui.ancientwarfare.drafting.materials").getString(), 128),
          this.left + 256 + 8,
          this.top + 30,
          -1,
@@ -171,8 +171,8 @@ public class DraftingStationSelectScreen extends Screen {
       );
       int right = this.left + 0 + 256 - 12;
       int hoveredIndex = this.templateAt((double)mouseX, (double)mouseY, indices);
-      graphics.m_280262_();
-      graphics.m_280588_(this.left + 0 + 3, this.top + 64 + 3, right, this.top + 64 + 176 - 3);
+      graphics.flush();
+      graphics.enableScissor(this.left + 0 + 3, this.top + 64 + 3, right, this.top + 64 + 176 - 3);
       int first = Math.max(0, (this.listScroll - 5) / 12);
       int last = Math.min(indices.size(), first + 14 + 3);
       List<String> names = this.menu().templateNames();
@@ -184,13 +184,13 @@ public class DraftingStationSelectScreen extends Screen {
          int rowWidth = 233;
          int stateY = index != hoveredIndex && index != this.candidate ? 40 : 80;
          LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, x, y, rowWidth, 12, 0, stateY, 256, 40);
-         graphics.m_280056_(this.f_96547_, DraftingStationScreen.fittedText(this.f_96547_, names.get(index), rowWidth - 4), x + 2, y + 2, -1, false);
+         graphics.drawString(this.font, DraftingStationScreen.fittedText(this.font, names.get(index), rowWidth - 4), x + 2, y + 2, -1, false);
       }
 
       if (indices.isEmpty()) {
-         graphics.m_280056_(
-            this.f_96547_,
-            DraftingStationScreen.fittedText(this.f_96547_, Component.m_237115_("gui.ancientwarfare.drafting.category_empty").getString(), 228),
+         graphics.drawString(
+            this.font,
+            DraftingStationScreen.fittedText(this.font, Component.translatable("gui.ancientwarfare.drafting.category_empty").getString(), 228),
             this.left + 8,
             this.top + 64 + 8,
             -1,
@@ -198,26 +198,26 @@ public class DraftingStationSelectScreen extends Screen {
          );
       }
 
-      graphics.m_280262_();
-      graphics.m_280618_();
+      graphics.flush();
+      graphics.disableScissor();
       ItemStack hoveredMaterial = DraftingStationScreen.renderMaterialPanel(
-         graphics, this.f_96547_, this.menu(), this.candidate, this.left + 256, this.top + 40, 144, 200, this.materialScroll, mouseX, mouseY
+         graphics, this.font, this.menu(), this.candidate, this.left + 256, this.top + 40, 144, 200, this.materialScroll, mouseX, mouseY
       );
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
-      if (!hoveredMaterial.m_41619_()) {
-         graphics.m_280153_(this.f_96547_, hoveredMaterial, mouseX, mouseY);
-      } else if (hoveredIndex >= 0 && this.f_96547_.m_92895_(names.get(hoveredIndex)) > 229) {
-         graphics.m_280557_(this.f_96547_, Component.m_237113_(names.get(hoveredIndex)), mouseX, mouseY);
+      super.render(graphics, mouseX, mouseY, partialTick);
+      if (!hoveredMaterial.isEmpty()) {
+         graphics.renderTooltip(this.font, hoveredMaterial, mouseX, mouseY);
+      } else if (hoveredIndex >= 0 && this.font.width(names.get(hoveredIndex)) > 229) {
+         graphics.renderTooltip(this.font, Component.literal(names.get(hoveredIndex)), mouseX, mouseY);
       } else if (mouseX >= this.left + 8
          && mouseX < this.left + 248
          && mouseY >= this.top + 20
          && mouseY < this.top + 29
-         && this.f_96547_.m_92895_(this.candidateName()) > 240) {
-         graphics.m_280557_(this.f_96547_, Component.m_237113_(this.candidateName()), mouseX, mouseY);
+         && this.font.width(this.candidateName()) > 240) {
+         graphics.renderTooltip(this.font, Component.literal(this.candidateName()), mouseX, mouseY);
       }
    }
 
-   public boolean m_6375_(double x, double y, int button) {
+   public boolean mouseClicked(double x, double y, int button) {
       List<Integer> indices = this.filteredIndices();
       this.clampScroll(indices.size());
       if (button == 0 && DraftingStationScreen.insideScrollbar(x, y, this.left + 0, this.top + 64, 256, 176) && maxListScroll(indices.size()) > 0) {
@@ -236,22 +236,22 @@ public class DraftingStationSelectScreen extends Screen {
             this.candidate = index;
             this.materialScroll = 0;
             this.updateButtons();
-            this.f_96541_.m_91106_().m_120367_(SimpleSoundInstance.m_263171_(SoundEvents.f_12490_, 1.0F));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
             return true;
          } else {
-            return super.m_6375_(x, y, button);
+            return super.mouseClicked(x, y, button);
          }
       }
    }
 
-   public boolean m_6050_(double x, double y, double delta) {
+   public boolean mouseScrolled(double x, double y, double delta) {
       if (this.insideList(x, y) || DraftingStationScreen.insideScrollbar(x, y, this.left + 0, this.top + 64, 256, 176)) {
          this.listScroll = this.listScroll - (int)Math.signum(delta) * 12 * 3;
          this.clampScroll(this.filteredIndices().size());
          return true;
       } else if (!DraftingStationScreen.insideMaterialViewport(x, y, this.left + 256, this.top + 40, 144, 200)
          && !DraftingStationScreen.insideScrollbar(x, y, this.left + 256, this.top + 40, 144, 200)) {
-         return super.m_6050_(x, y, delta);
+         return super.mouseScrolled(x, y, delta);
       } else {
          this.materialScroll = this.materialScroll - (int)Math.signum(delta) * 18;
          this.clampScroll(this.filteredIndices().size());
@@ -274,57 +274,57 @@ public class DraftingStationSelectScreen extends Screen {
       }
    }
 
-   public boolean m_7979_(double x, double y, int button, double dragX, double dragY) {
+   public boolean mouseDragged(double x, double y, int button, double dragX, double dragY) {
       if (button == 0 && this.draggingPanel >= 0) {
          this.scrollToMouse(y);
          return true;
       } else {
-         return super.m_7979_(x, y, button, dragX, dragY);
+         return super.mouseDragged(x, y, button, dragX, dragY);
       }
    }
 
-   public boolean m_6348_(double x, double y, int button) {
+   public boolean mouseReleased(double x, double y, int button) {
       if (button == 0) {
          this.draggingPanel = -1;
       }
 
-      return super.m_6348_(x, y, button);
+      return super.mouseReleased(x, y, button);
    }
 
    private void confirmSelection() {
       if (this.candidate >= 0 && this.candidate < this.menu().templateCount()) {
          this.parent.chooseTemplate(this.candidate);
-         this.m_7379_();
+         this.onClose();
       }
    }
 
-   public void m_86600_() {
-      this.search.m_94120_();
-      if (this.f_96541_.f_91074_ == null || this.f_96541_.f_91074_.f_36096_ != this.menu()) {
-         this.f_96541_.m_91152_(null);
-      } else if (!this.f_96541_.f_91074_.m_6084_() || this.f_96541_.f_91074_.m_213877_()) {
-         this.f_96541_.f_91074_.m_6915_();
+   public void tick() {
+      this.search.tick();
+      if (this.minecraft.player == null || this.minecraft.player.containerMenu != this.menu()) {
+         this.minecraft.setScreen(null);
+      } else if (!this.minecraft.player.isAlive() || this.minecraft.player.isRemoved()) {
+         this.minecraft.player.closeContainer();
       }
    }
 
-   public void m_7379_() {
-      if (this.f_96541_.f_91074_ != null && this.f_96541_.f_91074_.f_36096_ == this.menu()) {
+   public void onClose() {
+      if (this.minecraft.player != null && this.minecraft.player.containerMenu == this.menu()) {
          this.returningToParent = true;
-         this.f_96541_.m_91152_(this.parent);
+         this.minecraft.setScreen(this.parent);
       } else {
-         this.f_96541_.m_91152_(null);
+         this.minecraft.setScreen(null);
       }
    }
 
-   public void m_7861_() {
+   public void removed() {
       if (!this.returningToParent) {
          this.parent.selectorRemoved();
       }
 
-      super.m_7861_();
+      super.removed();
    }
 
-   public boolean m_7043_() {
+   public boolean isPauseScreen() {
       return false;
    }
 }

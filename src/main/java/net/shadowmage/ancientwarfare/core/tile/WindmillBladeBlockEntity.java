@@ -48,7 +48,7 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
    }
 
    public WindmillBladeBlockEntity.ToggleResult toggleAssembly(@Nullable Direction preferredHorizontal) {
-      if (this.f_58857_ == null || this.f_58857_.f_46443_) {
+      if (this.level == null || this.level.isClientSide) {
          return WindmillBladeBlockEntity.ToggleResult.INVALID;
       } else if (this.control && this.controlPos != null) {
          this.clearSquare();
@@ -69,17 +69,17 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
    }
 
    public static WindmillBladeBlockEntity.ToggleResult toggleAt(Level level, BlockPos bladePos, @Nullable Direction preferredHorizontal) {
-      if (level.f_46443_) {
+      if (level.isClientSide) {
          return WindmillBladeBlockEntity.ToggleResult.INVALID;
-      } else if (level.m_8055_(bladePos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE_RUNNING))
-         && level.m_7702_(bladePos) instanceof WindmillBladeBlockEntity running) {
+      } else if (level.getBlockState(bladePos).is(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE_RUNNING))
+         && level.getBlockEntity(bladePos) instanceof WindmillBladeBlockEntity running) {
          return running.toggleAssembly(preferredHorizontal);
-      } else if (!level.m_8055_(bladePos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE))) {
+      } else if (!level.getBlockState(bladePos).is(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE))) {
          return WindmillBladeBlockEntity.ToggleResult.INVALID;
       } else {
          Direction horizontal = preferredHorizontal != null
             ? preferredHorizontal
-            : getBladePlane((Direction)level.m_8055_(bladePos).m_61143_(WindmillBladeBlock.FACING));
+            : getBladePlane((Direction)level.getBlockState(bladePos).getValue(WindmillBladeBlock.FACING));
          WindmillBladeBlockEntity.Structure structure = findStructure(level, bladePos, horizontal);
          if (structure == null) {
             return WindmillBladeBlockEntity.ToggleResult.INVALID;
@@ -91,10 +91,10 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
    }
 
    public void onBroken() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
+      if (this.level != null && !this.level.isClientSide) {
          if (this.control) {
             this.clearSquare();
-         } else if (this.controlPos != null && this.f_58857_.m_7702_(this.controlPos) instanceof WindmillBladeBlockEntity controller) {
+         } else if (this.controlPos != null && this.level.getBlockEntity(this.controlPos) instanceof WindmillBladeBlockEntity controller) {
             controller.clearSquare();
          }
       }
@@ -134,24 +134,24 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
 
    @Nullable
    private WindmillBladeBlockEntity.Structure findStructure() {
-      if (this.f_58857_ == null) {
+      if (this.level == null) {
          return null;
       } else {
-         Direction normal = (Direction)this.m_58900_().m_61143_(WindmillBladeRunningBlock.FACING);
+         Direction normal = (Direction)this.getBlockState().getValue(WindmillBladeRunningBlock.FACING);
          return this.findStructure(getBladePlane(normal));
       }
    }
 
    @Nullable
    private WindmillBladeBlockEntity.Structure findStructure(Direction horizontal) {
-      if (this.f_58857_ == null) {
+      if (this.level == null) {
          return null;
       } else {
          WindmillBladeBlockEntity.Structure direct = this.findStructureOnPlane(horizontal);
          if (direct != null) {
             return direct;
          } else {
-            Direction alternate = horizontal.m_122434_() == Axis.X ? Direction.SOUTH : Direction.EAST;
+            Direction alternate = horizontal.getAxis() == Axis.X ? Direction.SOUTH : Direction.EAST;
             return alternate != horizontal ? this.findStructureOnPlane(alternate) : null;
          }
       }
@@ -164,7 +164,7 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
 
          for (int h = -radius; h <= radius; h++) {
             for (int v = -radius; v <= radius; v++) {
-               BlockPos candidate = this.f_58858_.m_5484_(horizontal, h).m_6630_(v);
+               BlockPos candidate = this.worldPosition.relative(horizontal, h).above(v);
                if (this.isCompleteSquare(candidate, horizontal, candidateSize)) {
                   return new WindmillBladeBlockEntity.Structure(candidate, horizontal, candidateSize);
                }
@@ -176,7 +176,7 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
    }
 
    private static Direction getBladePlane(Direction normal) {
-      return normal.m_122434_() == Axis.X ? Direction.SOUTH : Direction.EAST;
+      return normal.getAxis() == Axis.X ? Direction.SOUTH : Direction.EAST;
    }
 
    @Nullable
@@ -185,7 +185,7 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
       if (direct != null) {
          return direct;
       } else {
-         Direction alternate = horizontal.m_122434_() == Axis.X ? Direction.SOUTH : Direction.EAST;
+         Direction alternate = horizontal.getAxis() == Axis.X ? Direction.SOUTH : Direction.EAST;
          return alternate != horizontal ? findStructureOnPlane(level, origin, alternate) : null;
       }
    }
@@ -197,7 +197,7 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
 
          for (int h = -radius; h <= radius; h++) {
             for (int v = -radius; v <= radius; v++) {
-               BlockPos candidate = origin.m_5484_(horizontal, h).m_6630_(v);
+               BlockPos candidate = origin.relative(horizontal, h).above(v);
                if (isCompleteSquare(level, candidate, horizontal, candidateSize)) {
                   return new WindmillBladeBlockEntity.Structure(candidate, horizontal, candidateSize);
                }
@@ -209,7 +209,7 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
    }
 
    private boolean isCompleteSquare(BlockPos center, Direction horizontal, int candidateSize) {
-      return isCompleteSquare(this.f_58857_, center, horizontal, candidateSize);
+      return isCompleteSquare(this.level, center, horizontal, candidateSize);
    }
 
    private static boolean isCompleteSquare(Level level, BlockPos center, Direction horizontal, int candidateSize) {
@@ -217,8 +217,8 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
 
       for (int h = -radius; h <= radius; h++) {
          for (int v = -radius; v <= radius; v++) {
-            BlockPos pos = center.m_5484_(horizontal, h).m_6630_(v);
-            if (!level.m_8055_(pos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE))) {
+            BlockPos pos = center.relative(horizontal, h).above(v);
+            if (!level.getBlockState(pos).is(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE))) {
                return false;
             }
          }
@@ -228,33 +228,33 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
    }
 
    private void formSquare(BlockPos center, Direction horizontal, int candidateSize) {
-      formSquare(this.f_58857_, center, horizontal, candidateSize);
+      formSquare(this.level, center, horizontal, candidateSize);
    }
 
    private static void formSquare(Level level, BlockPos center, Direction horizontal, int candidateSize) {
       int radius = (candidateSize - 1) / 2;
-      Direction renderDirection = horizontal.m_122434_() == Axis.X ? Direction.WEST : Direction.NORTH;
+      Direction renderDirection = horizontal.getAxis() == Axis.X ? Direction.WEST : Direction.NORTH;
       List<BlockPos> positions = new ArrayList<>();
 
       for (int h = -radius; h <= radius; h++) {
          for (int v = -radius; v <= radius; v++) {
-            positions.add(center.m_5484_(horizontal, h).m_6630_(v));
+            positions.add(center.relative(horizontal, h).above(v));
          }
       }
 
       for (BlockPos pos : positions) {
-         BlockState oldState = level.m_8055_(pos);
-         Direction facing = oldState.m_61138_(WindmillBladeBlock.FACING) ? (Direction)oldState.m_61143_(WindmillBladeBlock.FACING) : Direction.NORTH;
-         level.m_7731_(
-            pos, (BlockState)AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE_RUNNING).m_49966_().m_61124_(WindmillBladeRunningBlock.FACING, facing), 11
+         BlockState oldState = level.getBlockState(pos);
+         Direction facing = oldState.hasProperty(WindmillBladeBlock.FACING) ? (Direction)oldState.getValue(WindmillBladeBlock.FACING) : Direction.NORTH;
+         level.setBlock(
+            pos, (BlockState)AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE_RUNNING).defaultBlockState().setValue(WindmillBladeRunningBlock.FACING, facing), 11
          );
-         if (level.m_7702_(pos) instanceof WindmillBladeBlockEntity blade) {
+         if (level.getBlockEntity(pos) instanceof WindmillBladeBlockEntity blade) {
             blade.controlPos = center;
             blade.control = pos.equals(center);
             blade.size = blade.control ? candidateSize : 0;
             blade.windmillDirection = renderDirection;
-            blade.m_6596_();
-            level.m_7260_(pos, blade.m_58900_(), blade.m_58900_(), 2);
+            blade.setChanged();
+            level.sendBlockUpdated(pos, blade.getBlockState(), blade.getBlockState(), 2);
          }
       }
    }
@@ -268,7 +268,7 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
          for (Direction horizontal : planes) {
             for (int h = -radius; h <= radius; h++) {
                for (int v = -radius; v <= radius; v++) {
-                  BlockPos pos = this.controlPos.m_5484_(horizontal, h).m_6630_(v);
+                  BlockPos pos = this.controlPos.relative(horizontal, h).above(v);
                   if (!positions.contains(pos)) {
                      positions.add(pos);
                   }
@@ -277,8 +277,8 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
          }
 
          for (BlockPos pos : positions) {
-            if (this.f_58857_.m_8055_(pos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE_RUNNING))) {
-               BlockEntity var14 = this.f_58857_.m_7702_(pos);
+            if (this.level.getBlockState(pos).is(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE_RUNNING))) {
+               BlockEntity var14 = this.level.getBlockEntity(pos);
                if (var14 instanceof WindmillBladeBlockEntity) {
                   WindmillBladeBlockEntity blade = (WindmillBladeBlockEntity)var14;
                   if (this.controlPos.equals(blade.controlPos)) {
@@ -301,7 +301,7 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
 
          for (int h = -radius; h <= radius; h++) {
             for (int v = -radius; v <= radius; v++) {
-               positions.add(structure.center().m_5484_(structure.horizontal(), h).m_6630_(v));
+               positions.add(structure.center().relative(structure.horizontal(), h).above(v));
             }
          }
 
@@ -312,17 +312,17 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
    private void clearConnected() {
       List<BlockPos> connected = new ArrayList<>();
       List<BlockPos> frontier = new ArrayList<>();
-      connected.add(this.f_58858_);
-      frontier.add(this.f_58858_);
+      connected.add(this.worldPosition);
+      frontier.add(this.worldPosition);
 
       while (!frontier.isEmpty() && connected.size() < 289) {
          BlockPos current = frontier.remove(frontier.size() - 1);
 
          for (Direction direction : Direction.values()) {
-            BlockPos neighbor = current.m_121945_(direction);
+            BlockPos neighbor = current.relative(direction);
             if (!connected.contains(neighbor)
-               && !(neighbor.m_123331_(this.f_58858_) > 400.0)
-               && this.f_58857_.m_8055_(neighbor).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE_RUNNING))) {
+               && !(neighbor.distSqr(this.worldPosition) > 400.0)
+               && this.level.getBlockState(neighbor).is(AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE_RUNNING))) {
                connected.add(neighbor);
                frontier.add(neighbor);
             }
@@ -330,68 +330,68 @@ public class WindmillBladeBlockEntity extends BlockEntity implements GeoBlockEnt
       }
 
       for (BlockPos pos : connected) {
-         if (this.f_58857_.m_7702_(pos) instanceof WindmillBladeBlockEntity blade) {
+         if (this.level.getBlockEntity(pos) instanceof WindmillBladeBlockEntity blade) {
             blade.clearState();
          }
       }
    }
 
    private void clearState() {
-      if (this.f_58857_ != null) {
-         BlockState oldState = this.m_58900_();
-         Direction facing = oldState.m_61138_(WindmillBladeRunningBlock.FACING)
-            ? (Direction)oldState.m_61143_(WindmillBladeRunningBlock.FACING)
+      if (this.level != null) {
+         BlockState oldState = this.getBlockState();
+         Direction facing = oldState.hasProperty(WindmillBladeRunningBlock.FACING)
+            ? (Direction)oldState.getValue(WindmillBladeRunningBlock.FACING)
             : Direction.NORTH;
          this.controlPos = null;
          this.control = false;
          this.size = 0;
-         this.m_6596_();
-         BlockState newState = (BlockState)AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE).m_49966_().m_61124_(WindmillBladeBlock.FACING, facing);
-         this.f_58857_.m_7731_(this.f_58858_, newState, 11);
+         this.setChanged();
+         BlockState newState = (BlockState)AWCoreRegistryAccess.block(AWCoreIds.WINDMILL_BLADE).defaultBlockState().setValue(WindmillBladeBlock.FACING, facing);
+         this.level.setBlock(this.worldPosition, newState, 11);
       }
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
       if (this.controlPos != null) {
-         tag.m_128356_("ControlPos", this.controlPos.m_121878_());
+         tag.putLong("ControlPos", this.controlPos.asLong());
       }
 
-      tag.m_128379_("Control", this.control);
-      tag.m_128405_("Size", this.size);
-      tag.m_128344_("Direction", (byte)this.windmillDirection.m_122416_());
+      tag.putBoolean("Control", this.control);
+      tag.putInt("Size", this.size);
+      tag.putByte("Direction", (byte)this.windmillDirection.get2DDataValue());
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.controlPos = tag.m_128441_("ControlPos") ? BlockPos.m_122022_(tag.m_128454_("ControlPos")) : null;
-      this.control = tag.m_128471_("Control");
-      this.size = tag.m_128451_("Size");
-      if (tag.m_128441_("Direction")) {
-         this.windmillDirection = Direction.m_122407_(tag.m_128445_("Direction"));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.controlPos = tag.contains("ControlPos") ? BlockPos.of(tag.getLong("ControlPos")) : null;
+      this.control = tag.getBoolean("Control");
+      this.size = tag.getInt("Size");
+      if (tag.contains("Direction")) {
+         this.windmillDirection = Direction.from2DDataValue(tag.getByte("Direction"));
       }
    }
 
-   public CompoundTag m_5995_() {
+   public CompoundTag getUpdateTag() {
       CompoundTag tag = new CompoundTag();
-      this.m_183515_(tag);
+      this.saveAdditional(tag);
       return tag;
    }
 
    public void handleUpdateTag(CompoundTag tag) {
-      this.m_142466_(tag);
+      this.load(tag);
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
    public AABB getRenderBoundingBox() {
       int radius = Math.max(1, (this.size - 1) / 2);
       int renderRadius = Math.max(2, radius * 2 + 2);
       return new AABB(
-         this.f_58858_.m_7918_(-renderRadius, -renderRadius, -renderRadius), this.f_58858_.m_7918_(renderRadius + 1, renderRadius + 1, renderRadius + 1)
+         this.worldPosition.offset(-renderRadius, -renderRadius, -renderRadius), this.worldPosition.offset(renderRadius + 1, renderRadius + 1, renderRadius + 1)
       );
    }
 

@@ -9,16 +9,6 @@
       "level": 1
     },
     {
-      "content_type": "toc_list",
-      "items": [
-        {
-          "text": "联动说明：世界大战与物理船舶",
-          "category_link": "integrations",
-          "anchor": "world_war"
-        }
-      ]
-    },
-    {
       "content_type": "text",
       "text": "点击下面的物品条目直接跳转。"
     },

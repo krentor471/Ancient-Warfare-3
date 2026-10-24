@@ -46,12 +46,12 @@ public class HandCrankedGeneratorBlockEntity extends BlockEntity implements Torq
    }
 
    public double crankByPlayer() {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
+      if (this.level != null && !this.level.isClientSide) {
          double accepted = this.inputCell.addTorque(100.0);
          if (accepted > 0.0) {
             this.crankActiveTicks = 18;
-            this.m_6596_();
-            this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+            this.setChanged();
+            this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
          }
 
          return accepted;
@@ -95,12 +95,12 @@ public class HandCrankedGeneratorBlockEntity extends BlockEntity implements Torq
          }
 
          if (generated > 0.0 || output > 0.0 || loss > 0.0 || this.previousOutputTorque != this.outputCell.getTorque()) {
-            this.m_6596_();
+            this.setChanged();
          }
 
-         if (wasCranking && this.crankActiveTicks <= 0 && this.f_58857_ != null) {
-            this.m_6596_();
-            this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+         if (wasCranking && this.crankActiveTicks <= 0 && this.level != null) {
+            this.setChanged();
+            this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
          }
       }
    }
@@ -115,9 +115,9 @@ public class HandCrankedGeneratorBlockEntity extends BlockEntity implements Torq
    }
 
    private double transferPowerTo(Direction side) {
-      if (this.f_58857_ != null && this.canOutputTorque(side)) {
-         if (this.f_58857_.m_7702_(this.f_58858_.m_121945_(side)) instanceof TorqueAccess target) {
-            Direction targetSide = side.m_122424_();
+      if (this.level != null && this.canOutputTorque(side)) {
+         if (this.level.getBlockEntity(this.worldPosition.relative(side)) instanceof TorqueAccess target) {
+            Direction targetSide = side.getOpposite();
             if (!target.canInputTorque(targetSide)) {
                return 0.0;
             } else {
@@ -174,40 +174,40 @@ public class HandCrankedGeneratorBlockEntity extends BlockEntity implements Torq
    }
 
    private Direction getFacing() {
-      return this.m_58900_().m_61138_(HandCrankedGeneratorBlock.FACING)
-         ? (Direction)this.m_58900_().m_61143_(HandCrankedGeneratorBlock.FACING)
+      return this.getBlockState().hasProperty(HandCrankedGeneratorBlock.FACING)
+         ? (Direction)this.getBlockState().getValue(HandCrankedGeneratorBlock.FACING)
          : Direction.NORTH;
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128347_("InputTorque", this.inputCell.getTorque());
-      tag.m_128347_("OutputTorque", this.outputCell.getTorque());
-      tag.m_128405_("CrankActiveTicks", this.crankActiveTicks);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.putDouble("InputTorque", this.inputCell.getTorque());
+      tag.putDouble("OutputTorque", this.outputCell.getTorque());
+      tag.putInt("CrankActiveTicks", this.crankActiveTicks);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.inputCell.setTorque(tag.m_128459_("InputTorque"));
-      this.outputCell.setTorque(tag.m_128459_("OutputTorque"));
-      this.crankActiveTicks = tag.m_128451_("CrankActiveTicks");
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.inputCell.setTorque(tag.getDouble("InputTorque"));
+      this.outputCell.setTorque(tag.getDouble("OutputTorque"));
+      this.crankActiveTicks = tag.getInt("CrankActiveTicks");
       this.previousOutputTorque = this.outputCell.getTorque();
    }
 
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      this.m_183515_(tag);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      this.saveAdditional(tag);
       return tag;
    }
 
    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
-      CompoundTag tag = packet.m_131708_();
+      CompoundTag tag = packet.getTag();
       if (tag != null) {
-         this.m_142466_(tag);
+         this.load(tag);
       }
    }
 }

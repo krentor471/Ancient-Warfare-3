@@ -11,11 +11,11 @@ public class ManualMenu extends AbstractContainerMenu {
       super(AWCoreRegistryAccess.menu(AWCoreIds.MANUAL), containerId);
    }
 
-   public boolean m_6875_(Player player) {
+   public boolean stillValid(Player player) {
       return true;
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

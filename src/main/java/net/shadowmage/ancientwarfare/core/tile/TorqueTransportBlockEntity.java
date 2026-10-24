@@ -122,7 +122,7 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
       this.previousTotal = this.getTotalTorque();
       this.updateVisualSpeed(input, output);
       if (input > 0.0 || output > 0.0 || loss > 0.0) {
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -142,17 +142,17 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
 
    private void updateVisualSpeed(double input, double output) {
       double activity = Math.max(Math.max(input, output), this.getTotalTorque() * 0.05);
-      float nextSpeed = activity > 0.001 ? (float)Math.min(1.0, 0.18 + activity / Math.max(1.0, getTierFromState(this.m_58900_()).getTransferLimit())) : 0.0F;
+      float nextSpeed = activity > 0.001 ? (float)Math.min(1.0, 0.18 + activity / Math.max(1.0, getTierFromState(this.getBlockState()).getTransferLimit())) : 0.0F;
       if (!(Math.abs(nextSpeed - this.visualSpeed) < 0.05F)) {
          this.visualSpeed = nextSpeed;
-         if (this.f_58857_ != null) {
-            this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+         if (this.level != null) {
+            this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
          }
       }
    }
 
    private double transferPowerFromDistributor() {
-      Direction inputSide = this.getFacing().m_122424_();
+      Direction inputSide = this.getFacing().getOpposite();
       double output = 0.0;
 
       for (Direction direction : Direction.values()) {
@@ -165,9 +165,9 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private double transferPowerTo(Direction side) {
-      if (this.f_58857_ != null && this.canOutputTorque(side)) {
-         if (this.f_58857_.m_7702_(this.f_58858_.m_121945_(side)) instanceof TorqueAccess target) {
-            Direction targetSide = side.m_122424_();
+      if (this.level != null && this.canOutputTorque(side)) {
+         if (this.level.getBlockEntity(this.worldPosition.relative(side)) instanceof TorqueAccess target) {
+            Direction targetSide = side.getOpposite();
             if (!target.canInputTorque(targetSide)) {
                return 0.0;
             } else {
@@ -217,7 +217,7 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private void balanceDistributorStorage() {
-      Direction inputSide = this.getFacing().m_122424_();
+      Direction inputSide = this.getFacing().getOpposite();
       TorqueCell input = this.sidedCells[inputSide.ordinal()];
       if (!(input.getTorque() <= 0.0)) {
          double totalRequested = 0.0;
@@ -254,12 +254,12 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private boolean hasTorqueConnection(Direction side) {
-      if (this.f_58857_ == null) {
+      if (this.level == null) {
          return false;
-      } else if (!(this.f_58857_.m_7702_(this.f_58858_.m_121945_(side)) instanceof TorqueAccess access)) {
+      } else if (!(this.level.getBlockEntity(this.worldPosition.relative(side)) instanceof TorqueAccess access)) {
          return false;
       } else {
-         Direction neighborSide = side.m_122424_();
+         Direction neighborSide = side.getOpposite();
          return access.canInputTorque(neighborSide) || access.canOutputTorque(neighborSide);
       }
    }
@@ -327,8 +327,8 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    private void updateVisualActiveSides(int activeSides) {
       if (this.visualActiveSides != activeSides) {
          this.visualActiveSides = activeSides;
-         if (this.f_58857_ != null) {
-            this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 3);
+         if (this.level != null) {
+            this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
          }
       }
    }
@@ -346,7 +346,7 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    public double getMaxTorqueInput(@Nullable Direction side) {
       if (side != null && this.canInputTorque(side)) {
          Set<BlockPos> visited = new HashSet<>();
-         visited.add(this.f_58858_);
+         visited.add(this.worldPosition);
          return this.getDownstreamDemand(side, visited, 0);
       } else {
          return 0.0;
@@ -354,23 +354,23 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    double getDownstreamDemand(Direction inputSide, Set<BlockPos> visited, int depth) {
-      if (this.f_58857_ != null && this.canInputTorque(inputSide)) {
+      if (this.level != null && this.canInputTorque(inputSide)) {
          double downstreamDemand;
          if (this.getKind() == TorqueTransportKind.DISTRIBUTOR) {
-            Direction distributorInput = this.getFacing().m_122424_();
+            Direction distributorInput = this.getFacing().getOpposite();
             downstreamDemand = 0.0;
 
             for (Direction direction : Direction.values()) {
                if (direction != distributorInput && this.isConnected(direction)) {
                   downstreamDemand += TorqueNetworkDemand.downstreamDemand(
-                     this.f_58857_, this.f_58858_.m_121945_(direction), direction.m_122424_(), new HashSet<>(visited), depth + 1
+                     this.level, this.worldPosition.relative(direction), direction.getOpposite(), new HashSet<>(visited), depth + 1
                   );
                }
             }
          } else {
             Direction outputSide = this.getFacing();
             downstreamDemand = TorqueNetworkDemand.downstreamDemand(
-               this.f_58857_, this.f_58858_.m_121945_(outputSide), outputSide.m_122424_(), visited, depth + 1
+               this.level, this.worldPosition.relative(outputSide), outputSide.getOpposite(), visited, depth + 1
             );
          }
 
@@ -389,14 +389,14 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private double getDemandBeyond(Direction outputSide) {
-      return this.f_58857_ == null ? 0.0 : TorqueNetworkDemand.downstreamDemand(this.f_58857_, this.f_58858_, outputSide);
+      return this.level == null ? 0.0 : TorqueNetworkDemand.downstreamDemand(this.level, this.worldPosition, outputSide);
    }
 
    @Override
    public boolean canOutputTorque(Direction side) {
       TorqueTransportKind kind = this.getKind();
       return kind == TorqueTransportKind.DISTRIBUTOR
-         ? side != this.getFacing().m_122424_() && this.isConnected(side)
+         ? side != this.getFacing().getOpposite() && this.isConnected(side)
          : side == this.getFacing() && this.isConnected(side);
    }
 
@@ -408,7 +408,7 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
          TorqueTransportKind kind = this.getKind();
          return kind != TorqueTransportKind.SHAFT && kind != TorqueTransportKind.DISTRIBUTOR
             ? side != this.getFacing() && this.isConnected(side)
-            : side == this.getFacing().m_122424_() && this.isConnected(side);
+            : side == this.getFacing().getOpposite() && this.isConnected(side);
       }
    }
 
@@ -429,51 +429,51 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    private Direction getFacing() {
-      return this.m_58900_().m_61138_(TorqueTransportBlock.FACING) ? (Direction)this.m_58900_().m_61143_(TorqueTransportBlock.FACING) : Direction.NORTH;
+      return this.getBlockState().hasProperty(TorqueTransportBlock.FACING) ? (Direction)this.getBlockState().getValue(TorqueTransportBlock.FACING) : Direction.NORTH;
    }
 
    private TorqueTransportKind getKind() {
-      return this.m_58900_().m_60734_() instanceof TorqueTransportBlock block ? block.getKind() : TorqueTransportKind.SHAFT;
+      return this.getBlockState().getBlock() instanceof TorqueTransportBlock block ? block.getKind() : TorqueTransportKind.SHAFT;
    }
 
    private boolean isConnected(Direction direction) {
-      return this.m_58900_().m_60734_() instanceof TorqueTransportBlock block ? block.isConnected(this.m_58900_(), direction) : true;
+      return this.getBlockState().getBlock() instanceof TorqueTransportBlock block ? block.isConnected(this.getBlockState(), direction) : true;
    }
 
    private static TorqueTier getTierFromState(BlockState state) {
-      return state.m_60734_() instanceof TorqueTransportBlock block ? block.getTier() : TorqueTier.LIGHT;
+      return state.getBlock() instanceof TorqueTransportBlock block ? block.getTier() : TorqueTier.LIGHT;
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128347_("Torque", this.singleCell.getTorque());
-      tag.m_128350_("VisualSpeed", this.visualSpeed);
-      tag.m_128405_("ActiveSides", this.visualActiveSides);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.putDouble("Torque", this.singleCell.getTorque());
+      tag.putFloat("VisualSpeed", this.visualSpeed);
+      tag.putInt("ActiveSides", this.visualActiveSides);
       ListTag list = new ListTag();
 
       for (Direction direction : Direction.values()) {
          CompoundTag sideTag = new CompoundTag();
-         sideTag.m_128359_("Side", direction.m_7912_());
-         sideTag.m_128347_("Torque", this.sidedCells[direction.ordinal()].getTorque());
+         sideTag.putString("Side", direction.getSerializedName());
+         sideTag.putDouble("Torque", this.sidedCells[direction.ordinal()].getTorque());
          list.add(sideTag);
       }
 
-      tag.m_128365_("SidedTorque", list);
+      tag.put("SidedTorque", list);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.singleCell.setTorque(tag.m_128459_("Torque"));
-      this.visualSpeed = tag.m_128457_("VisualSpeed");
-      this.visualActiveSides = tag.m_128451_("ActiveSides");
-      if (tag.m_128441_("SidedTorque")) {
-         ListTag list = tag.m_128437_("SidedTorque", 10);
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.singleCell.setTorque(tag.getDouble("Torque"));
+      this.visualSpeed = tag.getFloat("VisualSpeed");
+      this.visualActiveSides = tag.getInt("ActiveSides");
+      if (tag.contains("SidedTorque")) {
+         ListTag list = tag.getList("SidedTorque", 10);
 
          for (int i = 0; i < list.size(); i++) {
-            CompoundTag sideTag = list.m_128728_(i);
-            Direction direction = Direction.m_122402_(sideTag.m_128461_("Side"));
+            CompoundTag sideTag = list.getCompound(i);
+            Direction direction = Direction.byName(sideTag.getString("Side"));
             if (direction != null) {
-               this.sidedCells[direction.ordinal()].setTorque(sideTag.m_128459_("Torque"));
+               this.sidedCells[direction.ordinal()].setTorque(sideTag.getDouble("Torque"));
             }
          }
       }
@@ -482,19 +482,19 @@ public class TorqueTransportBlockEntity extends BlockEntity implements TorqueAcc
    }
 
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      this.m_183515_(tag);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      this.saveAdditional(tag);
       return tag;
    }
 
    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
-      CompoundTag tag = packet.m_131708_();
+      CompoundTag tag = packet.getTag();
       if (tag != null) {
-         this.m_142466_(tag);
+         this.load(tag);
       }
    }
 }

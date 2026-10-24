@@ -23,15 +23,15 @@ public final class ForgeRestoredCoffinBlockItem extends RestoredCoffinBlockItem 
       consumer.accept(
          new IClientItemExtensions() {
             private final BlockEntityWithoutLevelRenderer renderer = new BlockEntityWithoutLevelRenderer(
-               Minecraft.m_91087_().m_167982_(), Minecraft.m_91087_().m_167973_()
+               Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels()
             ) {
-               public void m_108829_(
+               public void renderByItem(
                   ItemStack stack, ItemDisplayContext context, PoseStack poseStack, MultiBufferSource buffers, int packedLight, int packedOverlay
                ) {
                   StructureContainerBlockEntity coffin = new StructureContainerBlockEntity(
-                     BlockPos.f_121853_, ForgeRestoredCoffinBlockItem.this.m_40614_().m_49966_()
+                     BlockPos.ZERO, ForgeRestoredCoffinBlockItem.this.getBlock().defaultBlockState()
                   );
-                  Minecraft.m_91087_().m_167982_().m_112272_(coffin, poseStack, buffers, packedLight, packedOverlay);
+                  Minecraft.getInstance().getBlockEntityRenderDispatcher().renderItem(coffin, poseStack, buffers, packedLight, packedOverlay);
                }
             };
 

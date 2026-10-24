@@ -120,7 +120,11 @@ public final class AwtTownPlacer {
       return name.toLowerCase(Locale.ROOT).replace(" ", "").replace("_", "").replace("-", "");
    }
 
-   private static List<String> readLines(String templatePath) {
+   static List<String> readLines(String templatePath) {
+      if (FactionTowns.isGenerated(templatePath)) {
+         return FactionTowns.lines(templatePath);
+      }
+
       String resource = "/assets/ancientwarfare/template/" + templatePath;
 
       try {
@@ -326,11 +330,11 @@ public final class AwtTownPlacer {
       }
 
       int rotatedWidth(Direction facing) {
-         return facing.m_122434_() == Axis.Z ? this.sizeX : this.sizeZ;
+         return facing.getAxis() == Axis.Z ? this.sizeX : this.sizeZ;
       }
 
       int rotatedLength(Direction facing) {
-         return facing.m_122434_() == Axis.Z ? this.sizeZ : this.sizeX;
+         return facing.getAxis() == Axis.Z ? this.sizeZ : this.sizeX;
       }
    }
 
@@ -479,15 +483,15 @@ public final class AwtTownPlacer {
          this.level = level;
          this.origin = origin;
          this.facing = facing;
-         this.random = new Random(origin.m_121878_());
+         this.random = new Random(origin.asLong());
          this.planning = planning;
       }
 
       private AwtTownPlacer.TownPlan plan(String path) {
          int chunks = Math.max(this.town.minSize(), this.town.maxSize());
          int totalSize = chunks * 16;
-         int y = this.origin.m_123342_();
-         BlockPos min = this.origin.m_7918_(-totalSize / 2, 0, -totalSize / 2);
+         int y = this.origin.getY();
+         BlockPos min = this.origin.offset(-totalSize / 2, 0, -totalSize / 2);
          List<AwtTownPlacer.TownBlock> blocks = this.townBlocks(min, totalSize, y);
          List<AwtTownPlacer.TownBlock> exteriorBlocks = this.exteriorTownBlocks(min, totalSize, y);
          this.placeRoads(min, totalSize, y, blocks);
@@ -517,11 +521,11 @@ public final class AwtTownPlacer {
       }
 
       private void place() {
-         this.level.m_7471_(this.origin, false);
+         this.level.removeBlock(this.origin, false);
          int chunks = Math.max(this.town.minSize(), this.town.maxSize());
          int totalSize = chunks * 16;
-         int y = this.origin.m_123342_();
-         BlockPos min = this.origin.m_7918_(-totalSize / 2, 0, -totalSize / 2);
+         int y = this.origin.getY();
+         BlockPos min = this.origin.offset(-totalSize / 2, 0, -totalSize / 2);
          List<AwtTownPlacer.TownBlock> blocks = this.townBlocks(min, totalSize, y);
          List<AwtTownPlacer.TownBlock> exteriorBlocks = this.exteriorTownBlocks(min, totalSize, y);
          this.clearAndFloor(min, totalSize, y);
@@ -533,15 +537,15 @@ public final class AwtTownPlacer {
       private void clearAndFloor(BlockPos min, int totalSize, int y) {
          for (int x = 0; x < totalSize; x++) {
             for (int z = 0; z < totalSize; z++) {
-               BlockPos floor = min.m_7918_(x, -1, z);
-               if (this.level.m_8055_(floor).m_60795_()) {
-                  this.level.m_7731_(floor, Blocks.f_50440_.m_49966_(), 3);
+               BlockPos floor = min.offset(x, -1, z);
+               if (this.level.getBlockState(floor).isAir()) {
+                  this.level.setBlock(floor, Blocks.GRASS_BLOCK.defaultBlockState(), 3);
                }
 
-               int clearTopY = this.level.m_6924_(Types.WORLD_SURFACE, floor.m_123341_(), floor.m_123343_()) - 1;
+               int clearTopY = this.level.getHeight(Types.WORLD_SURFACE, floor.getX(), floor.getZ()) - 1;
 
                for (int clearY = clearTopY; clearY >= y; clearY--) {
-                  this.level.m_7731_(new BlockPos(floor.m_123341_(), clearY, floor.m_123343_()), Blocks.f_50016_.m_49966_(), 18);
+                  this.level.setBlock(new BlockPos(floor.getX(), clearY, floor.getZ()), Blocks.AIR.defaultBlockState(), 18);
                }
             }
          }
@@ -552,10 +556,10 @@ public final class AwtTownPlacer {
 
          for (int i = 0; i < totalSize; i++) {
             for (int w = -1; w <= 1; w++) {
-               BlockPos northSouth = min.m_7918_(center + w, -1, i);
-               BlockPos eastWest = min.m_7918_(i, -1, center + w);
-               this.roadBlock(northSouth.m_123341_(), northSouth.m_123342_(), northSouth.m_123343_());
-               this.roadBlock(eastWest.m_123341_(), eastWest.m_123342_(), eastWest.m_123343_());
+               BlockPos northSouth = min.offset(center + w, -1, i);
+               BlockPos eastWest = min.offset(i, -1, center + w);
+               this.roadBlock(northSouth.getX(), northSouth.getY(), northSouth.getZ());
+               this.roadBlock(eastWest.getX(), eastWest.getY(), eastWest.getZ());
             }
          }
 
@@ -611,7 +615,7 @@ public final class AwtTownPlacer {
          if (this.planning) {
             this.plannedRoads.add(pos);
          } else {
-            this.level.m_7731_(pos, Blocks.f_49994_.m_49966_(), 3);
+            this.level.setBlock(pos, Blocks.GRAVEL.defaultBlockState(), 3);
          }
       }
 
@@ -621,18 +625,18 @@ public final class AwtTownPlacer {
             int wallMin = wallInset;
             int wallMax = totalSize - 10 - this.town.exteriorSize() * 16;
             if (wallMax > wallInset) {
-               this.placeWallTemplate(this.weightedWall(this.town.corners()), min.m_7918_(wallInset, 0, wallInset), Direction.SOUTH);
-               this.placeWallTemplate(this.weightedWall(this.town.corners()), min.m_7918_(wallMax, 0, wallInset), Direction.WEST);
-               this.placeWallTemplate(this.weightedWall(this.town.corners()), min.m_7918_(wallMax, 0, wallMax), Direction.NORTH);
-               this.placeWallTemplate(this.weightedWall(this.town.corners()), min.m_7918_(wallInset, 0, wallMax), Direction.EAST);
+               this.placeWallTemplate(this.weightedWall(this.town.corners()), min.offset(wallInset, 0, wallInset), Direction.SOUTH);
+               this.placeWallTemplate(this.weightedWall(this.town.corners()), min.offset(wallMax, 0, wallInset), Direction.WEST);
+               this.placeWallTemplate(this.weightedWall(this.town.corners()), min.offset(wallMax, 0, wallMax), Direction.NORTH);
+               this.placeWallTemplate(this.weightedWall(this.town.corners()), min.offset(wallInset, 0, wallMax), Direction.EAST);
                if (this.town.wallStyle() > 1 && !this.town.walls().isEmpty()) {
                   int chunks = Math.max(1, (wallMax - wallInset + 1) / 16);
 
                   for (int i = 1; i < chunks - 1; i++) {
-                     this.placeWallTemplate(this.wallFor(i, chunks), min.m_7918_(wallMin + i * 16, 0, wallMin), Direction.SOUTH);
-                     this.placeWallTemplate(this.wallFor(i, chunks), min.m_7918_(wallMax, 0, wallMin + i * 16), Direction.WEST);
-                     this.placeWallTemplate(this.wallFor(i, chunks), min.m_7918_(wallMax - i * 16, 0, wallMax), Direction.NORTH);
-                     this.placeWallTemplate(this.wallFor(i, chunks), min.m_7918_(wallMin, 0, wallMax - i * 16), Direction.EAST);
+                     this.placeWallTemplate(this.wallFor(i, chunks), min.offset(wallMin + i * 16, 0, wallMin), Direction.SOUTH);
+                     this.placeWallTemplate(this.wallFor(i, chunks), min.offset(wallMax, 0, wallMin + i * 16), Direction.WEST);
+                     this.placeWallTemplate(this.wallFor(i, chunks), min.offset(wallMax - i * 16, 0, wallMax), Direction.NORTH);
+                     this.placeWallTemplate(this.wallFor(i, chunks), min.offset(wallMin, 0, wallMax - i * 16), Direction.EAST);
                   }
                }
             }
@@ -671,7 +675,7 @@ public final class AwtTownPlacer {
          if (ref == null) {
             AncientWarfareCore.LOG.debug("Skipping unresolved AWT wall template {}", entry.templateName());
          } else {
-            BlockPos buildOrigin = pos.m_5484_(wallFacing.m_122428_(), 15 - ref.offsetX());
+            BlockPos buildOrigin = pos.relative(wallFacing.getCounterClockWise(), 15 - ref.offsetX());
             if (this.planning) {
                this.plannedWalls.add(new AwtTownPlacer.PlannedTemplate(ref.path(), this.structureMin(buildOrigin, ref, wallFacing), wallFacing));
             } else {
@@ -708,12 +712,12 @@ public final class AwtTownPlacer {
 
       private List<AwtTownPlacer.TownBlock> exteriorTownBlocks(BlockPos min, int totalSize, int y) {
          if (this.town.exteriorSize() > 0 && !this.town.exteriorStructures().isEmpty()) {
-            int maxX = min.m_123341_() + totalSize - 1;
-            int maxZ = min.m_123343_() + totalSize - 1;
-            int centerX = min.m_123341_() + totalSize / 2 - 1;
-            int centerZ = min.m_123343_() + totalSize / 2 - 1;
-            int exteriorMinX = min.m_123341_() + 7;
-            int exteriorMinZ = min.m_123343_() + 7;
+            int maxX = min.getX() + totalSize - 1;
+            int maxZ = min.getZ() + totalSize - 1;
+            int centerX = min.getX() + totalSize / 2 - 1;
+            int centerZ = min.getZ() + totalSize / 2 - 1;
+            int exteriorMinX = min.getX() + 7;
+            int exteriorMinZ = min.getZ() + 7;
             int exteriorMaxX = maxX - 9;
             int exteriorMaxZ = maxZ - 9;
             int wallMinX = exteriorMinX + this.town.exteriorSize() * 16;
@@ -825,12 +829,12 @@ public final class AwtTownPlacer {
       }
 
       private List<AwtTownPlacer.TownBlock> townBlocks(BlockPos min, int totalSize, int y) {
-         int maxX = min.m_123341_() + totalSize - 1;
-         int maxZ = min.m_123343_() + totalSize - 1;
-         int centerX = min.m_123341_() + totalSize / 2 - 1;
-         int centerZ = min.m_123343_() + totalSize / 2 - 1;
-         int townMinX = min.m_123341_() + 7 + this.town.exteriorSize() * 16 + this.town.wallSize();
-         int townMinZ = min.m_123343_() + 7 + this.town.exteriorSize() * 16 + this.town.wallSize();
+         int maxX = min.getX() + totalSize - 1;
+         int maxZ = min.getZ() + totalSize - 1;
+         int centerX = min.getX() + totalSize / 2 - 1;
+         int centerZ = min.getZ() + totalSize / 2 - 1;
+         int townMinX = min.getX() + 7 + this.town.exteriorSize() * 16 + this.town.wallSize();
+         int townMinZ = min.getZ() + 7 + this.town.exteriorSize() * 16 + this.town.wallSize();
          int townMaxX = maxX - 9 - this.town.exteriorSize() * 16 - this.town.wallSize();
          int townMaxZ = maxZ - 9 - this.town.exteriorSize() * 16 - this.town.wallSize();
          List<AwtTownPlacer.TownBlock> blocks = new ArrayList<>();
@@ -1015,8 +1019,8 @@ public final class AwtTownPlacer {
             double exteriorHalf = Math.hypot((double)totalSize / 2.0 - 7.0, (double)totalSize / 2.0 - 7.0);
             double wallHalf = Math.max(0.0, (double)totalSize / 2.0 - 7.0 - (double)this.town.exteriorSize() * 16.0);
             double distanceRange = Math.max(1.0, exteriorHalf - wallHalf);
-            int centerX = min.m_123341_() + totalSize / 2 - 1;
-            int centerZ = min.m_123343_() + totalSize / 2 - 1;
+            int centerX = min.getX() + totalSize / 2 - 1;
+            int centerZ = min.getZ() + totalSize / 2 - 1;
 
             for (AwtTownPlacer.TownBlock block : blocks) {
                for (AwtTownPlacer.TownPlot plot : block.plots) {
@@ -1065,7 +1069,7 @@ public final class AwtTownPlacer {
       }
 
       private long blockOrderHash(AwtTownPlacer.TownBlock block) {
-         long value = this.origin.m_121878_();
+         long value = this.origin.asLong();
          value ^= (long)block.x * 341873128712L;
          value ^= (long)block.z * 132897987541L;
          value ^= (long)block.xDir.ordinal() * 42317861L;
@@ -1081,13 +1085,13 @@ public final class AwtTownPlacer {
             AncientWarfareCore.LOG.debug("Skipping unresolved AWT structure template {}", entry.templateName());
             return false;
          } else {
-            Direction buildingFacing = this.faceForPlot(plot).m_122424_();
+            Direction buildingFacing = this.faceForPlot(plot).getOpposite();
             int width = ref.rotatedWidth(buildingFacing);
             int length = ref.rotatedLength(buildingFacing);
             int expansion = Math.max(0, this.town.buildingExpansion());
             int expandedWidth = width;
             int expandedLength = length;
-            if (buildingFacing.m_122434_() == Axis.Z) {
+            if (buildingFacing.getAxis() == Axis.Z) {
                expandedWidth = width + expansion;
                if (!center) {
                   expandedLength = length + 1;
@@ -1116,10 +1120,10 @@ public final class AwtTownPlacer {
       }
 
       private Direction faceForPlot(AwtTownPlacer.TownPlot plot) {
-         Direction face = Direction.m_122407_(this.random.nextInt(4));
+         Direction face = Direction.from2DDataValue(this.random.nextInt(4));
 
          for (int i = 0; i < 4; i++) {
-            face = face.m_122427_();
+            face = face.getClockWise();
             if (plot.roadBorders[this.gridOrdinal(face)]) {
                return face;
             }
@@ -1147,13 +1151,13 @@ public final class AwtTownPlacer {
             wAdj = extraWidth / 2;
             lAdj = extraLength / 2;
          } else {
-            if (face.m_122434_() == Axis.Z) {
+            if (face.getAxis() == Axis.Z) {
                wAdj = extraWidth / 2;
             } else {
                wAdj = face == Direction.WEST ? extraWidth : 0;
             }
 
-            if (face.m_122434_() == Axis.X) {
+            if (face.getAxis() == Axis.X) {
                lAdj = extraLength / 2;
             } else {
                lAdj = face == Direction.NORTH ? extraLength : 0;
@@ -1179,17 +1183,17 @@ public final class AwtTownPlacer {
 
       private BlockPos rearLeftCorner(BlockPos min, BlockPos max, Direction face) {
          return switch (face) {
-            case SOUTH -> new BlockPos(max.m_123341_(), min.m_123342_(), max.m_123343_());
-            case WEST -> new BlockPos(min.m_123341_(), min.m_123342_(), max.m_123343_());
+            case SOUTH -> new BlockPos(max.getX(), min.getY(), max.getZ());
+            case WEST -> new BlockPos(min.getX(), min.getY(), max.getZ());
             case NORTH -> min;
-            case EAST -> new BlockPos(max.m_123341_(), min.m_123342_(), min.m_123343_());
+            case EAST -> new BlockPos(max.getX(), min.getY(), min.getZ());
             default -> min;
          };
       }
 
       private Direction directionTowardCenter(BlockPos pos) {
-         int dx = this.origin.m_123341_() - pos.m_123341_();
-         int dz = this.origin.m_123343_() - pos.m_123343_();
+         int dx = this.origin.getX() - pos.getX();
+         int dz = this.origin.getZ() - pos.getZ();
          if (Math.abs(dx) > Math.abs(dz)) {
             return dx > 0 ? Direction.EAST : Direction.WEST;
          } else {
@@ -1201,8 +1205,8 @@ public final class AwtTownPlacer {
          AwtTownPlacer.AwsTemplateRef ref = AwtTownPlacer.awsTemplate(this.town.lamp().templateName());
          if (ref != null) {
             for (int i = 8; i < totalSize - 8; i += 12) {
-               this.placeBuildingOrigin(ref, min.m_7918_(center + 3, 0, i), Direction.SOUTH);
-               this.placeBuildingOrigin(ref, min.m_7918_(i, 0, center + 3), Direction.EAST);
+               this.placeBuildingOrigin(ref, min.offset(center + 3, 0, i), Direction.SOUTH);
+               this.placeBuildingOrigin(ref, min.offset(i, 0, center + 3), Direction.EAST);
             }
          }
       }
@@ -1216,10 +1220,10 @@ public final class AwtTownPlacer {
       }
 
       private BlockPos structureMin(BlockPos origin, AwtTownPlacer.AwsTemplateRef ref, Direction direction) {
-         BlockPos first = origin.m_5484_(direction.m_122428_(), ref.offsetX()).m_5484_(direction, ref.offsetZ()).m_6625_(ref.offsetY());
-         BlockPos second = first.m_5484_(direction.m_122427_(), ref.sizeX() - 1).m_5484_(direction, -(ref.sizeZ() - 1)).m_6630_(ref.sizeY() - 1);
+         BlockPos first = origin.relative(direction.getCounterClockWise(), ref.offsetX()).relative(direction, ref.offsetZ()).below(ref.offsetY());
+         BlockPos second = first.relative(direction.getClockWise(), ref.sizeX() - 1).relative(direction, -(ref.sizeZ() - 1)).above(ref.sizeY() - 1);
          return new BlockPos(
-            Math.min(first.m_123341_(), second.m_123341_()), Math.min(first.m_123342_(), second.m_123342_()), Math.min(first.m_123343_(), second.m_123343_())
+            Math.min(first.getX(), second.getX()), Math.min(first.getY(), second.getY()), Math.min(first.getZ(), second.getZ())
          );
       }
    }

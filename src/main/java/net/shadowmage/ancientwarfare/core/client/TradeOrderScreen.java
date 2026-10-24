@@ -30,44 +30,44 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
    private EditBox routeX;
    private EditBox routeY;
    private EditBox routeZ;
-   private Component routeStatus = Component.m_237119_();
+   private Component routeStatus = Component.empty();
 
    public TradeOrderScreen(TradeOrderMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title, 256, 240, 24, 128);
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
-      BlockPos target = ((TradeOrderMenu)this.f_97732_).getRouteTarget();
-      this.routeX = this.addRouteBox(this.f_97735_ + 50, this.f_97736_ + 52, target.m_123341_());
-      this.routeY = this.addRouteBox(this.f_97735_ + 50, this.f_97736_ + 78, target.m_123342_());
-      this.routeZ = this.addRouteBox(this.f_97735_ + 50, this.f_97736_ + 104, target.m_123343_());
+   protected void init() {
+      super.init();
+      BlockPos target = ((TradeOrderMenu)this.menu).getRouteTarget();
+      this.routeX = this.addRouteBox(this.leftPos + 50, this.topPos + 52, target.getX());
+      this.routeY = this.addRouteBox(this.leftPos + 50, this.topPos + 78, target.getY());
+      this.routeZ = this.addRouteBox(this.leftPos + 50, this.topPos + 104, target.getZ());
       this.updateRouteWidgetVisibility();
    }
 
    private EditBox addRouteBox(int x, int y, int value) {
-      EditBox box = new EditBox(this.f_96547_, x, y, 158, 18, Component.m_237119_());
-      box.m_94199_(12);
-      box.m_94202_(-1);
-      box.m_94205_(-4671304);
-      box.m_94153_(text -> text.matches("-?[0-9]*"));
-      box.m_94144_(Integer.toString(value));
-      return this.addLegacyWidget("route coordinate " + y, box, x - this.f_97735_, y - this.f_97736_, 158, 18);
+      EditBox box = new EditBox(this.font, x, y, 158, 18, Component.empty());
+      box.setMaxLength(12);
+      box.setTextColor(-1);
+      box.setTextColorUneditable(-4671304);
+      box.setFilter(text -> text.matches("-?[0-9]*"));
+      box.setValue(Integer.toString(value));
+      return this.addLegacyWidget("route coordinate " + y, box, x - this.leftPos, y - this.topPos, 158, 18);
    }
 
    private void updateRouteWidgetVisibility() {
       boolean visible = this.mode == 1;
-      this.routeX.m_94194_(visible);
-      this.routeY.m_94194_(visible);
-      this.routeZ.m_94194_(visible);
-      this.routeX.m_94186_(visible);
-      this.routeY.m_94186_(visible);
-      this.routeZ.m_94186_(visible);
+      this.routeX.setVisible(visible);
+      this.routeY.setVisible(visible);
+      this.routeZ.setVisible(visible);
+      this.routeX.setEditable(visible);
+      this.routeY.setEditable(visible);
+      this.routeZ.setEditable(visible);
       if (!visible) {
-         this.routeX.m_93692_(false);
-         this.routeY.m_93692_(false);
-         this.routeZ.m_93692_(false);
+         this.routeX.setFocused(false);
+         this.routeY.setFocused(false);
+         this.routeZ.setFocused(false);
       }
    }
 
@@ -80,13 +80,13 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
       } else if (this.mode == 1) {
          this.drawRoute(graphics, mouseX, mouseY);
       } else {
-         this.drawCenteredFitted(graphics, Component.m_237115_("guistrings.npc.trade_order.restock_unavailable"), 8, 76, this.f_97726_ - 24, 12, -4671304);
+         this.drawCenteredFitted(graphics, Component.translatable("guistrings.npc.trade_order.restock_unavailable"), 8, 76, this.imageWidth - 24, 12, -4671304);
       }
    }
 
    @Override
    protected int orderContentHeight() {
-      return 8 + ((TradeOrderMenu)this.f_97732_).getTrades().size() * 59 + 12;
+      return 8 + ((TradeOrderMenu)this.menu).getTrades().size() * 59 + 12;
    }
 
    @Override
@@ -95,59 +95,59 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
    }
 
    private void drawRoute(GuiGraphics graphics, int mouseX, int mouseY) {
-      Component heading = (Component)(this.routeStatus.getString().isEmpty() ? Component.m_237115_("guistrings.npc.trade_order.route_title") : this.routeStatus);
-      this.drawCenteredFitted(graphics, heading, 8, 34, this.f_97726_ - 24, 12, this.routeStatus.getString().isEmpty() ? -1 : -34953);
-      graphics.m_280614_(this.f_96547_, Component.m_237113_("X"), this.f_97735_ + 30, this.f_97736_ + 57, -1, false);
-      graphics.m_280614_(this.f_96547_, Component.m_237113_("Y"), this.f_97735_ + 30, this.f_97736_ + 83, -1, false);
-      graphics.m_280614_(this.f_96547_, Component.m_237113_("Z"), this.f_97735_ + 30, this.f_97736_ + 109, -1, false);
-      if (((TradeOrderMenu)this.f_97732_).isTraderBound()) {
-         this.drawButton(graphics, 81, 130, 94, 16, Component.m_237115_("guistrings.npc.trade_order.depart"), false, mouseX, mouseY);
+      Component heading = (Component)(this.routeStatus.getString().isEmpty() ? Component.translatable("guistrings.npc.trade_order.route_title") : this.routeStatus);
+      this.drawCenteredFitted(graphics, heading, 8, 34, this.imageWidth - 24, 12, this.routeStatus.getString().isEmpty() ? -1 : -34953);
+      graphics.drawString(this.font, Component.literal("X"), this.leftPos + 30, this.topPos + 57, -1, false);
+      graphics.drawString(this.font, Component.literal("Y"), this.leftPos + 30, this.topPos + 83, -1, false);
+      graphics.drawString(this.font, Component.literal("Z"), this.leftPos + 30, this.topPos + 109, -1, false);
+      if (((TradeOrderMenu)this.menu).isTraderBound()) {
+         this.drawButton(graphics, 81, 130, 94, 16, Component.translatable("guistrings.npc.trade_order.depart"), false, mouseX, mouseY);
       } else {
-         this.drawCenteredFitted(graphics, Component.m_237115_("guistrings.npc.trade_order.route_unbound_hint"), 8, 132, this.f_97726_ - 24, 12, -4671304);
+         this.drawCenteredFitted(graphics, Component.translatable("guistrings.npc.trade_order.route_unbound_hint"), 8, 132, this.imageWidth - 24, 12, -4671304);
       }
    }
 
    private void depart() {
       try {
-         int x = Integer.parseInt(this.routeX.m_94155_());
-         int y = Integer.parseInt(this.routeY.m_94155_());
-         int z = Integer.parseInt(this.routeZ.m_94155_());
-         this.routeStatus = Component.m_237119_();
-         AWCorePlatform.sendTraderToRoute(((TradeOrderMenu)this.f_97732_).getTraderEntityId(), new BlockPos(x, y, z));
+         int x = Integer.parseInt(this.routeX.getValue());
+         int y = Integer.parseInt(this.routeY.getValue());
+         int z = Integer.parseInt(this.routeZ.getValue());
+         this.routeStatus = Component.empty();
+         AWCorePlatform.sendTraderToRoute(((TradeOrderMenu)this.menu).getTraderEntityId(), new BlockPos(x, y, z));
       } catch (NumberFormatException var4) {
-         this.routeStatus = Component.m_237115_("guistrings.npc.trade_order.invalid_coordinates");
+         this.routeStatus = Component.translatable("guistrings.npc.trade_order.invalid_coordinates");
       }
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
    }
 
    @Override
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      super.render(graphics, mouseX, mouseY, partialTick);
       ItemStack hovered = this.hoveredTradeStack(mouseX, mouseY);
-      if (!hovered.m_41619_()) {
-         graphics.m_280153_(this.f_96547_, hovered, mouseX, mouseY);
+      if (!hovered.isEmpty()) {
+         graphics.renderTooltip(this.font, hovered, mouseX, mouseY);
       }
    }
 
    private void drawTabs(GuiGraphics graphics, int mouseX, int mouseY) {
-      this.drawTab(graphics, 8, Component.m_237115_("guistrings.npc.trade.trade"), 0, mouseX, mouseY);
-      this.drawTab(graphics, 83, Component.m_237115_("guistrings.npc.trade_order.route"), 1, mouseX, mouseY);
-      this.drawTab(graphics, 158, Component.m_237115_("guistrings.npc.trade_order.restock"), 2, mouseX, mouseY);
+      this.drawTab(graphics, 8, Component.translatable("guistrings.npc.trade.trade"), 0, mouseX, mouseY);
+      this.drawTab(graphics, 83, Component.translatable("guistrings.npc.trade_order.route"), 1, mouseX, mouseY);
+      this.drawTab(graphics, 158, Component.translatable("guistrings.npc.trade_order.restock"), 2, mouseX, mouseY);
    }
 
    private void drawTab(GuiGraphics graphics, int x, Component label, int tabMode, int mouseX, int mouseY) {
       if (this.mode == tabMode) {
-         LegacyGuiStyle.nineSlice(graphics, this.f_97735_, this.f_97736_, x, 8, 75, 12, 0, 0, 256, 40);
+         LegacyGuiStyle.nineSlice(graphics, this.leftPos, this.topPos, x, 8, 75, 12, 0, 0, 256, 40);
          this.drawCenteredFitted(graphics, label, x + 2, 9, 71, 10, -1);
       } else {
-         LegacyGuiStyle.buttonWithText(graphics, this.f_96547_, this.f_97735_, this.f_97736_, x, 8, 75, 12, label, mouseX, mouseY);
+         LegacyGuiStyle.buttonWithText(graphics, this.font, this.leftPos, this.topPos, x, 8, 75, 12, label, mouseX, mouseY);
       }
    }
 
    private void drawTrades(GuiGraphics graphics, int mouseX, int mouseY) {
-      List<TradeOrderData.TradeEntry> trades = ((TradeOrderMenu)this.f_97732_).getTrades();
+      List<TradeOrderData.TradeEntry> trades = ((TradeOrderMenu)this.menu).getTrades();
       this.clampOrderScroll();
       this.beginOrderViewport(graphics);
 
@@ -160,7 +160,7 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
 
       int addY = 32 + trades.size() * 59 - this.scrollPixels;
       if (addY < 152 && addY + 12 > 24) {
-         this.drawButton(graphics, 8, addY, this.f_97726_ - 24, 12, Component.m_237115_("guistrings.npc.trade.add"), this.pressedButton == 1, mouseX, mouseY);
+         this.drawButton(graphics, 8, addY, this.imageWidth - 24, 12, Component.translatable("guistrings.npc.trade.add"), this.pressedButton == 1, mouseX, mouseY);
       }
 
       this.endOrderViewport(graphics);
@@ -168,7 +168,7 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
 
    private void drawTrade(GuiGraphics graphics, TradeOrderData.TradeEntry trade, int index, int y, int mouseX, int mouseY) {
       this.drawGrid(graphics, 8, y, trade.inputs());
-      graphics.m_280614_(this.f_96547_, Component.m_237113_(">"), this.f_97735_ + 63, this.f_97736_ + y + 20, -1, true);
+      graphics.drawString(this.font, Component.literal(">"), this.leftPos + 63, this.topPos + y + 20, -1, true);
       this.drawGrid(graphics, 71, y, trade.outputs());
       this.drawButton(
          graphics,
@@ -176,7 +176,7 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
          y - 1,
          55,
          12,
-         Component.m_237115_("guistrings.npc.trade_order.move_up"),
+         Component.translatable("guistrings.npc.trade_order.move_up"),
          this.pressedButton == TradeOrderMenu.moveUpButton(index),
          mouseX,
          mouseY
@@ -187,7 +187,7 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
          y + 20,
          55,
          12,
-         Component.m_237115_("guistrings.npc.trade_order.remove"),
+         Component.translatable("guistrings.npc.trade_order.remove"),
          this.pressedButton == TradeOrderMenu.removeButton(index),
          mouseX,
          mouseY
@@ -198,49 +198,49 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
          y + 41,
          55,
          12,
-         Component.m_237115_("guistrings.npc.trade_order.move_down"),
+         Component.translatable("guistrings.npc.trade_order.move_down"),
          this.pressedButton == TradeOrderMenu.moveDownButton(index),
          mouseX,
          mouseY
       );
-      graphics.m_280509_(this.f_97735_ + 3, this.f_97736_ + y + 55, this.f_97735_ + this.f_97726_ - 12, this.f_97736_ + y + 56, -16777216);
+      graphics.fill(this.leftPos + 3, this.topPos + y + 55, this.leftPos + this.imageWidth - 12, this.topPos + y + 56, -16777216);
    }
 
    private void drawGrid(GuiGraphics graphics, int x, int y, List<ItemStack> stacks) {
       for (int slot = 0; slot < 9; slot++) {
          int sx = x + slot % 3 * 18;
          int sy = y + slot / 3 * 18;
-         LegacyGuiStyle.slot(graphics, this.f_97735_, this.f_97736_, sx, sy);
+         LegacyGuiStyle.slot(graphics, this.leftPos, this.topPos, sx, sy);
          ItemStack stack = stacks.get(slot);
-         if (!stack.m_41619_()) {
-            graphics.m_280203_(stack, this.f_97735_ + sx, this.f_97736_ + sy);
-            graphics.m_280370_(this.f_96547_, stack, this.f_97735_ + sx, this.f_97736_ + sy);
+         if (!stack.isEmpty()) {
+            graphics.renderFakeItem(stack, this.leftPos + sx, this.topPos + sy);
+            graphics.renderItemDecorations(this.font, stack, this.leftPos + sx, this.topPos + sy);
          }
       }
    }
 
    private void drawButton(GuiGraphics graphics, int x, int y, int width, int height, Component label, boolean pressed, int mouseX, int mouseY) {
-      boolean hovered = inBounds((double)(mouseX - this.f_97735_), (double)(mouseY - this.f_97736_), x, y, width, height)
+      boolean hovered = inBounds((double)(mouseX - this.leftPos), (double)(mouseY - this.topPos), x, y, width, height)
          && (this.mode != 0 || this.insideOrderViewport((double)mouseX, (double)mouseY));
-      LegacyGuiStyle.nineSlice(graphics, this.f_97735_, this.f_97736_, x, y, width, height, 0, !pressed && !hovered ? 40 : 80, 256, 40);
+      LegacyGuiStyle.nineSlice(graphics, this.leftPos, this.topPos, x, y, width, height, 0, !pressed && !hovered ? 40 : 80, 256, 40);
       this.drawCenteredFitted(graphics, label, x + 2, y + 1, width - 4, height - 2, -1);
    }
 
    private void drawCenteredFitted(GuiGraphics graphics, Component text, int x, int y, int width, int height, int color) {
-      int textWidth = this.f_96547_.m_92852_(text);
+      int textWidth = this.font.width(text);
       float scale = textWidth <= width ? 1.0F : (float)width / (float)textWidth;
       int scaledWidth = Math.round((float)textWidth * scale);
       int scaledHeight = Math.round(9.0F * scale);
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_()
-         .m_252880_((float)(this.f_97735_ + x) + (float)(width - scaledWidth) / 2.0F, (float)(this.f_97736_ + y) + (float)(height - scaledHeight) / 2.0F, 0.0F);
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, text, 0, 0, color, false);
-      graphics.m_280168_().m_85849_();
+      graphics.pose().pushPose();
+      graphics.pose()
+         .translate((float)(this.leftPos + x) + (float)(width - scaledWidth) / 2.0F, (float)(this.topPos + y) + (float)(height - scaledHeight) / 2.0F, 0.0F);
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, text, 0, 0, color, false);
+      graphics.pose().popPose();
    }
 
    @Override
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
       if (button == 0) {
          this.clampOrderScroll();
          int clicked = this.getButtonAt(mouseX, mouseY);
@@ -259,36 +259,36 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
 
          if (clicked >= 0) {
             this.pressedButton = clicked;
-            if (this.f_96541_.f_91072_ != null) {
-               this.f_96541_.f_91072_.m_105208_(((TradeOrderMenu)this.f_97732_).f_38840_, clicked);
+            if (this.minecraft.gameMode != null) {
+               this.minecraft.gameMode.handleInventoryButtonClick(((TradeOrderMenu)this.menu).containerId, clicked);
             }
 
             return true;
          }
       }
 
-      return super.m_6375_(mouseX, mouseY, button);
+      return super.mouseClicked(mouseX, mouseY, button);
    }
 
    @Override
-   public boolean m_6348_(double mouseX, double mouseY, int button) {
+   public boolean mouseReleased(double mouseX, double mouseY, int button) {
       this.pressedButton = -1;
-      return super.m_6348_(mouseX, mouseY, button);
+      return super.mouseReleased(mouseX, mouseY, button);
    }
 
    private int getButtonAt(double mouseX, double mouseY) {
-      int x = (int)mouseX - this.f_97735_;
-      int y = (int)mouseY - this.f_97736_;
+      int x = (int)mouseX - this.leftPos;
+      int y = (int)mouseY - this.topPos;
       if (inBounds((double)x, (double)y, 8, 8, 75, 12)) {
          return -10;
       } else if (inBounds((double)x, (double)y, 83, 8, 75, 12)) {
          return -11;
       } else if (inBounds((double)x, (double)y, 158, 8, 75, 12)) {
          return -12;
-      } else if (this.mode == 1 && ((TradeOrderMenu)this.f_97732_).isTraderBound() && inBounds((double)x, (double)y, 81, 130, 94, 16)) {
+      } else if (this.mode == 1 && ((TradeOrderMenu)this.menu).isTraderBound() && inBounds((double)x, (double)y, 81, 130, 94, 16)) {
          return -20;
       } else if (this.mode == 0 && this.insideOrderViewport(mouseX, mouseY)) {
-         List<TradeOrderData.TradeEntry> trades = ((TradeOrderMenu)this.f_97732_).getTrades();
+         List<TradeOrderData.TradeEntry> trades = ((TradeOrderMenu)this.menu).getTrades();
 
          for (int index = 0; index < trades.size(); index++) {
             int entryY = 32 + index * 59 - this.scrollPixels;
@@ -318,7 +318,7 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
          }
 
          int addY = 32 + trades.size() * 59 - this.scrollPixels;
-         return inBounds((double)x, (double)y, 8, addY, this.f_97726_ - 24, 12) ? 1 : -1;
+         return inBounds((double)x, (double)y, 8, addY, this.imageWidth - 24, 12) ? 1 : -1;
       } else {
          return -1;
       }
@@ -337,10 +337,10 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
    }
 
    private ItemStack hoveredTradeStack(int mouseX, int mouseY) {
-      if (this.mode == 0 && ((TradeOrderMenu)this.f_97732_).m_142621_().m_41619_() && this.insideOrderViewport((double)mouseX, (double)mouseY)) {
-         int x = mouseX - this.f_97735_;
-         int y = mouseY - this.f_97736_;
-         List<TradeOrderData.TradeEntry> trades = ((TradeOrderMenu)this.f_97732_).getTrades();
+      if (this.mode == 0 && ((TradeOrderMenu)this.menu).getCarried().isEmpty() && this.insideOrderViewport((double)mouseX, (double)mouseY)) {
+         int x = mouseX - this.leftPos;
+         int y = mouseY - this.topPos;
+         List<TradeOrderData.TradeEntry> trades = ((TradeOrderMenu)this.menu).getTrades();
 
          for (int index = 0; index < trades.size(); index++) {
             int entryY = 32 + index * 59 - this.scrollPixels;
@@ -355,9 +355,9 @@ public class TradeOrderScreen extends LegacyOrderScreen<TradeOrderMenu> {
             }
          }
 
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       } else {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       }
    }
 

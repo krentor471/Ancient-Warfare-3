@@ -70,7 +70,7 @@ import net.shadowmage.ancientwarfare.core.tile.WarehouseStorageBlockEntity;
 public final class AWCoreBlocks {
    public static final DeferredRegister<Block> REGISTER = DeferredRegister.create(ForgeRegistries.BLOCKS, "ancientwarfare");
    public static final RegistryObject<Block> MAILBOX = REGISTER.register(
-      "mailbox", () -> new MailboxBlock(Properties.m_284310_().m_284180_(MapColor.f_283825_).m_60978_(2.0F).m_60918_(SoundType.f_56736_).m_60999_())
+      "mailbox", () -> new MailboxBlock(Properties.of().mapColor(MapColor.WOOD).strength(2.0F).sound(SoundType.WOOD).requiresCorrectToolForDrops())
    );
    public static final RegistryObject<Block> ENGINEERING_STATION = REGISTER.register(
       "engineering_station", () -> new EngineeringStationBlock(stationProperties())
@@ -162,10 +162,36 @@ public final class AWCoreBlocks {
    );
    public static final RegistryObject<Block> WINDMILL_BLADE = REGISTER.register("windmill_blade", () -> new WindmillBladeBlock(torqueProperties()));
    public static final RegistryObject<Block> WINDMILL_BLADE_RUNNING = REGISTER.register(
-      "windmill_blade_running", () -> new WindmillBladeRunningBlock(torqueProperties().m_222994_())
+      "windmill_blade_running", () -> new WindmillBladeRunningBlock(torqueProperties().noLootTable())
    );
    public static final RegistryObject<Block> CHUNK_LOADER_SIMPLE = REGISTER.register("chunk_loader_simple", () -> new ChunkLoaderBlock(worksiteProperties()));
    public static final RegistryObject<Block> TOWN_HALL = REGISTER.register("town_hall", () -> new TownHallBlock(stationProperties()));
+   public static final RegistryObject<Block> QUEST_BOARD = REGISTER.register(
+      "quest_board",
+      () -> new net.shadowmage.ancientwarfare.core.block.QuestBoardBlock(
+         Properties.of().mapColor(MapColor.WOOD).strength(2.0F).sound(SoundType.WOOD).noOcclusion().ignitedByLava()
+      )
+   );
+   /** A field tent: soldiers resting by it at a camp fire heal. */
+   public static final RegistryObject<Block> FIELD_TENT = REGISTER.register(
+      "field_tent",
+      () -> {
+         net.minecraft.world.phys.shapes.VoxelShape shape = Block.box(0.0, 0.0, 0.0, 16.0, 12.0, 16.0);
+         return new StructureDecorBlock(
+            net.minecraft.world.level.block.state.BlockBehaviour.Properties.of()
+               .mapColor(net.minecraft.world.level.material.MapColor.WOOL)
+               .strength(0.8F)
+               .sound(net.minecraft.world.level.block.SoundType.WOOL)
+               .noOcclusion(),
+            java.util.Map.of(
+               net.minecraft.core.Direction.NORTH, shape,
+               net.minecraft.core.Direction.SOUTH, shape,
+               net.minecraft.core.Direction.EAST, shape,
+               net.minecraft.core.Direction.WEST, shape
+            )
+         );
+      }
+   );
    public static final RegistryObject<Block> FLYWHEEL_CONTROLLER_LIGHT = REGISTER.register(
       "flywheel_controller_light", () -> new FlywheelControllerBlock(torqueProperties(), TorqueTier.LIGHT)
    );
@@ -246,28 +272,28 @@ public final class AWCoreBlocks {
    public static final RegistryObject<Block> LOOT_BASKET = REGISTER.register(
       "loot_basket",
       () -> new StructureContainerBlock(
-            structureWoodProperties(), Block.m_49796_(1.0, 0.0, 1.0, 15.0, 10.0, 15.0), (pos, state) -> new StructureContainerBlockEntity(pos, state, 27)
+            structureWoodProperties(), Block.box(1.0, 0.0, 1.0, 15.0, 10.0, 15.0), (pos, state) -> new StructureContainerBlockEntity(pos, state, 27)
          )
    );
    public static final RegistryObject<Block> URN = REGISTER.register(
       "urn",
       () -> new StructureContainerBlock(
-            Properties.m_284310_().m_284180_(MapColor.f_283774_).m_60978_(0.4F).m_60918_(SoundType.f_271215_).m_60955_(),
-            Block.m_49796_(2.0, 0.0, 2.0, 14.0, 15.0, 14.0),
+            Properties.of().mapColor(MapColor.TERRACOTTA_BROWN).strength(0.4F).sound(SoundType.DECORATED_POT).noOcclusion(),
+            Block.box(2.0, 0.0, 2.0, 14.0, 15.0, 14.0),
             (pos, state) -> new StructureContainerBlockEntity(pos, state, 27)
          )
    );
    public static final RegistryObject<Block> WOODEN_COFFIN = REGISTER.register(
       "wooden_coffin",
       () -> new StructureContainerBlock(
-            structureWoodProperties(), Block.m_49796_(1.0, 0.0, 2.0, 15.0, 8.0, 14.0), (pos, state) -> new StructureContainerBlockEntity(pos, state, 27)
+            structureWoodProperties(), Block.box(1.0, 0.0, 2.0, 15.0, 8.0, 14.0), (pos, state) -> new StructureContainerBlockEntity(pos, state, 27)
          )
    );
    public static final RegistryObject<Block> STONE_COFFIN = REGISTER.register(
       "stone_coffin",
       () -> new StructureContainerBlock(
-            structureStoneProperties().m_60955_(),
-            Block.m_49796_(1.0, 0.0, 2.0, 15.0, 8.0, 14.0),
+            structureStoneProperties().noOcclusion(),
+            Block.box(1.0, 0.0, 2.0, 15.0, 8.0, 14.0),
             (pos, state) -> new StructureContainerBlockEntity(pos, state, 27)
          )
    );
@@ -278,40 +304,40 @@ public final class AWCoreBlocks {
          )
    );
    public static final RegistryObject<Block> ADVANCED_SPAWNER = REGISTER.register(
-      "advanced_spawner", () -> new AdvancedSpawnerBlock(structureStoneProperties().m_60955_())
+      "advanced_spawner", () -> new AdvancedSpawnerBlock(structureStoneProperties().noOcclusion())
    );
    public static final RegistryObject<Block> PROTECTION_FLAG = REGISTER.register(
-      "protection_flag", () -> new ProtectionFlagBlock(structureWoodProperties().m_60953_(state -> 13).m_60913_(2.0F, 3600000.0F))
+      "protection_flag", () -> new ProtectionFlagBlock(structureWoodProperties().lightLevel(state -> 13).strength(2.0F, 3600000.0F))
    );
    public static final RegistryObject<Block> GATE_VERTICAL_WOODEN = REGISTER.register(
-      "gate_vertical_wooden", () -> new StaticGateBlock(structureWoodProperties().m_60978_(3.0F), false)
+      "gate_vertical_wooden", () -> new StaticGateBlock(structureWoodProperties().strength(3.0F), false)
    );
    public static final RegistryObject<Block> GATE_VERTICAL_IRON = REGISTER.register(
-      "gate_vertical_iron", () -> new StaticGateBlock(structureMetalProperties().m_60978_(5.0F), true)
+      "gate_vertical_iron", () -> new StaticGateBlock(structureMetalProperties().strength(5.0F), true)
    );
    public static final RegistryObject<Block> GATE_SINGLE_WOOD = REGISTER.register(
-      "gate_single_wood", () -> new StaticGateBlock(structureWoodProperties().m_60978_(3.0F), false)
+      "gate_single_wood", () -> new StaticGateBlock(structureWoodProperties().strength(3.0F), false)
    );
    public static final RegistryObject<Block> GATE_SINGLE_IRON = REGISTER.register(
-      "gate_single_iron", () -> new StaticGateBlock(structureMetalProperties().m_60978_(5.0F), true)
+      "gate_single_iron", () -> new StaticGateBlock(structureMetalProperties().strength(5.0F), true)
    );
    public static final RegistryObject<Block> GATE_DOUBLE_WOOD = REGISTER.register(
-      "gate_double_wood", () -> new StaticGateBlock(structureWoodProperties().m_60978_(3.0F), false)
+      "gate_double_wood", () -> new StaticGateBlock(structureWoodProperties().strength(3.0F), false)
    );
    public static final RegistryObject<Block> GATE_DOUBLE_IRON = REGISTER.register(
-      "gate_double_iron", () -> new StaticGateBlock(structureMetalProperties().m_60978_(5.0F), true)
+      "gate_double_iron", () -> new StaticGateBlock(structureMetalProperties().strength(5.0F), true)
    );
    public static final RegistryObject<Block> GATE_DRAWBRIDGE = REGISTER.register(
-      "gate_drawbridge", () -> new StaticGateBlock(structureWoodProperties().m_60978_(3.0F), false)
+      "gate_drawbridge", () -> new StaticGateBlock(structureWoodProperties().strength(3.0F), false)
    );
    public static final RegistryObject<Block> GATE_PROXY = REGISTER.register(
-      "gate_proxy", () -> new GateProxyBlock(Properties.m_284310_().m_284180_(MapColor.f_283808_).m_60913_(-1.0F, 3600000.0F).m_60955_().m_222994_())
+      "gate_proxy", () -> new GateProxyBlock(Properties.of().mapColor(MapColor.NONE).strength(-1.0F, 3600000.0F).noOcclusion().noLootTable())
    );
    public static final RegistryObject<Block> UNDEAD_CEMETERY_FILL_SKULL_1 = REGISTER.register(
-      "undead_cemetery_fill_skull_1", () -> new UndeadCemeterySkullMarkerBlock(structureStoneProperties().m_60955_())
+      "undead_cemetery_fill_skull_1", () -> new UndeadCemeterySkullMarkerBlock(structureStoneProperties().noOcclusion())
    );
    public static final RegistryObject<Block> AWT_TOWN_MARKER = REGISTER.register(
-      "awt_town_marker", () -> new AwtTownMarkerBlock(structureStoneProperties().m_60955_())
+      "awt_town_marker", () -> new AwtTownMarkerBlock(structureStoneProperties().noOcclusion())
    );
    public static final RegistryObject<Block> STRUCTURE_SCANNER_BLOCK = REGISTER.register(
       "structure_scanner_block", () -> new StructureScannerBlock(structureWoodProperties())
@@ -325,46 +351,46 @@ public final class AWCoreBlocks {
    }
 
    private static Properties stationProperties() {
-      return Properties.m_284310_().m_284180_(MapColor.f_283825_).m_60978_(2.5F).m_60918_(SoundType.f_56736_).m_60999_().m_60955_();
+      return Properties.of().mapColor(MapColor.WOOD).strength(2.5F).sound(SoundType.WOOD).requiresCorrectToolForDrops().noOcclusion();
    }
 
    private static Properties worksiteProperties() {
-      return Properties.m_284310_().m_284180_(MapColor.f_283825_).m_60978_(2.5F).m_60918_(SoundType.f_56736_).m_60999_();
+      return Properties.of().mapColor(MapColor.WOOD).strength(2.5F).sound(SoundType.WOOD).requiresCorrectToolForDrops();
    }
 
    private static Properties torqueProperties() {
-      return Properties.m_284310_().m_284180_(MapColor.f_283906_).m_60978_(2.5F).m_60918_(SoundType.f_56743_).m_60999_().m_60955_();
+      return Properties.of().mapColor(MapColor.METAL).strength(2.5F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion();
    }
 
    private static Properties structureWoodProperties() {
-      return Properties.m_284310_().m_284180_(MapColor.f_283825_).m_60978_(1.5F).m_60918_(SoundType.f_56736_).m_60955_();
+      return Properties.of().mapColor(MapColor.WOOD).strength(1.5F).sound(SoundType.WOOD).noOcclusion();
    }
 
    private static Properties structureMetalProperties() {
-      return Properties.m_284310_().m_284180_(MapColor.f_283757_).m_60978_(2.0F).m_60918_(SoundType.f_56743_).m_60955_();
+      return Properties.of().mapColor(MapColor.GOLD).strength(2.0F).sound(SoundType.METAL).noOcclusion();
    }
 
    private static Properties structureStoneProperties() {
-      return Properties.m_284310_().m_284180_(MapColor.f_283947_).m_60978_(2.0F).m_60918_(SoundType.f_56742_);
+      return Properties.of().mapColor(MapColor.STONE).strength(2.0F).sound(SoundType.STONE);
    }
 
    private static Map<Direction, VoxelShape> fullBlockShapes() {
-      VoxelShape shape = Block.m_49796_(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+      VoxelShape shape = Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
       return Map.of(Direction.NORTH, shape, Direction.SOUTH, shape, Direction.EAST, shape, Direction.WEST, shape);
    }
 
    private static VoxelShape fullBlockShape() {
-      return Block.m_49796_(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+      return Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
    }
 
    private static Map<Direction, VoxelShape> totemShapes() {
-      VoxelShape shape = Block.m_49796_(3.0, 0.0, 3.0, 13.0, 16.0, 13.0);
+      VoxelShape shape = Block.box(3.0, 0.0, 3.0, 13.0, 16.0, 13.0);
       return Map.of(Direction.NORTH, shape, Direction.SOUTH, shape, Direction.EAST, shape, Direction.WEST, shape);
    }
 
    private static Map<Direction, VoxelShape> tribalStoolShapes() {
-      VoxelShape zAxis = Block.m_49796_(0.0, 0.0, 1.0, 16.0, 10.0, 15.0);
-      VoxelShape xAxis = Block.m_49796_(1.0, 0.0, 0.0, 15.0, 10.0, 16.0);
+      VoxelShape zAxis = Block.box(0.0, 0.0, 1.0, 16.0, 10.0, 15.0);
+      VoxelShape xAxis = Block.box(1.0, 0.0, 0.0, 15.0, 10.0, 16.0);
       return Map.of(Direction.NORTH, zAxis, Direction.SOUTH, zAxis, Direction.EAST, xAxis, Direction.WEST, xAxis);
    }
 
@@ -372,150 +398,150 @@ public final class AWCoreBlocks {
       return Map.of(
          Direction.NORTH,
          StructureDecorBlock.shape(
-            Block.m_49796_(3.0, 0.0, 3.0, 13.0, 8.0, 12.0),
-            Block.m_49796_(1.5, 11.0, 12.5, 14.5, 15.5, 13.5),
-            Block.m_49796_(2.0, 8.0, 2.0, 3.0, 11.0, 13.0),
-            Block.m_49796_(13.0, 8.0, 2.0, 14.0, 11.0, 13.0)
+            Block.box(3.0, 0.0, 3.0, 13.0, 8.0, 12.0),
+            Block.box(1.5, 11.0, 12.5, 14.5, 15.5, 13.5),
+            Block.box(2.0, 8.0, 2.0, 3.0, 11.0, 13.0),
+            Block.box(13.0, 8.0, 2.0, 14.0, 11.0, 13.0)
          ),
          Direction.SOUTH,
          StructureDecorBlock.shape(
-            Block.m_49796_(3.0, 0.0, 4.0, 13.0, 8.0, 13.0),
-            Block.m_49796_(1.5, 11.0, 2.5, 14.5, 15.5, 3.5),
-            Block.m_49796_(2.0, 8.0, 3.0, 3.0, 11.0, 14.0),
-            Block.m_49796_(13.0, 8.0, 3.0, 14.0, 11.0, 14.0)
+            Block.box(3.0, 0.0, 4.0, 13.0, 8.0, 13.0),
+            Block.box(1.5, 11.0, 2.5, 14.5, 15.5, 3.5),
+            Block.box(2.0, 8.0, 3.0, 3.0, 11.0, 14.0),
+            Block.box(13.0, 8.0, 3.0, 14.0, 11.0, 14.0)
          ),
          Direction.EAST,
          StructureDecorBlock.shape(
-            Block.m_49796_(4.0, 0.0, 3.0, 13.0, 8.0, 13.0),
-            Block.m_49796_(2.5, 11.0, 1.5, 3.5, 15.5, 14.5),
-            Block.m_49796_(3.0, 8.0, 2.0, 14.0, 11.0, 3.0),
-            Block.m_49796_(3.0, 8.0, 13.0, 14.0, 11.0, 14.0)
+            Block.box(4.0, 0.0, 3.0, 13.0, 8.0, 13.0),
+            Block.box(2.5, 11.0, 1.5, 3.5, 15.5, 14.5),
+            Block.box(3.0, 8.0, 2.0, 14.0, 11.0, 3.0),
+            Block.box(3.0, 8.0, 13.0, 14.0, 11.0, 14.0)
          ),
          Direction.WEST,
          StructureDecorBlock.shape(
-            Block.m_49796_(3.0, 0.0, 3.0, 12.0, 8.0, 13.0),
-            Block.m_49796_(12.5, 11.0, 1.5, 13.5, 15.5, 14.5),
-            Block.m_49796_(2.0, 8.0, 2.0, 13.0, 11.0, 3.0),
-            Block.m_49796_(2.0, 8.0, 13.0, 13.0, 11.0, 14.0)
+            Block.box(3.0, 0.0, 3.0, 12.0, 8.0, 13.0),
+            Block.box(12.5, 11.0, 1.5, 13.5, 15.5, 14.5),
+            Block.box(2.0, 8.0, 2.0, 13.0, 11.0, 3.0),
+            Block.box(2.0, 8.0, 13.0, 13.0, 11.0, 14.0)
          )
       );
    }
 
    private static Map<Direction, VoxelShape> stoolShapes() {
-      VoxelShape shape = Block.m_49796_(3.0, 0.0, 3.0, 13.0, 9.0, 13.0);
+      VoxelShape shape = Block.box(3.0, 0.0, 3.0, 13.0, 9.0, 13.0);
       return Map.of(Direction.NORTH, shape, Direction.SOUTH, shape, Direction.EAST, shape, Direction.WEST, shape);
    }
 
    private static VoxelShape firePitShape() {
-      return Block.m_49796_(0.0, 0.0, 0.0, 16.0, 4.0, 16.0);
+      return Block.box(0.0, 0.0, 0.0, 16.0, 4.0, 16.0);
    }
 
    private static VoxelShape brazierFlameShape() {
-      return Block.m_49796_(0.0, 0.0, 0.0, 16.0, 10.0, 16.0);
+      return Block.box(0.0, 0.0, 0.0, 16.0, 10.0, 16.0);
    }
 
    private static VoxelShape brazierEmberShape() {
-      return Block.m_49796_(0.0, 0.0, 0.0, 16.0, 14.0, 16.0);
+      return Block.box(0.0, 0.0, 0.0, 16.0, 14.0, 16.0);
    }
 
    private static VoxelShape coinStackShape() {
-      return Block.m_49796_(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+      return Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
    }
 
    private static Map<Direction, VoxelShape> chairShapes() {
       return Map.of(
          Direction.NORTH,
-         Block.m_49796_(1.0, 0.0, 0.0, 15.0, 16.0, 15.0),
+         Block.box(1.0, 0.0, 0.0, 15.0, 16.0, 15.0),
          Direction.SOUTH,
-         Block.m_49796_(1.0, 0.0, 1.0, 15.0, 16.0, 16.0),
+         Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 16.0),
          Direction.EAST,
-         Block.m_49796_(1.0, 0.0, 1.0, 16.0, 16.0, 15.0),
+         Block.box(1.0, 0.0, 1.0, 16.0, 16.0, 15.0),
          Direction.WEST,
-         Block.m_49796_(0.0, 0.0, 1.0, 15.0, 16.0, 15.0)
+         Block.box(0.0, 0.0, 1.0, 15.0, 16.0, 15.0)
       );
    }
 
    private static Map<Direction, VoxelShape> gravestoneShapes() {
-      VoxelShape zAxis = Block.m_49796_(0.0, 0.0, 6.0, 16.0, 19.0, 10.0);
-      VoxelShape xAxis = Block.m_49796_(6.0, 0.0, 0.0, 10.0, 19.0, 16.0);
+      VoxelShape zAxis = Block.box(0.0, 0.0, 6.0, 16.0, 19.0, 10.0);
+      VoxelShape xAxis = Block.box(6.0, 0.0, 0.0, 10.0, 19.0, 16.0);
       return Map.of(Direction.NORTH, zAxis, Direction.SOUTH, zAxis, Direction.EAST, xAxis, Direction.WEST, xAxis);
    }
 
    private static Map<Direction, VoxelShape> woodenThroneLowerShapes() {
       return Map.of(
          Direction.NORTH,
-         Block.m_49796_(0.0, 0.0, 1.0, 16.0, 16.0, 16.0),
+         Block.box(0.0, 0.0, 1.0, 16.0, 16.0, 16.0),
          Direction.SOUTH,
-         Block.m_49796_(0.0, 0.0, 0.0, 16.0, 16.0, 15.0),
+         Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 15.0),
          Direction.EAST,
-         Block.m_49796_(0.0, 0.0, 0.0, 15.0, 16.0, 16.0),
+         Block.box(0.0, 0.0, 0.0, 15.0, 16.0, 16.0),
          Direction.WEST,
-         Block.m_49796_(1.0, 0.0, 0.0, 16.0, 16.0, 16.0)
+         Block.box(1.0, 0.0, 0.0, 16.0, 16.0, 16.0)
       );
    }
 
    private static Map<Direction, VoxelShape> woodenThroneUpperShapes() {
       return Map.of(
          Direction.NORTH,
-         Block.m_49796_(0.0, 0.0, 13.0, 16.0, 16.0, 16.0),
+         Block.box(0.0, 0.0, 13.0, 16.0, 16.0, 16.0),
          Direction.SOUTH,
-         Block.m_49796_(0.0, 0.0, 0.0, 16.0, 16.0, 3.0),
+         Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 3.0),
          Direction.EAST,
-         Block.m_49796_(0.0, 0.0, 0.0, 3.0, 16.0, 16.0),
+         Block.box(0.0, 0.0, 0.0, 3.0, 16.0, 16.0),
          Direction.WEST,
-         Block.m_49796_(13.0, 0.0, 0.0, 16.0, 16.0, 16.0)
+         Block.box(13.0, 0.0, 0.0, 16.0, 16.0, 16.0)
       );
    }
 
    private static Map<Direction, VoxelShape> goldenThroneLowerShapes() {
       return Map.of(
          Direction.NORTH,
-         Block.m_49796_(0.0, 0.0, 1.0, 16.0, 16.0, 15.0),
+         Block.box(0.0, 0.0, 1.0, 16.0, 16.0, 15.0),
          Direction.SOUTH,
-         Block.m_49796_(0.0, 0.0, 1.0, 16.0, 16.0, 15.0),
+         Block.box(0.0, 0.0, 1.0, 16.0, 16.0, 15.0),
          Direction.EAST,
-         Block.m_49796_(1.0, 0.0, 0.0, 15.0, 16.0, 16.0),
+         Block.box(1.0, 0.0, 0.0, 15.0, 16.0, 16.0),
          Direction.WEST,
-         Block.m_49796_(1.0, 0.0, 0.0, 15.0, 16.0, 16.0)
+         Block.box(1.0, 0.0, 0.0, 15.0, 16.0, 16.0)
       );
    }
 
    private static Map<Direction, VoxelShape> goldenThroneUpperShapes() {
       return Map.of(
          Direction.NORTH,
-         Block.m_49796_(0.0, 0.0, 13.0, 16.0, 16.0, 15.0),
+         Block.box(0.0, 0.0, 13.0, 16.0, 16.0, 15.0),
          Direction.SOUTH,
-         Block.m_49796_(0.0, 0.0, 1.0, 16.0, 16.0, 3.0),
+         Block.box(0.0, 0.0, 1.0, 16.0, 16.0, 3.0),
          Direction.EAST,
-         Block.m_49796_(1.0, 0.0, 0.0, 3.0, 16.0, 16.0),
+         Block.box(1.0, 0.0, 0.0, 3.0, 16.0, 16.0),
          Direction.WEST,
-         Block.m_49796_(13.0, 0.0, 0.0, 15.0, 16.0, 16.0)
+         Block.box(13.0, 0.0, 0.0, 15.0, 16.0, 16.0)
       );
    }
 
    private static Map<Direction, VoxelShape> tribalChairLowerShapes() {
       return Map.of(
          Direction.NORTH,
-         Block.m_49796_(1.0, 0.0, 0.0, 15.0, 16.0, 15.0),
+         Block.box(1.0, 0.0, 0.0, 15.0, 16.0, 15.0),
          Direction.SOUTH,
-         Block.m_49796_(1.0, 0.0, 1.0, 15.0, 16.0, 16.0),
+         Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 16.0),
          Direction.EAST,
-         Block.m_49796_(1.0, 0.0, 1.0, 16.0, 16.0, 15.0),
+         Block.box(1.0, 0.0, 1.0, 16.0, 16.0, 15.0),
          Direction.WEST,
-         Block.m_49796_(0.0, 0.0, 1.0, 15.0, 16.0, 15.0)
+         Block.box(0.0, 0.0, 1.0, 15.0, 16.0, 15.0)
       );
    }
 
    private static Map<Direction, VoxelShape> tribalChairUpperShapes() {
       return Map.of(
          Direction.NORTH,
-         Block.m_49796_(1.0, 0.0, 12.0, 15.0, 14.0, 16.0),
+         Block.box(1.0, 0.0, 12.0, 15.0, 14.0, 16.0),
          Direction.SOUTH,
-         Block.m_49796_(1.0, 0.0, 0.0, 15.0, 14.0, 4.0),
+         Block.box(1.0, 0.0, 0.0, 15.0, 14.0, 4.0),
          Direction.EAST,
-         Block.m_49796_(0.0, 0.0, 1.0, 4.0, 14.0, 15.0),
+         Block.box(0.0, 0.0, 1.0, 4.0, 14.0, 15.0),
          Direction.WEST,
-         Block.m_49796_(12.0, 0.0, 1.0, 16.0, 14.0, 15.0)
+         Block.box(12.0, 0.0, 1.0, 16.0, 14.0, 15.0)
       );
    }
 
@@ -570,6 +596,8 @@ public final class AWCoreBlocks {
       blockItem("windmill_blade", WINDMILL_BLADE);
       blockItem("chunk_loader_simple", CHUNK_LOADER_SIMPLE);
       blockItem("town_hall", TOWN_HALL);
+      blockItem("quest_board", QUEST_BOARD);
+      blockItem("field_tent", FIELD_TENT);
       restoredAutomationBlockItem("flywheel_controller_light", FLYWHEEL_CONTROLLER_LIGHT);
       restoredAutomationBlockItem("flywheel_controller_medium", FLYWHEEL_CONTROLLER_MEDIUM);
       restoredAutomationBlockItem("flywheel_controller_heavy", FLYWHEEL_CONTROLLER_HEAVY);

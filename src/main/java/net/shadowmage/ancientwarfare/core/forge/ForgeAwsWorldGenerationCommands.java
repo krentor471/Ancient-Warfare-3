@@ -44,19 +44,19 @@ public final class ForgeAwsWorldGenerationCommands {
    public static void registerCommands(RegisterCommandsEvent event) {
       event.getDispatcher()
          .register(
-            (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.m_82127_(
+            (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal(
                                  "awworldgen"
                               )
-                              .requires(source -> source.m_6761_(2)))
-                           .then(Commands.m_82127_("status").executes(context -> generationStatus((CommandSourceStack)context.getSource()))))
+                              .requires(source -> source.hasPermission(2)))
+                           .then(Commands.literal("status").executes(context -> generationStatus((CommandSourceStack)context.getSource()))))
                         .then(
-                           Commands.m_82127_("resume")
+                           Commands.literal("resume")
                               .executes(
                                  context -> {
-                                    boolean resumed = LargeIslandWorldGenerator.resume(((CommandSourceStack)context.getSource()).m_81377_().m_129783_());
+                                    boolean resumed = LargeIslandWorldGenerator.resume(((CommandSourceStack)context.getSource()).getServer().overworld());
                                     ((CommandSourceStack)context.getSource())
-                                       .m_288197_(
-                                          () -> Component.m_237113_(
+                                       .sendSuccess(
+                                          () -> Component.literal(
                                                 resumed ? "Resumed paused large island construction." : "No paused large island construction."
                                              ),
                                           false
@@ -65,27 +65,27 @@ public final class ForgeAwsWorldGenerationCommands {
                                  }
                               )
                         ))
-                     .then(Commands.m_82127_("generate").executes(context -> generate(((CommandSourceStack)context.getSource()).m_81375_()))))
+                     .then(Commands.literal("generate").executes(context -> generate(((CommandSourceStack)context.getSource()).getPlayerOrException()))))
                   .then(
-                     Commands.m_82127_("town")
+                     Commands.literal("town")
                         .then(
-                           Commands.m_82129_("name", StringArgumentType.greedyString())
+                           Commands.argument("name", StringArgumentType.greedyString())
                               .suggests(
-                                 (context, builder) -> SharedSuggestionProvider.m_82981_(
+                                 (context, builder) -> SharedSuggestionProvider.suggest(
                                        AwtWorldGenTemplateRegistry.templates().stream().map(AwtWorldGenTemplateRegistry.Template::name), builder
                                     )
                               )
                               .executes(
-                                 context -> queueTown(((CommandSourceStack)context.getSource()).m_81375_(), StringArgumentType.getString(context, "name"))
+                                 context -> queueTown(((CommandSourceStack)context.getSource()).getPlayerOrException(), StringArgumentType.getString(context, "name"))
                               )
                         )
                   ))
                .then(
-                  ((LiteralArgumentBuilder)Commands.m_82127_("locate").executes(context -> locate(((CommandSourceStack)context.getSource()).m_81375_(), "")))
+                  ((LiteralArgumentBuilder)Commands.literal("locate").executes(context -> locate(((CommandSourceStack)context.getSource()).getPlayerOrException(), "")))
                      .then(
-                        Commands.m_82129_("name", StringArgumentType.greedyString())
+                        Commands.argument("name", StringArgumentType.greedyString())
                            .suggests(
-                              (context, builder) -> SharedSuggestionProvider.m_82981_(
+                              (context, builder) -> SharedSuggestionProvider.suggest(
                                     Stream.concat(
                                        AwtWorldGenTemplateRegistry.templates().stream().map(AwtWorldGenTemplateRegistry.Template::name),
                                        AwsWorldGenTemplateRegistry.templates().stream().map(AwsWorldGenTemplateRegistry.Template::name)
@@ -93,14 +93,14 @@ public final class ForgeAwsWorldGenerationCommands {
                                     builder
                                  )
                            )
-                           .executes(context -> locate(((CommandSourceStack)context.getSource()).m_81375_(), StringArgumentType.getString(context, "name")))
+                           .executes(context -> locate(((CommandSourceStack)context.getSource()).getPlayerOrException(), StringArgumentType.getString(context, "name")))
                      )
                )
          );
    }
 
    private static int generationStatus(CommandSourceStack source) {
-      ServerLevel level = source.m_81377_().m_129783_();
+      ServerLevel level = source.getServer().overworld();
       int pending = AwsWorldGenerationQueue.get(level).pendingCount();
       String state = !ValkyrienShipyardCompat.isReady()
          ? "paused: VS compatibility error"
@@ -115,68 +115,68 @@ public final class ForgeAwsWorldGenerationCommands {
          );
       String islandStatus = LargeIslandWorldGenerator.status(level);
       String details = islandStatus != null && !islandStatus.isBlank() ? "; " + islandStatus : "";
-      source.m_288197_(() -> Component.m_237113_("AWS pending candidates: " + pending + "; " + state + details), false);
+      source.sendSuccess(() -> Component.literal("AWS pending candidates: " + pending + "; " + state + details), false);
       return pending;
    }
 
    private static int generate(ServerPlayer player) {
-      ChunkPos center = player.m_146902_();
+      ChunkPos center = player.chunkPosition();
 
       for (int radius = 1; radius <= 8; radius++) {
          for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                if ((Math.abs(dx) == radius || Math.abs(dz) == radius)
-                  && AwsWorldGenerator.generateAt(player.m_284548_(), new ChunkPos(center.f_45578_ + dx, center.f_45579_ + dz), true)) {
-                  player.m_213846_(Component.m_237113_("Generated an AWS structure nearby."));
+                  && AwsWorldGenerator.generateAt(player.serverLevel(), new ChunkPos(center.x + dx, center.z + dz), true)) {
+                  player.sendSystemMessage(Component.literal("Generated an AWS structure nearby."));
                   return 1;
                }
             }
          }
       }
 
-      player.m_213846_(Component.m_237113_("No compatible AWS structure could be placed nearby."));
+      player.sendSystemMessage(Component.literal("No compatible AWS structure could be placed nearby."));
       return 0;
    }
 
    private static int queueTown(ServerPlayer player, String name) {
-      ChunkPos center = player.m_146902_();
+      ChunkPos center = player.chunkPosition();
 
       for (int radius = 8; radius <= 32; radius += 4) {
          for (int dx = -radius; dx <= radius; dx += 4) {
             for (int dz = -radius; dz <= radius; dz += 4) {
                if ((Math.abs(dx) == radius || Math.abs(dz) == radius)
-                  && AwtWorldGenerator.queueAt(player.m_284548_(), new ChunkPos(center.f_45578_ + dx, center.f_45579_ + dz), true, name)) {
-                  player.m_213846_(Component.m_237113_("Queued phased AWT construction for " + name + ".").m_130940_(ChatFormatting.GREEN));
+                  && AwtWorldGenerator.queueAt(player.serverLevel(), new ChunkPos(center.x + dx, center.z + dz), true, name)) {
+                  player.sendSystemMessage(Component.literal("Queued phased AWT construction for " + name + ".").withStyle(ChatFormatting.GREEN));
                   return 1;
                }
             }
          }
       }
 
-      player.m_213846_(Component.m_237113_("No matching AWT template or suitable construction area was found.").m_130940_(ChatFormatting.YELLOW));
+      player.sendSystemMessage(Component.literal("No matching AWT template or suitable construction area was found.").withStyle(ChatFormatting.YELLOW));
       return 0;
    }
 
    private static int locate(ServerPlayer player, String nameFilter) {
       String filter = normalize(nameFilter);
-      AwsWorldGenerationData data = AwsWorldGenerationData.get(player.m_284548_());
+      AwsWorldGenerationData data = AwsWorldGenerationData.get(player.serverLevel());
       Optional<AwsWorldGenerationData.Entry> nearestAws = nearest(data, player, filter);
-      Optional<AwtWorldGenerationData.TownTask> nearestAwt = AwtWorldGenerationData.get(player.m_284548_())
+      Optional<AwtWorldGenerationData.TownTask> nearestAwt = AwtWorldGenerationData.get(player.serverLevel())
          .towns()
          .stream()
          .filter(town -> filter.isBlank() || normalize(town.name).contains(filter))
-         .min(Comparator.comparingDouble(town -> town.distanceSquared(player.m_146903_(), player.m_146907_())));
+         .min(Comparator.comparingDouble(town -> town.distanceSquared(player.getBlockX(), player.getBlockZ())));
       boolean useAwt = nearestAwt.isPresent()
          && (
             nearestAws.isEmpty()
-               || nearestAwt.get().distanceSquared(player.m_146903_(), player.m_146907_())
-                  <= nearestAws.get().horizontalDistanceSquared(player.m_146903_(), player.m_146907_())
+               || nearestAwt.get().distanceSquared(player.getBlockX(), player.getBlockZ())
+                  <= nearestAws.get().horizontalDistanceSquared(player.getBlockX(), player.getBlockZ())
          );
       if (!useAwt && nearestAws.isEmpty() && filter.isBlank() && generateNearby(player)) {
          nearestAws = nearest(data, player, filter);
-         player.m_213846_(
-            Component.m_237113_("No previous AWS record existed, so a compatible nearby structure was generated for this search.")
-               .m_130940_(ChatFormatting.GRAY)
+         player.sendSystemMessage(
+            Component.literal("No previous AWS record existed, so a compatible nearby structure was generated for this search.")
+               .withStyle(ChatFormatting.GRAY)
          );
       }
 
@@ -188,16 +188,16 @@ public final class ForgeAwsWorldGenerationCommands {
             town.x,
             town.y,
             town.z,
-            town.distanceSquared(player.m_146903_(), player.m_146907_())
+            town.distanceSquared(player.getBlockX(), player.getBlockZ())
          );
       } else if (nearestAws.isEmpty()) {
-         player.m_213846_(
-            Component.m_237113_(
+         player.sendSystemMessage(
+            Component.literal(
                   filter.isBlank()
                      ? "No Ancient Warfare structure is recorded in this dimension."
                      : "No recorded Ancient Warfare structure matches: " + nameFilter
                )
-               .m_130940_(ChatFormatting.YELLOW)
+               .withStyle(ChatFormatting.YELLOW)
          );
          return 0;
       } else {
@@ -205,26 +205,26 @@ public final class ForgeAwsWorldGenerationCommands {
          int x = (entry.minX() + entry.maxX()) / 2;
          int y = entry.minY() + 1;
          int z = (entry.minZ() + entry.maxZ()) / 2;
-         return showLocation(player, displayName(entry.template()) + " [AWS]", x, y, z, entry.horizontalDistanceSquared(player.m_146903_(), player.m_146907_()));
+         return showLocation(player, displayName(entry.template()) + " [AWS]", x, y, z, entry.horizontalDistanceSquared(player.getBlockX(), player.getBlockZ()));
       }
    }
 
    private static int showLocation(ServerPlayer player, String name, int x, int y, int z, double distanceSquared) {
       int distance = (int)Math.round(Math.sqrt(distanceSquared));
       String teleport = "/tp @s " + x + " " + y + " " + z;
-      Component coordinates = Component.m_237113_("[" + x + ", " + y + ", " + z + "]")
-         .m_130938_(
-            style -> style.m_131140_(ChatFormatting.GREEN)
-                  .m_131162_(true)
-                  .m_131142_(new ClickEvent(Action.RUN_COMMAND, teleport))
-                  .m_131144_(new HoverEvent(net.minecraft.network.chat.HoverEvent.Action.f_130831_, Component.m_237113_("Click to teleport")))
+      Component coordinates = Component.literal("[" + x + ", " + y + ", " + z + "]")
+         .withStyle(
+            style -> style.withColor(ChatFormatting.GREEN)
+                  .withUnderlined(true)
+                  .withClickEvent(new ClickEvent(Action.RUN_COMMAND, teleport))
+                  .withHoverEvent(new HoverEvent(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT, Component.literal("Click to teleport")))
          );
-      player.m_213846_(
-         Component.m_237113_("Nearest Ancient Warfare structure: ")
-            .m_7220_(Component.m_237113_(name).m_130940_(ChatFormatting.GOLD))
-            .m_7220_(Component.m_237113_(" at "))
-            .m_7220_(coordinates)
-            .m_7220_(Component.m_237113_(" (" + distance + " blocks away)"))
+      player.sendSystemMessage(
+         Component.literal("Nearest Ancient Warfare structure: ")
+            .append(Component.literal(name).withStyle(ChatFormatting.GOLD))
+            .append(Component.literal(" at "))
+            .append(coordinates)
+            .append(Component.literal(" (" + distance + " blocks away)"))
       );
       return distance;
    }
@@ -233,18 +233,18 @@ public final class ForgeAwsWorldGenerationCommands {
       return data.entries()
          .stream()
          .filter(entry -> filter.isBlank() || normalize(displayName(entry.template())).contains(filter))
-         .min(Comparator.comparingDouble(entry -> entry.horizontalDistanceSquared(player.m_146903_(), player.m_146907_())));
+         .min(Comparator.comparingDouble(entry -> entry.horizontalDistanceSquared(player.getBlockX(), player.getBlockZ())));
    }
 
    private static boolean generateNearby(ServerPlayer player) {
-      ChunkPos center = player.m_146902_();
+      ChunkPos center = player.chunkPosition();
 
       for (int radius = 1; radius <= 8; radius++) {
          for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                if ((Math.abs(dx) == radius || Math.abs(dz) == radius)
-                  && AwsWorldGenerator.isCandidateChunk(player.m_284548_().m_7328_(), new ChunkPos(center.f_45578_ + dx, center.f_45579_ + dz))
-                  && AwsWorldGenerator.generateAt(player.m_284548_(), new ChunkPos(center.f_45578_ + dx, center.f_45579_ + dz), true)) {
+                  && AwsWorldGenerator.isCandidateChunk(player.serverLevel().getSeed(), new ChunkPos(center.x + dx, center.z + dz))
+                  && AwsWorldGenerator.generateAt(player.serverLevel(), new ChunkPos(center.x + dx, center.z + dz), true)) {
                   return true;
                }
             }

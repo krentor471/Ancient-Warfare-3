@@ -63,7 +63,7 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private static final String AUTO_TILL_TAG = "AutoTill";
    private static final int WORK_COST = 100;
    private static final int WORKER_ENERGY_PER_VISIT = 1600;
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(38, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(38, ItemStack.EMPTY);
    private BlockPos boundsMin;
    private BlockPos boundsMax;
    private byte[] targetMap = createFilledTargetMap();
@@ -86,7 +86,7 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    @Override
    public boolean hasWork() {
-      return this.f_58857_ != null && !this.f_58857_.f_46443_
+      return this.level != null && !this.level.isClientSide
          ? this.findHarvestTarget().isPresent()
             || this.findFertilizeTarget().isPresent()
             || this.findPlantTarget().isPresent()
@@ -96,12 +96,12 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    @Override
    public void addEnergyFromWorker(WorkerAccess worker) {
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_ && worker.canWorkAt(this.getWorkType())) {
+      if (this.level != null && !this.level.isClientSide && worker.canWorkAt(this.getWorkType())) {
          this.storedEnergy = Math.min(
             this.getMaxEnergy(), this.storedEnergy + Math.max(1, Math.round(1600.0F * worker.getWorkEffectiveness(this.getWorkType())))
          );
          this.processStoredEnergy();
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -133,19 +133,19 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    private boolean tryHarvest() {
       Optional<BlockPos> target = this.findHarvestTarget();
-      if (!target.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!target.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          BlockPos var6 = this.harvestPos(target.get()).orElse(target.get());
-         BlockState state = this.f_58857_.m_8055_(var6);
+         BlockState state = this.level.getBlockState(var6);
          if (this.tryHarvestPreservingPlant(var6, state)) {
             return true;
          } else {
             List<ItemStack> drops = new ArrayList<>(
-               Block.m_49874_(state, serverLevel, var6, this.f_58857_.m_7702_(var6), null, WorksiteUpgradeHelper.fortuneTool(Items.f_42392_, this, 33, 5))
+               Block.getDrops(state, serverLevel, var6, this.level.getBlockEntity(var6), null, WorksiteUpgradeHelper.fortuneTool(Items.DIAMOND_HOE, this, 33, 5))
             );
             if (drops.isEmpty()) {
                return false;
             } else {
-               this.f_58857_.m_46961_(var6, false);
+               this.level.destroyBlock(var6, false);
                if (this.shouldReplantAfterHarvest(state)) {
                   this.replantFromDrops(var6, drops);
                }
@@ -163,10 +163,10 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       if (!this.isSweetBerryHarvestable(state)) {
          return false;
       } else {
-         int age = (Integer)state.m_61143_(SweetBerryBushBlock.f_57244_);
-         ItemStack berries = new ItemStack(Items.f_42780_, 1 + this.f_58857_.f_46441_.m_188503_(2) + (age == 3 ? 1 : 0));
-         this.f_58857_.m_7731_(pos, (BlockState)state.m_61124_(SweetBerryBushBlock.f_57244_, 1), 3);
-         this.f_58857_.m_5594_(null, pos, SoundEvents.f_12457_, SoundSource.BLOCKS, 1.0F, 0.8F + this.f_58857_.f_46441_.m_188501_() * 0.4F);
+         int age = (Integer)state.getValue(SweetBerryBushBlock.AGE);
+         ItemStack berries = new ItemStack(Items.SWEET_BERRIES, 1 + this.level.random.nextInt(2) + (age == 3 ? 1 : 0));
+         this.level.setBlock(pos, (BlockState)state.setValue(SweetBerryBushBlock.AGE, 1), 3);
+         this.level.playSound(null, pos, SoundEvents.SWEET_BERRY_BUSH_PICK_BERRIES, SoundSource.BLOCKS, 1.0F, 0.8F + this.level.random.nextFloat() * 0.4F);
          this.insertOrDrop(pos, List.of(berries));
          return true;
       }
@@ -175,9 +175,9 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private void replantFromDrops(BlockPos pos, List<ItemStack> drops) {
       for (ItemStack stack : drops) {
          BlockState crop = this.cropForPlantable(stack);
-         if (!stack.m_41619_() && crop != null && this.canPlant(pos, crop)) {
-            this.f_58857_.m_7731_(pos, crop, 3);
-            stack.m_41774_(1);
+         if (!stack.isEmpty() && crop != null && this.canPlant(pos, crop)) {
+            this.level.setBlock(pos, crop, 3);
+            stack.shrink(1);
             return;
          }
       }
@@ -186,16 +186,16 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private boolean tryFertilize() {
       Optional<BlockPos> target = this.findFertilizeTarget();
       Optional<Integer> boneMealSlot = this.findBoneMealSlot();
-      if (!target.isEmpty() && !boneMealSlot.isEmpty() && this.f_58857_ instanceof ServerLevel serverLevel) {
+      if (!target.isEmpty() && !boneMealSlot.isEmpty() && this.level instanceof ServerLevel serverLevel) {
          BlockPos var8 = this.fertilizablePos(target.get()).orElse(target.get());
-         BlockState state = this.f_58857_.m_8055_(var8);
-         if (state.m_60734_() instanceof BonemealableBlock bonemealable
-            && bonemealable.m_7370_(this.f_58857_, var8, state, false)
-            && bonemealable.m_214167_(this.f_58857_, this.f_58857_.f_46441_, var8, state)) {
-            bonemealable.m_214148_(serverLevel, this.f_58857_.f_46441_, var8, state);
-            ((ItemStack)this.items.get(boneMealSlot.get())).m_41774_(1);
-            this.f_58857_.m_46796_(2005, var8, 0);
-            this.m_6596_();
+         BlockState state = this.level.getBlockState(var8);
+         if (state.getBlock() instanceof BonemealableBlock bonemealable
+            && bonemealable.isValidBonemealTarget(this.level, var8, state, false)
+            && bonemealable.isBonemealSuccess(this.level, this.level.random, var8, state)) {
+            bonemealable.performBonemeal(serverLevel, this.level.random, var8, state);
+            ((ItemStack)this.items.get(boneMealSlot.get())).shrink(1);
+            this.level.levelEvent(2005, var8, 0);
+            this.setChanged();
             return true;
          }
 
@@ -214,10 +214,10 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
             for (int slot = 27; slot < 30; slot++) {
                ItemStack stack = (ItemStack)this.items.get(slot);
                BlockState crop = this.cropForPlantable(stack);
-               if (!stack.m_41619_() && crop != null && this.canPlant(pos, crop)) {
-                  this.f_58857_.m_7731_(pos, crop, 3);
-                  stack.m_41774_(1);
-                  this.m_6596_();
+               if (!stack.isEmpty() && crop != null && this.canPlant(pos, crop)) {
+                  this.level.setBlock(pos, crop, 3);
+                  stack.shrink(1);
+                  this.setChanged();
                   return true;
                }
             }
@@ -233,8 +233,8 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
          return false;
       } else {
          BlockPos pos = target.get();
-         this.f_58857_.m_7731_(pos, Blocks.f_50093_.m_49966_(), 3);
-         this.f_58857_.m_46796_(1501, pos, 0);
+         this.level.setBlock(pos, Blocks.FARMLAND.defaultBlockState(), 3);
+         this.level.levelEvent(1501, pos, 0);
          return true;
       }
    }
@@ -283,9 +283,9 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
 
-      for (int x = min.m_123341_(); x <= max.m_123341_(); x++) {
-         for (int z = min.m_123343_(); z <= max.m_123343_(); z++) {
-            BlockPos pos = new BlockPos(x, min.m_123342_(), z);
+      for (int x = min.getX(); x <= max.getX(); x++) {
+         for (int z = min.getZ(); z <= max.getZ(); z++) {
+            BlockPos pos = new BlockPos(x, min.getY(), z);
             if (this.isTarget(pos)) {
                targets.add(pos);
             }
@@ -300,7 +300,7 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       if (harvestPos.isEmpty()) {
          return false;
       } else {
-         BlockState state = this.f_58857_.m_8055_(harvestPos.get());
+         BlockState state = this.level.getBlockState(harvestPos.get());
          if (this.isFruitBlock(state)
             || this.isHighCropBlock(state)
             || this.isSweetBerryHarvestable(state)
@@ -308,7 +308,7 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
             || this.isMaturePitcherCrop(state)) {
             return true;
          } else {
-            if (state.m_60734_() instanceof CropBlock crop && crop.m_52307_(state)) {
+            if (state.getBlock() instanceof CropBlock crop && crop.isMaxAge(state)) {
                return true;
             }
 
@@ -322,8 +322,8 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       if (fertilizablePos.isEmpty()) {
          return false;
       } else {
-         BlockState state = this.f_58857_.m_8055_(fertilizablePos.get());
-         if (state.m_60734_() instanceof BonemealableBlock bonemealable && bonemealable.m_7370_(this.f_58857_, fertilizablePos.get(), state, false)) {
+         BlockState state = this.level.getBlockState(fertilizablePos.get());
+         if (state.getBlock() instanceof BonemealableBlock bonemealable && bonemealable.isValidBonemealTarget(this.level, fertilizablePos.get(), state, false)) {
             return true;
          }
 
@@ -332,18 +332,18 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private Optional<BlockPos> cropPos(BlockPos workPos) {
-      if (this.f_58857_.m_8055_(workPos).m_60734_() instanceof CropBlock) {
+      if (this.level.getBlockState(workPos).getBlock() instanceof CropBlock) {
          return Optional.of(workPos);
       } else {
-         return this.f_58857_.m_8055_(workPos.m_7494_()).m_60734_() instanceof CropBlock ? Optional.of(workPos.m_7494_()) : Optional.empty();
+         return this.level.getBlockState(workPos.above()).getBlock() instanceof CropBlock ? Optional.of(workPos.above()) : Optional.empty();
       }
    }
 
    private Optional<BlockPos> fertilizablePos(BlockPos workPos) {
-      if (this.f_58857_.m_8055_(workPos).m_60734_() instanceof BonemealableBlock) {
+      if (this.level.getBlockState(workPos).getBlock() instanceof BonemealableBlock) {
          return Optional.of(workPos);
       } else {
-         return this.f_58857_.m_8055_(workPos.m_7494_()).m_60734_() instanceof BonemealableBlock ? Optional.of(workPos.m_7494_()) : Optional.empty();
+         return this.level.getBlockState(workPos.above()).getBlock() instanceof BonemealableBlock ? Optional.of(workPos.above()) : Optional.empty();
       }
    }
 
@@ -351,16 +351,16 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
       Optional<BlockPos> highCropPos = this.highCropHarvestPos(workPos);
       if (highCropPos.isPresent()) {
          return highCropPos;
-      } else if (this.isFruitBlock(this.f_58857_.m_8055_(workPos))) {
+      } else if (this.isFruitBlock(this.level.getBlockState(workPos))) {
          return Optional.of(workPos);
-      } else if (this.isFruitBlock(this.f_58857_.m_8055_(workPos.m_7494_()))) {
-         return Optional.of(workPos.m_7494_());
-      } else if (!this.isSweetBerryHarvestable(this.f_58857_.m_8055_(workPos)) && !this.isMatureNetherWart(this.f_58857_.m_8055_(workPos))) {
-         if (!this.isSweetBerryHarvestable(this.f_58857_.m_8055_(workPos.m_7494_())) && !this.isMatureNetherWart(this.f_58857_.m_8055_(workPos.m_7494_()))) {
+      } else if (this.isFruitBlock(this.level.getBlockState(workPos.above()))) {
+         return Optional.of(workPos.above());
+      } else if (!this.isSweetBerryHarvestable(this.level.getBlockState(workPos)) && !this.isMatureNetherWart(this.level.getBlockState(workPos))) {
+         if (!this.isSweetBerryHarvestable(this.level.getBlockState(workPos.above())) && !this.isMatureNetherWart(this.level.getBlockState(workPos.above()))) {
             Optional<BlockPos> pitcherPos = this.maturePitcherCropPos(workPos);
             return pitcherPos.isPresent() ? pitcherPos : this.cropPos(workPos);
          } else {
-            return Optional.of(workPos.m_7494_());
+            return Optional.of(workPos.above());
          }
       } else {
          return Optional.of(workPos);
@@ -368,70 +368,70 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private Optional<BlockPos> maturePitcherCropPos(BlockPos workPos) {
-      if (this.isMaturePitcherCrop(this.f_58857_.m_8055_(workPos))) {
+      if (this.isMaturePitcherCrop(this.level.getBlockState(workPos))) {
          return Optional.of(this.lowerHalfPos(workPos));
-      } else if (this.isMaturePitcherCrop(this.f_58857_.m_8055_(workPos.m_7494_()))) {
-         return Optional.of(this.lowerHalfPos(workPos.m_7494_()));
+      } else if (this.isMaturePitcherCrop(this.level.getBlockState(workPos.above()))) {
+         return Optional.of(this.lowerHalfPos(workPos.above()));
       } else {
-         return this.isMaturePitcherCrop(this.f_58857_.m_8055_(workPos.m_6630_(2))) ? Optional.of(this.lowerHalfPos(workPos.m_6630_(2))) : Optional.empty();
+         return this.isMaturePitcherCrop(this.level.getBlockState(workPos.above(2))) ? Optional.of(this.lowerHalfPos(workPos.above(2))) : Optional.empty();
       }
    }
 
    private BlockPos lowerHalfPos(BlockPos pos) {
-      BlockState state = this.f_58857_.m_8055_(pos);
-      return state.m_61138_(DoublePlantBlock.f_52858_) && state.m_61143_(DoublePlantBlock.f_52858_) == DoubleBlockHalf.UPPER ? pos.m_7495_() : pos;
+      BlockState state = this.level.getBlockState(pos);
+      return state.hasProperty(DoublePlantBlock.HALF) && state.getValue(DoublePlantBlock.HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
    }
 
    private Optional<BlockPos> highCropHarvestPos(BlockPos workPos) {
       BlockPos base = null;
-      if (this.isHighCropBlock(this.f_58857_.m_8055_(workPos))) {
+      if (this.isHighCropBlock(this.level.getBlockState(workPos))) {
          base = workPos;
-      } else if (this.isHighCropBlock(this.f_58857_.m_8055_(workPos.m_7494_()))) {
-         base = workPos.m_7494_();
+      } else if (this.isHighCropBlock(this.level.getBlockState(workPos.above()))) {
+         base = workPos.above();
       }
 
       if (base == null) {
          return Optional.empty();
       } else {
-         while (this.isSameHighCrop(this.f_58857_.m_8055_(base), this.f_58857_.m_8055_(base.m_7495_()))) {
-            base = base.m_7495_();
+         while (this.isSameHighCrop(this.level.getBlockState(base), this.level.getBlockState(base.below()))) {
+            base = base.below();
          }
 
-         BlockState baseState = this.f_58857_.m_8055_(base);
-         if (!baseState.m_60713_(Blocks.f_50130_) && !baseState.m_60713_(Blocks.f_50571_)) {
-            return baseState.m_60713_(Blocks.f_50128_) && this.f_58857_.m_8055_(base.m_7494_()).m_60713_(Blocks.f_50128_)
-               ? Optional.of(base.m_7494_())
+         BlockState baseState = this.level.getBlockState(base);
+         if (!baseState.is(Blocks.SUGAR_CANE) && !baseState.is(Blocks.BAMBOO)) {
+            return baseState.is(Blocks.CACTUS) && this.level.getBlockState(base.above()).is(Blocks.CACTUS)
+               ? Optional.of(base.above())
                : Optional.empty();
          } else {
-            return this.isSameHighCrop(baseState, this.f_58857_.m_8055_(base.m_7494_())) ? Optional.of(base.m_7494_()) : Optional.empty();
+            return this.isSameHighCrop(baseState, this.level.getBlockState(base.above())) ? Optional.of(base.above()) : Optional.empty();
          }
       }
    }
 
    private boolean isSameHighCrop(BlockState first, BlockState second) {
-      return first.m_60713_(Blocks.f_50130_) && second.m_60713_(Blocks.f_50130_)
-         || first.m_60713_(Blocks.f_50571_) && second.m_60713_(Blocks.f_50571_)
-         || first.m_60713_(Blocks.f_50128_) && second.m_60713_(Blocks.f_50128_);
+      return first.is(Blocks.SUGAR_CANE) && second.is(Blocks.SUGAR_CANE)
+         || first.is(Blocks.BAMBOO) && second.is(Blocks.BAMBOO)
+         || first.is(Blocks.CACTUS) && second.is(Blocks.CACTUS);
    }
 
    private boolean isHighCropBlock(BlockState state) {
-      return state.m_60713_(Blocks.f_50130_) || state.m_60713_(Blocks.f_50571_) || state.m_60713_(Blocks.f_50128_);
+      return state.is(Blocks.SUGAR_CANE) || state.is(Blocks.BAMBOO) || state.is(Blocks.CACTUS);
    }
 
    private boolean isFruitBlock(BlockState state) {
-      return state.m_60713_(Blocks.f_50133_) || state.m_60713_(Blocks.f_50186_);
+      return state.is(Blocks.PUMPKIN) || state.is(Blocks.MELON);
    }
 
    private boolean isSweetBerryHarvestable(BlockState state) {
-      return state.m_60713_(Blocks.f_50685_) && (Integer)state.m_61143_(SweetBerryBushBlock.f_57244_) >= 2;
+      return state.is(Blocks.SWEET_BERRY_BUSH) && (Integer)state.getValue(SweetBerryBushBlock.AGE) >= 2;
    }
 
    private boolean isMatureNetherWart(BlockState state) {
-      return state.m_60713_(Blocks.f_50200_) && (Integer)state.m_61143_(NetherWartBlock.f_54967_) >= 3;
+      return state.is(Blocks.NETHER_WART) && (Integer)state.getValue(NetherWartBlock.AGE) >= 3;
    }
 
    private boolean isMaturePitcherCrop(BlockState state) {
-      return state.m_60713_(Blocks.f_276665_) && (Integer)state.m_61143_(PitcherCropBlock.f_276478_) >= 4;
+      return state.is(Blocks.PITCHER_CROP) && (Integer)state.getValue(PitcherCropBlock.AGE) >= 4;
    }
 
    private boolean shouldReplantAfterHarvest(BlockState harvestedState) {
@@ -439,31 +439,31 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private Optional<BlockPos> plantPos(BlockPos workPos) {
-      if (this.f_58857_.m_8055_(workPos).m_247087_() && this.f_58857_.m_8055_(workPos.m_7495_()).m_60713_(Blocks.f_50093_)) {
+      if (this.level.getBlockState(workPos).canBeReplaced() && this.level.getBlockState(workPos.below()).is(Blocks.FARMLAND)) {
          return Optional.of(workPos);
       } else {
-         return !this.f_58857_.m_8055_(workPos).m_247087_() && this.f_58857_.m_8055_(workPos.m_7494_()).m_247087_()
-            ? Optional.of(workPos.m_7494_())
+         return !this.level.getBlockState(workPos).canBeReplaced() && this.level.getBlockState(workPos.above()).canBeReplaced()
+            ? Optional.of(workPos.above())
             : Optional.empty();
       }
    }
 
    private Optional<BlockPos> tillPos(BlockPos workPos) {
-      if (this.isTillable(this.f_58857_.m_8055_(workPos)) && this.f_58857_.m_8055_(workPos.m_7494_()).m_247087_()) {
+      if (this.isTillable(this.level.getBlockState(workPos)) && this.level.getBlockState(workPos.above()).canBeReplaced()) {
          return Optional.of(workPos);
       } else {
-         return this.f_58857_.m_8055_(workPos).m_247087_() && this.isTillable(this.f_58857_.m_8055_(workPos.m_7495_()))
-            ? Optional.of(workPos.m_7495_())
+         return this.level.getBlockState(workPos).canBeReplaced() && this.isTillable(this.level.getBlockState(workPos.below()))
+            ? Optional.of(workPos.below())
             : Optional.empty();
       }
    }
 
    private boolean isTillable(BlockState state) {
-      return state.m_60713_(Blocks.f_50493_)
-         || state.m_60713_(Blocks.f_50440_)
-         || state.m_60713_(Blocks.f_152481_)
-         || state.m_60713_(Blocks.f_50546_)
-         || state.m_60713_(Blocks.f_152549_);
+      return state.is(Blocks.DIRT)
+         || state.is(Blocks.GRASS_BLOCK)
+         || state.is(Blocks.DIRT_PATH)
+         || state.is(Blocks.COARSE_DIRT)
+         || state.is(Blocks.ROOTED_DIRT);
    }
 
    public boolean autoTill() {
@@ -488,7 +488,7 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    private Optional<Integer> findBoneMealSlot() {
       for (int slot = 30; slot < 33; slot++) {
          ItemStack stack = (ItemStack)this.items.get(slot);
-         if (stack.m_150930_(Items.f_42499_)) {
+         if (stack.is(Items.BONE_MEAL)) {
             return Optional.of(slot);
          }
       }
@@ -498,45 +498,45 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    @Nullable
    private BlockState cropForPlantable(ItemStack stack) {
-      if (stack.m_150930_(Items.f_42404_)) {
-         return Blocks.f_50092_.m_49966_();
-      } else if (stack.m_150930_(Items.f_42619_)) {
-         return Blocks.f_50249_.m_49966_();
-      } else if (stack.m_150930_(Items.f_42620_)) {
-         return Blocks.f_50250_.m_49966_();
-      } else if (stack.m_150930_(Items.f_42733_)) {
-         return Blocks.f_50444_.m_49966_();
-      } else if (stack.m_150930_(Items.f_42577_)) {
-         return Blocks.f_50189_.m_49966_();
-      } else if (stack.m_150930_(Items.f_42578_)) {
-         return Blocks.f_50190_.m_49966_();
-      } else if (stack.m_150930_(Items.f_41909_)) {
-         return Blocks.f_50130_.m_49966_();
-      } else if (stack.m_150930_(Items.f_42588_)) {
-         return Blocks.f_50200_.m_49966_();
-      } else if (stack.m_150930_(Items.f_42780_)) {
-         return Blocks.f_50685_.m_49966_();
-      } else if (stack.m_150930_(Items.f_41911_)) {
-         return Blocks.f_50570_.m_49966_();
-      } else if (stack.m_150930_(Items.f_41982_)) {
-         return Blocks.f_50128_.m_49966_();
-      } else if (stack.m_150930_(Items.f_271133_)) {
-         return Blocks.f_271410_.m_49966_();
+      if (stack.is(Items.WHEAT_SEEDS)) {
+         return Blocks.WHEAT.defaultBlockState();
+      } else if (stack.is(Items.CARROT)) {
+         return Blocks.CARROTS.defaultBlockState();
+      } else if (stack.is(Items.POTATO)) {
+         return Blocks.POTATOES.defaultBlockState();
+      } else if (stack.is(Items.BEETROOT_SEEDS)) {
+         return Blocks.BEETROOTS.defaultBlockState();
+      } else if (stack.is(Items.PUMPKIN_SEEDS)) {
+         return Blocks.PUMPKIN_STEM.defaultBlockState();
+      } else if (stack.is(Items.MELON_SEEDS)) {
+         return Blocks.MELON_STEM.defaultBlockState();
+      } else if (stack.is(Items.SUGAR_CANE)) {
+         return Blocks.SUGAR_CANE.defaultBlockState();
+      } else if (stack.is(Items.NETHER_WART)) {
+         return Blocks.NETHER_WART.defaultBlockState();
+      } else if (stack.is(Items.SWEET_BERRIES)) {
+         return Blocks.SWEET_BERRY_BUSH.defaultBlockState();
+      } else if (stack.is(Items.BAMBOO)) {
+         return Blocks.BAMBOO_SAPLING.defaultBlockState();
+      } else if (stack.is(Items.CACTUS)) {
+         return Blocks.CACTUS.defaultBlockState();
+      } else if (stack.is(Items.TORCHFLOWER_SEEDS)) {
+         return Blocks.TORCHFLOWER_CROP.defaultBlockState();
       } else {
-         return stack.m_150930_(Items.f_276594_) ? Blocks.f_276665_.m_49966_() : null;
+         return stack.is(Items.PITCHER_POD) ? Blocks.PITCHER_CROP.defaultBlockState() : null;
       }
    }
 
    private boolean canPlant(BlockPos pos, BlockState crop) {
-      return this.f_58857_.m_8055_(pos).m_247087_() && !this.wouldExtendColumnCrop(pos, crop) && crop.m_60710_(this.f_58857_, pos);
+      return this.level.getBlockState(pos).canBeReplaced() && !this.wouldExtendColumnCrop(pos, crop) && crop.canSurvive(this.level, pos);
    }
 
    private boolean wouldExtendColumnCrop(BlockPos pos, BlockState crop) {
-      BlockState below = this.f_58857_.m_8055_(pos.m_7495_());
-      if (crop.m_60713_(Blocks.f_50130_)) {
-         return below.m_60713_(Blocks.f_50130_);
+      BlockState below = this.level.getBlockState(pos.below());
+      if (crop.is(Blocks.SUGAR_CANE)) {
+         return below.is(Blocks.SUGAR_CANE);
       } else {
-         return !crop.m_60713_(Blocks.f_50570_) && !crop.m_60713_(Blocks.f_50571_) ? false : below.m_60713_(Blocks.f_50570_) || below.m_60713_(Blocks.f_50571_);
+         return !crop.is(Blocks.BAMBOO_SAPLING) && !crop.is(Blocks.BAMBOO) ? false : below.is(Blocks.BAMBOO_SAPLING) || below.is(Blocks.BAMBOO);
       }
    }
 
@@ -545,22 +545,22 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    public boolean isMiscItem(ItemStack stack) {
-      return stack.m_150930_(Items.f_42499_);
+      return stack.is(Items.BONE_MEAL);
    }
 
    private void insertOrDrop(BlockPos pos, List<ItemStack> drops) {
       for (ItemStack drop : drops) {
-         if (!drop.m_41619_()) {
+         if (!drop.isEmpty()) {
             ItemStack remaining = this.insertStack(drop);
-            if (!remaining.m_41619_()) {
-               Block.m_49840_(this.f_58857_, pos, remaining);
+            if (!remaining.isEmpty()) {
+               Block.popResource(this.level, pos, remaining);
             }
          }
       }
    }
 
    private ItemStack insertStack(ItemStack stack) {
-      ItemStack remaining = stack.m_41777_();
+      ItemStack remaining = stack.copy();
       if (this.isPlantable(remaining)) {
          remaining = this.insertIntoRange(remaining, 27, 3);
       }
@@ -569,26 +569,26 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private ItemStack insertIntoRange(ItemStack stack, int start, int count) {
-      for (int slot = start; slot < start + count && !stack.m_41619_(); slot++) {
+      for (int slot = start; slot < start + count && !stack.isEmpty(); slot++) {
          ItemStack existing = (ItemStack)this.items.get(slot);
-         if (existing.m_41619_()) {
-            this.items.set(slot, stack.m_41777_());
-            stack.m_41764_(0);
-         } else if (ItemStack.m_150942_(existing, stack) && existing.m_41613_() < existing.m_41741_()) {
-            int moved = Math.min(stack.m_41613_(), existing.m_41741_() - existing.m_41613_());
-            existing.m_41769_(moved);
-            stack.m_41774_(moved);
+         if (existing.isEmpty()) {
+            this.items.set(slot, stack.copy());
+            stack.setCount(0);
+         } else if (ItemStack.isSameItemSameTags(existing, stack) && existing.getCount() < existing.getMaxStackSize()) {
+            int moved = Math.min(stack.getCount(), existing.getMaxStackSize() - existing.getCount());
+            existing.grow(moved);
+            stack.shrink(moved);
          }
       }
 
-      this.m_6596_();
+      this.setChanged();
       return stack;
    }
 
    @Override
    public BlockPos getBoundsMin() {
       if (this.boundsMin == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMin;
@@ -597,7 +597,7 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    @Override
    public BlockPos getBoundsMax() {
       if (this.boundsMax == null) {
-         this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+         this.resetDefaultBounds(this.worldPosition, this.getBlockState());
       }
 
       return this.boundsMax;
@@ -609,7 +609,7 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
 
    public void adjustBounds(int minXDelta, int maxXDelta, int minZDelta, int maxZDelta) {
       WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjust(
-         this.f_58858_, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
+         this.worldPosition, this.getBoundsMin(), this.getBoundsMax(), this.getMaxBoundsWidth(), minXDelta, maxXDelta, minZDelta, maxZDelta
       );
       if (adjusted != null) {
          this.boundsMin = adjusted.min();
@@ -627,11 +627,11 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    public boolean containsWorkTarget(BlockPos pos) {
       BlockPos min = this.getBoundsMin();
       BlockPos max = this.getBoundsMax();
-      return pos.m_123341_() >= min.m_123341_()
-         && pos.m_123341_() <= max.m_123341_()
-         && pos.m_123343_() >= min.m_123343_()
-         && pos.m_123343_() <= max.m_123343_()
-         && Math.abs(pos.m_123342_() - min.m_123342_()) <= 1;
+      return pos.getX() >= min.getX()
+         && pos.getX() <= max.getX()
+         && pos.getZ() >= min.getZ()
+         && pos.getZ() <= max.getZ()
+         && Math.abs(pos.getY() - min.getY()) <= 1;
    }
 
    public byte[] getTargetMap() {
@@ -641,28 +641,28 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    public void setTargetMap(byte[] targetMap) {
       if (targetMap.length <= 256) {
          this.normalizeTargetMap(targetMap);
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
    private int targetIndex(BlockPos pos) {
-      int x = pos.m_123341_() - this.getBoundsMin().m_123341_();
-      int z = pos.m_123343_() - this.getBoundsMin().m_123343_();
+      int x = pos.getX() - this.getBoundsMin().getX();
+      int z = pos.getZ() - this.getBoundsMin().getZ();
       return z * 16 + x;
    }
 
    private void resetDefaultBounds(BlockPos pos, BlockState state) {
-      Direction facing = state.m_61138_(AutomationWorksiteBlock.FACING)
-         ? ((Direction)state.m_61143_(AutomationWorksiteBlock.FACING)).m_122424_()
+      Direction facing = state.hasProperty(AutomationWorksiteBlock.FACING)
+         ? ((Direction)state.getValue(AutomationWorksiteBlock.FACING)).getOpposite()
          : Direction.SOUTH;
-      BlockPos near = pos.m_121945_(facing);
-      BlockPos far = pos.m_5484_(facing, 5);
-      if (facing.m_122434_() == Axis.Z) {
-         this.boundsMin = new BlockPos(pos.m_123341_() - 2, pos.m_123342_(), Math.min(near.m_123343_(), far.m_123343_()));
-         this.boundsMax = new BlockPos(pos.m_123341_() + 2, pos.m_123342_(), Math.max(near.m_123343_(), far.m_123343_()));
+      BlockPos near = pos.relative(facing);
+      BlockPos far = pos.relative(facing, 5);
+      if (facing.getAxis() == Axis.Z) {
+         this.boundsMin = new BlockPos(pos.getX() - 2, pos.getY(), Math.min(near.getZ(), far.getZ()));
+         this.boundsMax = new BlockPos(pos.getX() + 2, pos.getY(), Math.max(near.getZ(), far.getZ()));
       } else {
-         this.boundsMin = new BlockPos(Math.min(near.m_123341_(), far.m_123341_()), pos.m_123342_(), pos.m_123343_() - 2);
-         this.boundsMax = new BlockPos(Math.max(near.m_123341_(), far.m_123341_()), pos.m_123342_(), pos.m_123343_() + 2);
+         this.boundsMin = new BlockPos(Math.min(near.getX(), far.getX()), pos.getY(), pos.getZ() - 2);
+         this.boundsMax = new BlockPos(Math.max(near.getX(), far.getX()), pos.getY(), pos.getZ() + 2);
       }
    }
 
@@ -677,35 +677,35 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    @Override
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128382_("TargetMap", this.targetMap);
-      tag.m_128379_("AutoTill", this.autoTill);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putByteArray("TargetMap", this.targetMap);
+      tag.putBoolean("AutoTill", this.autoTill);
    }
 
    @Override
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      if (tag.m_128441_("BoundsMin")) {
-         this.boundsMin = BlockPos.m_122022_(tag.m_128454_("BoundsMin"));
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      if (tag.contains("BoundsMin")) {
+         this.boundsMin = BlockPos.of(tag.getLong("BoundsMin"));
       }
 
-      if (tag.m_128441_("BoundsMax")) {
-         this.boundsMax = BlockPos.m_122022_(tag.m_128454_("BoundsMax"));
+      if (tag.contains("BoundsMax")) {
+         this.boundsMax = BlockPos.of(tag.getLong("BoundsMax"));
       }
 
-      if (tag.m_128441_("TargetMap")) {
-         byte[] loadedTargets = tag.m_128463_("TargetMap");
+      if (tag.contains("TargetMap")) {
+         byte[] loadedTargets = tag.getByteArray("TargetMap");
          if (loadedTargets.length <= 256) {
             this.normalizeTargetMap(loadedTargets);
          }
       }
 
-      this.autoTill = tag.m_128471_("AutoTill");
+      this.autoTill = tag.getBoolean("AutoTill");
       this.normalizeLoadedBounds();
    }
 
@@ -724,102 +724,102 @@ public class CropFarmBlockEntity extends BasicWorksiteBlockEntity implements Con
    }
 
    private void normalizeLoadedBounds() {
-      if (this.f_58857_ == null || !this.f_58857_.f_46443_) {
+      if (this.level == null || !this.level.isClientSide) {
          if (this.boundsMin != null
             && this.boundsMax != null
-            && this.boundsMin.m_123342_() == this.f_58858_.m_123342_() + 1
-            && this.boundsMax.m_123342_() == this.f_58858_.m_123342_() + 1) {
-            this.boundsMin = this.boundsMin.m_7495_();
-            this.boundsMax = this.boundsMax.m_7495_();
+            && this.boundsMin.getY() == this.worldPosition.getY() + 1
+            && this.boundsMax.getY() == this.worldPosition.getY() + 1) {
+            this.boundsMin = this.boundsMin.below();
+            this.boundsMax = this.boundsMax.below();
          }
 
          if (this.boundsMin != null && this.boundsMax != null && !WorksiteBoundsGeometry.hasValidSize(this.boundsMin, this.boundsMax, this.getMaxBoundsWidth())
             )
           {
-            this.resetDefaultBounds(this.f_58858_, this.m_58900_());
+            this.resetDefaultBounds(this.worldPosition, this.getBlockState());
          }
       }
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      tag.m_128356_("BoundsMin", this.getBoundsMin().m_121878_());
-      tag.m_128356_("BoundsMax", this.getBoundsMax().m_121878_());
-      tag.m_128382_("TargetMap", this.targetMap);
-      tag.m_128379_("AutoTill", this.autoTill);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      tag.putLong("BoundsMin", this.getBoundsMin().asLong());
+      tag.putLong("BoundsMax", this.getBoundsMax().asLong());
+      tag.putByteArray("TargetMap", this.targetMap);
+      tag.putBoolean("AutoTill", this.autoTill);
       return tag;
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return 38;
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
-      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.f_41583_;
+   public ItemStack getItem(int slot) {
+      return this.isValidSlot(slot) ? (ItemStack)this.items.get(slot) : ItemStack.EMPTY;
    }
 
-   public ItemStack m_7407_(int slot, int amount) {
-      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.m_18969_(this.items, slot, amount) : ItemStack.f_41583_;
-      if (!removed.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int slot, int amount) {
+      ItemStack removed = this.isValidSlot(slot) ? ContainerHelper.removeItem(this.items, slot, amount) : ItemStack.EMPTY;
+      if (!removed.isEmpty()) {
+         this.setChanged();
       }
 
       return removed;
    }
 
-   public ItemStack m_8016_(int slot) {
-      return this.isValidSlot(slot) ? ContainerHelper.m_18966_(this.items, slot) : ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int slot) {
+      return this.isValidSlot(slot) ? ContainerHelper.takeItem(this.items, slot) : ItemStack.EMPTY;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       if (this.isValidSlot(slot)) {
          this.items.set(slot, stack);
-         if (!stack.m_41619_() && stack.m_41613_() > this.m_6893_()) {
-            stack.m_41764_(this.m_6893_());
+         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
          }
 
-         this.m_6596_();
+         this.setChanged();
          if (slot >= 33 && slot < 38) {
             this.refreshChunkLoading();
          }
       }
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null
-         && this.f_58857_.m_7702_(this.f_58858_) == this
-         && player.m_20275_((double)this.f_58858_.m_123341_() + 0.5, (double)this.f_58858_.m_123342_() + 0.5, (double)this.f_58858_.m_123343_() + 0.5) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null
+         && this.level.getBlockEntity(this.worldPosition) == this
+         && player.distanceToSqr((double)this.worldPosition.getX() + 0.5, (double)this.worldPosition.getY() + 0.5, (double)this.worldPosition.getZ() + 0.5) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_(this.getDescriptionId());
+   public Component getDisplayName() {
+      return Component.translatable(this.getDescriptionId());
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int containerId, Inventory playerInventory, Player player) {
-      return new CropFarmMenu(containerId, playerInventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+      return new CropFarmMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createBoundsMenu(int containerId, Inventory playerInventory) {
-      return new CropFarmBoundsMenu(containerId, playerInventory, this.f_58858_);
+      return new CropFarmBoundsMenu(containerId, playerInventory, this.worldPosition);
    }
 
    public AbstractContainerMenu createControlMenu(int containerId, Inventory playerInventory) {
-      return new CropFarmControlMenu(containerId, playerInventory, this.f_58858_);
+      return new CropFarmControlMenu(containerId, playerInventory, this.worldPosition);
    }
 
    @Override

@@ -10,76 +10,136 @@ import net.shadowmage.ancientwarfare.core.menu.ResearchStationMenu;
 public class ResearchStationScreen extends LegacyContainerScreen<ResearchStationMenu> {
    private static final int TEXT_COLOR = 16777215;
    private LegacyTexturedButton queueButton;
+   private LegacyTexturedButton treeButton;
 
    public ResearchStationScreen(ResearchStationMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title, 178, 240);
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
+   protected void init() {
+      super.init();
       this.queueButton = this.legacyButton(
          "research queue",
          60,
          24,
          110,
          12,
-         Component.m_237115_("guistrings.research.research_queue"),
-         button -> this.f_96541_.m_91152_(new ResearchQueueScreen((ResearchStationMenu)this.f_97732_, this.f_96541_.f_91074_.m_150109_(), this.f_96539_))
+         Component.translatable("guistrings.research.research_queue"),
+         button -> this.minecraft.setScreen(new ResearchQueueScreen((ResearchStationMenu)this.menu, this.minecraft.player.getInventory(), this.title))
+      );
+      this.treeButton = this.legacyButton(
+         "research tree",
+         120,
+         5,
+         50,
+         14,
+         Component.translatable("gui.ancientwarfare.research_tree.button"),
+         button -> this.minecraft.setScreen(new ResearchTreeScreen((ResearchStationMenu)this.menu, this.minecraft.player.getInventory(), this.title))
       );
       this.registerLayoutRect("needed resource preview", 97, 97, 56, 56, false);
    }
 
    @Override
    protected void renderLegacyBackground(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      LegacyGuiStyle.slots(graphics, this.f_97735_, this.f_97736_, 98, 98, 3, 3);
-      this.drawProgressBar(graphics, 70, 56, 100, 12, ((ResearchStationMenu)this.f_97732_).getProgressRatio());
+      LegacyGuiStyle.slots(graphics, this.leftPos, this.topPos, 98, 98, 3, 3);
+      this.drawProgressBar(graphics, 70, 56, 100, 12, ((ResearchStationMenu)this.menu).getProgressRatio());
       this.drawNeededResources(graphics);
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      String researcherName = ((ResearchStationMenu)this.f_97732_).getResearcherName();
-      this.queueButton.f_93623_ = !researcherName.isEmpty();
-      graphics.m_280614_(
-         this.f_96547_,
-         researcherName.isEmpty() ? Component.m_237115_("guistrings.research.no_researcher") : Component.m_237113_(researcherName),
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      String researcherName = ((ResearchStationMenu)this.menu).getResearcherName();
+      this.queueButton.active = !researcherName.isEmpty();
+      this.treeButton.active = !researcherName.isEmpty();
+      graphics.drawString(
+         this.font,
+         researcherName.isEmpty() ? Component.translatable("guistrings.research.no_researcher") : Component.literal(researcherName),
          8,
          8,
          16777215,
          false
       );
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("guistrings.research.current_goal").m_130946_(":"), 8, 44, 16777215, false);
-      String currentResearch = ((ResearchStationMenu)this.f_97732_).getCurrentResearchName();
-      graphics.m_280614_(
-         this.f_96547_,
-         currentResearch.isEmpty() ? Component.m_237115_("guistrings.research.no_research") : Component.m_237113_(currentResearch),
+      graphics.drawString(this.font, Component.translatable("guistrings.research.current_goal").append(":"), 8, 44, 16777215, false);
+      String currentResearch = ((ResearchStationMenu)this.menu).getCurrentResearchName();
+      graphics.drawString(
+         this.font,
+         currentResearch.isEmpty() ? Component.translatable("guistrings.research.no_research") : Component.literal(currentResearch),
          80,
          44,
          16777215,
          false
       );
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("guistrings.research.progress"), 8, 57, 16777215, false);
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("guistrings.research.input"), 26, 84, 16777215, false);
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("guistrings.research.needed"), 98, 84, 16777215, false);
+      graphics.drawString(this.font, Component.translatable("guistrings.research.progress"), 8, 57, 16777215, false);
+      int science = ((ResearchStationMenu)this.menu).getScience();
+      int needed = ((ResearchStationMenu)this.menu).getNeededScience();
+      graphics.drawString(
+         this.font,
+         needed > 0 ? Component.translatable("guistrings.research.science_needed", science, needed) : Component.translatable("guistrings.research.science", science),
+         8,
+         71,
+         needed > science ? 0xFF7070 : 0xA0E0FF,
+         false
+      );
+      if (net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.isStarved(((ResearchStationMenu)this.menu).book())) {
+         graphics.drawString(this.font, Component.translatable("guistrings.research.no_supplies_short"), 120, 71, 0xFF6060, false);
+      } else {
+         float bonus = net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity.roomBonus(this.minecraft.level, ((ResearchStationMenu)this.menu).pos());
+         if (bonus > 0.0F) {
+            graphics.drawString(this.font, Component.literal("+" + Math.round(bonus * 100.0F) + "%"), 140, 71, 0x80FF80, false);
+         }
+      }
+      graphics.drawString(this.font, Component.translatable("guistrings.research.input"), 26, 84, 16777215, false);
+      graphics.drawString(this.font, Component.translatable("guistrings.research.needed"), 98, 84, 16777215, false);
+   }
+
+   @Override
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      super.render(graphics, mouseX, mouseY, partialTick);
+      if (mouseX >= this.leftPos + 8 && mouseX < this.leftPos + 170 && mouseY >= this.topPos + 69 && mouseY < this.topPos + 81) {
+         graphics.renderComponentTooltip(this.font, this.scienceTooltip(), mouseX, mouseY);
+      }
+   }
+
+   /** How the scribes are doing: the room's bonus, whether it is a scriptorium, and what they write with. */
+   private List<Component> scienceTooltip() {
+      ResearchStationMenu menu = (ResearchStationMenu)this.menu;
+      float bonus = net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity.roomBonus(this.minecraft.level, menu.pos());
+      boolean scriptorium = net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity.isScriptorium(this.minecraft.level, menu.pos());
+      List<Component> lines = new java.util.ArrayList<>();
+      lines.add(Component.translatable("guistrings.research.science_hint"));
+      lines.add(
+         Component.translatable(scriptorium ? "guistrings.research.scriptorium" : "guistrings.research.shelves", Math.round(bonus * 100.0F))
+            .withStyle(scriptorium ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.GRAY)
+      );
+      lines.add(
+         Component.translatable(
+               "guistrings.research.supplies", net.shadowmage.ancientwarfare.core.tile.ResearchStationBlockEntity.SCIENCE_PER_SUPPLY
+            )
+            .withStyle(
+               net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.isStarved(menu.book()) ? net.minecraft.ChatFormatting.RED : net.minecraft.ChatFormatting.GRAY
+            )
+      );
+      lines.add(Component.translatable("guistrings.research.quill_hint").withStyle(net.minecraft.ChatFormatting.GRAY));
+      return lines;
    }
 
    private void drawNeededResources(GuiGraphics graphics) {
-      List<ItemStack> resources = ((ResearchStationMenu)this.f_97732_).getCurrentResearchResources();
+      List<ItemStack> resources = ((ResearchStationMenu)this.menu).getCurrentResearchResources();
 
       for (int i = 0; i < resources.size() && i < 9; i++) {
-         int x = this.f_97735_ + 98 + i % 3 * 18;
-         int y = this.f_97736_ + 98 + i / 3 * 18;
-         graphics.m_280480_(resources.get(i), x, y);
-         graphics.m_280370_(this.f_96547_, resources.get(i), x, y);
+         int x = this.leftPos + 98 + i % 3 * 18;
+         int y = this.topPos + 98 + i / 3 * 18;
+         graphics.renderItem(resources.get(i), x, y);
+         graphics.renderItemDecorations(this.font, resources.get(i), x, y);
       }
    }
 
    private void drawProgressBar(GuiGraphics graphics, int x, int y, int width, int height, float progress) {
-      LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, this.f_97735_ + x, this.f_97736_ + y, width, height, 0, 0, 256, 40);
+      LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, this.leftPos + x, this.topPos + y, width, height, 0, 0, 256, 40);
       int fillWidth = Math.max(0, Math.min(width - 6, Math.round((float)(width - 6) * progress)));
       if (fillWidth > 0) {
          LegacyGuiStyle.quarteredTexture(
-            graphics, LegacyGuiStyle.WIDGETS, this.f_97735_ + x + 3, this.f_97736_ + y + 3, fillWidth, height - 6, 152, 234, 104, 10
+            graphics, LegacyGuiStyle.WIDGETS, this.leftPos + x + 3, this.topPos + y + 3, fillWidth, height - 6, 152, 234, 104, 10
          );
       }
    }

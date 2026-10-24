@@ -339,7 +339,7 @@ rule:
 plugin=blockTile
 number=3
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:1b,effects:[{Ambient:0b,CurativeItems:[{id:"minecraft:milk_bucket",Count:1b,Damage:0s}],ShowParticles:1b,RegistryName:"minecraft:blindness",Duration:160,Amplifier:1b}],hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/beast_treasure_hoard",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
+JSON:{blockState:{blockName:"ancientwarfarestructure:urn"},teData:{lootSettings:{lootRolls:1,splashPotion:1b,effects:[{Ambient:0b,CurativeItems:[{id:"minecraft:milk_bucket",Count:1b,Damage:0s}],ShowParticles:1b,RegistryName:"minecraft:blindness",Duration:160,Amplifier:1b}],hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/castle_treasury_medium_value",spawnEntity:1b,entity:"minecraft:husk"},id:"ancientwarfarestructure:urn_tile"}}
 :enddata
 :endrule
 

@@ -27,45 +27,45 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class StaticGateBlock extends HorizontalDirectionalBlock {
-   public static final DirectionProperty FACING = HorizontalDirectionalBlock.f_54117_;
-   public static final BooleanProperty OPEN = BooleanProperty.m_61465_("open");
-   public static final BooleanProperty POWERED = BooleanProperty.m_61465_("powered");
-   private static final VoxelShape CLOSED_NORTH_SOUTH = Block.m_49796_(0.0, 0.0, 7.0, 16.0, 32.0, 9.0);
-   private static final VoxelShape CLOSED_EAST_WEST = Block.m_49796_(7.0, 0.0, 0.0, 9.0, 32.0, 16.0);
+   public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+   public static final BooleanProperty OPEN = BooleanProperty.create("open");
+   public static final BooleanProperty POWERED = BooleanProperty.create("powered");
+   private static final VoxelShape CLOSED_NORTH_SOUTH = Block.box(0.0, 0.0, 7.0, 16.0, 32.0, 9.0);
+   private static final VoxelShape CLOSED_EAST_WEST = Block.box(7.0, 0.0, 0.0, 9.0, 32.0, 16.0);
    private final boolean metal;
 
    public StaticGateBlock(Properties properties, boolean metal) {
       super(properties);
       this.metal = metal;
-      this.m_49959_(
-         (BlockState)((BlockState)((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH)).m_61124_(OPEN, false))
-            .m_61124_(POWERED, false)
+      this.registerDefaultState(
+         (BlockState)((BlockState)((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH)).setValue(OPEN, false))
+            .setValue(POWERED, false)
       );
    }
 
-   public BlockState m_5573_(BlockPlaceContext context) {
-      boolean powered = context.m_43725_().m_276867_(context.m_8083_());
-      return (BlockState)((BlockState)((BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_().m_122424_())).m_61124_(OPEN, powered))
-         .m_61124_(POWERED, powered);
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      boolean powered = context.getLevel().hasNeighborSignal(context.getClickedPos());
+      return (BlockState)((BlockState)((BlockState)this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite())).setValue(OPEN, powered))
+         .setValue(POWERED, powered);
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if ((Boolean)state.m_61143_(POWERED)) {
-         return InteractionResult.m_19078_(level.f_46443_);
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if ((Boolean)state.getValue(POWERED)) {
+         return InteractionResult.sidedSuccess(level.isClientSide);
       } else {
-         boolean open = !(Boolean)state.m_61143_(OPEN);
-         level.m_7731_(pos, (BlockState)state.m_61124_(OPEN, open), 10);
+         boolean open = !(Boolean)state.getValue(OPEN);
+         level.setBlock(pos, (BlockState)state.setValue(OPEN, open), 10);
          this.playGateSound(level, pos, open);
-         return InteractionResult.m_19078_(level.f_46443_);
+         return InteractionResult.sidedSuccess(level.isClientSide);
       }
    }
 
-   public void m_6861_(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean moving) {
-      if (!level.f_46443_) {
-         boolean powered = level.m_276867_(pos);
-         if (powered != (Boolean)state.m_61143_(POWERED)) {
-            boolean wasOpen = (Boolean)state.m_61143_(OPEN);
-            level.m_7731_(pos, (BlockState)((BlockState)state.m_61124_(POWERED, powered)).m_61124_(OPEN, powered), 2);
+   public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean moving) {
+      if (!level.isClientSide) {
+         boolean powered = level.hasNeighborSignal(pos);
+         if (powered != (Boolean)state.getValue(POWERED)) {
+            boolean wasOpen = (Boolean)state.getValue(OPEN);
+            level.setBlock(pos, (BlockState)((BlockState)state.setValue(POWERED, powered)).setValue(OPEN, powered), 2);
             if (wasOpen != powered) {
                this.playGateSound(level, pos, powered);
             }
@@ -74,38 +74,38 @@ public class StaticGateBlock extends HorizontalDirectionalBlock {
    }
 
    private void playGateSound(Level level, BlockPos pos, boolean open) {
-      level.m_5594_(
+      level.playSound(
          null,
          pos,
-         this.metal ? (open ? SoundEvents.f_12056_ : SoundEvents.f_12055_) : (open ? SoundEvents.f_12627_ : SoundEvents.f_12626_),
+         this.metal ? (open ? SoundEvents.IRON_DOOR_OPEN : SoundEvents.IRON_DOOR_CLOSE) : (open ? SoundEvents.WOODEN_DOOR_OPEN : SoundEvents.WOODEN_DOOR_CLOSE),
          SoundSource.BLOCKS,
          0.8F,
          open ? 1.0F : 0.8F
       );
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-      return state.m_61143_(OPEN) ? Shapes.m_83144_() : this.closedShape(state);
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+      return state.getValue(OPEN) ? Shapes.block() : this.closedShape(state);
    }
 
-   public VoxelShape m_5939_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-      return state.m_61143_(OPEN) ? Shapes.m_83040_() : this.closedShape(state);
+   public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+      return state.getValue(OPEN) ? Shapes.empty() : this.closedShape(state);
    }
 
    private VoxelShape closedShape(BlockState state) {
-      Direction facing = (Direction)state.m_61143_(FACING);
-      return facing.m_122434_() == Axis.X ? CLOSED_EAST_WEST : CLOSED_NORTH_SOUTH;
+      Direction facing = (Direction)state.getValue(FACING);
+      return facing.getAxis() == Axis.X ? CLOSED_EAST_WEST : CLOSED_NORTH_SOUTH;
    }
 
-   public BlockState m_6843_(BlockState state, Rotation rotation) {
-      return (BlockState)state.m_61124_(FACING, rotation.m_55954_((Direction)state.m_61143_(FACING)));
+   public BlockState rotate(BlockState state, Rotation rotation) {
+      return (BlockState)state.setValue(FACING, rotation.rotate((Direction)state.getValue(FACING)));
    }
 
-   public BlockState m_6943_(BlockState state, Mirror mirror) {
-      return state.m_60717_(mirror.m_54846_((Direction)state.m_61143_(FACING)));
+   public BlockState mirror(BlockState state, Mirror mirror) {
+      return state.rotate(mirror.getRotation((Direction)state.getValue(FACING)));
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING, OPEN, POWERED});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{FACING, OPEN, POWERED});
    }
 }

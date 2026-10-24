@@ -24,20 +24,20 @@ public class BallistaBoltRenderer extends EntityRenderer<BallistaBoltEntity> {
    }
 
    public void render(BallistaBoltEntity entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-      poseStack.m_85836_();
-      float yaw = Mth.m_14179_(partialTick, entity.f_19859_, entity.m_146908_());
-      float pitch = Mth.m_14179_(partialTick, entity.f_19860_, entity.m_146909_());
-      poseStack.m_252781_(Axis.f_252436_.m_252977_(yaw));
-      poseStack.m_252781_(Axis.f_252529_.m_252977_(-pitch));
-      poseStack.m_85841_(1.35F, 1.35F, 1.35F);
-      VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110458_(TEXTURE));
+      poseStack.pushPose();
+      float yaw = Mth.lerp(partialTick, entity.yRotO, entity.getYRot());
+      float pitch = Mth.lerp(partialTick, entity.xRotO, entity.getXRot());
+      poseStack.mulPose(Axis.YP.rotationDegrees(yaw));
+      poseStack.mulPose(Axis.XP.rotationDegrees(-pitch));
+      poseStack.scale(1.35F, 1.35F, 1.35F);
+      VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
       BallistaBoltRenderer.Palette palette = BallistaBoltRenderer.Palette.forAmmo(entity.getAmmoType());
       renderCuboid(poseStack, consumer, -0.035F, -0.035F, -0.55F, 0.035F, 0.035F, 0.42F, palette.shaft(), packedLight);
       renderCuboid(poseStack, consumer, -0.07F, -0.07F, 0.38F, 0.07F, 0.07F, 0.6F, palette.head(), packedLight);
       renderCuboid(poseStack, consumer, -0.12F, -0.015F, -0.7F, 0.12F, 0.015F, -0.5F, palette.fletching(), packedLight);
       renderCuboid(poseStack, consumer, -0.015F, -0.12F, -0.7F, 0.015F, 0.12F, -0.5F, palette.fletching(), packedLight);
-      poseStack.m_85849_();
-      super.m_7392_(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+      poseStack.popPose();
+      super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
    }
 
    public ResourceLocation getTextureLocation(BallistaBoltEntity entity) {
@@ -47,7 +47,7 @@ public class BallistaBoltRenderer extends EntityRenderer<BallistaBoltEntity> {
    private static void renderCuboid(
       PoseStack poseStack, VertexConsumer consumer, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int color, int packedLight
    ) {
-      Pose pose = poseStack.m_85850_();
+      Pose pose = poseStack.last();
       quad(pose, consumer, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, 0.0F, 0.0F, 1.0F, color, packedLight);
       quad(pose, consumer, maxX, minY, minZ, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, 0.0F, 0.0F, -1.0F, color, packedLight);
       quad(pose, consumer, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ, minX, maxY, minZ, 0.0F, 1.0F, 0.0F, color, packedLight);
@@ -86,15 +86,15 @@ public class BallistaBoltRenderer extends EntityRenderer<BallistaBoltEntity> {
    private static void vertex(
       Pose pose, VertexConsumer consumer, float x, float y, float z, float u, float v, float normalX, float normalY, float normalZ, int color, int packedLight
    ) {
-      Matrix4f matrix = pose.m_252922_();
-      Matrix3f normal = pose.m_252943_();
-      consumer.m_252986_(matrix, x, y, z)
-         .m_6122_(color >> 16 & 0xFF, color >> 8 & 0xFF, color & 0xFF, 255)
-         .m_7421_(u, v)
-         .m_86008_(0)
-         .m_85969_(packedLight)
-         .m_252939_(normal, normalX, normalY, normalZ)
-         .m_5752_();
+      Matrix4f matrix = pose.pose();
+      Matrix3f normal = pose.normal();
+      consumer.vertex(matrix, x, y, z)
+         .color(color >> 16 & 0xFF, color >> 8 & 0xFF, color & 0xFF, 255)
+         .uv(u, v)
+         .overlayCoords(0)
+         .uv2(packedLight)
+         .normal(normal, normalX, normalY, normalZ)
+         .endVertex();
    }
 
    private static record Palette(int head, int shaft, int fletching) {

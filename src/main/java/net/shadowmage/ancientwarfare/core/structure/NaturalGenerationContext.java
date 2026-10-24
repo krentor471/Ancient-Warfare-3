@@ -19,13 +19,13 @@ public final class NaturalGenerationContext {
 
    public static boolean isInternalChunk(ChunkPos chunk) {
       NaturalGenerationContext.Scope scope = CURRENT.get();
-      return scope != null && (scope.chunks.contains(chunk.m_45588_()) || scope.areas.stream().anyMatch(area -> area.contains(chunk)));
+      return scope != null && (scope.chunks.contains(chunk.toLong()) || scope.areas.stream().anyMatch(area -> area.contains(chunk)));
    }
 
    public static void markChunk(ChunkPos chunk) {
       NaturalGenerationContext.Scope scope = CURRENT.get();
       if (scope != null) {
-         scope.chunks.add(chunk.m_45588_());
+         scope.chunks.add(chunk.toLong());
       }
    }
 
@@ -35,8 +35,8 @@ public final class NaturalGenerationContext {
 
    public static void markArea(BlockPos min, int maxX, int maxZ) {
       NaturalGenerationContext.Scope scope = CURRENT.get();
-      if (scope != null && maxX >= min.m_123341_() && maxZ >= min.m_123343_()) {
-         scope.areas.add(new NaturalGenerationContext.ChunkArea(min.m_123341_() >> 4, min.m_123343_() >> 4, maxX >> 4, maxZ >> 4));
+      if (scope != null && maxX >= min.getX() && maxZ >= min.getZ()) {
+         scope.areas.add(new NaturalGenerationContext.ChunkArea(min.getX() >> 4, min.getZ() >> 4, maxX >> 4, maxZ >> 4));
       }
    }
 
@@ -67,7 +67,7 @@ public final class NaturalGenerationContext {
 
    private static record ChunkArea(int minX, int minZ, int maxX, int maxZ) {
       private boolean contains(ChunkPos chunk) {
-         return chunk.f_45578_ >= this.minX && chunk.f_45578_ <= this.maxX && chunk.f_45579_ >= this.minZ && chunk.f_45579_ <= this.maxZ;
+         return chunk.x >= this.minX && chunk.x <= this.maxX && chunk.z >= this.minZ && chunk.z <= this.maxZ;
       }
    }
 

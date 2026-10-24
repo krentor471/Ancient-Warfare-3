@@ -31,32 +31,32 @@ public class TreeFarmBoundsMenu extends AbstractContainerMenu {
    public TreeFarmBoundsMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.TREE_FARM_BOUNDS), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      this.owner = playerInventory.f_35978_;
-      this.treeFarm = this.level.m_7702_(pos) instanceof TreeFarmBlockEntity farm ? farm : null;
+      this.level = playerInventory.player.level();
+      this.owner = playerInventory.player;
+      this.treeFarm = this.level.getBlockEntity(pos) instanceof TreeFarmBlockEntity farm ? farm : null;
       this.previewMin = this.treeFarm == null ? pos : this.treeFarm.getBoundsMin();
       this.previewMax = this.treeFarm == null ? pos : this.treeFarm.getBoundsMax();
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       if (this.treeFarm != null
-         && !this.level.f_46443_
+         && !this.level.isClientSide
          && player == this.owner
-         && player.m_9236_() == this.level
-         && !player.m_5833_()
-         && player.f_36096_ == this
-         && this.m_6875_(player)
-         && this.level.m_7702_(this.pos) == this.treeFarm) {
+         && player.level() == this.level
+         && !player.isSpectator()
+         && player.containerMenu == this
+         && this.stillValid(player)
+         && this.level.getBlockEntity(this.pos) == this.treeFarm) {
          BlockPos min = this.treeFarm.getBoundsMin();
          BlockPos max = this.treeFarm.getBoundsMax();
          WorksiteBoundsGeometry.Bounds adjusted = WorksiteBoundsGeometry.adjustButton(this.pos, min, max, this.treeFarm.getMaxBoundsWidth(), id);
          if (adjusted == null) {
             return false;
          } else {
-            long minXDelta = (long)adjusted.min().m_123341_() - (long)min.m_123341_();
-            long maxXDelta = (long)adjusted.max().m_123341_() - (long)max.m_123341_();
-            long minZDelta = (long)adjusted.min().m_123343_() - (long)min.m_123343_();
-            long maxZDelta = (long)adjusted.max().m_123343_() - (long)max.m_123343_();
+            long minXDelta = (long)adjusted.min().getX() - (long)min.getX();
+            long maxXDelta = (long)adjusted.max().getX() - (long)max.getX();
+            long minZDelta = (long)adjusted.min().getZ() - (long)min.getZ();
+            long maxZDelta = (long)adjusted.max().getZ() - (long)max.getZ();
             if (minXDelta >= -2147483648L
                && minXDelta <= 2147483647L
                && maxXDelta >= -2147483648L
@@ -68,7 +68,7 @@ public class TreeFarmBoundsMenu extends AbstractContainerMenu {
                this.treeFarm.adjustBounds((int)minXDelta, (int)maxXDelta, (int)minZDelta, (int)maxZDelta);
                this.previewMin = this.treeFarm.getBoundsMin();
                this.previewMax = this.treeFarm.getBoundsMax();
-               this.m_38946_();
+               this.broadcastChanges();
                return true;
             } else {
                return false;
@@ -85,10 +85,10 @@ public class TreeFarmBoundsMenu extends AbstractContainerMenu {
             this.pos, this.previewMin, this.previewMax, this.treeFarm.getMaxBoundsWidth(), id
          );
          if (adjusted != null) {
-            long minXDelta = (long)adjusted.min().m_123341_() - (long)this.previewMin.m_123341_();
-            long maxXDelta = (long)adjusted.max().m_123341_() - (long)this.previewMax.m_123341_();
-            long minZDelta = (long)adjusted.min().m_123343_() - (long)this.previewMin.m_123343_();
-            long maxZDelta = (long)adjusted.max().m_123343_() - (long)this.previewMax.m_123343_();
+            long minXDelta = (long)adjusted.min().getX() - (long)this.previewMin.getX();
+            long maxXDelta = (long)adjusted.max().getX() - (long)this.previewMax.getX();
+            long minZDelta = (long)adjusted.min().getZ() - (long)this.previewMin.getZ();
+            long maxZDelta = (long)adjusted.max().getZ() - (long)this.previewMax.getZ();
             if (minXDelta < -2147483648L
                || minXDelta > 2147483647L
                || maxXDelta < -2147483648L
@@ -118,11 +118,11 @@ public class TreeFarmBoundsMenu extends AbstractContainerMenu {
       return this.pos;
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.TREE_FARM));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.TREE_FARM));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

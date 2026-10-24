@@ -76,9 +76,6 @@ import net.shadowmage.ancientwarfare.core.block.TallStructureDecorBlock;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireStructureLootCompat;
-import net.shadowmage.ancientwarfare.core.compat.LegacyIceAndFireStructureCompat;
-import net.shadowmage.ancientwarfare.core.compat.SlashBladeStructureLootCompat;
 import net.shadowmage.ancientwarfare.core.entity.GateEntity;
 import net.shadowmage.ancientwarfare.core.tile.AdvancedSpawnerBlockEntity;
 import net.shadowmage.ancientwarfare.core.tile.GateProxyBlockEntity;
@@ -146,52 +143,52 @@ public final class AwsTemplatePlacer {
    }
 
    public static boolean isBasicNaturalTerrain(BlockState state) {
-      if (state != null && !state.m_60795_() && !state.m_60713_(Blocks.f_50752_) && !state.m_155947_()) {
-         Block block = state.m_60734_();
-         return state.m_60713_(Blocks.f_49990_)
-            || state.m_60713_(Blocks.f_49991_)
-            || state.m_60713_(Blocks.f_50575_)
-            || state.m_60713_(Blocks.f_50576_)
-            || state.m_60713_(Blocks.f_50037_)
-            || state.m_60713_(Blocks.f_50038_)
-            || state.m_60713_(Blocks.f_50567_)
+      if (state != null && !state.isAir() && !state.is(Blocks.BEDROCK) && !state.hasBlockEntity()) {
+         Block block = state.getBlock();
+         return state.is(Blocks.WATER)
+            || state.is(Blocks.LAVA)
+            || state.is(Blocks.KELP)
+            || state.is(Blocks.KELP_PLANT)
+            || state.is(Blocks.SEAGRASS)
+            || state.is(Blocks.TALL_SEAGRASS)
+            || state.is(Blocks.SEA_PICKLE)
             || block instanceof CoralBlock
             || block instanceof BaseCoralPlantTypeBlock
-            || state.m_60713_(Blocks.f_50579_)
-            || state.m_60713_(Blocks.f_50580_)
-            || state.m_60713_(Blocks.f_50581_)
-            || state.m_60713_(Blocks.f_50582_)
-            || state.m_60713_(Blocks.f_50583_)
-            || state.m_204336_(BlockTags.f_144274_)
-            || state.m_204336_(BlockTags.f_13061_)
-            || state.m_204336_(BlockTags.f_13062_)
-            || state.m_204336_(BlockTags.f_13029_)
-            || state.m_204336_(BlockTags.f_144279_)
-            || state.m_204336_(BlockTags.f_13047_)
-            || state.m_204336_(BlockTags.f_278394_)
-            || state.m_204336_(BlockTags.f_13035_)
-            || state.m_204336_(BlockTags.f_13104_)
-            || state.m_204336_(BlockTags.f_13041_)
-            || state.m_204336_(BlockTags.f_13077_)
-            || state.m_204336_(BlockTags.f_144262_)
-            || state.m_204336_(BlockTags.f_144258_)
-            || state.m_204336_(BlockTags.f_144264_)
-            || state.m_204336_(BlockTags.f_13043_)
-            || state.m_204336_(BlockTags.f_144260_)
-            || state.m_204336_(BlockTags.f_144263_)
-            || state.m_204336_(BlockTags.f_144261_)
-            || state.m_204336_(BlockTags.f_144259_)
-            || block == Blocks.f_49994_
-            || block == Blocks.f_50129_
-            || block == Blocks.f_220864_
-            || block == Blocks.f_220834_
-            || block == Blocks.f_50135_
-            || block == Blocks.f_50136_
-            || block == Blocks.f_50259_
-            || block == Blocks.f_152497_
-            || block == Blocks.f_152537_
-            || block == Blocks.f_152588_
-            || block == Blocks.f_50450_;
+            || state.is(Blocks.DEAD_TUBE_CORAL_BLOCK)
+            || state.is(Blocks.DEAD_BRAIN_CORAL_BLOCK)
+            || state.is(Blocks.DEAD_BUBBLE_CORAL_BLOCK)
+            || state.is(Blocks.DEAD_FIRE_CORAL_BLOCK)
+            || state.is(Blocks.DEAD_HORN_CORAL_BLOCK)
+            || state.is(BlockTags.DIRT)
+            || state.is(BlockTags.BASE_STONE_OVERWORLD)
+            || state.is(BlockTags.BASE_STONE_NETHER)
+            || state.is(BlockTags.SAND)
+            || state.is(BlockTags.SNOW)
+            || state.is(BlockTags.ICE)
+            || state.is(BlockTags.REPLACEABLE)
+            || state.is(BlockTags.LEAVES)
+            || state.is(BlockTags.SAPLINGS)
+            || state.is(BlockTags.FLOWERS)
+            || state.is(BlockTags.NYLIUM)
+            || state.is(BlockTags.COAL_ORES)
+            || state.is(BlockTags.IRON_ORES)
+            || state.is(BlockTags.COPPER_ORES)
+            || state.is(BlockTags.GOLD_ORES)
+            || state.is(BlockTags.REDSTONE_ORES)
+            || state.is(BlockTags.EMERALD_ORES)
+            || state.is(BlockTags.LAPIS_ORES)
+            || state.is(BlockTags.DIAMOND_ORES)
+            || block == Blocks.GRAVEL
+            || block == Blocks.CLAY
+            || block == Blocks.MUD
+            || block == Blocks.MUDDY_MANGROVE_ROOTS
+            || block == Blocks.SOUL_SAND
+            || block == Blocks.SOUL_SOIL
+            || block == Blocks.END_STONE
+            || block == Blocks.CALCITE
+            || block == Blocks.DRIPSTONE_BLOCK
+            || block == Blocks.POINTED_DRIPSTONE
+            || block == Blocks.MAGMA_BLOCK;
       } else {
          return false;
       }
@@ -199,14 +196,14 @@ public final class AwsTemplatePlacer {
 
    public static boolean isOpenWaterTerrain(BlockState state) {
       return state != null
-         && !state.m_155947_()
+         && !state.hasBlockEntity()
          && (
-            state.m_60795_()
-               || state.m_60713_(Blocks.f_49990_)
-               || state.m_60713_(Blocks.f_50575_)
-               || state.m_60713_(Blocks.f_50576_)
-               || state.m_60713_(Blocks.f_50037_)
-               || state.m_60713_(Blocks.f_50038_)
+            state.isAir()
+               || state.is(Blocks.WATER)
+               || state.is(Blocks.KELP)
+               || state.is(Blocks.KELP_PLANT)
+               || state.is(Blocks.SEAGRASS)
+               || state.is(Blocks.TALL_SEAGRASS)
          );
    }
 
@@ -299,17 +296,17 @@ public final class AwsTemplatePlacer {
 
    public static Set<Long> requiredChunks(BlockPos min, String templatePath, Direction facing) {
       AwsTemplatePlacer.AwsTemplate template = template(templatePath);
-      int sizeX = facing.m_122434_() == Axis.X ? template.sizeZ() : template.sizeX();
-      int sizeZ = facing.m_122434_() == Axis.X ? template.sizeX() : template.sizeZ();
-      int minChunkX = Math.floorDiv(min.m_123341_(), 16);
-      int maxChunkX = Math.floorDiv(min.m_123341_() + sizeX - 1, 16);
-      int minChunkZ = Math.floorDiv(min.m_123343_(), 16);
-      int maxChunkZ = Math.floorDiv(min.m_123343_() + sizeZ - 1, 16);
+      int sizeX = facing.getAxis() == Axis.X ? template.sizeZ() : template.sizeX();
+      int sizeZ = facing.getAxis() == Axis.X ? template.sizeX() : template.sizeZ();
+      int minChunkX = Math.floorDiv(min.getX(), 16);
+      int maxChunkX = Math.floorDiv(min.getX() + sizeX - 1, 16);
+      int minChunkZ = Math.floorDiv(min.getZ(), 16);
+      int maxChunkZ = Math.floorDiv(min.getZ() + sizeZ - 1, 16);
       Set<Long> chunks = new HashSet<>();
 
       for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-            chunks.add(ChunkPos.m_45589_(chunkX, chunkZ));
+            chunks.add(ChunkPos.asLong(chunkX, chunkZ));
          }
       }
 
@@ -318,13 +315,13 @@ public final class AwsTemplatePlacer {
 
    public static AwsTemplatePlacer.ChunkLayout chunkLayout(BlockPos min, String templatePath, Direction facing) {
       AwsTemplatePlacer.AwsTemplate template = template(templatePath);
-      int sizeX = facing.m_122434_() == Axis.X ? template.sizeZ() : template.sizeX();
-      int sizeZ = facing.m_122434_() == Axis.X ? template.sizeX() : template.sizeZ();
+      int sizeX = facing.getAxis() == Axis.X ? template.sizeZ() : template.sizeX();
+      int sizeZ = facing.getAxis() == Axis.X ? template.sizeX() : template.sizeZ();
       return new AwsTemplatePlacer.ChunkLayout(
-         Math.floorDiv(min.m_123341_(), 16),
-         Math.floorDiv(min.m_123343_(), 16),
-         Math.floorDiv(min.m_123341_() + sizeX - 1, 16),
-         Math.floorDiv(min.m_123343_() + sizeZ - 1, 16)
+         Math.floorDiv(min.getX(), 16),
+         Math.floorDiv(min.getZ(), 16),
+         Math.floorDiv(min.getX() + sizeX - 1, 16),
+         Math.floorDiv(min.getZ() + sizeZ - 1, 16)
       );
    }
 
@@ -362,7 +359,7 @@ public final class AwsTemplatePlacer {
 
    public static boolean aquaticGateCellsSafe(ServerLevel level, BlockPos min, String path, Direction facing, boolean allowNaturalTerrain) {
       AwsTemplatePlacer.AwsTemplate template = template(path);
-      int turns = (facing.m_122416_() + 2) % 4;
+      int turns = (facing.get2DDataValue() + 2) % 4;
 
       for (AwsTemplatePlacer.AwsTemplate.EntityRule entityRule : template.entities) {
          if ("awGate".equals(entityRule.plugin)) {
@@ -374,22 +371,22 @@ public final class AwsTemplatePlacer {
                   template.sizeX,
                   template.sizeZ
                )
-               .m_121955_(min);
+               .offset(min);
             BlockPos first = AwsTemplatePlacer.AwsTemplate.EntityRule.rotateOffset(
                   AwsTemplatePlacer.AwsTemplate.EntityRule.parseRelativePos(entityRule.data, "pos1"), turns
                )
-               .m_121955_(anchor);
+               .offset(anchor);
             BlockPos second = AwsTemplatePlacer.AwsTemplate.EntityRule.rotateOffset(
                   AwsTemplatePlacer.AwsTemplate.EntityRule.parseRelativePos(entityRule.data, "pos2"), turns
                )
-               .m_121955_(anchor);
-            int minX = Math.min(first.m_123341_(), second.m_123341_());
-            int maxX = Math.max(first.m_123341_(), second.m_123341_());
-            int minY = Math.min(first.m_123342_(), second.m_123342_());
-            int maxY = Math.max(first.m_123342_(), second.m_123342_());
-            int minZ = Math.min(first.m_123343_(), second.m_123343_());
-            int maxZ = Math.max(first.m_123343_(), second.m_123343_());
-            if (minY < level.m_141937_() || maxY >= level.m_151558_()) {
+               .offset(anchor);
+            int minX = Math.min(first.getX(), second.getX());
+            int maxX = Math.max(first.getX(), second.getX());
+            int minY = Math.min(first.getY(), second.getY());
+            int maxY = Math.max(first.getY(), second.getY());
+            int minZ = Math.min(first.getZ(), second.getZ());
+            int maxZ = Math.max(first.getZ(), second.getZ());
+            if (minY < level.getMinBuildHeight() || maxY >= level.getMaxBuildHeight()) {
                return false;
             }
 
@@ -399,9 +396,9 @@ public final class AwsTemplatePlacer {
                for (int z = minZ; z <= maxZ; z++) {
                   for (int x = minX; x <= maxX; x++) {
                      BlockPos pos = new BlockPos(x, y, z);
-                     BlockState existing = level.m_8055_(pos);
-                     if (level.m_7702_(pos) != null
-                        || existing.m_155947_()
+                     BlockState existing = level.getBlockState(pos);
+                     if (level.getBlockEntity(pos) != null
+                        || existing.hasBlockEntity()
                         || !isOpenWaterTerrain(existing) && (!allowNaturalTerrain || !isBasicNaturalTerrain(existing))) {
                         return false;
                      }
@@ -421,8 +418,8 @@ public final class AwsTemplatePlacer {
    private static List<ChunkPos> surroundingChunks(BlockPos pos, int radius) {
       List<ChunkPos> result = new ArrayList<>(9);
 
-      for (int z = Math.floorDiv(pos.m_123343_() - radius, 16); z <= Math.floorDiv(pos.m_123343_() + radius, 16); z++) {
-         for (int x = Math.floorDiv(pos.m_123341_() - radius, 16); x <= Math.floorDiv(pos.m_123341_() + radius, 16); x++) {
+      for (int z = Math.floorDiv(pos.getZ() - radius, 16); z <= Math.floorDiv(pos.getZ() + radius, 16); z++) {
+         for (int x = Math.floorDiv(pos.getX() - radius, 16); x <= Math.floorDiv(pos.getX() + radius, 16); x++) {
             result.add(new ChunkPos(x, z));
          }
       }
@@ -431,19 +428,19 @@ public final class AwsTemplatePlacer {
    }
 
    private static void refreshConnection(Level level, BlockPos pos) {
-      BlockState state = level.m_8055_(pos);
-      if (state.m_60734_() instanceof BenchStructureDecorBlock) {
+      BlockState state = level.getBlockState(pos);
+      if (state.getBlock() instanceof BenchStructureDecorBlock) {
          refreshBenchConnections(level, Set.of(pos));
       } else if (hasHorizontalConnections(state)) {
          BlockState connected = state;
 
          for (Direction direction : HORIZONTAL) {
-            BlockPos neighbor = pos.m_121945_(direction);
-            connected = connected.m_60728_(direction, level.m_8055_(neighbor), level, pos, neighbor);
+            BlockPos neighbor = pos.relative(direction);
+            connected = connected.updateShape(direction, level.getBlockState(neighbor), level, pos, neighbor);
          }
 
          if (connected != state) {
-            level.m_7731_(pos, connected, 18);
+            level.setBlock(pos, connected, 18);
          }
       }
    }
@@ -452,26 +449,26 @@ public final class AwsTemplatePlacer {
       Set<BlockPos> refreshPositions = new HashSet<>();
 
       for (long packed : occupiedBlocks) {
-         BlockPos pos = BlockPos.m_122022_(packed);
+         BlockPos pos = BlockPos.of(packed);
          refreshPositions.add(pos);
 
          for (Direction direction : Plane.HORIZONTAL) {
-            refreshPositions.add(pos.m_121945_(direction));
+            refreshPositions.add(pos.relative(direction));
          }
       }
 
       for (BlockPos pos : refreshPositions) {
-         BlockState state = level.m_8055_(pos);
-         if (!(state.m_60734_() instanceof BenchStructureDecorBlock) && hasHorizontalConnections(state)) {
+         BlockState state = level.getBlockState(pos);
+         if (!(state.getBlock() instanceof BenchStructureDecorBlock) && hasHorizontalConnections(state)) {
             BlockState connected = state;
 
             for (Direction direction : Plane.HORIZONTAL) {
-               BlockPos neighborPos = pos.m_121945_(direction);
-               connected = connected.m_60728_(direction, level.m_8055_(neighborPos), level, pos, neighborPos);
+               BlockPos neighborPos = pos.relative(direction);
+               connected = connected.updateShape(direction, level.getBlockState(neighborPos), level, pos, neighborPos);
             }
 
             if (connected != state) {
-               level.m_7731_(pos, connected, 18);
+               level.setBlock(pos, connected, 18);
             }
          }
       }
@@ -481,15 +478,15 @@ public final class AwsTemplatePlacer {
 
    private static void refreshBenchConnections(Level level, Set<BlockPos> refreshPositions) {
       for (BlockPos pos : refreshPositions) {
-         BlockState state = level.m_8055_(pos);
-         Block axis = state.m_60734_();
+         BlockState state = level.getBlockState(pos);
+         Block axis = state.getBlock();
          if (axis instanceof BenchStructureDecorBlock) {
             BenchStructureDecorBlock bench = (BenchStructureDecorBlock)axis;
-            Axis axisx = (Axis)state.m_61143_(BenchStructureDecorBlock.AXIS);
+            Axis axisx = (Axis)state.getValue(BenchStructureDecorBlock.AXIS);
             BenchStructureDecorBlock.Legs legs;
             if (axisx == Axis.X) {
-               boolean first = sameAxisBench(level, bench, state, pos.m_122024_());
-               boolean second = sameAxisBench(level, bench, state, pos.m_122029_());
+               boolean first = sameAxisBench(level, bench, state, pos.west());
+               boolean second = sameAxisBench(level, bench, state, pos.east());
                legs = first && !second
                   ? BenchStructureDecorBlock.Legs.LEFT
                   : (
@@ -498,35 +495,35 @@ public final class AwsTemplatePlacer {
                         : (!first ? BenchStructureDecorBlock.Legs.BOTH : BenchStructureDecorBlock.Legs.NONE)
                   );
             } else {
-               boolean south = sameAxisBench(level, bench, state, pos.m_122019_());
-               boolean north = sameAxisBench(level, bench, state, pos.m_122012_());
+               boolean south = sameAxisBench(level, bench, state, pos.south());
+               boolean north = sameAxisBench(level, bench, state, pos.north());
                legs = north && !south
                   ? BenchStructureDecorBlock.Legs.RIGHT
                   : (!north && south ? BenchStructureDecorBlock.Legs.LEFT : (!north ? BenchStructureDecorBlock.Legs.BOTH : BenchStructureDecorBlock.Legs.NONE));
             }
 
-            BlockState corrected = (BlockState)state.m_61124_(BenchStructureDecorBlock.LEGS, legs);
+            BlockState corrected = (BlockState)state.setValue(BenchStructureDecorBlock.LEGS, legs);
             if (corrected != state) {
-               level.m_7731_(pos, corrected, 18);
+               level.setBlock(pos, corrected, 18);
             }
          }
       }
    }
 
    private static boolean sameAxisBench(BlockGetter level, BenchStructureDecorBlock bench, BlockState state, BlockPos neighborPos) {
-      BlockState neighbor = level.m_8055_(neighborPos);
-      return neighbor.m_60734_() == bench && neighbor.m_61143_(BenchStructureDecorBlock.AXIS) == state.m_61143_(BenchStructureDecorBlock.AXIS);
+      BlockState neighbor = level.getBlockState(neighborPos);
+      return neighbor.getBlock() == bench && neighbor.getValue(BenchStructureDecorBlock.AXIS) == state.getValue(BenchStructureDecorBlock.AXIS);
    }
 
    private static boolean hasHorizontalConnections(BlockState state) {
-      return state.m_60734_() instanceof WallBlock
-         || state.m_60734_() instanceof FenceBlock
-         || state.m_60734_() instanceof IronBarsBlock
-         || state.m_60734_() instanceof BenchStructureDecorBlock
-         || state.m_61138_(BlockStateProperties.f_61368_)
-            && state.m_61138_(BlockStateProperties.f_61369_)
-            && state.m_61138_(BlockStateProperties.f_61370_)
-            && state.m_61138_(BlockStateProperties.f_61371_);
+      return state.getBlock() instanceof WallBlock
+         || state.getBlock() instanceof FenceBlock
+         || state.getBlock() instanceof IronBarsBlock
+         || state.getBlock() instanceof BenchStructureDecorBlock
+         || state.hasProperty(BlockStateProperties.NORTH)
+            && state.hasProperty(BlockStateProperties.EAST)
+            && state.hasProperty(BlockStateProperties.SOUTH)
+            && state.hasProperty(BlockStateProperties.WEST);
    }
 
    private static Rotation rotationFor(Direction facing) {
@@ -585,10 +582,10 @@ public final class AwsTemplatePlacer {
             for (int[] row : layer) {
                for (int rule : row) {
                   AwsTemplatePlacer.AwsTemplate.RuleState ruleState = this.rules.get(rule);
-                  if (ruleState != null && !ruleState.state().m_60795_() && !ruleState.isInvisibleProxy()) {
-                     Item item = ruleState.state().m_60734_().m_5456_();
-                     if (item != Items.f_41852_) {
-                        counts.merge(BuiltInRegistries.f_257033_.m_7981_(item), 1, Integer::sum);
+                  if (ruleState != null && !ruleState.state().isAir() && !ruleState.isInvisibleProxy()) {
+                     Item item = ruleState.state().getBlock().asItem();
+                     if (item != Items.AIR) {
+                        counts.merge(BuiltInRegistries.ITEM.getKey(item), 1, Integer::sum);
                      }
                   }
                }
@@ -604,7 +601,7 @@ public final class AwsTemplatePlacer {
 
       AwsTemplatePlacer.PreviewData preview(BlockPos origin, Direction facing) {
          BlockPos min = this.structureMin(origin, facing);
-         int turns = (facing.m_122416_() + 2) % 4;
+         int turns = (facing.get2DDataValue() + 2) % 4;
          Rotation rotation = AwsTemplatePlacer.rotationFor(facing);
          List<AwsTemplatePlacer.PreviewBlock> blocks = new ArrayList<>();
 
@@ -612,9 +609,9 @@ public final class AwsTemplatePlacer {
             for (int z = 0; z < this.sizeZ; z++) {
                for (int x = 0; x < this.sizeX; x++) {
                   AwsTemplatePlacer.AwsTemplate.RuleState rule = this.rules.get(this.layers[y][z][x]);
-                  if (rule != null && !rule.state().m_60795_() && !rule.isInvisibleProxy()) {
-                     BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).m_121955_(min);
-                     blocks.add(new AwsTemplatePlacer.PreviewBlock(target, rule.state().m_60717_(rotation)));
+                  if (rule != null && !rule.state().isAir() && !rule.isInvisibleProxy()) {
+                     BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).offset(min);
+                     blocks.add(new AwsTemplatePlacer.PreviewBlock(target, rule.state().rotate(rotation)));
                   }
                }
             }
@@ -631,7 +628,7 @@ public final class AwsTemplatePlacer {
          ServerLevel level, BlockPos origin, Direction facing, int cursor, int budget, BlockPos builderPos
       ) {
          BlockPos min = this.structureMin(origin, facing);
-         int turns = (facing.m_122416_() + 2) % 4;
+         int turns = (facing.get2DDataValue() + 2) % 4;
          int volume = this.sizeX * this.sizeY * this.sizeZ;
          int next = Math.max(0, cursor);
          int used = 0;
@@ -640,14 +637,14 @@ public final class AwsTemplatePlacer {
 
          while (next < volume && used < Math.max(0, budget) && inspected++ < inspectionLimit) {
             BlockPos local = this.localFromIndex(next++);
-            AwsTemplatePlacer.AwsTemplate.RuleState templateRule = this.rules.get(this.layers[local.m_123342_()][local.m_123343_()][local.m_123341_()]);
-            if (templateRule != null && !templateRule.state().m_60795_() && !templateRule.isInvisibleProxy()) {
-               BlockPos target = this.rotateInArea(local, turns).m_121955_(min);
-               BlockState existing = level.m_8055_(target);
+            AwsTemplatePlacer.AwsTemplate.RuleState templateRule = this.rules.get(this.layers[local.getY()][local.getZ()][local.getX()]);
+            if (templateRule != null && !templateRule.state().isAir() && !templateRule.isInvisibleProxy()) {
+               BlockPos target = this.rotateInArea(local, turns).offset(min);
+               BlockState existing = level.getBlockState(target);
                if (!target.equals(builderPos)
-                  && level.m_7702_(target) == null
+                  && level.getBlockEntity(target) == null
                   && AwsTemplatePlacer.isBasicNaturalTerrain(existing)
-                  && level.m_7731_(target, Blocks.f_50016_.m_49966_(), 18)) {
+                  && level.setBlock(target, Blocks.AIR.defaultBlockState(), 18)) {
                   used++;
                }
             }
@@ -660,7 +657,7 @@ public final class AwsTemplatePlacer {
          ServerLevel level, BlockPos origin, Direction facing, int cursor, int budget, BlockPos builderPos
       ) {
          BlockPos min = this.structureMin(origin, facing);
-         int turns = (facing.m_122416_() + 2) % 4;
+         int turns = (facing.get2DDataValue() + 2) % 4;
          Rotation rotation = AwsTemplatePlacer.rotationFor(facing);
          int volume = this.sizeX * this.sizeY * this.sizeZ;
          int next = Math.max(0, cursor);
@@ -668,15 +665,15 @@ public final class AwsTemplatePlacer {
 
          while (next < volume && used < Math.max(0, budget)) {
             BlockPos local = this.localFromIndex(next++);
-            AwsTemplatePlacer.AwsTemplate.RuleState ruleState = this.rules.get(this.layers[local.m_123342_()][local.m_123343_()][local.m_123341_()]);
-            if (ruleState != null && !ruleState.state().m_60795_() && !ruleState.isInvisibleProxy()) {
-               BlockPos target = this.rotateInArea(local, turns).m_121955_(min);
+            AwsTemplatePlacer.AwsTemplate.RuleState ruleState = this.rules.get(this.layers[local.getY()][local.getZ()][local.getX()]);
+            if (ruleState != null && !ruleState.state().isAir() && !ruleState.isInvisibleProxy()) {
+               BlockPos target = this.rotateInArea(local, turns).offset(min);
                if (!target.equals(builderPos)) {
-                  BlockState intended = ruleState.state().m_60717_(rotation);
-                  BlockState existing = level.m_8055_(target);
+                  BlockState intended = ruleState.state().rotate(rotation);
+                  BlockState existing = level.getBlockState(target);
                   if (!existing.equals(intended)
-                     && (existing.m_60795_() || level.m_7702_(target) == null && AwsTemplatePlacer.isBasicNaturalTerrain(existing))
-                     && level.m_7731_(target, intended, 18)) {
+                     && (existing.isAir() || level.getBlockEntity(target) == null && AwsTemplatePlacer.isBasicNaturalTerrain(existing))
+                     && level.setBlock(target, intended, 18)) {
                      used++;
                   }
                }
@@ -688,19 +685,19 @@ public final class AwsTemplatePlacer {
 
       private void finishIncremental(ServerLevel level, BlockPos origin, Direction facing) {
          BlockPos min = this.structureMin(origin, facing);
-         int turns = (facing.m_122416_() + 2) % 4;
+         int turns = (facing.get2DDataValue() + 2) % 4;
          Rotation rotation = AwsTemplatePlacer.rotationFor(facing);
          List<AwsTemplatePlacer.AwsTemplate.PlacedRule> placedRules = new ArrayList<>();
-         level.m_7471_(origin, false);
+         level.removeBlock(origin, false);
 
          for (int y = 0; y < this.sizeY; y++) {
             for (int z = 0; z < this.sizeZ; z++) {
                for (int x = 0; x < this.sizeX; x++) {
                   AwsTemplatePlacer.AwsTemplate.RuleState ruleState = this.rules.get(this.layers[y][z][x]);
-                  if (ruleState != null && !ruleState.state().m_60795_() && !ruleState.isInvisibleProxy()) {
-                     BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).m_121955_(min);
+                  if (ruleState != null && !ruleState.state().isAir() && !ruleState.isInvisibleProxy()) {
+                     BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).offset(min);
                      if (target.equals(origin)) {
-                        level.m_7731_(target, ruleState.state().m_60717_(rotation), 18);
+                        level.setBlock(target, ruleState.state().rotate(rotation), 18);
                      }
 
                      placedRules.add(new AwsTemplatePlacer.AwsTemplate.PlacedRule(target, ruleState));
@@ -716,10 +713,10 @@ public final class AwsTemplatePlacer {
          for (AwsTemplatePlacer.AwsTemplate.PlacedRule placed : placedRules) {
             BlockPos target = placed.pos();
             AwsTemplatePlacer.AwsTemplate.RuleState ruleState = placed.rule();
-            if (level.m_7702_(target) instanceof ProtectionFlagBlockEntity flag) {
+            if (level.getBlockEntity(target) instanceof ProtectionFlagBlockEntity flag) {
                flag.loadFromOldTemplateData(ruleState.data());
                flag.configureTerritory(min, this.structureMax(min, facing));
-            } else if (level.m_7702_(target) instanceof AdvancedSpawnerBlockEntity spawner) {
+            } else if (level.getBlockEntity(target) instanceof AdvancedSpawnerBlockEntity spawner) {
                spawner.loadFromOldTemplateData(ruleState.data());
             } else {
                this.configureStructureLoot(level, target, ruleState.data(), false);
@@ -751,7 +748,7 @@ public final class AwsTemplatePlacer {
       private void placeAtMin(
          Level level, BlockPos min, Direction facing, boolean clearAir, Set<Long> protectedBlocks, boolean templateAirOnly, boolean fillUnconfiguredContainers
       ) {
-         int turns = (facing.m_122416_() + 2) % 4;
+         int turns = (facing.get2DDataValue() + 2) % 4;
          Rotation rotation = AwsTemplatePlacer.rotationFor(facing);
          List<AwsTemplatePlacer.AwsTemplate.PlacedRule> placedRules = new ArrayList<>();
          if (clearAir) {
@@ -764,11 +761,11 @@ public final class AwsTemplatePlacer {
                   int rule = this.layers[y][z][x];
                   if (rule != 0) {
                      AwsTemplatePlacer.AwsTemplate.RuleState ruleState = this.rules.get(rule);
-                     if (ruleState != null && !ruleState.state().m_60795_() && !ruleState.isInvisibleProxy()) {
+                     if (ruleState != null && !ruleState.state().isAir() && !ruleState.isInvisibleProxy()) {
                         BlockState state = ruleState.state();
                         BlockPos local = new BlockPos(x, y, z);
-                        BlockPos target = this.rotateInArea(local, turns).m_121955_(min);
-                        level.m_7731_(target, state.m_60717_(rotation), 18);
+                        BlockPos target = this.rotateInArea(local, turns).offset(min);
+                        level.setBlock(target, state.rotate(rotation), 18);
                         placedRules.add(new AwsTemplatePlacer.AwsTemplate.PlacedRule(target, ruleState));
                      }
                   }
@@ -783,10 +780,10 @@ public final class AwsTemplatePlacer {
          for (AwsTemplatePlacer.AwsTemplate.PlacedRule placed : placedRules) {
             BlockPos target = placed.pos();
             AwsTemplatePlacer.AwsTemplate.RuleState ruleState = placed.rule();
-            if (level.m_7702_(target) instanceof ProtectionFlagBlockEntity flag) {
+            if (level.getBlockEntity(target) instanceof ProtectionFlagBlockEntity flag) {
                flag.loadFromOldTemplateData(ruleState.data());
                flag.configureTerritory(min, this.structureMax(min, facing));
-            } else if (level.m_7702_(target) instanceof AdvancedSpawnerBlockEntity spawner) {
+            } else if (level.getBlockEntity(target) instanceof AdvancedSpawnerBlockEntity spawner) {
                spawner.loadFromOldTemplateData(ruleState.data());
             } else {
                this.configureStructureLoot(level, target, ruleState.data(), fillUnconfiguredContainers);
@@ -795,7 +792,7 @@ public final class AwsTemplatePlacer {
 
          if (!this.entities.isEmpty() && level instanceof ServerLevel serverLevel) {
             List<AwsTemplatePlacer.AwsTemplate.EntityRule> pendingEntities = List.copyOf(this.entities);
-            serverLevel.m_7654_().execute(() -> {
+            serverLevel.getServer().execute(() -> {
                AncientWarfareCore.LOG.info("Placing {} AWS entity rules", pendingEntities.size());
 
                for (AwsTemplatePlacer.AwsTemplate.EntityRule entity : pendingEntities) {
@@ -806,25 +803,25 @@ public final class AwsTemplatePlacer {
       }
 
       private void placeChunk(ServerLevel level, BlockPos min, Direction facing, ChunkPos chunk) {
-         int turns = (facing.m_122416_() + 2) % 4;
+         int turns = (facing.get2DDataValue() + 2) % 4;
          Rotation rotation = AwsTemplatePlacer.rotationFor(facing);
          List<AwsTemplatePlacer.AwsTemplate.PlacedRule> placedRules = new ArrayList<>();
-         int chunkMinX = chunk.m_45604_();
-         int chunkMaxX = chunk.m_45608_();
-         int chunkMinZ = chunk.m_45605_();
-         int chunkMaxZ = chunk.m_45609_();
+         int chunkMinX = chunk.getMinBlockX();
+         int chunkMaxX = chunk.getMaxBlockX();
+         int chunkMinZ = chunk.getMinBlockZ();
+         int chunkMaxZ = chunk.getMaxBlockZ();
 
          for (int z = 0; z < this.sizeZ; z++) {
             for (int x = 0; x < this.sizeX; x++) {
-               BlockPos column = this.rotateInArea(new BlockPos(x, 0, z), turns).m_121955_(min);
-               if (column.m_123341_() >= chunkMinX && column.m_123341_() <= chunkMaxX && column.m_123343_() >= chunkMinZ && column.m_123343_() <= chunkMaxZ) {
+               BlockPos column = this.rotateInArea(new BlockPos(x, 0, z), turns).offset(min);
+               if (column.getX() >= chunkMinX && column.getX() <= chunkMaxX && column.getZ() >= chunkMinZ && column.getZ() <= chunkMaxZ) {
                   for (int y = 0; y < this.sizeY; y++) {
                      int rule = this.layers[y][z][x];
                      if (rule != 0) {
                         AwsTemplatePlacer.AwsTemplate.RuleState ruleState = this.rules.get(rule);
-                        if (ruleState != null && !ruleState.state().m_60795_() && !ruleState.isInvisibleProxy()) {
-                           BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).m_121955_(min);
-                           level.m_7731_(target, ruleState.state().m_60717_(rotation), 18);
+                        if (ruleState != null && !ruleState.state().isAir() && !ruleState.isInvisibleProxy()) {
+                           BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).offset(min);
+                           level.setBlock(target, ruleState.state().rotate(rotation), 18);
                            placedRules.add(new AwsTemplatePlacer.AwsTemplate.PlacedRule(target, ruleState));
                         }
                      }
@@ -838,7 +835,7 @@ public final class AwsTemplatePlacer {
       }
 
       private void finishPhasedPlacement(ServerLevel level, BlockPos min, Direction facing) {
-         int turns = (facing.m_122416_() + 2) % 4;
+         int turns = (facing.get2DDataValue() + 2) % 4;
 
          for (AwsTemplatePlacer.AwsTemplate.EntityRule entity : this.entities) {
             entity.place(level, min, turns, this.sizeX, this.sizeZ);
@@ -846,30 +843,30 @@ public final class AwsTemplatePlacer {
       }
 
       private void connectChunk(ServerLevel level, BlockPos min, Direction facing, ChunkPos chunk) {
-         int turns = (facing.m_122416_() + 2) % 4;
-         int chunkMinX = chunk.m_45604_();
-         int chunkMaxX = chunk.m_45608_();
-         int chunkMinZ = chunk.m_45605_();
-         int chunkMaxZ = chunk.m_45609_();
+         int turns = (facing.get2DDataValue() + 2) % 4;
+         int chunkMinX = chunk.getMinBlockX();
+         int chunkMaxX = chunk.getMaxBlockX();
+         int chunkMinZ = chunk.getMinBlockZ();
+         int chunkMaxZ = chunk.getMaxBlockZ();
          Set<Long> refresh = new HashSet<>();
 
          for (int z = 0; z < this.sizeZ; z++) {
             for (int x = 0; x < this.sizeX; x++) {
-               BlockPos column = this.rotateInArea(new BlockPos(x, 0, z), turns).m_121955_(min);
-               if (column.m_123341_() >= chunkMinX && column.m_123341_() <= chunkMaxX && column.m_123343_() >= chunkMinZ && column.m_123343_() <= chunkMaxZ) {
+               BlockPos column = this.rotateInArea(new BlockPos(x, 0, z), turns).offset(min);
+               if (column.getX() >= chunkMinX && column.getX() <= chunkMaxX && column.getZ() >= chunkMinZ && column.getZ() <= chunkMaxZ) {
                   for (int y = 0; y < this.sizeY; y++) {
-                     BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).m_121955_(min);
-                     refresh.add(target.m_121878_());
-                     BlockState state = level.m_8055_(target);
-                     if (state.m_60734_() instanceof ChestBlock && state.m_61143_(ChestBlock.f_51479_) == ChestType.SINGLE) {
-                        Direction partnerDirection = ((Direction)state.m_61143_(ChestBlock.f_51478_)).m_122427_();
-                        BlockPos partnerPos = target.m_121945_(partnerDirection);
-                        BlockState partner = level.m_8055_(partnerPos);
-                        if (partner.m_60713_(state.m_60734_())
-                           && partner.m_61143_(ChestBlock.f_51479_) == ChestType.SINGLE
-                           && partner.m_61143_(ChestBlock.f_51478_) == state.m_61143_(ChestBlock.f_51478_)) {
-                           level.m_7731_(target, (BlockState)state.m_61124_(ChestBlock.f_51479_, ChestType.LEFT), 2);
-                           level.m_7731_(partnerPos, (BlockState)partner.m_61124_(ChestBlock.f_51479_, ChestType.RIGHT), 2);
+                     BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).offset(min);
+                     refresh.add(target.asLong());
+                     BlockState state = level.getBlockState(target);
+                     if (state.getBlock() instanceof ChestBlock && state.getValue(ChestBlock.TYPE) == ChestType.SINGLE) {
+                        Direction partnerDirection = ((Direction)state.getValue(ChestBlock.FACING)).getClockWise();
+                        BlockPos partnerPos = target.relative(partnerDirection);
+                        BlockState partner = level.getBlockState(partnerPos);
+                        if (partner.is(state.getBlock())
+                           && partner.getValue(ChestBlock.TYPE) == ChestType.SINGLE
+                           && partner.getValue(ChestBlock.FACING) == state.getValue(ChestBlock.FACING)) {
+                           level.setBlock(target, (BlockState)state.setValue(ChestBlock.TYPE, ChestType.LEFT), 2);
+                           level.setBlock(partnerPos, (BlockState)partner.setValue(ChestBlock.TYPE, ChestType.RIGHT), 2);
                         }
                      }
                   }
@@ -881,24 +878,24 @@ public final class AwsTemplatePlacer {
       }
 
       private void configureChunk(ServerLevel level, BlockPos min, Direction facing, ChunkPos chunk, boolean fillUnconfiguredContainers) {
-         int turns = (facing.m_122416_() + 2) % 4;
-         int chunkMinX = chunk.m_45604_();
-         int chunkMaxX = chunk.m_45608_();
-         int chunkMinZ = chunk.m_45605_();
-         int chunkMaxZ = chunk.m_45609_();
+         int turns = (facing.get2DDataValue() + 2) % 4;
+         int chunkMinX = chunk.getMinBlockX();
+         int chunkMaxX = chunk.getMaxBlockX();
+         int chunkMinZ = chunk.getMinBlockZ();
+         int chunkMaxZ = chunk.getMaxBlockZ();
 
          for (int z = 0; z < this.sizeZ; z++) {
             for (int x = 0; x < this.sizeX; x++) {
-               BlockPos column = this.rotateInArea(new BlockPos(x, 0, z), turns).m_121955_(min);
-               if (column.m_123341_() >= chunkMinX && column.m_123341_() <= chunkMaxX && column.m_123343_() >= chunkMinZ && column.m_123343_() <= chunkMaxZ) {
+               BlockPos column = this.rotateInArea(new BlockPos(x, 0, z), turns).offset(min);
+               if (column.getX() >= chunkMinX && column.getX() <= chunkMaxX && column.getZ() >= chunkMinZ && column.getZ() <= chunkMaxZ) {
                   for (int y = 0; y < this.sizeY; y++) {
                      AwsTemplatePlacer.AwsTemplate.RuleState ruleState = this.rules.get(this.layers[y][z][x]);
-                     if (ruleState != null && !ruleState.state().m_60795_() && !ruleState.isInvisibleProxy()) {
-                        BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).m_121955_(min);
-                        if (level.m_7702_(target) instanceof ProtectionFlagBlockEntity flag) {
+                     if (ruleState != null && !ruleState.state().isAir() && !ruleState.isInvisibleProxy()) {
+                        BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).offset(min);
+                        if (level.getBlockEntity(target) instanceof ProtectionFlagBlockEntity flag) {
                            flag.loadFromOldTemplateData(ruleState.data());
                            flag.configureTerritory(min, this.structureMax(min, facing));
-                        } else if (level.m_7702_(target) instanceof AdvancedSpawnerBlockEntity spawner) {
+                        } else if (level.getBlockEntity(target) instanceof AdvancedSpawnerBlockEntity spawner) {
                            spawner.loadFromOldTemplateData(ruleState.data());
                         } else {
                            this.configureStructureLoot(level, target, ruleState.data(), fillUnconfiguredContainers);
@@ -911,15 +908,15 @@ public final class AwsTemplatePlacer {
       }
 
       private BlockPos structureMax(BlockPos min, Direction facing) {
-         return min.m_7918_(this.rotatedSizeX(facing) - 1, this.sizeY - 1, this.rotatedSizeZ(facing) - 1);
+         return min.offset(this.rotatedSizeX(facing) - 1, this.sizeY - 1, this.rotatedSizeZ(facing) - 1);
       }
 
       private int rotatedSizeX(Direction facing) {
-         return facing.m_122434_() == Axis.X ? this.sizeZ : this.sizeX;
+         return facing.getAxis() == Axis.X ? this.sizeZ : this.sizeX;
       }
 
       private int rotatedSizeZ(Direction facing) {
-         return facing.m_122434_() == Axis.X ? this.sizeX : this.sizeZ;
+         return facing.getAxis() == Axis.X ? this.sizeX : this.sizeZ;
       }
 
       private static void refreshHorizontalConnections(Level level, List<AwsTemplatePlacer.AwsTemplate.PlacedRule> placedRules) {
@@ -927,7 +924,7 @@ public final class AwsTemplatePlacer {
 
          for (AwsTemplatePlacer.AwsTemplate.PlacedRule placed : placedRules) {
             BlockPos pos = placed.pos();
-            refreshPositions.add(pos.m_121878_());
+            refreshPositions.add(pos.asLong());
          }
 
          AwsTemplatePlacer.refreshHorizontalConnections(level, refreshPositions);
@@ -937,41 +934,41 @@ public final class AwsTemplatePlacer {
          Set<BlockPos> lowerDoors = new HashSet<>();
 
          for (AwsTemplatePlacer.AwsTemplate.PlacedRule placed : placedRules) {
-            BlockState state = level.m_8055_(placed.pos());
-            if (state.m_60734_() instanceof DoorBlock && state.m_61138_(DoorBlock.f_52730_)) {
-               lowerDoors.add(state.m_61143_(DoorBlock.f_52730_) == DoubleBlockHalf.LOWER ? placed.pos() : placed.pos().m_7495_());
+            BlockState state = level.getBlockState(placed.pos());
+            if (state.getBlock() instanceof DoorBlock && state.hasProperty(DoorBlock.HALF)) {
+               lowerDoors.add(state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER ? placed.pos() : placed.pos().below());
             }
          }
 
          for (BlockPos lowerPos : lowerDoors) {
-            BlockPos upperPos = lowerPos.m_7494_();
-            BlockState lower = level.m_8055_(lowerPos);
-            BlockState upper = level.m_8055_(upperPos);
-            if (lower.m_60734_() instanceof DoorBlock
-               && upper.m_60713_(lower.m_60734_())
-               && lower.m_61143_(DoorBlock.f_52730_) == DoubleBlockHalf.LOWER
-               && upper.m_61143_(DoorBlock.f_52730_) == DoubleBlockHalf.UPPER) {
-               BlockState normalizedLower = (BlockState)lower.m_61124_(DoorBlock.f_52728_, (DoorHingeSide)upper.m_61143_(DoorBlock.f_52728_));
-               BlockState normalizedUpper = (BlockState)((BlockState)((BlockState)upper.m_61124_(
-                        DoorBlock.f_52726_, (Direction)lower.m_61143_(DoorBlock.f_52726_)
+            BlockPos upperPos = lowerPos.above();
+            BlockState lower = level.getBlockState(lowerPos);
+            BlockState upper = level.getBlockState(upperPos);
+            if (lower.getBlock() instanceof DoorBlock
+               && upper.is(lower.getBlock())
+               && lower.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER
+               && upper.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
+               BlockState normalizedLower = (BlockState)lower.setValue(DoorBlock.HINGE, (DoorHingeSide)upper.getValue(DoorBlock.HINGE));
+               BlockState normalizedUpper = (BlockState)((BlockState)((BlockState)upper.setValue(
+                        DoorBlock.FACING, (Direction)lower.getValue(DoorBlock.FACING)
                      ))
-                     .m_61124_(DoorBlock.f_52727_, (Boolean)lower.m_61143_(DoorBlock.f_52727_)))
-                  .m_61124_(DoorBlock.f_52729_, (Boolean)lower.m_61143_(DoorBlock.f_52729_));
-               level.m_7731_(lowerPos, normalizedLower, 18);
-               level.m_7731_(upperPos, normalizedUpper, 18);
+                     .setValue(DoorBlock.OPEN, (Boolean)lower.getValue(DoorBlock.OPEN)))
+                  .setValue(DoorBlock.POWERED, (Boolean)lower.getValue(DoorBlock.POWERED));
+               level.setBlock(lowerPos, normalizedLower, 18);
+               level.setBlock(upperPos, normalizedUpper, 18);
             }
          }
       }
 
       private Set<Long> occupiedBlocks(BlockPos min, Direction facing) {
-         int turns = (facing.m_122416_() + 2) % 4;
+         int turns = (facing.get2DDataValue() + 2) % 4;
          Set<Long> occupied = new HashSet<>();
 
          for (int y = 0; y < this.sizeY; y++) {
             for (int z = 0; z < this.sizeZ; z++) {
                for (int x = 0; x < this.sizeX; x++) {
                   if (this.isSolidRule(this.layers[y][z][x])) {
-                     occupied.add(this.rotateInArea(new BlockPos(x, y, z), turns).m_121955_(min).m_121878_());
+                     occupied.add(this.rotateInArea(new BlockPos(x, y, z), turns).offset(min).asLong());
                   }
                }
             }
@@ -986,9 +983,9 @@ public final class AwsTemplatePlacer {
          for (int y = 0; y < this.sizeY; y++) {
             for (int z = 0; z < this.sizeZ; z++) {
                for (int x = 0; x < this.sizeX; x++) {
-                  BlockPos pos = this.rotateInArea(new BlockPos(x, y, z), turns).m_121955_(min);
-                  if (level.m_8055_(pos).m_60734_() instanceof ChestBlock) {
-                     templateChestPositions.add(pos.m_121878_());
+                  BlockPos pos = this.rotateInArea(new BlockPos(x, y, z), turns).offset(min);
+                  if (level.getBlockState(pos).getBlock() instanceof ChestBlock) {
+                     templateChestPositions.add(pos.asLong());
                   }
                }
             }
@@ -997,18 +994,18 @@ public final class AwsTemplatePlacer {
          for (int y = 0; y < this.sizeY; y++) {
             for (int z = 0; z < this.sizeZ; z++) {
                for (int xx = 0; xx < this.sizeX; xx++) {
-                  BlockPos pos = this.rotateInArea(new BlockPos(xx, y, z), turns).m_121955_(min);
-                  BlockState state = level.m_8055_(pos);
-                  if (state.m_60734_() instanceof ChestBlock && state.m_61143_(ChestBlock.f_51479_) == ChestType.SINGLE) {
-                     Direction partnerDirection = ((Direction)state.m_61143_(ChestBlock.f_51478_)).m_122427_();
-                     BlockPos partnerPos = pos.m_121945_(partnerDirection);
-                     if (templateChestPositions.contains(partnerPos.m_121878_())) {
-                        BlockState partner = level.m_8055_(partnerPos);
-                        if (partner.m_60713_(state.m_60734_())
-                           && partner.m_61143_(ChestBlock.f_51479_) == ChestType.SINGLE
-                           && partner.m_61143_(ChestBlock.f_51478_) == state.m_61143_(ChestBlock.f_51478_)) {
-                           level.m_7731_(pos, (BlockState)state.m_61124_(ChestBlock.f_51479_, ChestType.LEFT), 2);
-                           level.m_7731_(partnerPos, (BlockState)partner.m_61124_(ChestBlock.f_51479_, ChestType.RIGHT), 2);
+                  BlockPos pos = this.rotateInArea(new BlockPos(xx, y, z), turns).offset(min);
+                  BlockState state = level.getBlockState(pos);
+                  if (state.getBlock() instanceof ChestBlock && state.getValue(ChestBlock.TYPE) == ChestType.SINGLE) {
+                     Direction partnerDirection = ((Direction)state.getValue(ChestBlock.FACING)).getClockWise();
+                     BlockPos partnerPos = pos.relative(partnerDirection);
+                     if (templateChestPositions.contains(partnerPos.asLong())) {
+                        BlockState partner = level.getBlockState(partnerPos);
+                        if (partner.is(state.getBlock())
+                           && partner.getValue(ChestBlock.TYPE) == ChestType.SINGLE
+                           && partner.getValue(ChestBlock.FACING) == state.getValue(ChestBlock.FACING)) {
+                           level.setBlock(pos, (BlockState)state.setValue(ChestBlock.TYPE, ChestType.LEFT), 2);
+                           level.setBlock(partnerPos, (BlockState)partner.setValue(ChestBlock.TYPE, ChestType.RIGHT), 2);
                         }
                      }
                   }
@@ -1021,18 +1018,18 @@ public final class AwsTemplatePlacer {
          AwsTemplatePlacer.AwsTemplate.LootDefinition loot = AwsTemplatePlacer.AwsTemplate.LootDefinition.fromOldTemplate(data);
          boolean fixedRewardContents = data.contains("Items:[{");
          CompoundTag legacyLootSettings = parseLegacyLootSettings(data);
-         if (level.m_7702_(target) instanceof ChestBlockEntity chest) {
-            if (!legacyLootSettings.m_128456_()) {
+         if (level.getBlockEntity(target) instanceof ChestBlockEntity chest) {
+            if (!legacyLootSettings.isEmpty()) {
                AdvancedLootChestBlock.storeLegacyLootSettings(chest, legacyLootSettings);
             }
 
             if (loot != null) {
-               AdvancedLootChestBlock.configureLoot(chest, loot.table(), loot.rolls(), level.f_46441_.m_188505_());
+               AdvancedLootChestBlock.configureLoot(chest, loot.table(), loot.rolls(), level.random.nextLong());
                AncientWarfareCore.LOG
                   .debug(
                      "AWS loot configured: template={}, pos={}, targetBlock={}, blockEntity={}, table={}, rolls={}, fixedItems={}",
                      new Object[]{
-                        this.name, target, level.m_8055_(target).m_60734_(), chest.getClass().getSimpleName(), loot.table(), loot.rolls(), fixedRewardContents
+                        this.name, target, level.getBlockState(target).getBlock(), chest.getClass().getSimpleName(), loot.table(), loot.rolls(), fixedRewardContents
                      }
                   );
             } else if (fixedRewardContents) {
@@ -1040,7 +1037,7 @@ public final class AwsTemplatePlacer {
                AncientWarfareCore.LOG
                   .debug(
                      "AWS fixed container restored: template={}, pos={}, targetBlock={}, blockEntity={}",
-                     new Object[]{this.name, target, level.m_8055_(target).m_60734_(), chest.getClass().getSimpleName()}
+                     new Object[]{this.name, target, level.getBlockState(target).getBlock(), chest.getClass().getSimpleName()}
                   );
             }
 
@@ -1050,7 +1047,7 @@ public final class AwsTemplatePlacer {
                && isEmpty(chest)
                && !AdvancedLootChestBlock.hasConfiguredLoot(chest)) {
                StructureEmptyContainerLootResolver.Match inferred = StructureEmptyContainerLootResolver.resolve(level, target, this.path, this.name);
-               AdvancedLootChestBlock.configureBasicLoot(chest, inferred.table(), level.f_46441_.m_188505_());
+               AdvancedLootChestBlock.configureBasicLoot(chest, inferred.table(), level.random.nextLong());
                loot = new AwsTemplatePlacer.AwsTemplate.LootDefinition(inferred.table(), 1);
                AncientWarfareCore.LOG
                   .debug(
@@ -1058,27 +1055,20 @@ public final class AwsTemplatePlacer {
                      new Object[]{this.name, target, inferred.table(), inferred.reason()}
                   );
             }
-
-            if (loot != null || fixedRewardContents) {
-               IceAndFireStructureLootCompat.configure(
-                  chest, IceAndFireStructureLootCompat.settingsFor(this.path, this.name, this.unique, data), level.f_46441_.m_188505_()
-               );
-               SlashBladeStructureLootCompat.configure(chest, level.f_46441_.m_188505_());
-            }
-         } else if (level.m_7702_(target) instanceof StructureContainerBlockEntity container) {
-            if (!legacyLootSettings.m_128456_()) {
+         } else if (level.getBlockEntity(target) instanceof StructureContainerBlockEntity container) {
+            if (!legacyLootSettings.isEmpty()) {
                container.storeLegacyLootSettings(legacyLootSettings);
             }
 
             if (loot != null) {
-               container.configureStructureLoot(loot.table(), loot.rolls(), level.f_46441_.m_188505_());
+               container.configureStructureLoot(loot.table(), loot.rolls(), level.random.nextLong());
                AncientWarfareCore.LOG
                   .debug(
                      "AWS structure container loot configured: template={}, pos={}, block={}, container={}, table={}, rolls={}, fixedItems={}",
                      new Object[]{
                         this.name,
                         target,
-                        level.m_8055_(target).m_60734_(),
+                        level.getBlockState(target).getBlock(),
                         container.getClass().getSimpleName(),
                         loot.table(),
                         loot.rolls(),
@@ -1090,13 +1080,13 @@ public final class AwsTemplatePlacer {
                AncientWarfareCore.LOG
                   .debug(
                      "AWS fixed structure container restored: template={}, pos={}, block={}, container={}",
-                     new Object[]{this.name, target, level.m_8055_(target).m_60734_(), container.getClass().getSimpleName()}
+                     new Object[]{this.name, target, level.getBlockState(target).getBlock(), container.getClass().getSimpleName()}
                   );
             }
 
             if (loot == null && fillUnconfiguredContainers && AWCorePlatform.gameplayConfig().fillUnconfiguredStructureContainers() && isEmpty(container)) {
                StructureEmptyContainerLootResolver.Match inferred = StructureEmptyContainerLootResolver.resolve(level, target, this.path, this.name);
-               container.configureStructureLoot(inferred.table(), 1, level.f_46441_.m_188505_());
+               container.configureStructureLoot(inferred.table(), 1, level.random.nextLong());
                loot = new AwsTemplatePlacer.AwsTemplate.LootDefinition(inferred.table(), 1);
                AncientWarfareCore.LOG
                   .debug(
@@ -1104,23 +1094,18 @@ public final class AwsTemplatePlacer {
                      new Object[]{this.name, target, inferred.table(), inferred.reason()}
                   );
             }
-
-            if (loot != null || fixedRewardContents) {
-               container.configureIceAndFireLoot(IceAndFireStructureLootCompat.settingsFor(this.path, this.name, this.unique, data), level.f_46441_.m_188505_());
-               container.configureSlashBladeLoot(level.f_46441_.m_188505_());
-            }
          } else if (data.contains("lootSettings:") || data.contains("LootTable:\"")) {
             AncientWarfareCore.LOG
                .warn(
                   "AWS loot metadata has no compatible container block entity: template={}, pos={}, block={}, dataPrefix={}",
-                  new Object[]{this.name, target, level.m_8055_(target).m_60734_(), data.substring(0, Math.min(180, data.length()))}
+                  new Object[]{this.name, target, level.getBlockState(target).getBlock(), data.substring(0, Math.min(180, data.length()))}
                );
          }
       }
 
       private static boolean isEmpty(Container container) {
-         for (int slot = 0; slot < container.m_6643_(); slot++) {
-            if (!container.m_8020_(slot).m_41619_()) {
+         for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            if (!container.getItem(slot).isEmpty()) {
                return false;
             }
          }
@@ -1134,7 +1119,7 @@ public final class AwsTemplatePlacer {
             return new CompoundTag();
          } else {
             try {
-               return TagParser.m_129359_(
+               return TagParser.parseTag(
                   settings.replace("ancientwarfarenpc:", "ancientwarfare:")
                      .replace("ancientwarfarestructure:", "ancientwarfare:")
                      .replace("ancientwarfarevehicle:", "ancientwarfare:")
@@ -1155,20 +1140,20 @@ public final class AwsTemplatePlacer {
                   .replace("ancientwarfarestructure:", "ancientwarfare:")
                   .replace("ancientwarfarevehicle:", "ancientwarfare:")
                   .replace("ancientwarfareautomation:", "ancientwarfare:");
-               CompoundTag tag = TagParser.m_129359_(normalized);
-               ListTag items = tag.m_128437_("Items", 10);
-               container.m_6211_();
+               CompoundTag tag = TagParser.parseTag(normalized);
+               ListTag items = tag.getList("Items", 10);
+               container.clearContent();
 
                for (int index = 0; index < items.size(); index++) {
-                  CompoundTag itemTag = items.m_128728_(index);
-                  ItemStack stack = ItemStack.m_41712_(itemTag);
-                  if (!stack.m_41619_()) {
-                     insertFixedStack(container, stack, Math.max(1, stack.m_41613_()));
+                  CompoundTag itemTag = items.getCompound(index);
+                  ItemStack stack = ItemStack.of(itemTag);
+                  if (!stack.isEmpty()) {
+                     insertFixedStack(container, stack, Math.max(1, stack.getCount()));
                   }
                }
 
                if (container instanceof BlockEntity blockEntity) {
-                  blockEntity.m_6596_();
+                  blockEntity.setChanged();
                }
             } catch (Exception var9) {
                AncientWarfareCore.LOG.warn("Unable to restore fixed AWS container contents", var9);
@@ -1179,35 +1164,35 @@ public final class AwsTemplatePlacer {
       private static void insertFixedStack(Container container, ItemStack source, int count) {
          int remaining = count;
 
-         for (int slot = 0; slot < container.m_6643_() && remaining > 0; slot++) {
-            ItemStack existing = container.m_8020_(slot);
-            if (!existing.m_41619_() && ItemStack.m_150942_(existing, source) && existing.m_41613_() < existing.m_41741_()) {
-               int moved = Math.min(remaining, existing.m_41741_() - existing.m_41613_());
-               existing.m_41769_(moved);
+         for (int slot = 0; slot < container.getContainerSize() && remaining > 0; slot++) {
+            ItemStack existing = container.getItem(slot);
+            if (!existing.isEmpty() && ItemStack.isSameItemSameTags(existing, source) && existing.getCount() < existing.getMaxStackSize()) {
+               int moved = Math.min(remaining, existing.getMaxStackSize() - existing.getCount());
+               existing.grow(moved);
                remaining -= moved;
             }
          }
 
-         for (int slotx = 0; slotx < container.m_6643_() && remaining > 0; slotx++) {
-            if (container.m_8020_(slotx).m_41619_()) {
-               ItemStack split = source.m_41777_();
-               split.m_41764_(Math.min(remaining, split.m_41741_()));
-               container.m_6836_(slotx, split);
-               remaining -= split.m_41613_();
+         for (int slotx = 0; slotx < container.getContainerSize() && remaining > 0; slotx++) {
+            if (container.getItem(slotx).isEmpty()) {
+               ItemStack split = source.copy();
+               split.setCount(Math.min(remaining, split.getMaxStackSize()));
+               container.setItem(slotx, split);
+               remaining -= split.getCount();
             }
          }
       }
 
       private void clearTemplateVolume(Level level, BlockPos min, int turns, Set<Long> protectedBlocks, boolean templateAirOnly) {
-         BlockState air = Blocks.f_50016_.m_49966_();
+         BlockState air = Blocks.AIR.defaultBlockState();
 
          for (int y = 0; y < this.sizeY; y++) {
             for (int z = 0; z < this.sizeZ; z++) {
                for (int x = 0; x < this.sizeX; x++) {
                   if (!templateAirOnly || !this.isSolidRule(this.layers[y][z][x])) {
-                     BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).m_121955_(min);
-                     if (!protectedBlocks.contains(target.m_121878_()) && !level.m_8055_(target).m_60795_()) {
-                        level.m_7731_(target, air, 18);
+                     BlockPos target = this.rotateInArea(new BlockPos(x, y, z), turns).offset(min);
+                     if (!protectedBlocks.contains(target.asLong()) && !level.getBlockState(target).isAir()) {
+                        level.setBlock(target, air, 18);
                      }
                   }
                }
@@ -1220,7 +1205,7 @@ public final class AwsTemplatePlacer {
             return false;
          } else {
             AwsTemplatePlacer.AwsTemplate.RuleState ruleState = this.rules.get(rule);
-            return ruleState != null && !ruleState.state().m_60795_() && !ruleState.isInvisibleProxy();
+            return ruleState != null && !ruleState.state().isAir() && !ruleState.isInvisibleProxy();
          }
       }
 
@@ -1257,9 +1242,9 @@ public final class AwsTemplatePlacer {
       }
 
       private BlockPos structureMin(BlockPos origin, Direction facing) {
-         BlockPos c1 = origin.m_5484_(facing.m_122428_(), this.offsetX).m_5484_(facing, this.offsetZ).m_6630_(-this.offsetY);
-         BlockPos c2 = c1.m_5484_(facing.m_122427_(), this.sizeX - 1).m_5484_(facing, -(this.sizeZ - 1)).m_6630_(this.sizeY - 1);
-         return new BlockPos(Math.min(c1.m_123341_(), c2.m_123341_()), Math.min(c1.m_123342_(), c2.m_123342_()), Math.min(c1.m_123343_(), c2.m_123343_()));
+         BlockPos c1 = origin.relative(facing.getCounterClockWise(), this.offsetX).relative(facing, this.offsetZ).above(-this.offsetY);
+         BlockPos c2 = c1.relative(facing.getClockWise(), this.sizeX - 1).relative(facing, -(this.sizeZ - 1)).above(this.sizeY - 1);
+         return new BlockPos(Math.min(c1.getX(), c2.getX()), Math.min(c1.getY(), c2.getY()), Math.min(c1.getZ(), c2.getZ()));
       }
 
       private BlockPos rotateInArea(BlockPos pos, int turns) {
@@ -1267,8 +1252,8 @@ public final class AwsTemplatePlacer {
          int currentZSize = this.sizeZ;
          int nextXSize = currentXSize;
          int nextZSize = currentZSize;
-         int x = pos.m_123341_();
-         int z = pos.m_123343_();
+         int x = pos.getX();
+         int z = pos.getZ();
          int nextX = x;
          int nextZ = z;
          int positiveTurns = turns > 0 ? turns : 4 + turns;
@@ -1283,7 +1268,7 @@ public final class AwsTemplatePlacer {
             nextZSize = currentZSize;
          }
 
-         return new BlockPos(x, pos.m_123342_(), z);
+         return new BlockPos(x, pos.getY(), z);
       }
 
       private static List<String> readLines(String templatePath) {
@@ -1533,7 +1518,7 @@ public final class AwsTemplatePlacer {
             } else {
                String properties = extract(data, "properties:{", "}");
                BlockState state = blockState(blockName, properties, data);
-               if (state.m_60795_()) {
+               if (state.isAir()) {
                   return state;
                } else {
                   if (!properties.isBlank()) {
@@ -1545,8 +1530,8 @@ public final class AwsTemplatePlacer {
 
                   if ("vanillaSkull".equals(plugin)) {
                      String rotation = extract(data, "skullRotation:", ",");
-                     if (!rotation.isBlank() && state.m_61138_(SkullBlock.f_56314_)) {
-                        state = (BlockState)state.m_61124_(SkullBlock.f_56314_, Integer.parseInt(rotation));
+                     if (!rotation.isBlank() && state.hasProperty(SkullBlock.ROTATION)) {
+                        state = (BlockState)state.setValue(SkullBlock.ROTATION, Integer.parseInt(rotation));
                      }
                   }
 
@@ -1557,14 +1542,14 @@ public final class AwsTemplatePlacer {
       }
 
       private static BlockState applyLegacyFurnitureFacing(BlockState state, String data) {
-         if ((state.m_60734_() instanceof StructureDecorBlock || state.m_60734_() instanceof TallStructureDecorBlock)
-            && state.m_61138_(HorizontalDirectionalBlock.f_54117_)) {
+         if ((state.getBlock() instanceof StructureDecorBlock || state.getBlock() instanceof TallStructureDecorBlock)
+            && state.hasProperty(HorizontalDirectionalBlock.FACING)) {
             String facing = extract(data, "},facing:\"", "\"");
 
             try {
-               Direction direction = Direction.m_122402_(facing);
-               return direction != null && direction.m_122434_().m_122479_()
-                  ? (BlockState)state.m_61124_(HorizontalDirectionalBlock.f_54117_, direction)
+               Direction direction = Direction.byName(facing);
+               return direction != null && direction.getAxis().isHorizontal()
+                  ? (BlockState)state.setValue(HorizontalDirectionalBlock.FACING, direction)
                   : state;
             } catch (IllegalArgumentException var4) {
                return state;
@@ -1575,12 +1560,12 @@ public final class AwsTemplatePlacer {
       }
 
       private static BlockState applyLegacySlabProperties(BlockState state, String properties) {
-         if (state.m_60734_() instanceof SlabBlock && state.m_61138_(SlabBlock.f_56353_)) {
+         if (state.getBlock() instanceof SlabBlock && state.hasProperty(SlabBlock.TYPE)) {
             String var2 = propertyValue(properties, "half");
 
             return switch (var2) {
-               case "top" -> (BlockState)state.m_61124_(SlabBlock.f_56353_, SlabType.TOP);
-               case "bottom" -> (BlockState)state.m_61124_(SlabBlock.f_56353_, SlabType.BOTTOM);
+               case "top" -> (BlockState)state.setValue(SlabBlock.TYPE, SlabType.TOP);
+               case "bottom" -> (BlockState)state.setValue(SlabBlock.TYPE, SlabType.BOTTOM);
                default -> state;
             };
          } else {
@@ -1589,11 +1574,11 @@ public final class AwsTemplatePlacer {
       }
 
       private static BlockState applyLegacyMultipartProperties(BlockState state, String properties) {
-         if (state.m_60734_() instanceof TallStructureDecorBlock && state.m_61138_(TallStructureDecorBlock.HALF)) {
+         if (state.getBlock() instanceof TallStructureDecorBlock && state.hasProperty(TallStructureDecorBlock.HALF)) {
             String part = propertyValue(properties, "part");
             String visible = propertyValue(properties, "visible");
             boolean upper = "top".equals(part) || "false".equals(visible);
-            return (BlockState)state.m_61124_(TallStructureDecorBlock.HALF, upper ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER);
+            return (BlockState)state.setValue(TallStructureDecorBlock.HALF, upper ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER);
          } else {
             return state;
          }
@@ -1608,20 +1593,18 @@ public final class AwsTemplatePlacer {
 
       private static BlockState blockState(String oldName, String properties, String data) {
          String name = remapBlockName(oldName, properties, data);
-         ResourceLocation id = ResourceLocation.m_135820_(name);
-         if (id != null && BuiltInRegistries.f_256975_.m_7804_(id)) {
-            return ((Block)BuiltInRegistries.f_256975_.m_7745_(id)).m_49966_();
+         ResourceLocation id = ResourceLocation.tryParse(name);
+         if (id != null && BuiltInRegistries.BLOCK.containsKey(id)) {
+            return ((Block)BuiltInRegistries.BLOCK.get(id)).defaultBlockState();
          } else {
             AncientWarfareCore.LOG.debug("Skipping unmapped AWS block {}", oldName);
-            return Blocks.f_50016_.m_49966_();
+            return Blocks.AIR.defaultBlockState();
          }
       }
 
       private static String remapBlockName(String name, String properties, String data) {
          if (name.startsWith("ancientwarfarestructure:")) {
             return remapAncientWarfareBlock(name);
-         } else if (name.startsWith("iceandfire:")) {
-            return LegacyIceAndFireStructureCompat.remapBlock(name);
          } else {
             return switch (name) {
                case "minecraft:chest", "minecraft:trapped_chest" -> "minecraft:chest";
@@ -1955,12 +1938,12 @@ public final class AwsTemplatePlacer {
 
       private static <T extends Comparable<T>> BlockState applyProperty(BlockState state, String name, String value) {
          Property<T> property = property(state, name);
-         return property == null ? state : property.m_6215_(value).map(v -> (BlockState)state.m_61124_(property, v)).orElse(state);
+         return property == null ? state : property.getValue(value).map(v -> (BlockState)state.setValue(property, v)).orElse(state);
       }
 
       private static <T extends Comparable<T>> Property<T> property(BlockState state, String name) {
-         for (Property<?> property : state.m_61147_()) {
-            if (property.m_61708_().equals(name)) {
+         for (Property<?> property : state.getProperties()) {
+            if (property.getName().equals(name)) {
                return (Property<T>)property;
             }
          }
@@ -2020,7 +2003,7 @@ public final class AwsTemplatePlacer {
 
       private static record EntityRule(String plugin, String data) {
          void place(Level level, BlockPos min, int turns, int sizeX, int sizeZ) {
-            BlockPos anchor = rotateAnchor(decodeLegacyBlockPos(parseLong(this.data, "position", 0L)), turns, sizeX, sizeZ).m_121955_(min);
+            BlockPos anchor = rotateAnchor(decodeLegacyBlockPos(parseLong(this.data, "position", 0L)), turns, sizeX, sizeZ).offset(min);
             if ("awGate".equals(this.plugin)) {
                this.placeGate(level, anchor, turns);
             } else if ("AWVehicle".equals(this.plugin)) {
@@ -2029,22 +2012,22 @@ public final class AwsTemplatePlacer {
          }
 
          private void placeGate(Level level, BlockPos anchor, int turns) {
-            BlockPos first = rotateOffset(parseRelativePos(this.data, "pos1"), turns).m_121955_(anchor);
-            BlockPos second = rotateOffset(parseRelativePos(this.data, "pos2"), turns).m_121955_(anchor);
-            Direction facing = Direction.m_122376_(parseInt(this.data, "orientation", Direction.NORTH.ordinal()));
+            BlockPos first = rotateOffset(parseRelativePos(this.data, "pos1"), turns).offset(anchor);
+            BlockPos second = rotateOffset(parseRelativePos(this.data, "pos2"), turns).offset(anchor);
+            Direction facing = Direction.from3DDataValue(parseInt(this.data, "orientation", Direction.NORTH.ordinal()));
 
             for (int i = 0; i < turns; i++) {
-               facing = facing.m_122427_();
+               facing = facing.getClockWise();
             }
 
-            GateEntity gate = (GateEntity)AWCoreRegistryAccess.entityType(AWCoreIds.DYNAMIC_GATE).m_20615_(level);
+            GateEntity gate = (GateEntity)AWCoreRegistryAccess.entityType(AWCoreIds.DYNAMIC_GATE).create(level);
             if (gate != null) {
                String gateType = AwsTemplatePlacer.AwsTemplate.extract(this.data, "gateType:\"", "\"");
                gate.configure(first, second, facing);
                gate.setMaterial(gateType.toLowerCase(Locale.ROOT).contains("iron") ? GateEntity.Material.IRON : GateEntity.Material.WOOD);
                gate.setOpeningStyle(gateOpeningStyle(gateType));
                clearGateArea(level, first, second);
-               level.m_7967_(gate);
+               level.addFreshEntity(gate);
                gate.ensureProxyBlocks();
                AncientWarfareCore.LOG.info("Placed AWS gate {} from {} to {}", new Object[]{gateType, first, second});
             }
@@ -2060,10 +2043,10 @@ public final class AwsTemplatePlacer {
             if (type == null) {
                AncientWarfareCore.LOG.debug("Skipping unsupported AWS vehicle type {}", vehicleType);
             } else {
-               Entity vehicle = type.m_20615_(level);
+               Entity vehicle = type.create(level);
                if (vehicle != null) {
                   if (stableId != null) {
-                     vehicle.m_20084_(stableId);
+                     vehicle.setUUID(stableId);
                   }
 
                   double xOffset = parseDouble(this.data, "xOffset", 0.5);
@@ -2079,18 +2062,18 @@ public final class AwsTemplatePlacer {
                   }
 
                   float yaw = (float)(parseDouble(this.data, "rotation", 0.0) - 90.0 * (double)turns);
-                  vehicle.m_7678_((double)anchor.m_123341_() + rotatedX, (double)anchor.m_123342_() + yOffset, (double)anchor.m_123343_() + rotatedZ, yaw, 0.0F);
-                  if (level.m_7967_(vehicle)) {
+                  vehicle.moveTo((double)anchor.getX() + rotatedX, (double)anchor.getY() + yOffset, (double)anchor.getZ() + rotatedZ, yaw, 0.0F);
+                  if (level.addFreshEntity(vehicle)) {
                      AncientWarfareCore.LOG
                         .info(
-                           "Placed AWS vehicle type {} as {} at {}", new Object[]{vehicleType, BuiltInRegistries.f_256780_.m_7981_(type), vehicle.m_20182_()}
+                           "Placed AWS vehicle type {} as {} at {}", new Object[]{vehicleType, BuiltInRegistries.ENTITY_TYPE.getKey(type), vehicle.position()}
                         );
                   } else {
                      if (stableId != null) {
                         throw new IllegalStateException("Failed to add AWS vehicle " + stableId);
                      }
 
-                     AncientWarfareCore.LOG.warn("Failed to add AWS vehicle type {} at {}", vehicleType, vehicle.m_20182_());
+                     AncientWarfareCore.LOG.warn("Failed to add AWS vehicle type {} at {}", vehicleType, vehicle.position());
                   }
                }
             }
@@ -2130,18 +2113,18 @@ public final class AwsTemplatePlacer {
 
          private static void clearGateArea(Level level, BlockPos first, BlockPos second) {
             BlockPos min = new BlockPos(
-               Math.min(first.m_123341_(), second.m_123341_()),
-               Math.min(first.m_123342_(), second.m_123342_()),
-               Math.min(first.m_123343_(), second.m_123343_())
+               Math.min(first.getX(), second.getX()),
+               Math.min(first.getY(), second.getY()),
+               Math.min(first.getZ(), second.getZ())
             );
             BlockPos max = new BlockPos(
-               Math.max(first.m_123341_(), second.m_123341_()),
-               Math.max(first.m_123342_(), second.m_123342_()),
-               Math.max(first.m_123343_(), second.m_123343_())
+               Math.max(first.getX(), second.getX()),
+               Math.max(first.getY(), second.getY()),
+               Math.max(first.getZ(), second.getZ())
             );
 
-            for (BlockPos pos : BlockPos.m_121940_(min, max)) {
-               level.m_7471_(pos, false);
+            for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
+               level.removeBlock(pos, false);
             }
          }
 
@@ -2152,7 +2135,7 @@ public final class AwsTemplatePlacer {
 
          private static BlockPos rotateOffset(BlockPos pos, int turns) {
             for (int i = 0; i < turns; i++) {
-               pos = new BlockPos(-pos.m_123343_(), pos.m_123342_(), pos.m_123341_());
+               pos = new BlockPos(-pos.getZ(), pos.getY(), pos.getX());
             }
 
             return pos;
@@ -2161,8 +2144,8 @@ public final class AwsTemplatePlacer {
          private static BlockPos rotateAnchor(BlockPos pos, int turns, int sizeX, int sizeZ) {
             int currentXSize = sizeX;
             int currentZSize = sizeZ;
-            int x = pos.m_123341_();
-            int z = pos.m_123343_();
+            int x = pos.getX();
+            int z = pos.getZ();
 
             for (int i = 0; i < turns; i++) {
                int nextX = currentZSize - 1 - z;
@@ -2173,7 +2156,7 @@ public final class AwsTemplatePlacer {
                currentZSize = oldXSize;
             }
 
-            return new BlockPos(x, pos.m_123342_(), z);
+            return new BlockPos(x, pos.getY(), z);
          }
 
          private static BlockPos decodeLegacyBlockPos(long packed) {
@@ -2296,7 +2279,7 @@ public final class AwsTemplatePlacer {
       private static record RuleState(BlockState state, String data, String plugin) {
          boolean isInvisibleProxy() {
             return this.data.contains("mainBlockPos:") && !this.data.contains("mainBlock:1b")
-               ? !(this.state.m_60734_() instanceof TallStructureDecorBlock)
+               ? !(this.state.getBlock() instanceof TallStructureDecorBlock)
                : "coffin".equals(this.plugin) && this.data.contains("invisible:\"true\"");
          }
       }
@@ -2335,8 +2318,8 @@ public final class AwsTemplatePlacer {
          this.template = template;
          this.min = min;
          this.facing = facing;
-         this.turns = (facing.m_122416_() + 2) % 4;
-         this.index = new IslandLayerPlan(template.sizeX, template.sizeY, template.sizeZ, min.m_123341_(), min.m_123343_(), this.turns);
+         this.turns = (facing.get2DDataValue() + 2) % 4;
+         this.index = new IslandLayerPlan(template.sizeX, template.sizeY, template.sizeZ, min.getX(), min.getZ(), this.turns);
       }
 
       public IslandLayerPlan index() {
@@ -2362,7 +2345,7 @@ public final class AwsTemplatePlacer {
 
       private BlockPos target(int layer, int chunk, int cell) {
          int local = this.index.cells(layer, chunk)[cell];
-         return this.template.rotateInArea(new BlockPos(local % this.template.sizeX, layer, local / this.template.sizeX), this.turns).m_121955_(this.min);
+         return this.template.rotateInArea(new BlockPos(local % this.template.sizeX, layer, local / this.template.sizeX), this.turns).offset(this.min);
       }
 
       private AwsTemplatePlacer.AwsTemplate.RuleState rule(int layer, int chunk, int cell) {
@@ -2373,12 +2356,12 @@ public final class AwsTemplatePlacer {
       private BlockState intended(int layer, int chunk, int cell) {
          int local = this.index.cells(layer, chunk)[cell];
          int id = this.template.layers[layer][local / this.template.sizeX][local % this.template.sizeX];
-         return this.rotated.computeIfAbsent(id, key -> this.template.rules.get(key).state.m_60717_(AwsTemplatePlacer.rotationFor(this.facing)));
+         return this.rotated.computeIfAbsent(id, key -> this.template.rules.get(key).state.rotate(AwsTemplatePlacer.rotationFor(this.facing)));
       }
 
       public boolean matchesRecordedCell(Level level, BlockPos pos) {
          BlockState expected = this.expectedAt(pos);
-         return expected != null && !expected.m_155947_() && level.m_7702_(pos) == null && matchesRecordedState(level.m_8055_(pos), expected);
+         return expected != null && !expected.hasBlockEntity() && level.getBlockEntity(pos) == null && matchesRecordedState(level.getBlockState(pos), expected);
       }
 
       public int recordedVolumeSize() {
@@ -2390,10 +2373,10 @@ public final class AwsTemplatePlacer {
             int horizontal = this.template.sizeX * this.template.sizeZ;
             int y = cursor / horizontal;
             int cell = cursor % horizontal;
-            BlockPos pos = this.template.rotateInArea(new BlockPos(cell % this.template.sizeX, y, cell / this.template.sizeX), this.turns).m_121955_(this.min);
+            BlockPos pos = this.template.rotateInArea(new BlockPos(cell % this.template.sizeX, y, cell / this.template.sizeX), this.turns).offset(this.min);
             if (window.request(level, this.min, new ChunkPos(pos), windowSize) && budget.tryWork()) {
-               BlockState existing = level.m_8055_(pos);
-               if (level.m_7702_(pos) == null && !existing.m_155947_()) {
+               BlockState existing = level.getBlockState(pos);
+               if (level.getBlockEntity(pos) == null && !existing.hasBlockEntity()) {
                   return !AwsTemplatePlacer.isOpenWaterTerrain(existing)
                         && !AwsTemplatePlacer.isBasicNaturalTerrain(existing)
                         && !this.matchesRecordedCell(level, pos)
@@ -2423,8 +2406,8 @@ public final class AwsTemplatePlacer {
       ) {
          BlockPos pos = this.target(layer, chunk, cursor);
          if (window.request(level, this.min, new ChunkPos(pos), windowSize) && budget.tryWork()) {
-            BlockState existing = level.m_8055_(pos);
-            if (level.m_7702_(pos) == null && !existing.m_155947_()) {
+            BlockState existing = level.getBlockState(pos);
+            if (level.getBlockEntity(pos) == null && !existing.hasBlockEntity()) {
                if (!AwsTemplatePlacer.isOpenWaterTerrain(existing) && (!allowNaturalTerrain || !AwsTemplatePlacer.isBasicNaturalTerrain(existing))) {
                   for (AwsTemplatePlacer.IslandConstruction recorded : replaceablePlans) {
                      if (recorded.matchesRecordedCell(level, pos)) {
@@ -2471,23 +2454,23 @@ public final class AwsTemplatePlacer {
                   this.template.sizeX,
                   this.template.sizeZ
                )
-               .m_121955_(this.min);
+               .offset(this.min);
             BlockPos first = AwsTemplatePlacer.AwsTemplate.EntityRule.rotateOffset(
                   AwsTemplatePlacer.AwsTemplate.EntityRule.parseRelativePos(entityRule.data, "pos1"), this.turns
                )
-               .m_121955_(anchor);
+               .offset(anchor);
             BlockPos second = AwsTemplatePlacer.AwsTemplate.EntityRule.rotateOffset(
                   AwsTemplatePlacer.AwsTemplate.EntityRule.parseRelativePos(entityRule.data, "pos2"), this.turns
                )
-               .m_121955_(anchor);
+               .offset(anchor);
             BlockPos gateMin = new BlockPos(
-               Math.min(first.m_123341_(), second.m_123341_()),
-               Math.min(first.m_123342_(), second.m_123342_()),
-               Math.min(first.m_123343_(), second.m_123343_())
+               Math.min(first.getX(), second.getX()),
+               Math.min(first.getY(), second.getY()),
+               Math.min(first.getZ(), second.getZ())
             );
-            int width = Math.abs(first.m_123341_() - second.m_123341_()) + 1;
-            int depth = Math.abs(first.m_123343_() - second.m_123343_()) + 1;
-            int height = Math.abs(first.m_123342_() - second.m_123342_()) + 1;
+            int width = Math.abs(first.getX() - second.getX()) + 1;
+            int depth = Math.abs(first.getZ() - second.getZ()) + 1;
+            int height = Math.abs(first.getY() - second.getY()) + 1;
             int volume = Math.multiplyExact(Math.multiplyExact(width, depth), height);
             if (task.cellCursor >= volume) {
                if (!budget.tryScan()) {
@@ -2499,14 +2482,14 @@ public final class AwsTemplatePlacer {
                }
             } else {
                int cursor = task.cellCursor;
-               BlockPos pos = gateMin.m_7918_(cursor % width, cursor / width / depth, cursor / width % depth);
+               BlockPos pos = gateMin.offset(cursor % width, cursor / width / depth, cursor / width % depth);
                if (window.request(level, this.min, new ChunkPos(pos), windowSize) && budget.tryWork()) {
                   UUID id = UUID.nameUUIDFromBytes(
-                     (level.m_46472_().m_135782_() + ":" + this.min + ":" + this.template.path + ":" + task.entityCursor).getBytes(StandardCharsets.UTF_8)
+                     (level.dimension().location() + ":" + this.min + ":" + this.template.path + ":" + task.entityCursor).getBytes(StandardCharsets.UTF_8)
                   );
                   if (!isOwnGateProxy(level, pos, id)) {
-                     BlockState existing = level.m_8055_(pos);
-                     if (level.m_7702_(pos) != null || existing.m_155947_()) {
+                     BlockState existing = level.getBlockState(pos);
+                     if (level.getBlockEntity(pos) != null || existing.hasBlockEntity()) {
                         return 1;
                      }
 
@@ -2536,9 +2519,9 @@ public final class AwsTemplatePlacer {
       }
 
       private BlockState expectedAt(BlockPos pos) {
-         int dx = pos.m_123341_() - this.min.m_123341_();
-         int dz = pos.m_123343_() - this.min.m_123343_();
-         int y = pos.m_123342_() - this.min.m_123342_();
+         int dx = pos.getX() - this.min.getX();
+         int dz = pos.getZ() - this.min.getZ();
+         int y = pos.getY() - this.min.getY();
          int x;
          int z;
          switch (this.turns) {
@@ -2563,27 +2546,27 @@ public final class AwsTemplatePlacer {
             int id = this.template.layers[y][z][x];
             return !this.template.isSolidRule(id)
                ? null
-               : this.rotated.computeIfAbsent(id, key -> this.template.rules.get(key).state.m_60717_(AwsTemplatePlacer.rotationFor(this.facing)));
+               : this.rotated.computeIfAbsent(id, key -> this.template.rules.get(key).state.rotate(AwsTemplatePlacer.rotationFor(this.facing)));
          } else {
             return null;
          }
       }
 
       private static boolean matchesRecordedState(BlockState existing, BlockState expected) {
-         if (existing.m_60734_() != expected.m_60734_()) {
+         if (existing.getBlock() != expected.getBlock()) {
             return false;
          } else {
-            for (Property<?> property : expected.m_61147_()) {
-               String name = property.m_61708_();
+            for (Property<?> property : expected.getProperties()) {
+               String name = property.getName();
                boolean dynamic = "waterlogged".equals(name)
                   || "open".equals(name)
                   || "powered".equals(name)
                   || "lit".equals(name)
                   || AwsTemplatePlacer.hasHorizontalConnections(expected)
                      && ("north".equals(name) || "east".equals(name) || "south".equals(name) || "west".equals(name) || "up".equals(name))
-                  || expected.m_60734_() instanceof BenchStructureDecorBlock && "legs".equals(name)
-                  || expected.m_60734_() instanceof StairBlock && "shape".equals(name);
-               if (!dynamic && (!existing.m_61138_(property) || !existing.m_61143_(property).equals(expected.m_61143_(property)))) {
+                  || expected.getBlock() instanceof BenchStructureDecorBlock && "legs".equals(name)
+                  || expected.getBlock() instanceof StairBlock && "shape".equals(name);
+               if (!dynamic && (!existing.hasProperty(property) || !existing.getValue(property).equals(expected.getValue(property)))) {
                   return false;
                }
             }
@@ -2593,21 +2576,21 @@ public final class AwsTemplatePlacer {
       }
 
       private static void requireSafeOverwrite(Level level, BlockPos pos, BlockState existing) {
-         if (level.m_7702_(pos) != null || existing.m_155947_() || !existing.m_60795_() && !AwsTemplatePlacer.isBasicNaturalTerrain(existing)) {
+         if (level.getBlockEntity(pos) != null || existing.hasBlockEntity() || !existing.isAir() && !AwsTemplatePlacer.isBasicNaturalTerrain(existing)) {
             throw new IllegalStateException("Protected block appeared during island construction at " + pos);
          }
       }
 
       private static boolean isOwnGateProxy(Level level, BlockPos pos, UUID id) {
-         return level.m_8055_(pos).m_60713_(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))
-            && level.m_7702_(pos) instanceof GateProxyBlockEntity proxy
+         return level.getBlockState(pos).is(AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY))
+            && level.getBlockEntity(pos) instanceof GateProxyBlockEntity proxy
             && proxy.isGate(id);
       }
 
       private void requireSafeGateOverwrite(Level level, BlockPos pos, UUID id) {
          if (!isOwnGateProxy(level, pos, id)) {
-            BlockState existing = level.m_8055_(pos);
-            if (level.m_7702_(pos) != null || existing.m_155947_() || !this.matchesRecordedCell(level, pos)) {
+            BlockState existing = level.getBlockState(pos);
+            if (level.getBlockEntity(pos) != null || existing.hasBlockEntity() || !this.matchesRecordedCell(level, pos)) {
                requireSafeOverwrite(level, pos, existing);
             }
          }
@@ -2627,18 +2610,18 @@ public final class AwsTemplatePlacer {
          int cell = finalConnections ? cursor / 5 : cursor;
          BlockPos pos = this.target(layer, chunk, cell);
          BlockState expected = this.intended(layer, chunk, cell);
-         if (phase == LargeIslandWorldGenerationData.Phase.CONFIGURE && !expected.m_155947_()) {
+         if (phase == LargeIslandWorldGenerationData.Phase.CONFIGURE && !expected.hasBlockEntity()) {
             return budget.tryScan();
          } else if (phase == LargeIslandWorldGenerationData.Phase.CONNECT
-            && expected.m_60815_()
-            && !(expected.m_60734_() instanceof FallingBlock)
-            && !expected.m_155947_()) {
+            && expected.canOcclude()
+            && !(expected.getBlock() instanceof FallingBlock)
+            && !expected.hasBlockEntity()) {
             return budget.tryScan();
          } else {
             if (finalConnections) {
                int neighbor = cursor % 5;
                if (neighbor > 0) {
-                  pos = pos.m_121945_(AwsTemplatePlacer.HORIZONTAL[neighbor - 1]);
+                  pos = pos.relative(AwsTemplatePlacer.HORIZONTAL[neighbor - 1]);
                }
 
                if (this.knownNonConnector(pos)) {
@@ -2656,34 +2639,34 @@ public final class AwsTemplatePlacer {
             if (window.requestGroup(level, this.min, required, windowSize) && budget.tryWork()) {
                switch (phase) {
                   case BUILD:
-                     if (!(expected.m_60734_() instanceof FallingBlock)) {
-                        BlockState existing = level.m_8055_(pos);
-                        if (existing.m_60734_() != expected.m_60734_()) {
+                     if (!(expected.getBlock() instanceof FallingBlock)) {
+                        BlockState existing = level.getBlockState(pos);
+                        if (existing.getBlock() != expected.getBlock()) {
                            requireSafeOverwrite(level, pos, existing);
-                           level.m_7731_(pos, expected, 18);
+                           level.setBlock(pos, expected, 18);
                         }
                      }
                      break;
                   case CLEANUP:
                      if (this.matchesRecordedCell(level, pos)) {
-                        level.m_7731_(pos, Blocks.f_50016_.m_49966_(), 18);
+                        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 18);
                      }
                      break;
                   case CONNECT:
-                     BlockState state = level.m_8055_(pos);
+                     BlockState state = level.getBlockState(pos);
                      BlockState desired = this.intended(layer, chunk, cell);
                      if ((
-                           state.m_60795_()
-                              || desired.m_60734_() instanceof FallingBlock
-                              || !state.m_60819_().m_76178_() && state.m_60734_() != desired.m_60734_()
+                           state.isAir()
+                              || desired.getBlock() instanceof FallingBlock
+                              || !state.getFluidState().isEmpty() && state.getBlock() != desired.getBlock()
                         )
-                        && state.m_60734_() != desired.m_60734_()) {
+                        && state.getBlock() != desired.getBlock()) {
                         requireSafeOverwrite(level, pos, state);
                         state = desired;
-                        level.m_7731_(pos, desired, 18);
+                        level.setBlock(pos, desired, 18);
                      }
 
-                     if (state.m_60734_() instanceof DoorBlock) {
+                     if (state.getBlock() instanceof DoorBlock) {
                         AwsTemplatePlacer.AwsTemplate.normalizeDoors(
                            level, List.of(new AwsTemplatePlacer.AwsTemplate.PlacedRule(pos, this.rule(layer, chunk, cell)))
                         );
@@ -2693,7 +2676,7 @@ public final class AwsTemplatePlacer {
                      AwsTemplatePlacer.refreshConnection(level, pos);
                      break;
                   case CONFIGURE:
-                     BlockEntity blockEntity = level.m_7702_(pos);
+                     BlockEntity blockEntity = level.getBlockEntity(pos);
                      if (blockEntity instanceof ProtectionFlagBlockEntity flag) {
                         flag.loadFromOldTemplateData(this.rule(layer, chunk, cell).data);
                         flag.configureTerritory(this.min, this.template.structureMax(this.min, this.facing));
@@ -2718,9 +2701,9 @@ public final class AwsTemplatePlacer {
       }
 
       private boolean knownNonConnector(BlockPos pos) {
-         int dx = pos.m_123341_() - this.min.m_123341_();
-         int dz = pos.m_123343_() - this.min.m_123343_();
-         int y = pos.m_123342_() - this.min.m_123342_();
+         int dx = pos.getX() - this.min.getX();
+         int dz = pos.getZ() - this.min.getZ();
+         int y = pos.getY() - this.min.getY();
          int x;
          int z;
          switch (this.turns) {
@@ -2750,15 +2733,15 @@ public final class AwsTemplatePlacer {
       }
 
       private static void connectChest(ServerLevel level, BlockPos pos) {
-         BlockState state = level.m_8055_(pos);
-         if (state.m_60734_() instanceof ChestBlock && state.m_61143_(ChestBlock.f_51479_) == ChestType.SINGLE) {
-            BlockPos partnerPos = pos.m_121945_(((Direction)state.m_61143_(ChestBlock.f_51478_)).m_122427_());
-            BlockState partner = level.m_8055_(partnerPos);
-            if (partner.m_60713_(state.m_60734_())
-               && partner.m_61143_(ChestBlock.f_51479_) == ChestType.SINGLE
-               && partner.m_61143_(ChestBlock.f_51478_) == state.m_61143_(ChestBlock.f_51478_)) {
-               level.m_7731_(pos, (BlockState)state.m_61124_(ChestBlock.f_51479_, ChestType.LEFT), 18);
-               level.m_7731_(partnerPos, (BlockState)partner.m_61124_(ChestBlock.f_51479_, ChestType.RIGHT), 18);
+         BlockState state = level.getBlockState(pos);
+         if (state.getBlock() instanceof ChestBlock && state.getValue(ChestBlock.TYPE) == ChestType.SINGLE) {
+            BlockPos partnerPos = pos.relative(((Direction)state.getValue(ChestBlock.FACING)).getClockWise());
+            BlockState partner = level.getBlockState(partnerPos);
+            if (partner.is(state.getBlock())
+               && partner.getValue(ChestBlock.TYPE) == ChestType.SINGLE
+               && partner.getValue(ChestBlock.FACING) == state.getValue(ChestBlock.FACING)) {
+               level.setBlock(pos, (BlockState)state.setValue(ChestBlock.TYPE, ChestType.LEFT), 18);
+               level.setBlock(partnerPos, (BlockState)partner.setValue(ChestBlock.TYPE, ChestType.RIGHT), 18);
             }
          }
       }
@@ -2777,9 +2760,9 @@ public final class AwsTemplatePlacer {
                this.template.sizeX,
                this.template.sizeZ
             )
-            .m_121955_(this.min);
+            .offset(this.min);
          UUID id = UUID.nameUUIDFromBytes(
-            (level.m_46472_().m_135782_() + ":" + this.min + ":" + this.template.path + ":" + task.entityCursor).getBytes(StandardCharsets.UTF_8)
+            (level.dimension().location() + ":" + this.min + ":" + this.template.path + ":" + task.entityCursor).getBytes(StandardCharsets.UTF_8)
          );
          if (!"awGate".equals(entityRule.plugin)) {
             double offsetX = AwsTemplatePlacer.AwsTemplate.EntityRule.parseDouble(entityRule.data, "xOffset", 0.5);
@@ -2792,12 +2775,12 @@ public final class AwsTemplatePlacer {
             }
 
             ChunkPos actualChunk = new ChunkPos(
-               BlockPos.m_274561_((double)anchor.m_123341_() + offsetX, (double)anchor.m_123342_(), (double)anchor.m_123343_() + offsetZ)
+               BlockPos.containing((double)anchor.getX() + offsetX, (double)anchor.getY(), (double)anchor.getZ() + offsetZ)
             );
             if (window.requestGroup(level, this.min, List.of(new ChunkPos(anchor), actualChunk), windowSize)
-               && level.m_143319_(actualChunk.m_45588_())
+               && level.areEntitiesLoaded(actualChunk.toLong())
                && budget.tryWork()) {
-               if (level.m_8791_(id) == null) {
+               if (level.getEntity(id) == null) {
                   entityRule.placeVehicle(level, anchor, this.turns, id);
                }
 
@@ -2811,37 +2794,37 @@ public final class AwsTemplatePlacer {
             BlockPos first = AwsTemplatePlacer.AwsTemplate.EntityRule.rotateOffset(
                   AwsTemplatePlacer.AwsTemplate.EntityRule.parseRelativePos(entityRule.data, "pos1"), this.turns
                )
-               .m_121955_(anchor);
+               .offset(anchor);
             BlockPos second = AwsTemplatePlacer.AwsTemplate.EntityRule.rotateOffset(
                   AwsTemplatePlacer.AwsTemplate.EntityRule.parseRelativePos(entityRule.data, "pos2"), this.turns
                )
-               .m_121955_(anchor);
+               .offset(anchor);
             BlockPos gateMin = new BlockPos(
-               Math.min(first.m_123341_(), second.m_123341_()),
-               Math.min(first.m_123342_(), second.m_123342_()),
-               Math.min(first.m_123343_(), second.m_123343_())
+               Math.min(first.getX(), second.getX()),
+               Math.min(first.getY(), second.getY()),
+               Math.min(first.getZ(), second.getZ())
             );
-            int width = Math.abs(first.m_123341_() - second.m_123341_()) + 1;
-            int depth = Math.abs(first.m_123343_() - second.m_123343_()) + 1;
-            int height = Math.abs(first.m_123342_() - second.m_123342_()) + 1;
+            int width = Math.abs(first.getX() - second.getX()) + 1;
+            int depth = Math.abs(first.getZ() - second.getZ()) + 1;
+            int height = Math.abs(first.getY() - second.getY()) + 1;
             int volume = Math.multiplyExact(Math.multiplyExact(width, depth), height);
             int totalCells = Math.multiplyExact(volume, 2);
             BlockPos center = new BlockPos(
-               Math.floorDiv(first.m_123341_() + second.m_123341_() + 1, 2), gateMin.m_123342_(), Math.floorDiv(first.m_123343_() + second.m_123343_() + 1, 2)
+               Math.floorDiv(first.getX() + second.getX() + 1, 2), gateMin.getY(), Math.floorDiv(first.getZ() + second.getZ() + 1, 2)
             );
             int cursor = Math.min(task.cellCursor, totalCells);
             int withinGate = cursor % volume;
-            BlockPos pos = gateMin.m_7918_(withinGate % width, withinGate / width / depth, withinGate / width % depth);
+            BlockPos pos = gateMin.offset(withinGate % width, withinGate / width / depth, withinGate / width % depth);
             List<ChunkPos> required = new ArrayList<>(AwsTemplatePlacer.surroundingChunks(cursor < totalCells ? pos : center));
             required.add(new ChunkPos(center));
-            if (window.requestGroup(level, this.min, required, windowSize) && level.m_143319_(new ChunkPos(center).m_45588_()) && budget.tryWork()) {
+            if (window.requestGroup(level, this.min, required, windowSize) && level.areEntitiesLoaded(new ChunkPos(center).toLong()) && budget.tryWork()) {
                if (cursor < volume) {
                   this.requireSafeGateOverwrite(level, pos, id);
                } else if (cursor < totalCells && !isOwnGateProxy(level, pos, id)) {
                   throw new IllegalStateException("Gate proxy changed during island construction at " + pos);
                }
 
-               Entity existing = level.m_8791_(id);
+               Entity existing = level.getEntity(id);
                GateEntity gate;
                if (existing instanceof GateEntity found) {
                   gate = found;
@@ -2850,53 +2833,53 @@ public final class AwsTemplatePlacer {
                      throw new IllegalStateException("AWS entity UUID occupied: " + id);
                   }
 
-                  gate = (GateEntity)AWCoreRegistryAccess.entityType(AWCoreIds.DYNAMIC_GATE).m_20615_(level);
+                  gate = (GateEntity)AWCoreRegistryAccess.entityType(AWCoreIds.DYNAMIC_GATE).create(level);
                   if (gate == null) {
                      throw new IllegalStateException("Unable to create AWS gate");
                   }
 
-                  gate.m_20084_(id);
-                  Direction gateFacing = Direction.m_122376_(
+                  gate.setUUID(id);
+                  Direction gateFacing = Direction.from3DDataValue(
                      AwsTemplatePlacer.AwsTemplate.EntityRule.parseInt(entityRule.data, "orientation", Direction.NORTH.ordinal())
                   );
 
                   for (int i = 0; i < this.turns; i++) {
-                     gateFacing = gateFacing.m_122427_();
+                     gateFacing = gateFacing.getClockWise();
                   }
 
                   gate.configure(first, second, gateFacing);
                   String type = AwsTemplatePlacer.AwsTemplate.extract(entityRule.data, "gateType:\"", "\"");
                   gate.setMaterial(type.toLowerCase(Locale.ROOT).contains("iron") ? GateEntity.Material.IRON : GateEntity.Material.WOOD);
                   gate.setOpeningStyle(AwsTemplatePlacer.AwsTemplate.EntityRule.gateOpeningStyle(type));
-                  if (!level.m_7967_(gate)) {
+                  if (!level.addFreshEntity(gate)) {
                      throw new IllegalStateException("Unable to add AWS gate " + id);
                   }
                }
 
                if (cursor < volume) {
-                  level.m_7731_(pos, AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY).m_49966_(), 18);
-                  if (level.m_7702_(pos) instanceof GateProxyBlockEntity proxy) {
+                  level.setBlock(pos, AWCoreRegistryAccess.block(AWCoreIds.GATE_PROXY).defaultBlockState(), 18);
+                  if (level.getBlockEntity(pos) instanceof GateProxyBlockEntity proxy) {
                      proxy.setGateUuid(id);
                   }
 
-                  if (level.m_276867_(pos)) {
-                     gate.getPersistentData().m_128379_("IslandGatePowered", true);
+                  if (level.hasNeighborSignal(pos)) {
+                     gate.getPersistentData().putBoolean("IslandGatePowered", true);
                   }
 
                   task.cellCursor++;
                } else if (cursor < totalCells) {
-                  BlockState proxyState = level.m_8055_(pos);
+                  BlockState proxyState = level.getBlockState(pos);
                   if (isOwnGateProxy(level, pos, id)) {
-                     level.m_7731_(pos, (BlockState)proxyState.m_61124_(GateProxyBlock.OPEN, gate.getPersistentData().m_128471_("IslandGatePowered")), 18);
-                     if (level.m_7702_(pos) instanceof GateProxyBlockEntity proxy) {
+                     level.setBlock(pos, (BlockState)proxyState.setValue(GateProxyBlock.OPEN, gate.getPersistentData().getBoolean("IslandGatePowered")), 18);
+                     if (level.getBlockEntity(pos) instanceof GateProxyBlockEntity proxy) {
                         proxy.setGateUuid(id);
                      }
                   }
 
                   task.cellCursor++;
                } else {
-                  gate.finishWorldgenProxySetup(gate.getPersistentData().m_128471_("IslandGatePowered"));
-                  gate.getPersistentData().m_128473_("IslandGatePowered");
+                  gate.finishWorldgenProxySetup(gate.getPersistentData().getBoolean("IslandGatePowered"));
+                  gate.getPersistentData().remove("IslandGatePowered");
                   task.entityCursor++;
                   task.cellCursor = 0;
                }

@@ -14,7 +14,7 @@ public final class BardMusicLibrary {
    }
 
    public static File musicFolder() {
-      File folder = new File(Minecraft.m_91087_().f_91069_, "ancientwarfare_bard_music");
+      File folder = new File(Minecraft.getInstance().gameDirectory, "ancientwarfare_bard_music");
       if (!folder.exists()) {
          folder.mkdirs();
       }

@@ -154,7 +154,7 @@
       "entries": [
         {
           "type": "minecraft:loot_table",
-          "name": "ancientwarfare:chests/rakshasa",
+          "name": "ancientwarfare:chests/potion_beneficial",
           "weight": 1,
           "conditions": [
             {

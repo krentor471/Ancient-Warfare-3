@@ -10,7 +10,7 @@ import net.shadowmage.ancientwarfare.core.item.CatapultAmmoType;
 import net.shadowmage.ancientwarfare.core.item.TrebuchetMobileItem;
 
 public class TrebuchetMobileEntity extends CatapultMobileEntity {
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.trebuchet_mobile");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.trebuchet_mobile");
 
    public TrebuchetMobileEntity(EntityType<? extends TrebuchetMobileEntity> type, Level level) {
       super(type, level);
@@ -52,7 +52,7 @@ public class TrebuchetMobileEntity extends CatapultMobileEntity {
       ItemStack stack = new ItemStack(TrebuchetMobileItem.itemForMaterialLevel(this.getMaterialLevel()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("TrebuchetMobileData", tag);
+      stack.getOrCreateTag().put("TrebuchetMobileData", tag);
       return stack;
    }
 }

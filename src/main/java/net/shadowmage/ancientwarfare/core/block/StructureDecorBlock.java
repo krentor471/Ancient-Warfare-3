@@ -19,46 +19,46 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class StructureDecorBlock extends HorizontalDirectionalBlock {
-   public static final DirectionProperty FACING = HorizontalDirectionalBlock.f_54117_;
+   public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
    private final Map<Direction, VoxelShape> shapes;
 
    public StructureDecorBlock(Properties properties, Map<Direction, VoxelShape> shapes) {
       super(properties);
       this.shapes = shapes;
-      this.m_49959_((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH));
+      this.registerDefaultState((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH));
    }
 
    public static VoxelShape shape(VoxelShape... boxes) {
-      VoxelShape shape = Shapes.m_83040_();
+      VoxelShape shape = Shapes.empty();
 
       for (VoxelShape box : boxes) {
-         shape = Shapes.m_83110_(shape, box);
+         shape = Shapes.or(shape, box);
       }
 
       return shape;
    }
 
-   public BlockState m_5573_(BlockPlaceContext context) {
-      return (BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_().m_122424_());
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      return (BlockState)this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-      return this.shapes.getOrDefault(state.m_61143_(FACING), Shapes.m_83144_());
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+      return this.shapes.getOrDefault(state.getValue(FACING), Shapes.block());
    }
 
-   public VoxelShape m_5939_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-      return this.m_5940_(state, level, pos, context);
+   public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+      return this.getShape(state, level, pos, context);
    }
 
-   public BlockState m_6843_(BlockState state, Rotation rotation) {
-      return (BlockState)state.m_61124_(FACING, rotation.m_55954_((Direction)state.m_61143_(FACING)));
+   public BlockState rotate(BlockState state, Rotation rotation) {
+      return (BlockState)state.setValue(FACING, rotation.rotate((Direction)state.getValue(FACING)));
    }
 
-   public BlockState m_6943_(BlockState state, Mirror mirror) {
-      return state.m_60717_(mirror.m_54846_((Direction)state.m_61143_(FACING)));
+   public BlockState mirror(BlockState state, Mirror mirror) {
+      return state.rotate(mirror.getRotation((Direction)state.getValue(FACING)));
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{FACING});
    }
 }

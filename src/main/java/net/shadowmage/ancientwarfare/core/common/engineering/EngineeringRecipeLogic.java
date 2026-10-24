@@ -21,7 +21,7 @@ public final class EngineeringRecipeLogic {
          return EngineeringRecipeMatch.NONE;
       } else {
          RecipeType<EngineeringRecipe> type = AWCoreRegistryAccess.recipeType(AWCoreIds.id("engineering"));
-         return level.m_7465_().m_44015_(type, crafting, level).map(EngineeringRecipeMatch::recipe).orElse(EngineeringRecipeMatch.NONE);
+         return level.getRecipeManager().getRecipeFor(type, crafting, level).map(EngineeringRecipeMatch::recipe).orElse(EngineeringRecipeMatch.NONE);
       }
    }
 

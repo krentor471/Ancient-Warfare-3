@@ -8,7 +8,7 @@ public class WorksiteUpgradeItem extends Item {
    private final WorksiteUpgrade upgrade;
 
    public WorksiteUpgradeItem(WorksiteUpgrade upgrade) {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
       this.upgrade = upgrade;
    }
 

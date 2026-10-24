@@ -20,10 +20,10 @@ public class UpkeepOrderScreen extends LegacyContainerScreen<UpkeepOrderMenu> {
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
-      this.registerLayoutRect("upkeep target panel", 0, 0, this.f_97726_, 58, false);
-      this.registerLayoutRect("upkeep food panel", 0, 60, this.f_97726_, 54, false);
+   protected void init() {
+      super.init();
+      this.registerLayoutRect("upkeep target panel", 0, 0, this.imageWidth, 58, false);
+      this.registerLayoutRect("upkeep food panel", 0, 60, this.imageWidth, 54, false);
       this.registerLayoutRect("upkeep target", 8, 10, 16, 16, true);
       this.registerLayoutRect("upkeep side", 101, 18, 55, 12, true);
       this.registerLayoutRect("upkeep clear", 30, 34, 60, 12, true);
@@ -38,118 +38,118 @@ public class UpkeepOrderScreen extends LegacyContainerScreen<UpkeepOrderMenu> {
 
    @Override
    protected void renderLegacyBackground(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      LegacyGuiStyle.background(graphics, this.f_97735_, this.f_97736_, this.f_97726_, 58);
-      UpkeepOrderData.UpkeepEntry entry = ((UpkeepOrderMenu)this.f_97732_).getEntry().orElse(null);
+      LegacyGuiStyle.background(graphics, this.leftPos, this.topPos, this.imageWidth, 58);
+      UpkeepOrderData.UpkeepEntry entry = ((UpkeepOrderMenu)this.menu).getEntry().orElse(null);
       if (entry == null) {
-         this.drawFitted(graphics, Component.m_237115_("guistrings.npc.upkeep_order.empty"), 8, 8, 240, -10461088);
+         this.drawFitted(graphics, Component.translatable("guistrings.npc.upkeep_order.empty"), 8, 8, 240, -10461088);
       } else {
          this.drawTarget(graphics, entry, mouseX, mouseY);
-         LegacyGuiStyle.background(graphics, this.f_97735_, this.f_97736_ + 60, this.f_97726_, 54);
+         LegacyGuiStyle.background(graphics, this.leftPos, this.topPos + 60, this.imageWidth, 54);
          this.drawFoodTarget(graphics, mouseX, mouseY);
       }
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("container.inventory"), 47, 144, -12566464, false);
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      graphics.drawString(this.font, Component.translatable("container.inventory"), 47, 144, -12566464, false);
    }
 
    private void drawTarget(GuiGraphics graphics, UpkeepOrderData.UpkeepEntry entry, int mouseX, int mouseY) {
-      LegacyGuiStyle.slot(graphics, this.f_97735_, this.f_97736_, 8, 10);
-      graphics.m_280203_(this.blockStack(entry.pos()), this.f_97735_ + 8, this.f_97736_ + 10);
-      this.drawFitted(graphics, Component.m_237113_(this.formatPos(entry.pos())), 30, 8, 126, -12566464);
-      this.drawButton(graphics, 101, 18, 55, Component.m_237115_("guistrings.inventory.direction." + entry.side().m_122433_()), mouseX, mouseY);
-      this.drawFitted(graphics, Component.m_237115_("guistrings.npc.upkeep_time"), 166, 8, 74, -12566464);
+      LegacyGuiStyle.slot(graphics, this.leftPos, this.topPos, 8, 10);
+      graphics.renderFakeItem(this.blockStack(entry.pos()), this.leftPos + 8, this.topPos + 10);
+      this.drawFitted(graphics, Component.literal(this.formatPos(entry.pos())), 30, 8, 126, -12566464);
+      this.drawButton(graphics, 101, 18, 55, Component.translatable("guistrings.inventory.direction." + entry.side().getName()), mouseX, mouseY);
+      this.drawFitted(graphics, Component.translatable("guistrings.npc.upkeep_time"), 166, 8, 74, -12566464);
       this.drawValue(graphics, 166, 18, 60, this.amount(entry));
-      this.drawButton(graphics, 30, 34, 60, Component.m_237115_("guistrings.npc.upkeep_order.clear"), mouseX, mouseY);
-      this.drawButton(graphics, 166, 34, 12, Component.m_237113_("-"), mouseX, mouseY);
-      this.drawButton(graphics, 180, 34, 12, Component.m_237113_("+"), mouseX, mouseY);
+      this.drawButton(graphics, 30, 34, 60, Component.translatable("guistrings.npc.upkeep_order.clear"), mouseX, mouseY);
+      this.drawButton(graphics, 166, 34, 12, Component.literal("-"), mouseX, mouseY);
+      this.drawButton(graphics, 180, 34, 12, Component.literal("+"), mouseX, mouseY);
    }
 
    private void drawFoodTarget(GuiGraphics graphics, int mouseX, int mouseY) {
-      ItemStack food = ((UpkeepOrderMenu)this.f_97732_).getFoodTarget();
-      LegacyGuiStyle.slot(graphics, this.f_97735_, this.f_97736_, 8, 70);
-      ItemStack icon = food.m_41619_() ? new ItemStack(Items.f_42406_) : food;
-      graphics.m_280203_(icon, this.f_97735_ + 8, this.f_97736_ + 70);
-      if (!food.m_41619_()) {
-         graphics.m_280370_(this.f_96547_, food, this.f_97735_ + 8, this.f_97736_ + 70);
+      ItemStack food = ((UpkeepOrderMenu)this.menu).getFoodTarget();
+      LegacyGuiStyle.slot(graphics, this.leftPos, this.topPos, 8, 70);
+      ItemStack icon = food.isEmpty() ? new ItemStack(Items.BREAD) : food;
+      graphics.renderFakeItem(icon, this.leftPos + 8, this.topPos + 70);
+      if (!food.isEmpty()) {
+         graphics.renderItemDecorations(this.font, food, this.leftPos + 8, this.topPos + 70);
       }
 
-      Component description = food.m_41619_()
-         ? Component.m_237115_("guistrings.npc.upkeep_order.any_food")
-         : Component.m_237110_("guistrings.npc.upkeep_order.food_target", new Object[]{food.m_41786_(), food.m_41613_()});
-      this.drawFitted(graphics, description, 30, 72, 124, food.m_41619_() ? -10461088 : -12566464);
-      this.drawButton(graphics, 166, 78, 12, Component.m_237113_("-"), mouseX, mouseY);
-      this.drawButton(graphics, 180, 78, 12, Component.m_237113_("+"), mouseX, mouseY);
-      this.drawButton(graphics, 196, 78, 44, Component.m_237115_("guistrings.npc.upkeep_order.food_plus"), mouseX, mouseY);
+      Component description = food.isEmpty()
+         ? Component.translatable("guistrings.npc.upkeep_order.any_food")
+         : Component.translatable("guistrings.npc.upkeep_order.food_target", new Object[]{food.getHoverName(), food.getCount()});
+      this.drawFitted(graphics, description, 30, 72, 124, food.isEmpty() ? -10461088 : -12566464);
+      this.drawButton(graphics, 166, 78, 12, Component.literal("-"), mouseX, mouseY);
+      this.drawButton(graphics, 180, 78, 12, Component.literal("+"), mouseX, mouseY);
+      this.drawButton(graphics, 196, 78, 44, Component.translatable("guistrings.npc.upkeep_order.food_plus"), mouseX, mouseY);
    }
 
    private void drawButton(GuiGraphics graphics, int x, int y, int width, Component label, int mouseX, int mouseY) {
-      LegacyGuiStyle.buttonWithText(graphics, this.f_96547_, this.f_97735_, this.f_97736_, x, y, width, 12, label, mouseX, mouseY);
+      LegacyGuiStyle.buttonWithText(graphics, this.font, this.leftPos, this.topPos, x, y, width, 12, label, mouseX, mouseY);
    }
 
    private void drawValue(GuiGraphics graphics, int x, int y, int width, String value) {
-      graphics.m_280509_(this.f_97735_ + x, this.f_97736_ + y, this.f_97735_ + x + width, this.f_97736_ + y + 12, -1710619);
-      graphics.m_280509_(this.f_97735_ + x + 1, this.f_97736_ + y + 1, this.f_97735_ + x + width - 1, this.f_97736_ + y + 11, -16777216);
-      this.drawFitted(graphics, Component.m_237113_(value), x + 2, y + 2, width - 4, -1);
+      graphics.fill(this.leftPos + x, this.topPos + y, this.leftPos + x + width, this.topPos + y + 12, -1710619);
+      graphics.fill(this.leftPos + x + 1, this.topPos + y + 1, this.leftPos + x + width - 1, this.topPos + y + 11, -16777216);
+      this.drawFitted(graphics, Component.literal(value), x + 2, y + 2, width - 4, -1);
    }
 
    private void drawFitted(GuiGraphics graphics, Component text, int x, int y, int width, int color) {
-      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.f_96547_.m_92852_(text)));
-      graphics.m_280168_().m_85836_();
-      graphics.m_280168_().m_252880_((float)(this.f_97735_ + x), (float)(this.f_97736_ + y), 0.0F);
-      graphics.m_280168_().m_85841_(scale, scale, 1.0F);
-      graphics.m_280614_(this.f_96547_, text, 0, 0, color, false);
-      graphics.m_280168_().m_85849_();
+      float scale = Math.min(1.0F, (float)width / (float)Math.max(1, this.font.width(text)));
+      graphics.pose().pushPose();
+      graphics.pose().translate((float)(this.leftPos + x), (float)(this.topPos + y), 0.0F);
+      graphics.pose().scale(scale, scale, 1.0F);
+      graphics.drawString(this.font, text, 0, 0, color, false);
+      graphics.pose().popPose();
    }
 
-   protected void m_280072_(GuiGraphics graphics, int mouseX, int mouseY) {
-      UpkeepOrderData.UpkeepEntry entry = ((UpkeepOrderMenu)this.f_97732_).getEntry().orElse(null);
-      if (entry != null && ((UpkeepOrderMenu)this.f_97732_).m_142621_().m_41619_()) {
-         int x = mouseX - this.f_97735_;
-         int y = mouseY - this.f_97736_;
+   protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+      UpkeepOrderData.UpkeepEntry entry = ((UpkeepOrderMenu)this.menu).getEntry().orElse(null);
+      if (entry != null && ((UpkeepOrderMenu)this.menu).getCarried().isEmpty()) {
+         int x = mouseX - this.leftPos;
+         int y = mouseY - this.topPos;
          if (this.inside(x, y, 8, 10, 16, 16)) {
-            graphics.m_280153_(this.f_96547_, this.blockStack(entry.pos()), mouseX, mouseY);
+            graphics.renderTooltip(this.font, this.blockStack(entry.pos()), mouseX, mouseY);
             return;
          }
 
          if (this.inside(x, y, 30, 8, 126, 9)) {
-            graphics.m_280557_(this.f_96547_, Component.m_237113_(this.formatPos(entry.pos())), mouseX, mouseY);
+            graphics.renderTooltip(this.font, Component.literal(this.formatPos(entry.pos())), mouseX, mouseY);
             return;
          }
 
          if (this.inside(x, y, 166, 18, 60, 12)) {
-            graphics.m_280557_(this.f_96547_, Component.m_237110_("guistrings.npc.upkeep_order.amount", new Object[]{this.amount(entry)}), mouseX, mouseY);
+            graphics.renderTooltip(this.font, Component.translatable("guistrings.npc.upkeep_order.amount", new Object[]{this.amount(entry)}), mouseX, mouseY);
             return;
          }
 
          if (this.inside(x, y, 8, 70, 16, 16) || this.inside(x, y, 30, 72, 124, 9)) {
-            ItemStack food = ((UpkeepOrderMenu)this.f_97732_).getFoodTarget();
-            if (food.m_41619_()) {
-               graphics.m_280557_(this.f_96547_, Component.m_237115_("guistrings.npc.upkeep_order.any_food"), mouseX, mouseY);
+            ItemStack food = ((UpkeepOrderMenu)this.menu).getFoodTarget();
+            if (food.isEmpty()) {
+               graphics.renderTooltip(this.font, Component.translatable("guistrings.npc.upkeep_order.any_food"), mouseX, mouseY);
             } else {
-               graphics.m_280153_(this.f_96547_, food, mouseX, mouseY);
+               graphics.renderTooltip(this.font, food, mouseX, mouseY);
             }
 
             return;
          }
       }
 
-      super.m_280072_(graphics, mouseX, mouseY);
+      super.renderTooltip(graphics, mouseX, mouseY);
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
-      if (button == 0 && ((UpkeepOrderMenu)this.f_97732_).getEntry().isPresent()) {
-         int clicked = this.getButtonAt((int)mouseX - this.f_97735_, (int)mouseY - this.f_97736_);
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
+      if (button == 0 && ((UpkeepOrderMenu)this.menu).getEntry().isPresent()) {
+         int clicked = this.getButtonAt((int)mouseX - this.leftPos, (int)mouseY - this.topPos);
          if (clicked >= 0) {
-            if (this.f_96541_.f_91072_ != null) {
-               this.f_96541_.f_91072_.m_105208_(((UpkeepOrderMenu)this.f_97732_).f_38840_, clicked);
+            if (this.minecraft.gameMode != null) {
+               this.minecraft.gameMode.handleInventoryButtonClick(((UpkeepOrderMenu)this.menu).containerId, clicked);
             }
 
             return true;
          }
       }
 
-      return super.m_6375_(mouseX, mouseY, button);
+      return super.mouseClicked(mouseX, mouseY, button);
    }
 
    private int getButtonAt(int x, int y) {
@@ -173,11 +173,11 @@ public class UpkeepOrderScreen extends LegacyContainerScreen<UpkeepOrderMenu> {
    }
 
    private ItemStack blockStack(BlockPos pos) {
-      if (this.f_96541_ != null && this.f_96541_.f_91073_ != null && this.f_96541_.f_91073_.m_46805_(pos)) {
-         ItemStack stack = new ItemStack(this.f_96541_.f_91073_.m_8055_(pos).m_60734_());
-         return stack.m_41619_() ? new ItemStack(Items.f_42127_) : stack;
+      if (this.minecraft != null && this.minecraft.level != null && this.minecraft.level.hasChunkAt(pos)) {
+         ItemStack stack = new ItemStack(this.minecraft.level.getBlockState(pos).getBlock());
+         return stack.isEmpty() ? new ItemStack(Items.BARRIER) : stack;
       } else {
-         return new ItemStack(Items.f_42127_);
+         return new ItemStack(Items.BARRIER);
       }
    }
 
@@ -186,7 +186,7 @@ public class UpkeepOrderScreen extends LegacyContainerScreen<UpkeepOrderMenu> {
    }
 
    private String formatPos(BlockPos pos) {
-      return "X:" + pos.m_123341_() + " Y:" + pos.m_123342_() + " Z:" + pos.m_123343_();
+      return "X:" + pos.getX() + " Y:" + pos.getY() + " Z:" + pos.getZ();
    }
 
    private boolean inside(int x, int y, int left, int top, int width, int height) {

@@ -29,8 +29,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 import net.shadowmage.ancientwarfare.core.block.GateProxyBlock;
-import net.shadowmage.ancientwarfare.core.common.npc.FactionRegistry;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+import net.shadowmage.ancientwarfare.core.faction.FactionDiplomacy;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcCommandType;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcOwnerAccess;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
@@ -45,11 +45,11 @@ import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegis
 import software.bernie.geckolib.core.object.PlayState;
 
 public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeaponControl {
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.battering_ram");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.battering_ram");
    private static final RawAnimation WHEEL_ROLL = RawAnimation.begin().thenLoop("animation.ancientwarfare.legacy.battering_ram.wheel_rotations");
    private static final RawAnimation ATTACK = RawAnimation.begin().thenPlay("animation.ancientwarfare.legacy.battering_ram.firing_cycle");
-   private static final EntityDataAccessor<Integer> ATTACK_ANIMATION_TICKS = SynchedEntityData.m_135353_(
-      BatteringRamEntity.class, EntityDataSerializers.f_135028_
+   private static final EntityDataAccessor<Integer> ATTACK_ANIMATION_TICKS = SynchedEntityData.defineId(
+      BatteringRamEntity.class, EntityDataSerializers.INT
    );
    private static final int ATTACK_COOLDOWN_TICKS = 30;
    private static final int ATTACK_ANIMATION_LENGTH_TICKS = 16;
@@ -66,30 +66,30 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(ATTACK_ANIMATION_TICKS, 0);
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(ATTACK_ANIMATION_TICKS, 0);
    }
 
    @Override
-   public void m_8119_() {
-      super.m_8119_();
+   public void tick() {
+      super.tick();
       if (this.attackCooldown > 0) {
          this.attackCooldown--;
       }
 
       if (this.getAttackAnimationTicks() > 0) {
-         this.f_19804_.m_135381_(ATTACK_ANIMATION_TICKS, this.getAttackAnimationTicks() - 1);
+         this.entityData.set(ATTACK_ANIMATION_TICKS, this.getAttackAnimationTicks() - 1);
       }
    }
 
    public int getAttackAnimationTicks() {
-      return (Integer)this.f_19804_.m_135370_(ATTACK_ANIMATION_TICKS);
+      return (Integer)this.entityData.get(ATTACK_ANIMATION_TICKS);
    }
 
    @Override
    protected void updateVehicleMotion() {
-      if (this.m_6688_() instanceof NpcBaseEntity npc) {
+      if (this.getControllingPassenger() instanceof NpcBaseEntity npc) {
          if (!this.isNpcOperationPaused(npc) && this.npcDriveTicks > 0) {
             this.npcDriveTicks--;
             if (this.npcCombatTicks > 0) {
@@ -121,11 +121,11 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    boolean hasNpcCombatControl(PathfinderMob engineer) {
-      return this.m_6688_() == engineer && this.npcCombatTicks > 0 && !this.isNpcOperationPaused(engineer);
+      return this.getControllingPassenger() == engineer && this.npcCombatTicks > 0 && !this.isNpcOperationPaused(engineer);
    }
 
    void setNpcFormationInput(PathfinderMob engineer, float forward, float turn) {
-      if (this.m_6688_() == engineer) {
+      if (this.getControllingPassenger() == engineer) {
          if (this.isNpcOperationPaused(engineer)) {
             this.stopNpcControl();
          } else if (!this.hasNpcCombatControl(engineer)) {
@@ -154,7 +154,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
 
    @Override
    public void stopOperation(PathfinderMob engineer) {
-      if (this.m_6688_() == engineer) {
+      if (this.getControllingPassenger() == engineer) {
          this.stopNpcControl();
          this.npcGateTarget = null;
          this.npcGateEnemy = null;
@@ -179,31 +179,31 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    private AABB attackBox() {
-      double yaw = Math.toRadians((double)this.m_146908_());
+      double yaw = Math.toRadians((double)this.getYRot());
       Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
-      Vec3 center = this.m_20182_().m_82549_(forward.m_82490_(1.75)).m_82520_(0.0, 0.9, 0.0);
+      Vec3 center = this.position().add(forward.scale(1.75)).add(0.0, 0.9, 0.0);
       return new AABB(
-         center.f_82479_ - 1.15, center.f_82480_ - 0.8, center.f_82481_ - 1.15, center.f_82479_ + 1.15, center.f_82480_ + 0.8, center.f_82481_ + 1.15
+         center.x - 1.15, center.y - 0.8, center.z - 1.15, center.x + 1.15, center.y + 0.8, center.z + 1.15
       );
    }
 
    private BlockHitResult obstacleTowards(LivingEntity target) {
-      return this.obstacleTowards(new Vec3(target.m_20185_(), target.m_20227_(0.5), target.m_20189_()));
+      return this.obstacleTowards(new Vec3(target.getX(), target.getY(0.5), target.getZ()));
    }
 
    private BlockHitResult obstacleTowards(Vec3 destination) {
-      return this.m_9236_().m_45547_(new ClipContext(this.m_20182_().m_82520_(0.0, 0.9, 0.0), destination, Block.COLLIDER, Fluid.NONE, this));
+      return this.level().clip(new ClipContext(this.position().add(0.0, 0.9, 0.0), destination, Block.COLLIDER, Fluid.NONE, this));
    }
 
    private GateEntity gateAtHit(BlockHitResult hit) {
-      if (this.m_9236_() instanceof ServerLevel server && hit.m_6662_() == Type.BLOCK) {
-         BlockState state = this.m_9236_().m_8055_(hit.m_82425_());
-         if (state.m_60734_() instanceof GateProxyBlock && !(Boolean)state.m_61143_(GateProxyBlock.OPEN)) {
-            if (!(this.m_9236_().m_7702_(hit.m_82425_()) instanceof GateProxyBlockEntity proxy)) {
+      if (this.level() instanceof ServerLevel server && hit.getType() == Type.BLOCK) {
+         BlockState state = this.level().getBlockState(hit.getBlockPos());
+         if (state.getBlock() instanceof GateProxyBlock && !(Boolean)state.getValue(GateProxyBlock.OPEN)) {
+            if (!(this.level().getBlockEntity(hit.getBlockPos()) instanceof GateProxyBlockEntity proxy)) {
                return null;
             }
 
-            if (proxy.getGate(server) instanceof GateEntity gate && gate.isClosedForSiege() && gate.ownsProxyPosition(hit.m_82425_())) {
+            if (proxy.getGate(server) instanceof GateEntity gate && gate.isClosedForSiege() && gate.ownsProxyPosition(hit.getBlockPos())) {
                return gate;
             }
 
@@ -226,7 +226,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    private boolean canDamageGate(PathfinderMob engineer, LivingEntity target, GateEntity gate) {
-      if (this.m_9236_() instanceof ServerLevel server && NpcTargeting.canHarm(engineer, gate)) {
+      if (this.level() instanceof ServerLevel server && NpcTargeting.canHarm(engineer, gate)) {
          UUID owner = gate.getOwnerUUID();
          if (owner == null) {
             owner = NaturalGateTerritory.claimedOwner(server, gate);
@@ -240,19 +240,16 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
                return false;
             }
 
-            Player ownerPlayer = this.m_9236_().m_46003_(owner);
+            Player ownerPlayer = this.level().getPlayerByUUID(owner);
             if (ownerPlayer != null && !NpcTargeting.canHarm(engineer, ownerPlayer)) {
                return false;
             }
 
             if (target == null
                || !NpcTargeting.canHarm(engineer, target)
-               || !owner.equals(target.m_20148_()) && (!(target instanceof NpcOwnerAccess owned) || !owned.getOwner().filter(owner::equals).isPresent())) {
+               || !owner.equals(target.getUUID()) && (!(target instanceof NpcOwnerAccess owned) || !owned.getOwner().filter(owner::equals).isPresent())) {
                if (engineer instanceof FactionNpcEntity faction
-                  && (
-                     FactionRegistry.get(faction.getFactionName()).defaultStanding() < 0
-                        || FactionStandingData.get(server).isHostile(owner, faction.getFactionName())
-                  )) {
+                  && FactionStandingData.get(server).isHostile(owner, faction.getFactionName())) {
                   return true;
                }
 
@@ -265,15 +262,12 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
          String gateFaction = NaturalGateTerritory.faction(server, gate);
          if (!gateFaction.isEmpty()) {
             if (engineer instanceof FactionNpcEntity faction) {
-               return FactionRegistry.isHostile(faction.getFactionName(), gateFaction);
+               return FactionDiplomacy.isHostile(server, faction.getFactionName(), gateFaction);
             }
 
             if (engineer instanceof NpcOwnerAccess owned
                && owned.getOwner()
-                  .map(
-                     playerOwner -> FactionRegistry.get(gateFaction).defaultStanding() < 0
-                           || FactionStandingData.get(server).isHostile(playerOwner, gateFaction)
-                  )
+                  .map(playerOwner -> FactionStandingData.get(server).isHostile(playerOwner, gateFaction))
                   .orElse(false)) {
                return true;
             }
@@ -288,11 +282,11 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    private Vec3 gateAimPoint(GateEntity gate) {
-      AABB bounds = gate.m_20191_();
+      AABB bounds = gate.getBoundingBox();
       return new Vec3(
-         Math.max(bounds.f_82288_ + 0.05, Math.min(bounds.f_82291_ - 0.05, this.m_20185_())),
-         Math.max(bounds.f_82289_ + 0.05, Math.min(bounds.f_82292_ - 0.05, this.m_20186_() + 0.9)),
-         Math.max(bounds.f_82290_ + 0.05, Math.min(bounds.f_82293_ - 0.05, this.m_20189_()))
+         Math.max(bounds.minX + 0.05, Math.min(bounds.maxX - 0.05, this.getX())),
+         Math.max(bounds.minY + 0.05, Math.min(bounds.maxY - 0.05, this.getY() + 0.9)),
+         Math.max(bounds.minZ + 0.05, Math.min(bounds.maxZ - 0.05, this.getZ()))
       );
    }
 
@@ -301,16 +295,16 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    private boolean isValidGateTarget(NpcBaseEntity engineer, GateEntity gate, LivingEntity enemy, Predicate<LivingEntity> targetFilter) {
-      if (gate != null && gate.m_6084_() && gate.m_9236_() == this.m_9236_() && gate.isClosedForSiege() && !this.isNpcOperationPaused(engineer)) {
-         Vec3 delta = this.gateAimPoint(gate).m_82546_(this.m_20182_());
-         if (delta.f_82479_ * delta.f_82479_ + delta.f_82480_ * delta.f_82480_ + delta.f_82481_ * delta.f_82481_ > 9216.0) {
+      if (gate != null && gate.isAlive() && gate.level() == this.level() && gate.isClosedForSiege() && !this.isNpcOperationPaused(engineer)) {
+         Vec3 delta = this.gateAimPoint(gate).subtract(this.position());
+         if (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z > 9216.0) {
             return false;
          } else {
             return enemy == null
-                  || enemy.m_9236_() == this.m_9236_()
+                  || enemy.level() == this.level()
                      && NpcTargeting.canHarm(engineer, enemy)
                      && targetFilter.test(enemy)
-                     && !(engineer.m_20280_(enemy) > 9216.0)
+                     && !(engineer.distanceToSqr(enemy) > 9216.0)
                ? this.canDamageGate(engineer, enemy, gate) && this.hasClearGateApproach(gate)
                : false;
          }
@@ -320,23 +314,23 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    GateEntity chooseGateTarget(NpcBaseEntity engineer, Predicate<LivingEntity> targetFilter) {
-      if (this.m_6688_() == engineer && !this.isNpcOperationPaused(engineer)) {
-         AABB search = this.m_20191_().m_82400_(96.0);
+      if (this.getControllingPassenger() == engineer && !this.isNpcOperationPaused(engineer)) {
+         AABB search = this.getBoundingBox().inflate(96.0);
          if (this.isValidGateTarget(engineer, this.npcGateTarget, null, targetFilter)) {
             this.npcGateEnemy = null;
             return this.npcGateTarget;
          } else if (this.isValidGateTarget(engineer, this.npcGateTarget, this.npcGateEnemy, targetFilter)) {
             return this.npcGateTarget;
          } else {
-            List<LivingEntity> enemies = this.m_9236_()
-               .m_6443_(
+            List<LivingEntity> enemies = this.level()
+               .getEntitiesOfClass(
                   LivingEntity.class,
                   search,
-                  enemyx -> NpcTargeting.canHarm(engineer, enemyx) && targetFilter.test(enemyx) && engineer.m_20280_(enemyx) <= 9216.0
+                  enemyx -> NpcTargeting.canHarm(engineer, enemyx) && targetFilter.test(enemyx) && engineer.distanceToSqr(enemyx) <= 9216.0
                );
-            List<GateEntity> gates = this.m_9236_().m_6443_(GateEntity.class, search, Entity::m_6084_).stream().sorted(Comparator.comparingDouble(gatex -> {
-               Vec3 delta = this.gateAimPoint(gatex).m_82546_(this.m_20182_());
-               return delta.f_82479_ * delta.f_82479_ + delta.f_82480_ * delta.f_82480_ + delta.f_82481_ * delta.f_82481_;
+            List<GateEntity> gates = this.level().getEntitiesOfClass(GateEntity.class, search, Entity::isAlive).stream().sorted(Comparator.comparingDouble(gatex -> {
+               Vec3 delta = this.gateAimPoint(gatex).subtract(this.position());
+               return delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
             })).toList();
             if (this.npcGateTarget != null && gates.contains(this.npcGateTarget)) {
                ArrayList<GateEntity> ordered = new ArrayList<>(gates);
@@ -368,7 +362,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
       } else {
          this.npcGateTarget = null;
          this.npcGateEnemy = null;
-         if (this.m_6688_() == engineer) {
+         if (this.getControllingPassenger() == engineer) {
             this.stopNpcControl();
          }
 
@@ -377,9 +371,9 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    void aimAtGate(PathfinderMob engineer, GateEntity gate) {
-      if (this.m_6688_() == engineer) {
+      if (this.getControllingPassenger() == engineer) {
          if (engineer instanceof NpcBaseEntity npc && gate == this.npcGateTarget && this.isValidGateTarget(npc, gate, this.npcGateEnemy, target -> true)) {
-            this.aimTowards(this.gateAimPoint(gate), gate.m_20191_());
+            this.aimTowards(this.gateAimPoint(gate), gate.getBoundingBox());
             return;
          }
 
@@ -388,7 +382,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    boolean fireAtGate(PathfinderMob engineer, GateEntity gate) {
-      if (this.m_6688_() != engineer) {
+      if (this.getControllingPassenger() != engineer) {
          return false;
       } else if (this.isNpcOperationPaused(engineer)) {
          this.stopNpcControl();
@@ -397,7 +391,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
          if (engineer instanceof NpcBaseEntity npc
             && gate == this.npcGateTarget
             && this.isValidGateTarget(npc, gate, this.npcGateEnemy, target -> true)
-            && this.attackBox().m_82381_(gate.m_20191_())) {
+            && this.attackBox().intersects(gate.getBoundingBox())) {
             return this.attack(engineer, this.npcGateEnemy, gate);
          }
 
@@ -407,11 +401,11 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
 
    @Override
    public boolean canAttackTarget(LivingEntity target) {
-      if (this.m_6688_() instanceof PathfinderMob engineer && !this.isNpcOperationPaused(engineer) && NpcTargeting.canHarm(engineer, target)) {
+      if (this.getControllingPassenger() instanceof PathfinderMob engineer && !this.isNpcOperationPaused(engineer) && NpcTargeting.canHarm(engineer, target)) {
          GateEntity gate = this.blockingGate(engineer, target);
          return gate != null
-            ? this.attackBox().m_82381_(gate.m_20191_())
-            : this.obstacleTowards(target).m_6662_() == Type.MISS && this.attackBox().m_82381_(target.m_20191_());
+            ? this.attackBox().intersects(gate.getBoundingBox())
+            : this.obstacleTowards(target).getType() == Type.MISS && this.attackBox().intersects(target.getBoundingBox());
       }
 
       return false;
@@ -419,25 +413,25 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
 
    @Override
    public void aimAt(PathfinderMob engineer, LivingEntity target) {
-      if (this.m_6688_() == engineer && !this.isNpcOperationPaused(engineer) && NpcTargeting.canHarm(engineer, target)) {
+      if (this.getControllingPassenger() == engineer && !this.isNpcOperationPaused(engineer) && NpcTargeting.canHarm(engineer, target)) {
          GateEntity gate = this.blockingGate(engineer, target);
-         Vec3 aim = gate == null ? target.m_20182_() : this.obstacleTowards(target).m_82450_();
-         this.aimTowards(aim, gate != null ? gate.m_20191_() : target.m_20191_());
+         Vec3 aim = gate == null ? target.position() : this.obstacleTowards(target).getLocation();
+         this.aimTowards(aim, gate != null ? gate.getBoundingBox() : target.getBoundingBox());
       } else {
-         if (this.m_6688_() == engineer) {
+         if (this.getControllingPassenger() == engineer) {
             this.stopNpcControl();
          }
       }
    }
 
    private void aimTowards(Vec3 aim, AABB targetBounds) {
-      Vec3 delta = aim.m_82546_(this.m_20182_());
-      if (delta.m_165925_() > 1.0E-6) {
-         SiegeWeaponNpcControl.faceVehicle(this, (float)Math.toDegrees(Math.atan2(-delta.f_82479_, delta.f_82481_)));
+      Vec3 delta = aim.subtract(this.position());
+      if (delta.horizontalDistanceSqr() > 1.0E-6) {
+         SiegeWeaponNpcControl.faceVehicle(this, (float)Math.toDegrees(Math.atan2(-delta.x, delta.z)));
       }
 
-      boolean inReach = this.attackBox().m_82381_(targetBounds);
-      float forward = inReach ? 0.0F : (delta.m_165925_() < 2.25 ? -1.0F : 1.0F);
+      boolean inReach = this.attackBox().intersects(targetBounds);
+      float forward = inReach ? 0.0F : (delta.horizontalDistanceSqr() < 2.25 ? -1.0F : 1.0F);
       this.setVehicleInput(forward, 0.0F);
       this.npcDriveTicks = 2;
       this.npcCombatTicks = 2;
@@ -445,7 +439,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
 
    @Override
    public boolean fireAt(PathfinderMob engineer, LivingEntity target) {
-      if (this.m_6688_() != engineer) {
+      if (this.getControllingPassenger() != engineer) {
          return false;
       } else if (this.isNpcOperationPaused(engineer)) {
          this.stopNpcControl();
@@ -456,38 +450,38 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    public boolean tryAttack() {
-      return this.attack(this.m_6688_(), null, null);
+      return this.attack(this.getControllingPassenger(), null, null);
    }
 
    private boolean attack(LivingEntity rider, LivingEntity npcTarget, GateEntity npcGate) {
-      if (!this.m_9236_().f_46443_ && this.attackCooldown <= 0) {
+      if (!this.level().isClientSide && this.attackCooldown <= 0) {
          AABB attackBox = this.attackBox();
          boolean manualAttack = npcTarget == null && npcGate == null;
-         DamageSource source = rider != null ? this.m_269291_().m_269333_(rider) : this.m_269291_().m_269264_();
+         DamageSource source = rider != null ? this.damageSources().mobAttack(rider) : this.damageSources().generic();
          float damage = attackDamageForLevel(this.getMaterialLevel());
-         List<LivingEntity> targets = this.m_9236_()
-            .m_6443_(
+         List<LivingEntity> targets = this.level()
+            .getEntitiesOfClass(
                LivingEntity.class,
                attackBox,
                target -> target != rider
-                     && !this.m_20197_().contains(target)
-                     && target.m_6084_()
+                     && !this.getPassengers().contains(target)
+                     && target.isAlive()
                      && (manualAttack || npcGate == null && target == npcTarget && NpcTargeting.canHarm(rider, target))
             );
          boolean hit = false;
 
          for (LivingEntity target : targets) {
-            hit |= target.m_6469_(source, damage);
+            hit |= target.hurt(source, damage);
          }
 
-         for (GateEntity gate : this.m_9236_().m_6443_(GateEntity.class, attackBox, Entity::m_6084_)) {
+         for (GateEntity gate : this.level().getEntitiesOfClass(GateEntity.class, attackBox, Entity::isAlive)) {
             if (manualAttack || gate == npcGate && rider instanceof PathfinderMob engineer && this.canDamageGate(engineer, npcTarget, gate)) {
-               hit |= gate.m_6469_(source, damage * 10.0F);
+               hit |= gate.hurt(source, damage * 10.0F);
             }
          }
 
          this.attackCooldown = 30;
-         this.f_19804_.m_135381_(ATTACK_ANIMATION_TICKS, 16);
+         this.entityData.set(ATTACK_ANIMATION_TICKS, 16);
          return hit;
       } else {
          return false;
@@ -521,7 +515,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    private PlayState wheelAnimation(AnimationState<BatteringRamEntity> state) {
-      if (this.m_20184_().m_165925_() > 4.0E-4) {
+      if (this.getDeltaMovement().horizontalDistanceSqr() > 4.0E-4) {
          state.setAnimation(WHEEL_ROLL);
          return PlayState.CONTINUE;
       } else {
@@ -556,10 +550,10 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         Vec3 offset = this.getPassengerOffset().m_82524_(-this.m_146908_() * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         Vec3 offset = this.getPassengerOffset().yRot(-this.getYRot() * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -568,7 +562,7 @@ public class BatteringRamEntity extends ChestPushcartEntity implements SiegeWeap
       ItemStack stack = new ItemStack(BatteringRamItem.itemForMaterialLevel(this.getMaterialLevel()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("BatteringRamData", tag);
+      stack.getOrCreateTag().put("BatteringRamData", tag);
       return stack;
    }
 }

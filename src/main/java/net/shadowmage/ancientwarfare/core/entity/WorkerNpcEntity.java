@@ -45,7 +45,7 @@ import net.shadowmage.ancientwarfare.core.item.CommandBatonItem;
 import net.shadowmage.ancientwarfare.core.menu.NpcInventoryMenu;
 
 public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAccess {
-   private static final EntityDataAccessor<String> WORK_STATE = SynchedEntityData.m_135353_(WorkerNpcEntity.class, EntityDataSerializers.f_135030_);
+   private static final EntityDataAccessor<String> WORK_STATE = SynchedEntityData.defineId(WorkerNpcEntity.class, EntityDataSerializers.STRING);
    private static final String DEFAULT_WORK_STATE = "idle";
    private static final String MOVE_TO_WORK_STATE = "moving_to_work";
    private static final String WORKING_STATE = "working";
@@ -65,48 +65,49 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    }
 
    public static Builder createAttributes() {
-      return m_21552_().m_22268_(Attributes.f_22276_, 20.0).m_22268_(Attributes.f_22279_, 0.25).m_22268_(Attributes.f_22277_, 24.0);
+      return createMobAttributes().add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.25).add(Attributes.FOLLOW_RANGE, 24.0);
    }
 
-   protected void m_8099_() {
-      this.f_21345_.m_25352_(0, new FloatGoal(this));
-      this.f_21345_.m_25352_(1, new WorkerNpcEntity.SleepGoal(this, this.playerSprintNavigationSpeed()));
-      this.f_21345_.m_25352_(2, new WorkerNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
-      this.f_21345_.m_25352_(4, new WorkerNpcEntity.WorkOrderGoal(this, 1.0, 2.0));
-      this.f_21345_.m_25352_(5, new WorkerNpcEntity.NearbyWorkGoal(this, 1.0));
-      this.f_21345_.m_25352_(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
-      this.f_21345_.m_25352_(7, new RandomLookAroundGoal(this));
-   }
-
-   @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(WORK_STATE, "idle");
+   protected void registerGoals() {
+      this.goalSelector.addGoal(0, new FloatGoal(this));
+      this.goalSelector.addGoal(1, new WorkerNpcEntity.SleepGoal(this, this.playerSprintNavigationSpeed()));
+      this.goalSelector.addGoal(2, new WorkerNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(4, new WorkerNpcEntity.WorkOrderGoal(this, 1.0, 2.0));
+      this.goalSelector.addGoal(4, new BuilderGoal(this));
+      this.goalSelector.addGoal(5, new WorkerNpcEntity.NearbyWorkGoal(this, 1.0));
+      this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+      this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
    }
 
    @Override
-   public void m_8119_() {
-      if (!this.m_9236_().f_46443_) {
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(WORK_STATE, "idle");
+   }
+
+   @Override
+   public void tick() {
+      if (!this.level().isClientSide) {
          this.migrateLegacyOrderState();
-         if (this.m_21525_() && !this.isGuiInteractionPaused()) {
-            this.m_21557_(false);
+         if (this.isNoAi() && !this.isGuiInteractionPaused()) {
+            this.setNoAi(false);
          }
 
-         if (this.m_5803_() && !this.shouldSleepNow()) {
-            this.m_5796_();
+         if (this.isSleeping() && !this.shouldSleepNow()) {
+            this.stopSleeping();
             this.sleepBed = null;
          }
       }
 
-      super.m_8119_();
+      super.tick();
    }
 
    private void migrateLegacyOrderState() {
       if (!AWCoreRegistryAccess.is(this.getOrdersStack(), AWCoreIds.WORK_ORDER)) {
          if (AWCoreRegistryAccess.is(this.getUpkeepStack(), AWCoreIds.WORK_ORDER)) {
-            ItemStack legacyOrder = this.getUpkeepStack().m_41777_();
+            ItemStack legacyOrder = this.getUpkeepStack().copy();
             super.setOrdersStack(legacyOrder);
-            super.setUpkeepStack(ItemStack.f_41583_);
+            super.setUpkeepStack(ItemStack.EMPTY);
             this.resetWorkOrderProgress();
             if (this.getCurrentCommand() != NpcCommandType.NONE) {
                this.clearCommand();
@@ -117,49 +118,49 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    }
 
    @Override
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
-      tag.m_128359_("WorkState", this.getWorkState());
-      tag.m_128405_("WorkOrderIndex", this.workOrderIndex);
-      tag.m_128405_("WorkTicksAtSite", this.workTicksAtSite);
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
+      tag.putString("WorkState", this.getWorkState());
+      tag.putInt("WorkOrderIndex", this.workOrderIndex);
+      tag.putInt("WorkTicksAtSite", this.workTicksAtSite);
    }
 
    @Override
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
-      if (tag.m_128471_("NoAI")) {
-         this.m_21557_(false);
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
+      if (tag.getBoolean("NoAI")) {
+         this.setNoAi(false);
       }
 
-      this.setWorkState(tag.m_128461_("WorkState"));
-      this.workOrderIndex = tag.m_128451_("WorkOrderIndex");
-      this.workTicksAtSite = tag.m_128451_("WorkTicksAtSite");
+      this.setWorkState(tag.getString("WorkState"));
+      this.workOrderIndex = tag.getInt("WorkOrderIndex");
+      this.workTicksAtSite = tag.getInt("WorkTicksAtSite");
    }
 
-   protected InteractionResult m_6071_(Player player, InteractionHand hand) {
+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
       if (this.tryAcceptFood(player, hand)) {
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
-      } else if (player.m_21120_(hand).m_41720_() instanceof CommandBatonItem) {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.m_21120_(hand), player, this);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
+            CommandBatonItem.clickNpc(player.getItemInHand(hand), player, this);
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
             AWCorePlatform.openMenu(
                player,
-               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.m_5446_()),
-               buffer -> buffer.writeInt(this.m_19879_())
+               new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.getDisplayName()),
+               buffer -> buffer.writeInt(this.getId())
             );
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       }
    }
 
    public String getWorkState() {
-      return (String)this.f_19804_.m_135370_(WORK_STATE);
+      return (String)this.entityData.get(WORK_STATE);
    }
 
    public boolean isWorkingAnimation() {
@@ -168,7 +169,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    }
 
    public void setWorkState(String workState) {
-      this.f_19804_.m_135381_(WORK_STATE, workState != null && !workState.isBlank() ? workState : "idle");
+      this.entityData.set(WORK_STATE, workState != null && !workState.isBlank() ? workState : "idle");
    }
 
    @Override
@@ -185,7 +186,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    public void setUpkeepStack(ItemStack stack) {
       if (AWCoreRegistryAccess.is(stack, AWCoreIds.WORK_ORDER)) {
          super.setOrdersStack(stack);
-         super.setUpkeepStack(ItemStack.f_41583_);
+         super.setUpkeepStack(ItemStack.EMPTY);
          this.resetWorkOrderProgress();
          if (this.getCurrentCommand() != NpcCommandType.NONE) {
             this.clearCommand();
@@ -202,18 +203,18 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    }
 
    private boolean shouldSleepNow() {
-      if (!this.m_9236_().f_46443_ && this.getCurrentCommand() == NpcCommandType.NONE && !this.isGuiInteractionPaused() && !this.isGettingFood()) {
+      if (!this.level().isClientSide && this.getCurrentCommand() == NpcCommandType.NONE && !this.isGuiInteractionPaused() && !this.isGettingFood()) {
          boolean nightShift = AWCoreRegistryAccess.is(this.getOrdersStack(), AWCoreIds.WORK_ORDER) && WorkOrderData.isNightShift(this.getOrdersStack());
-         return nightShift ? !this.m_9236_().m_46462_() : this.m_9236_().m_46462_();
+         return nightShift ? !this.level().isNight() : this.level().isNight();
       } else {
          return false;
       }
    }
 
    private boolean shouldShelterAtHome() {
-      return !this.m_9236_().f_46443_
+      return !this.level().isClientSide
          && this.hasHome()
-         && this.m_9236_().m_46471_()
+         && this.level().isRaining()
          && this.getCurrentCommand() == NpcCommandType.NONE
          && !this.isGuiInteractionPaused()
          && !this.isGettingFood();
@@ -224,14 +225,14 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    }
 
    private boolean bedReservedByAnother(BlockPos bed) {
-      AABB search = new AABB(bed).m_82377_(24.0, 8.0, 24.0);
+      AABB search = new AABB(bed).inflate(24.0, 8.0, 24.0);
 
-      for (WorkerNpcEntity other : this.m_9236_().m_45976_(WorkerNpcEntity.class, search)) {
+      for (WorkerNpcEntity other : this.level().getEntitiesOfClass(WorkerNpcEntity.class, search)) {
          if (other != this && bed.equals(other.sleepBed)) {
             return true;
          }
 
-         if (other != this && other.m_5803_() && other.m_21257_().isPresent() && bed.equals(other.m_21257_().get())) {
+         if (other != this && other.isSleeping() && other.getSleepingPos().isPresent() && bed.equals(other.getSleepingPos().get())) {
             return true;
          }
       }
@@ -242,11 +243,11 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    private BlockPos findAvailableBed(BlockPos center) {
       MutableBlockPos cursor = new MutableBlockPos();
 
-      for (BlockPos pos : BlockPos.m_121940_(center.m_7918_(-16, -4, -16), center.m_7918_(16, 4, 16))) {
-         cursor.m_122190_(pos);
-         BlockState state = this.m_9236_().m_8055_(cursor);
-         if (state.m_60734_() instanceof BedBlock && !this.bedReservedByAnother(cursor.m_7949_())) {
-            return cursor.m_7949_();
+      for (BlockPos pos : BlockPos.betweenClosed(center.offset(-16, -4, -16), center.offset(16, 4, 16))) {
+         cursor.set(pos);
+         BlockState state = this.level().getBlockState(cursor);
+         if (state.getBlock() instanceof BedBlock && !this.bedReservedByAnother(cursor.immutable())) {
+            return cursor.immutable();
          }
       }
 
@@ -254,17 +255,17 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    }
 
    public NpcWorkType getWorkType() {
-      return WorkerProfessionResolver.workTypeFor(this.m_21205_());
+      return WorkerProfessionResolver.workTypeFor(this.getMainHandItem());
    }
 
    @Override
    public String getNpcSubtype() {
-      return WorkerProfessionResolver.subtypeFor(this.m_21205_());
+      return WorkerProfessionResolver.subtypeFor(this.getMainHandItem());
    }
 
    @Override
-   public Component m_5677_() {
-      return Component.m_237115_("entity.ancientwarfare.worker." + this.getNpcSubtype());
+   public Component getTypeName() {
+      return Component.translatable("entity.ancientwarfare.worker." + this.getNpcSubtype());
    }
 
    @Override
@@ -283,7 +284,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       return 4.0;
    }
 
-   private boolean hasAssignedWorkOrder() {
+   boolean hasAssignedWorkOrder() {
       return AWCoreRegistryAccess.is(this.getOrdersStack(), AWCoreIds.WORK_ORDER) && !WorkOrderData.getWorkEntries(this.getOrdersStack()).isEmpty();
    }
 
@@ -297,46 +298,46 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          this.worker = worker;
          this.speedModifier = speedModifier;
          this.stopDistanceSq = stopDistance * stopDistance;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.worker.getCurrentCommand() != NpcCommandType.MOVE) {
             return false;
          } else {
             this.target = this.worker.getCommandTarget();
-            return !BlockPos.f_121853_.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
+            return !BlockPos.ZERO.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.worker.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() > this.stopDistanceSq;
       }
 
-      public void m_8037_() {
-         this.worker.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+      public void tick() {
+         this.worker.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
          this.worker
-            .m_21573_()
-            .m_26519_(
-               (double)this.target.m_123341_() + 0.5,
-               (double)this.target.m_123342_(),
-               (double)this.target.m_123343_() + 0.5,
+            .getNavigation()
+            .moveTo(
+               (double)this.target.getX() + 0.5,
+               (double)this.target.getY(),
+               (double)this.target.getZ() + 0.5,
                this.worker.playerSprintNavigationSpeed()
             );
       }
 
-      public void m_8041_() {
+      public void stop() {
          if (this.worker.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
-            this.worker.clearCommand();
+            this.worker.completeMoveCommand();
             this.worker.setWorkState("idle");
          }
 
          this.target = null;
-         this.worker.m_21573_().m_26573_();
+         this.worker.getNavigation().stop();
       }
 
       private double distanceToTargetSq() {
-         return this.worker.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+         return this.worker.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
       }
    }
 
@@ -351,6 +352,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       private final double speedModifier;
       private final Map<BlockPos, Integer> rejectedUntil = new HashMap<>();
       private BlockPos target;
+      private BlockPos approach;
       private int nextSearchTick;
       private int repathCooldown;
       private int stuckTicks;
@@ -360,18 +362,28 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       private NearbyWorkGoal(WorkerNpcEntity worker, double speedModifier) {
          this.worker = worker;
          this.speedModifier = speedModifier;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
-         if (this.canAutomaticallyWork() && this.worker.f_19797_ >= this.nextSearchTick) {
+      public boolean canUse() {
+         if (this.canAutomaticallyWork() && this.worker.tickCount >= this.nextSearchTick && this.worker.onGround()) {
             this.pruneRejectedTargets();
             this.target = this.findNearestAvailableWorksite();
             if (this.target == null) {
                this.worker.setWorkState("no_work");
-               this.nextSearchTick = this.worker.f_19797_ + 40;
+               this.nextSearchTick = this.worker.tickCount + 40;
                return false;
             } else {
+               this.approach = WorksiteApproach.find(this.worker, this.target, this.worker.getWorkRangeSq());
+               if (this.approach == null) {
+                  // Nowhere to stand next to it that the worker can walk to: try the next site instead of pushing at walls.
+                  this.rejectedUntil.put(this.target, this.worker.tickCount + 200);
+                  this.worker.setWorkState("no_work_site");
+                  this.nextSearchTick = this.worker.tickCount + 1;
+                  this.target = null;
+                  return false;
+               }
+
                this.failed = false;
                this.repathCooldown = 0;
                this.stuckTicks = 0;
@@ -384,20 +396,21 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          if (this.canAutomaticallyWork() && !this.failed && this.target != null) {
-            WorkSite site = WorkSites.get(this.worker.m_9236_(), this.target).orElse(null);
+            WorkSite site = WorkSites.get(this.worker.level(), this.target).orElse(null);
             return site != null && this.worker.canWorkAt(site.getWorkType()) && site.hasWork();
          } else {
             return false;
          }
       }
 
-      public void m_8037_() {
+      public void tick() {
          if (this.target != null) {
-            this.worker.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+            this.worker.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
             double distanceSq = this.distanceToTargetSq();
-            if (distanceSq > this.worker.getWorkRangeSq()) {
+            if (distanceSq > this.worker.getWorkRangeSq() && !WorksiteApproach.isAt(this.worker, this.approach)
+               || WorksiteApproach.inDoorway(this.worker)) {
                this.worker.workTicksAtSite = 0;
                this.worker.setWorkState("moving_to_work");
                if (distanceSq < this.lastDistanceSq - 0.05) {
@@ -410,11 +423,11 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
                if (this.repathCooldown-- <= 0) {
                   this.repathCooldown = 20;
                   boolean pathFound = this.worker
-                     .m_21573_()
-                     .m_26519_(
-                        (double)this.target.m_123341_() + 0.5,
-                        (double)this.target.m_123342_(),
-                        (double)this.target.m_123343_() + 0.5,
+                     .getNavigation()
+                     .moveTo(
+                        (double)this.approach.getX() + 0.5,
+                        (double)this.approach.getY(),
+                        (double)this.approach.getZ() + 0.5,
                         this.worker.playerSprintNavigationSpeed()
                      );
                   if (!pathFound) {
@@ -427,14 +440,14 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
                   this.rejectCurrentTarget();
                }
             } else {
-               this.worker.m_21573_().m_26573_();
-               WorkSite site = WorkSites.get(this.worker.m_9236_(), this.target).orElse(null);
+               this.worker.getNavigation().stop();
+               WorkSite site = WorkSites.get(this.worker.level(), this.target).orElse(null);
                if (site != null && this.worker.canWorkAt(site.getWorkType()) && site.hasWork()) {
                   this.worker.setWorkState("working");
                   this.worker.workTicksAtSite++;
                   site.onWorkerTick(this.worker);
-                  if (this.worker.f_19797_ % 10 == 0) {
-                     this.worker.m_6674_(InteractionHand.MAIN_HAND);
+                  if (this.worker.tickCount % 10 == 0) {
+                     this.worker.swing(InteractionHand.MAIN_HAND);
                   }
 
                   if (this.worker.workTicksAtSite >= 10) {
@@ -448,9 +461,10 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          }
       }
 
-      public void m_8041_() {
-         this.worker.m_21573_().m_26573_();
+      public void stop() {
+         this.worker.getNavigation().stop();
          this.target = null;
+         this.approach = null;
          this.failed = false;
          this.repathCooldown = 0;
          this.stuckTicks = 0;
@@ -462,7 +476,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       }
 
       private boolean canAutomaticallyWork() {
-         return !this.worker.m_9236_().f_46443_
+         return !this.worker.level().isClientSide
             && this.worker.getCurrentCommand() == NpcCommandType.NONE
             && !this.worker.hasAssignedWorkOrder()
             && this.worker.getWorkType() != NpcWorkType.NONE
@@ -472,29 +486,29 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       }
 
       private BlockPos findNearestAvailableWorksite() {
-         if (!(this.worker.m_9236_() instanceof ServerLevel serverLevel)) {
+         if (!(this.worker.level() instanceof ServerLevel serverLevel)) {
             return null;
          } else {
-            BlockPos origin = this.worker.m_20183_();
-            int minChunkX = Math.floorDiv(origin.m_123341_() - 24, 16);
-            int maxChunkX = Math.floorDiv(origin.m_123341_() + 24, 16);
-            int minChunkZ = Math.floorDiv(origin.m_123343_() - 24, 16);
-            int maxChunkZ = Math.floorDiv(origin.m_123343_() + 24, 16);
+            BlockPos origin = this.worker.blockPosition();
+            int minChunkX = Math.floorDiv(origin.getX() - 24, 16);
+            int maxChunkX = Math.floorDiv(origin.getX() + 24, 16);
+            int minChunkZ = Math.floorDiv(origin.getZ() - 24, 16);
+            int maxChunkZ = Math.floorDiv(origin.getZ() + 24, 16);
             double bestDistanceSq = Double.MAX_VALUE;
             BlockPos best = null;
 
             for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
                for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                  LevelChunk chunk = serverLevel.m_7726_().m_7131_(chunkX, chunkZ);
+                  LevelChunk chunk = serverLevel.getChunkSource().getChunkNow(chunkX, chunkZ);
                   if (chunk != null) {
-                     for (BlockEntity blockEntity : chunk.m_62954_().values()) {
-                        BlockPos pos = blockEntity.m_58899_();
-                        if (Math.abs(pos.m_123342_() - origin.m_123342_()) <= 8 && this.rejectedUntil.getOrDefault(pos, 0) <= this.worker.f_19797_) {
-                           double distanceSq = origin.m_123331_(pos);
+                     for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
+                        BlockPos pos = blockEntity.getBlockPos();
+                        if (Math.abs(pos.getY() - origin.getY()) <= 8 && this.rejectedUntil.getOrDefault(pos, 0) <= this.worker.tickCount) {
+                           double distanceSq = origin.distSqr(pos);
                            if (!(distanceSq > 576.0) && !(distanceSq >= bestDistanceSq)) {
                               WorkSite site = WorkSites.get(serverLevel, pos).orElse(null);
                               if (site != null && this.worker.canWorkAt(site.getWorkType()) && site.hasWork()) {
-                                 best = pos.m_7949_();
+                                 best = pos.immutable();
                                  bestDistanceSq = distanceSq;
                               }
                            }
@@ -510,21 +524,21 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
 
       private void rejectCurrentTarget() {
          if (this.target != null) {
-            this.rejectedUntil.put(this.target.m_7949_(), this.worker.f_19797_ + 200);
+            this.rejectedUntil.put(this.target.immutable(), this.worker.tickCount + 200);
          }
 
          this.failed = true;
-         this.nextSearchTick = this.worker.f_19797_ + 1;
+         this.nextSearchTick = this.worker.tickCount + 1;
          this.worker.setWorkState("no_work_site");
-         this.worker.m_21573_().m_26573_();
+         this.worker.getNavigation().stop();
       }
 
       private void pruneRejectedTargets() {
-         this.rejectedUntil.entrySet().removeIf(entry -> entry.getValue() <= this.worker.f_19797_);
+         this.rejectedUntil.entrySet().removeIf(entry -> entry.getValue() <= this.worker.tickCount);
       }
 
       private double distanceToTargetSq() {
-         return this.worker.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+         return this.worker.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
       }
    }
 
@@ -540,14 +554,14 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
       private SleepGoal(WorkerNpcEntity worker, double speed) {
          this.worker = worker;
          this.speed = speed;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
-         if (this.worker.shouldRestAtHome() && !this.worker.m_5803_()) {
-            this.restCenter = this.worker.hasHome() ? this.worker.getHomePos() : this.worker.m_20183_();
+      public boolean canUse() {
+         if (this.worker.shouldRestAtHome() && !this.worker.isSleeping()) {
+            this.restCenter = this.worker.hasHome() ? this.worker.getHomePos() : this.worker.blockPosition();
             this.reachedCenter = this.worker
-                  .m_20275_((double)this.restCenter.m_123341_() + 0.5, (double)this.restCenter.m_123342_() + 0.5, (double)this.restCenter.m_123343_() + 0.5)
+                  .distanceToSqr((double)this.restCenter.getX() + 0.5, (double)this.restCenter.getY() + 0.5, (double)this.restCenter.getZ() + 0.5)
                <= 9.0;
             this.targetBed = null;
             this.bedSearchCooldown = 0;
@@ -557,33 +571,33 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.worker.shouldRestAtHome();
       }
 
-      public void m_8056_() {
+      public void start() {
          this.worker.setWorkState(this.worker.shouldShelterAtHome() ? "sheltering" : "returning_home");
       }
 
-      public void m_8037_() {
-         if (!this.worker.m_5803_()) {
+      public void tick() {
+         if (!this.worker.isSleeping()) {
             if (!this.reachedCenter) {
                this.worker
-                  .m_21563_()
-                  .m_24946_((double)this.restCenter.m_123341_() + 0.5, (double)this.restCenter.m_123342_() + 0.5, (double)this.restCenter.m_123343_() + 0.5);
+                  .getLookControl()
+                  .setLookAt((double)this.restCenter.getX() + 0.5, (double)this.restCenter.getY() + 0.5, (double)this.restCenter.getZ() + 0.5);
                this.worker
-                  .m_21573_()
-                  .m_26519_(
-                     (double)this.restCenter.m_123341_() + 0.5,
-                     (double)this.restCenter.m_123342_() + 0.5,
-                     (double)this.restCenter.m_123343_() + 0.5,
+                  .getNavigation()
+                  .moveTo(
+                     (double)this.restCenter.getX() + 0.5,
+                     (double)this.restCenter.getY() + 0.5,
+                     (double)this.restCenter.getZ() + 0.5,
                      this.speed
                   );
                this.reachedCenter = this.worker
-                     .m_20275_((double)this.restCenter.m_123341_() + 0.5, (double)this.restCenter.m_123342_() + 0.5, (double)this.restCenter.m_123343_() + 0.5)
+                     .distanceToSqr((double)this.restCenter.getX() + 0.5, (double)this.restCenter.getY() + 0.5, (double)this.restCenter.getZ() + 0.5)
                   <= 9.0;
             } else {
-               this.worker.m_21573_().m_26573_();
+               this.worker.getNavigation().stop();
                if (!this.worker.shouldSleepNow()) {
                   this.worker.setWorkState("sheltering");
                   this.targetBed = null;
@@ -604,22 +618,22 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
                   }
 
                   double distance = this.worker
-                     .m_20275_((double)this.targetBed.m_123341_() + 0.5, (double)this.targetBed.m_123342_() + 0.5, (double)this.targetBed.m_123343_() + 0.5);
+                     .distanceToSqr((double)this.targetBed.getX() + 0.5, (double)this.targetBed.getY() + 0.5, (double)this.targetBed.getZ() + 0.5);
                   if (distance > 4.0) {
                      this.worker
-                        .m_21563_()
-                        .m_24946_((double)this.targetBed.m_123341_() + 0.5, (double)this.targetBed.m_123342_() + 0.5, (double)this.targetBed.m_123343_() + 0.5);
+                        .getLookControl()
+                        .setLookAt((double)this.targetBed.getX() + 0.5, (double)this.targetBed.getY() + 0.5, (double)this.targetBed.getZ() + 0.5);
                      this.worker
-                        .m_21573_()
-                        .m_26519_(
-                           (double)this.targetBed.m_123341_() + 0.5,
-                           (double)this.targetBed.m_123342_() + 0.5,
-                           (double)this.targetBed.m_123343_() + 0.5,
+                        .getNavigation()
+                        .moveTo(
+                           (double)this.targetBed.getX() + 0.5,
+                           (double)this.targetBed.getY() + 0.5,
+                           (double)this.targetBed.getZ() + 0.5,
                            this.speed
                         );
                   } else {
-                     if (this.worker.m_9236_().m_8055_(this.targetBed).m_60734_() instanceof BedBlock) {
-                        this.worker.m_5802_(this.targetBed);
+                     if (this.worker.level().getBlockState(this.targetBed).getBlock() instanceof BedBlock) {
+                        this.worker.startSleeping(this.targetBed);
                         this.worker.setWorkState("sleeping");
                      } else {
                         this.targetBed = null;
@@ -631,13 +645,13 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          }
       }
 
-      public void m_8041_() {
-         if (this.worker.m_5803_()) {
-            this.worker.m_5796_();
+      public void stop() {
+         if (this.worker.isSleeping()) {
+            this.worker.stopSleeping();
          }
 
          this.worker.sleepBed = null;
-         this.worker.m_21573_().m_26573_();
+         this.worker.getNavigation().stop();
          if (this.worker.getCurrentCommand() == NpcCommandType.NONE) {
             this.worker.setWorkState("idle");
          }
@@ -651,20 +665,29 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
    private static class WorkOrderGoal extends Goal {
       private static final int DEFAULT_WORK_TICKS = 10;
       private static final int INVALID_SITE_WAIT_TICKS = 40;
+      private static final int REPATH_TICKS = 20;
+      private static final int STUCK_TICKS = 60;
+      private static final int MAX_FAILURES = 3;
       private final WorkerNpcEntity worker;
       private final double speedModifier;
       private BlockPos target;
+      private BlockPos approach;
+      private BlockPos approachFor;
+      private int repathCooldown;
+      private int stuckTicks;
+      private int failures;
+      private double lastDistanceSq = Double.MAX_VALUE;
 
       private WorkOrderGoal(WorkerNpcEntity worker, double speedModifier, double stopDistance) {
          this.worker = worker;
          this.speedModifier = speedModifier;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.worker.getCurrentCommand() != NpcCommandType.NONE || !AWCoreRegistryAccess.is(this.worker.getOrdersStack(), AWCoreIds.WORK_ORDER)) {
             return false;
-         } else if (!WorkOrderData.matchesDimension(this.worker.getOrdersStack(), this.worker.m_9236_())) {
+         } else if (!WorkOrderData.matchesDimension(this.worker.getOrdersStack(), this.worker.level())) {
             this.worker.setWorkState("no_work");
             return false;
          } else if (!this.shouldWorkThisShift()) {
@@ -675,36 +698,29 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          if (this.worker.getCurrentCommand() == NpcCommandType.NONE
             && AWCoreRegistryAccess.is(this.worker.getOrdersStack(), AWCoreIds.WORK_ORDER)
-            && WorkOrderData.matchesDimension(this.worker.getOrdersStack(), this.worker.m_9236_())
+            && WorkOrderData.matchesDimension(this.worker.getOrdersStack(), this.worker.level())
             && this.shouldWorkThisShift()
             && this.selectTarget()) {
-            WorkSite site = this.target == null ? null : WorkSites.get(this.worker.m_9236_(), this.target).orElse(null);
+            WorkSite site = this.target == null ? null : WorkSites.get(this.worker.level(), this.target).orElse(null);
             return site != null && this.worker.canWorkAt(site.getWorkType()) && site.hasWork();
          } else {
             return false;
          }
       }
 
-      public void m_8037_() {
+      public void tick() {
          if (this.target != null) {
-            this.worker.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
-            if (this.distanceToTargetSq() > this.worker.getWorkRangeSq()) {
-               this.worker.workTicksAtSite = 0;
-               this.worker.setWorkState("moving_to_work");
-               this.worker
-                  .m_21573_()
-                  .m_26519_(
-                     (double)this.target.m_123341_() + 0.5,
-                     (double)this.target.m_123342_(),
-                     (double)this.target.m_123343_() + 0.5,
-                     this.worker.playerSprintNavigationSpeed()
-                  );
+            this.worker.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
+            if (this.distanceToTargetSq() > this.worker.getWorkRangeSq()
+                  && !(this.target.equals(this.approachFor) && WorksiteApproach.isAt(this.worker, this.approach))
+               || WorksiteApproach.inDoorway(this.worker)) {
+               this.walkToSite();
             } else {
-               this.worker.m_21573_().m_26573_();
-               WorkSite site = WorkSites.get(this.worker.m_9236_(), this.target).orElse(null);
+               this.worker.getNavigation().stop();
+               WorkSite site = WorkSites.get(this.worker.level(), this.target).orElse(null);
                if (site == null || !this.worker.canWorkAt(site.getWorkType())) {
                   this.worker.setWorkState("no_work_site");
                   this.worker.workTicksAtSite++;
@@ -719,8 +735,8 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
                   this.worker.setWorkState("working");
                   this.worker.workTicksAtSite++;
                   site.onWorkerTick(this.worker);
-                  if (this.worker.f_19797_ % 10 == 0) {
-                     this.worker.m_6674_(InteractionHand.MAIN_HAND);
+                  if (this.worker.tickCount % 10 == 0) {
+                     this.worker.swing(InteractionHand.MAIN_HAND);
                   }
 
                   if (this.worker.workTicksAtSite >= this.getTicksForCurrentSite()) {
@@ -733,9 +749,75 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
          }
       }
 
-      public void m_8041_() {
+      /**
+       * Walks to a free spot next to the site, refreshing the path now and then. A site with no reachable spot, or one
+       * the worker stops getting closer to, is skipped for the next one in the order instead of blocking it forever.
+       */
+      private void walkToSite() {
+         if (!this.target.equals(this.approachFor)) {
+            this.approachFor = this.target;
+            this.approach = null;
+            this.failures = 0;
+            this.repathCooldown = 0;
+         }
+
+         if (this.approach == null) {
+            // Look for a spot now and then; the pathfinder cannot plan while the worker is still falling or jumping.
+            if (this.repathCooldown-- <= 0 && this.worker.onGround()) {
+               this.approach = WorksiteApproach.find(this.worker, this.target, this.worker.getWorkRangeSq());
+               this.stuckTicks = 0;
+               this.lastDistanceSq = this.distanceToTargetSq();
+               if (this.approach == null && ++this.failures >= MAX_FAILURES) {
+                  this.skipSite();
+                  return;
+               }
+
+               this.repathCooldown = this.approach == null ? REPATH_TICKS : 0;
+            }
+
+            if (this.approach == null) {
+               this.worker.setWorkState("no_work_site");
+               return;
+            }
+         }
+
+         this.worker.workTicksAtSite = 0;
+         this.worker.setWorkState("moving_to_work");
+         double distanceSq = this.distanceToTargetSq();
+         if (distanceSq < this.lastDistanceSq - 0.05) {
+            this.stuckTicks = 0;
+            this.lastDistanceSq = distanceSq;
+         } else if (++this.stuckTicks >= STUCK_TICKS) {
+            this.skipSite();
+            return;
+         }
+
+         if (this.repathCooldown-- <= 0) {
+            this.repathCooldown = REPATH_TICKS;
+            boolean pathFound = this.worker
+               .getNavigation()
+               .moveTo((double)this.approach.getX() + 0.5, (double)this.approach.getY(), (double)this.approach.getZ() + 0.5, this.worker.playerSprintNavigationSpeed());
+            if (pathFound) {
+               this.failures = 0;
+            } else if (++this.failures >= MAX_FAILURES) {
+               this.skipSite();
+            }
+         }
+      }
+
+      private void skipSite() {
+         this.worker.setWorkState("no_work_site");
+         this.worker.workTicksAtSite = 0;
+         this.worker.getNavigation().stop();
+         this.approachFor = null;
+         this.advanceToNextSite();
+      }
+
+      public void stop() {
          this.target = null;
-         this.worker.m_21573_().m_26573_();
+         this.approachFor = null;
+         this.approach = null;
+         this.worker.getNavigation().stop();
          if (this.worker.getCurrentCommand() == NpcCommandType.NONE) {
             this.worker.setWorkState("idle");
          }
@@ -747,7 +829,7 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
             this.worker.resetWorkOrderProgress();
             return false;
          } else {
-            String currentDimension = this.worker.m_9236_().m_46472_().m_135782_().toString();
+            String currentDimension = this.worker.level().dimension().location().toString();
             if (entries.stream().anyMatch(entry -> !entry.dimension().isEmpty() && !entry.dimension().equals(currentDimension))) {
                this.worker.setWorkState("no_work");
                return false;
@@ -785,11 +867,11 @@ public class WorkerNpcEntity extends PlayerOwnedNpcEntity implements WorkerAcces
 
       private boolean shouldWorkThisShift() {
          boolean nightShift = WorkOrderData.isNightShift(this.worker.getOrdersStack());
-         return nightShift == this.worker.m_9236_().m_46462_();
+         return nightShift == this.worker.level().isNight();
       }
 
       private double distanceToTargetSq() {
-         return this.worker.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+         return this.worker.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
       }
    }
 }

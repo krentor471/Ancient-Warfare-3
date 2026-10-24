@@ -1487,7 +1487,7 @@ rule:
 plugin=inventory
 number=77
 data:
-JSON:{blockState:{blockName:"ancientwarfarestructure:loot_basket",properties:{visible:"true",double:"true",facing:"east"}},lootLevel:0,teData:{lootSettings:{lootRolls:2,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/wizardly",spawnEntity:0b},Items:[],id:"ancientwarfarestructure:loot_basket",Lock:""},legacyFeatures:0b}
+JSON:{blockState:{blockName:"ancientwarfarestructure:loot_basket",properties:{visible:"true",double:"true",facing:"east"}},lootLevel:0,teData:{lootSettings:{lootRolls:2,splashPotion:0b,hasMessage:0b,hasLoot:1b,lootTableName:"ancientwarfare:chests/village_magician",spawnEntity:0b},Items:[],id:"ancientwarfarestructure:loot_basket",Lock:""},legacyFeatures:0b}
 :enddata
 :endrule
 

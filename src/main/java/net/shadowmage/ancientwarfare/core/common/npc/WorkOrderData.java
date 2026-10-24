@@ -32,11 +32,11 @@ public final class WorkOrderData {
       if (orders == null) {
          return entries;
       } else {
-         ListTag list = orders.m_128437_("entryList", 10);
+         ListTag list = orders.getList("entryList", 10);
 
          for (int i = 0; i < list.size(); i++) {
-            CompoundTag entry = list.m_128728_(i);
-            entries.add(new WorkOrderData.WorkEntry(BlockPos.m_122022_(entry.m_128454_("pos")), entry.m_128461_("dim"), entry.m_128451_("length")));
+            CompoundTag entry = list.getCompound(i);
+            entries.add(new WorkOrderData.WorkEntry(BlockPos.of(entry.getLong("pos")), entry.getString("dim"), entry.getInt("length")));
          }
 
          return entries;
@@ -50,13 +50,13 @@ public final class WorkOrderData {
    public static boolean addEntry(ItemStack stack, Level level, BlockPos pos) {
       List<WorkOrderData.WorkEntry> entries = getWorkEntries(stack);
       if (pos != null && !entries.stream().anyMatch(entry -> entry.pos().equals(pos)) && entries.size() < 8) {
-         String dimension = level == null ? "" : level.m_46472_().m_135782_().toString();
+         String dimension = level == null ? "" : level.dimension().location().toString();
          CompoundTag existingOrders = getOrdersTag(stack);
-         if (existingOrders != null && !dimension.equals(existingOrders.m_128461_("dim"))) {
+         if (existingOrders != null && !dimension.equals(existingOrders.getString("dim"))) {
             entries.clear();
          }
 
-         entries.add(new WorkOrderData.WorkEntry(pos.m_7949_(), dimension, 0));
+         entries.add(new WorkOrderData.WorkEntry(pos.immutable(), dimension, 0));
          setWorkEntries(stack, entries);
          return true;
       } else {
@@ -66,12 +66,12 @@ public final class WorkOrderData {
 
    public static String getDimension(ItemStack stack) {
       CompoundTag orders = getOrdersTag(stack);
-      return orders == null ? "" : orders.m_128461_("dim");
+      return orders == null ? "" : orders.getString("dim");
    }
 
    public static boolean matchesDimension(ItemStack stack, Level level) {
       String dimension = getDimension(stack);
-      return dimension.isEmpty() || level != null && dimension.equals(level.m_46472_().m_135782_().toString());
+      return dimension.isEmpty() || level != null && dimension.equals(level.dimension().location().toString());
    }
 
    public static boolean removeEntry(ItemStack stack, BlockPos pos) {
@@ -105,8 +105,8 @@ public final class WorkOrderData {
 
    public static WorkOrderData.PriorityType getPriorityType(ItemStack stack) {
       CompoundTag orders = getOrdersTag(stack);
-      if (orders != null && orders.m_128441_("priorityType")) {
-         int ordinal = orders.m_128451_("priorityType");
+      if (orders != null && orders.contains("priorityType")) {
+         int ordinal = orders.getInt("priorityType");
          WorkOrderData.PriorityType[] values = WorkOrderData.PriorityType.values();
          return ordinal >= 0 && ordinal < values.length ? values[ordinal] : WorkOrderData.PriorityType.ROUTE;
       } else {
@@ -117,20 +117,20 @@ public final class WorkOrderData {
    public static void togglePriority(ItemStack stack) {
       WorkOrderData.PriorityType[] values = WorkOrderData.PriorityType.values();
       WorkOrderData.PriorityType next = values[(getPriorityType(stack).ordinal() + 1) % values.length];
-      getOrCreateOrdersTag(stack).m_128405_("priorityType", next.ordinal());
+      getOrCreateOrdersTag(stack).putInt("priorityType", next.ordinal());
    }
 
    public static boolean isNightShift(ItemStack stack) {
       CompoundTag orders = getOrdersTag(stack);
-      return orders != null && orders.m_128471_("nightShift");
+      return orders != null && orders.getBoolean("nightShift");
    }
 
    public static void toggleShift(ItemStack stack) {
-      getOrCreateOrdersTag(stack).m_128379_("nightShift", !isNightShift(stack));
+      getOrCreateOrdersTag(stack).putBoolean("nightShift", !isNightShift(stack));
    }
 
    public static void clear(ItemStack stack) {
-      stack.m_41784_().m_128473_("orders");
+      stack.getOrCreateTag().remove("orders");
    }
 
    public static void setEntries(ItemStack stack, List<BlockPos> entries) {
@@ -138,60 +138,60 @@ public final class WorkOrderData {
       ListTag list = new ListTag();
       entries.stream().limit(8L).forEach(pos -> {
          CompoundTag entry = new CompoundTag();
-         entry.m_128356_("pos", pos.m_121878_());
-         entry.m_128405_("length", 0);
+         entry.putLong("pos", pos.asLong());
+         entry.putInt("length", 0);
          list.add(entry);
       });
       CompoundTag current = getOrdersTag(stack);
       if (current != null) {
-         orders.m_128359_("dim", current.m_128461_("dim"));
-         orders.m_128405_("priorityType", current.m_128451_("priorityType"));
-         orders.m_128379_("nightShift", current.m_128471_("nightShift"));
+         orders.putString("dim", current.getString("dim"));
+         orders.putInt("priorityType", current.getInt("priorityType"));
+         orders.putBoolean("nightShift", current.getBoolean("nightShift"));
       }
 
-      orders.m_128365_("entryList", list);
-      stack.m_41784_().m_128365_("orders", orders);
+      orders.put("entryList", list);
+      stack.getOrCreateTag().put("orders", orders);
    }
 
    public static void setWorkEntries(ItemStack stack, List<WorkOrderData.WorkEntry> entries) {
       CompoundTag current = getOrdersTag(stack);
       CompoundTag orders = new CompoundTag();
       if (current != null) {
-         orders.m_128405_("priorityType", current.m_128451_("priorityType"));
-         orders.m_128379_("nightShift", current.m_128471_("nightShift"));
+         orders.putInt("priorityType", current.getInt("priorityType"));
+         orders.putBoolean("nightShift", current.getBoolean("nightShift"));
       } else {
-         orders.m_128405_("priorityType", WorkOrderData.PriorityType.ROUTE.ordinal());
-         orders.m_128379_("nightShift", false);
+         orders.putInt("priorityType", WorkOrderData.PriorityType.ROUTE.ordinal());
+         orders.putBoolean("nightShift", false);
       }
 
       ListTag list = new ListTag();
       entries.stream().limit(8L).forEach(workEntry -> {
          CompoundTag entry = new CompoundTag();
-         entry.m_128356_("pos", workEntry.pos().m_121878_());
-         entry.m_128359_("dim", workEntry.dimension());
-         entry.m_128405_("length", Math.max(0, workEntry.workLength()));
+         entry.putLong("pos", workEntry.pos().asLong());
+         entry.putString("dim", workEntry.dimension());
+         entry.putInt("length", Math.max(0, workEntry.workLength()));
          list.add(entry);
       });
-      orders.m_128365_("entryList", list);
-      stack.m_41784_().m_128365_("orders", orders);
+      orders.put("entryList", list);
+      stack.getOrCreateTag().put("orders", orders);
    }
 
    private static CompoundTag getOrdersTag(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag != null && tag.m_128425_("orders", 10) ? tag.m_128469_("orders") : null;
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("orders", 10) ? tag.getCompound("orders") : null;
    }
 
    private static CompoundTag getOrCreateOrdersTag(ItemStack stack) {
-      CompoundTag tag = stack.m_41784_();
-      if (!tag.m_128425_("orders", 10)) {
+      CompoundTag tag = stack.getOrCreateTag();
+      if (!tag.contains("orders", 10)) {
          CompoundTag orders = new CompoundTag();
-         orders.m_128365_("entryList", new ListTag());
-         orders.m_128405_("priorityType", WorkOrderData.PriorityType.ROUTE.ordinal());
-         orders.m_128379_("nightShift", false);
-         tag.m_128365_("orders", orders);
+         orders.put("entryList", new ListTag());
+         orders.putInt("priorityType", WorkOrderData.PriorityType.ROUTE.ordinal());
+         orders.putBoolean("nightShift", false);
+         tag.put("orders", orders);
       }
 
-      return tag.m_128469_("orders");
+      return tag.getCompound("orders");
    }
 
    private static void updateWorkLength(ItemStack stack, int index, int delta) {

@@ -17,48 +17,48 @@ public class ChestPushcartScreen extends AbstractContainerScreen<ChestPushcartMe
 
    public ChestPushcartScreen(ChestPushcartMenu menu, Inventory playerInventory, Component title) {
       super(menu, playerInventory, title);
-      this.f_97726_ = 195;
-      this.f_97727_ = 212;
-      this.f_97728_ = 8;
-      this.f_97729_ = 8;
-      this.f_97731_ = 116;
+      this.imageWidth = 195;
+      this.imageHeight = 212;
+      this.titleLabelX = 8;
+      this.titleLabelY = 8;
+      this.inventoryLabelY = 116;
    }
 
-   protected void m_7856_() {
-      super.m_7856_();
-      this.upButton = (Button)this.m_142416_(Button.m_253074_(Component.m_237113_("-"), button -> {
-         this.f_96541_.f_91072_.m_105208_(((ChestPushcartMenu)this.f_97732_).f_38840_, ChestPushcartMenu.scrollUpButtonId());
-         ((ChestPushcartMenu)this.f_97732_).scrollStorageRows(-1);
+   protected void init() {
+      super.init();
+      this.upButton = (Button)this.addRenderableWidget(Button.builder(Component.literal("-"), button -> {
+         this.minecraft.gameMode.handleInventoryButtonClick(((ChestPushcartMenu)this.menu).containerId, ChestPushcartMenu.scrollUpButtonId());
+         ((ChestPushcartMenu)this.menu).scrollStorageRows(-1);
          this.updateScrollButtons();
-      }).m_252987_(this.f_97735_ + 171, this.f_97736_ + 33, 16, 16).m_253136_());
-      this.downButton = (Button)this.m_142416_(Button.m_253074_(Component.m_237113_("+"), button -> {
-         this.f_96541_.f_91072_.m_105208_(((ChestPushcartMenu)this.f_97732_).f_38840_, ChestPushcartMenu.scrollDownButtonId());
-         ((ChestPushcartMenu)this.f_97732_).scrollStorageRows(1);
+      }).bounds(this.leftPos + 171, this.topPos + 33, 16, 16).build());
+      this.downButton = (Button)this.addRenderableWidget(Button.builder(Component.literal("+"), button -> {
+         this.minecraft.gameMode.handleInventoryButtonClick(((ChestPushcartMenu)this.menu).containerId, ChestPushcartMenu.scrollDownButtonId());
+         ((ChestPushcartMenu)this.menu).scrollStorageRows(1);
          this.updateScrollButtons();
-      }).m_252987_(this.f_97735_ + 171, this.f_97736_ + 71, 16, 16).m_253136_());
-      this.m_142416_(Button.m_253074_(Component.m_237115_("guistrings.vehicle.pack"), button -> {
-         this.f_96541_.f_91072_.m_105208_(((ChestPushcartMenu)this.f_97732_).f_38840_, ChestPushcartMenu.packButtonId());
-         this.f_96541_.f_91074_.m_6915_();
-      }).m_252987_(this.f_97735_ + 8, this.f_97736_ + 91, 45, 18).m_253136_());
+      }).bounds(this.leftPos + 171, this.topPos + 71, 16, 16).build());
+      this.addRenderableWidget(Button.builder(Component.translatable("guistrings.vehicle.pack"), button -> {
+         this.minecraft.gameMode.handleInventoryButtonClick(((ChestPushcartMenu)this.menu).containerId, ChestPushcartMenu.packButtonId());
+         this.minecraft.player.closeContainer();
+      }).bounds(this.leftPos + 8, this.topPos + 91, 45, 18).build());
       this.updateScrollButtons();
    }
 
-   protected void m_7286_(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-      this.drawNineSlice(graphics, BACKGROUND, 0, 0, this.f_97726_, this.f_97727_, 0, 0, 256, 240);
-      this.drawSlotGrid(graphics, 8, 34, 9, ((ChestPushcartMenu)this.f_97732_).getVisibleStorageRows());
+   protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+      this.drawNineSlice(graphics, BACKGROUND, 0, 0, this.imageWidth, this.imageHeight, 0, 0, 256, 240);
+      this.drawSlotGrid(graphics, 8, 34, 9, ((ChestPushcartMenu)this.menu).getVisibleStorageRows());
       this.drawSlotGrid(graphics, 62, 92, 6, 1);
       this.drawSlotGrid(graphics, 8, 128, 9, 3);
       this.drawSlotGrid(graphics, 8, 186, 9, 1);
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      graphics.m_280614_(this.f_96547_, this.f_96539_, this.f_97728_, this.f_97729_, 16777215, false);
-      if (((ChestPushcartMenu)this.f_97732_).getStorageRows() > ((ChestPushcartMenu)this.f_97732_).getVisibleStorageRows()) {
-         graphics.m_280614_(
-            this.f_96547_,
-            Component.m_237110_(
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 16777215, false);
+      if (((ChestPushcartMenu)this.menu).getStorageRows() > ((ChestPushcartMenu)this.menu).getVisibleStorageRows()) {
+         graphics.drawString(
+            this.font,
+            Component.translatable(
                "guistrings.vehicle.storage_rows",
-               new Object[]{((ChestPushcartMenu)this.f_97732_).getTopStorageRow() + 1, ((ChestPushcartMenu)this.f_97732_).getStorageRows()}
+               new Object[]{((ChestPushcartMenu)this.menu).getTopStorageRow() + 1, ((ChestPushcartMenu)this.menu).getStorageRows()}
             ),
             8,
             23,
@@ -67,32 +67,32 @@ public class ChestPushcartScreen extends AbstractContainerScreen<ChestPushcartMe
          );
       }
 
-      graphics.m_280614_(this.f_96547_, Component.m_237115_("guistrings.automation.upgrades"), 62, 82, 16777215, false);
-      graphics.m_280614_(this.f_96547_, this.f_169604_, 8, this.f_97731_, 16777215, false);
+      graphics.drawString(this.font, Component.translatable("guistrings.automation.upgrades"), 62, 82, 16777215, false);
+      graphics.drawString(this.font, this.playerInventoryTitle, 8, this.inventoryLabelY, 16777215, false);
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
-      this.m_280072_(graphics, mouseX, mouseY);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
+      super.render(graphics, mouseX, mouseY, partialTick);
+      this.renderTooltip(graphics, mouseX, mouseY);
    }
 
    private void updateScrollButtons() {
       if (this.upButton != null) {
-         this.upButton.f_93624_ = ((ChestPushcartMenu)this.f_97732_).getStorageRows() > ((ChestPushcartMenu)this.f_97732_).getVisibleStorageRows();
-         this.upButton.f_93623_ = this.upButton.f_93624_ && ((ChestPushcartMenu)this.f_97732_).canScrollUp();
+         this.upButton.visible = ((ChestPushcartMenu)this.menu).getStorageRows() > ((ChestPushcartMenu)this.menu).getVisibleStorageRows();
+         this.upButton.active = this.upButton.visible && ((ChestPushcartMenu)this.menu).canScrollUp();
       }
 
       if (this.downButton != null) {
-         this.downButton.f_93624_ = ((ChestPushcartMenu)this.f_97732_).getStorageRows() > ((ChestPushcartMenu)this.f_97732_).getVisibleStorageRows();
-         this.downButton.f_93623_ = this.downButton.f_93624_ && ((ChestPushcartMenu)this.f_97732_).canScrollDown();
+         this.downButton.visible = ((ChestPushcartMenu)this.menu).getStorageRows() > ((ChestPushcartMenu)this.menu).getVisibleStorageRows();
+         this.downButton.active = this.downButton.visible && ((ChestPushcartMenu)this.menu).canScrollDown();
       }
    }
 
    private void drawSlotGrid(GuiGraphics graphics, int x, int y, int columns, int rows) {
       for (int row = 0; row < rows; row++) {
          for (int col = 0; col < columns; col++) {
-            graphics.m_280218_(WIDGETS, this.f_97735_ + x + col * 18 - 1, this.f_97736_ + y + row * 18 - 1, 152, 120, 18, 18);
+            graphics.blit(WIDGETS, this.leftPos + x + col * 18 - 1, this.topPos + y + row * 18 - 1, 152, 120, 18, 18);
          }
       }
    }
@@ -100,13 +100,13 @@ public class ChestPushcartScreen extends AbstractContainerScreen<ChestPushcartMe
    private void drawNineSlice(GuiGraphics graphics, ResourceLocation texture, int x, int y, int width, int height, int u, int v, int texWidth, int texHeight) {
       int halfWidth = width / 2;
       int halfHeight = height / 2;
-      graphics.m_280218_(texture, this.f_97735_ + x, this.f_97736_ + y, u, v, halfWidth, halfHeight);
-      graphics.m_280218_(texture, this.f_97735_ + x + halfWidth, this.f_97736_ + y, u + texWidth - (width - halfWidth), v, width - halfWidth, halfHeight);
-      graphics.m_280218_(texture, this.f_97735_ + x, this.f_97736_ + y + halfHeight, u, v + texHeight - (height - halfHeight), halfWidth, height - halfHeight);
-      graphics.m_280218_(
+      graphics.blit(texture, this.leftPos + x, this.topPos + y, u, v, halfWidth, halfHeight);
+      graphics.blit(texture, this.leftPos + x + halfWidth, this.topPos + y, u + texWidth - (width - halfWidth), v, width - halfWidth, halfHeight);
+      graphics.blit(texture, this.leftPos + x, this.topPos + y + halfHeight, u, v + texHeight - (height - halfHeight), halfWidth, height - halfHeight);
+      graphics.blit(
          texture,
-         this.f_97735_ + x + halfWidth,
-         this.f_97736_ + y + halfHeight,
+         this.leftPos + x + halfWidth,
+         this.topPos + y + halfHeight,
          u + texWidth - (width - halfWidth),
          v + texHeight - (height - halfHeight),
          width - halfWidth,

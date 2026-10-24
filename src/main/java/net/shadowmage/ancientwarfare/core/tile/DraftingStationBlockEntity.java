@@ -31,7 +31,7 @@ import net.shadowmage.ancientwarfare.core.structure.PlayerStructureTemplateData;
 import org.jetbrains.annotations.Nullable;
 
 public class DraftingStationBlockEntity extends BlockEntity implements Container, MenuProvider {
-   private final NonNullList<ItemStack> items = NonNullList.m_122780_(28, ItemStack.f_41583_);
+   private final NonNullList<ItemStack> items = NonNullList.withSize(28, ItemStack.EMPTY);
    private final Map<ResourceLocation, Integer> suppliedMaterials = new LinkedHashMap<>();
    private String selectedTemplate = "";
    private boolean started;
@@ -71,7 +71,7 @@ public class DraftingStationBlockEntity extends BlockEntity implements Container
    public void start() {
       if (!this.selectedTemplate.isBlank()) {
          this.started = true;
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -90,21 +90,21 @@ public class DraftingStationBlockEntity extends BlockEntity implements Container
    }
 
    private void acceptInputMaterials(ServerLevel serverLevel) {
-      if (!this.selectedTemplate.isBlank() && ((ItemStack)this.items.get(27)).m_41619_()) {
+      if (!this.selectedTemplate.isBlank() && ((ItemStack)this.items.get(27)).isEmpty()) {
          List<DraftingStationBlockEntity.ResourceEntry> required = this.resources(serverLevel);
          if (!required.isEmpty()) {
             boolean changed = false;
 
             for (int slot = 0; slot < 27; slot++) {
                ItemStack stack = (ItemStack)this.items.get(slot);
-               if (!stack.m_41619_()) {
-                  ResourceLocation id = BuiltInRegistries.f_257033_.m_7981_(stack.m_41720_());
+               if (!stack.isEmpty()) {
+                  ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
                   int maxRequired = required.stream().filter(r -> r.itemId().equals(id)).mapToInt(DraftingStationBlockEntity.ResourceEntry::count).sum();
                   int remaining = Math.max(0, maxRequired - this.suppliedMaterials.getOrDefault(id, 0));
                   if (remaining > 0) {
-                     int accepted = Math.min(stack.m_41613_(), remaining);
+                     int accepted = Math.min(stack.getCount(), remaining);
                      this.suppliedMaterials.merge(id, accepted, Integer::sum);
-                     stack.m_41774_(accepted);
+                     stack.shrink(accepted);
                      changed = true;
                   }
                }
@@ -118,7 +118,7 @@ public class DraftingStationBlockEntity extends BlockEntity implements Container
    }
 
    private void consumeAndCraft() {
-      if (this.f_58857_ instanceof ServerLevel serverLevel && ((ItemStack)this.items.get(27)).m_41619_()) {
+      if (this.level instanceof ServerLevel serverLevel && ((ItemStack)this.items.get(27)).isEmpty()) {
          List<DraftingStationBlockEntity.ResourceEntry> resources = this.resources(serverLevel);
          if (resources.isEmpty()) {
             this.started = false;
@@ -132,7 +132,7 @@ public class DraftingStationBlockEntity extends BlockEntity implements Container
          }
 
          ItemStack output = new ItemStack(AWCoreRegistryAccess.block(AWCoreIds.STRUCTURE_BUILDER_TICKED));
-         output.m_41784_().m_128359_("TemplateName", this.selectedTemplate);
+         output.getOrCreateTag().putString("TemplateName", this.selectedTemplate);
          this.items.set(27, output);
          this.started = false;
          this.markChangedAndSync();
@@ -140,54 +140,54 @@ public class DraftingStationBlockEntity extends BlockEntity implements Container
       }
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      ContainerHelper.m_18973_(tag, this.items);
-      tag.m_128359_("TemplateName", this.selectedTemplate);
-      tag.m_128379_("Started", this.started);
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      ContainerHelper.saveAllItems(tag, this.items);
+      tag.putString("TemplateName", this.selectedTemplate);
+      tag.putBoolean("Started", this.started);
       ListTag supplied = new ListTag();
       this.suppliedMaterials.forEach((id, count) -> {
          CompoundTag entry = new CompoundTag();
-         entry.m_128359_("Item", id.toString());
-         entry.m_128405_("Count", count);
+         entry.putString("Item", id.toString());
+         entry.putInt("Count", count);
          supplied.add(entry);
       });
-      tag.m_128365_("SuppliedMaterials", supplied);
+      tag.put("SuppliedMaterials", supplied);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      ContainerHelper.m_18980_(tag, this.items);
-      this.selectedTemplate = tag.m_128461_("TemplateName");
-      this.started = tag.m_128471_("Started");
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      ContainerHelper.loadAllItems(tag, this.items);
+      this.selectedTemplate = tag.getString("TemplateName");
+      this.started = tag.getBoolean("Started");
       this.suppliedMaterials.clear();
-      ListTag supplied = tag.m_128437_("SuppliedMaterials", 10);
+      ListTag supplied = tag.getList("SuppliedMaterials", 10);
 
       for (int i = 0; i < supplied.size(); i++) {
-         CompoundTag entry = supplied.m_128728_(i);
-         ResourceLocation id = ResourceLocation.m_135820_(entry.m_128461_("Item"));
-         if (id != null && entry.m_128451_("Count") > 0) {
-            this.suppliedMaterials.put(id, entry.m_128451_("Count"));
+         CompoundTag entry = supplied.getCompound(i);
+         ResourceLocation id = ResourceLocation.tryParse(entry.getString("Item"));
+         if (id != null && entry.getInt("Count") > 0) {
+            this.suppliedMaterials.put(id, entry.getInt("Count"));
          }
       }
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return this.items.size();
    }
 
-   public boolean m_7983_() {
-      return this.items.stream().allMatch(ItemStack::m_41619_);
+   public boolean isEmpty() {
+      return this.items.stream().allMatch(ItemStack::isEmpty);
    }
 
-   public ItemStack m_8020_(int slot) {
+   public ItemStack getItem(int slot) {
       return (ItemStack)this.items.get(slot);
    }
 
-   public ItemStack m_7407_(int slot, int count) {
-      ItemStack result = ContainerHelper.m_18969_(this.items, slot, count);
-      if (!result.m_41619_()) {
-         if (slot == 27 && ((ItemStack)this.items.get(slot)).m_41619_()) {
+   public ItemStack removeItem(int slot, int count) {
+      ItemStack result = ContainerHelper.removeItem(this.items, slot, count);
+      if (!result.isEmpty()) {
+         if (slot == 27 && ((ItemStack)this.items.get(slot)).isEmpty()) {
             this.suppliedMaterials.clear();
          }
 
@@ -197,9 +197,9 @@ public class DraftingStationBlockEntity extends BlockEntity implements Container
       return result;
    }
 
-   public ItemStack m_8016_(int slot) {
-      ItemStack result = ContainerHelper.m_18966_(this.items, slot);
-      if (!result.m_41619_()) {
+   public ItemStack removeItemNoUpdate(int slot) {
+      ItemStack result = ContainerHelper.takeItem(this.items, slot);
+      if (!result.isEmpty()) {
          if (slot == 27) {
             this.suppliedMaterials.clear();
          }
@@ -210,54 +210,54 @@ public class DraftingStationBlockEntity extends BlockEntity implements Container
       return result;
    }
 
-   public void m_6836_(int slot, ItemStack stack) {
+   public void setItem(int slot, ItemStack stack) {
       this.items.set(slot, stack);
-      if (stack.m_41613_() > this.m_6893_()) {
-         stack.m_41764_(this.m_6893_());
+      if (stack.getCount() > this.getMaxStackSize()) {
+         stack.setCount(this.getMaxStackSize());
       }
 
       this.markChangedAndSync();
    }
 
-   public boolean m_6542_(Player player) {
-      return this.f_58857_ != null && this.f_58857_.m_7702_(this.f_58858_) == this && player.m_20238_(this.f_58858_.m_252807_()) <= 64.0;
+   public boolean stillValid(Player player) {
+      return this.level != null && this.level.getBlockEntity(this.worldPosition) == this && player.distanceToSqr(this.worldPosition.getCenter()) <= 64.0;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public Component m_5446_() {
-      return Component.m_237115_("block.ancientwarfare.drafting_station");
+   public Component getDisplayName() {
+      return Component.translatable("block.ancientwarfare.drafting_station");
    }
 
    @Nullable
-   public AbstractContainerMenu m_7208_(int id, Inventory inventory, Player player) {
-      return new DraftingStationMenu(id, inventory, this.f_58858_);
+   public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+      return new DraftingStationMenu(id, inventory, this.worldPosition);
    }
 
    private void markChangedAndSync() {
-      this.m_6596_();
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 2);
+      this.setChanged();
+      if (this.level != null && !this.level.isClientSide) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 2);
       }
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      this.m_183515_(tag);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      this.saveAdditional(tag);
       return tag;
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {
-      if (packet.m_131708_() != null) {
-         this.m_142466_(packet.m_131708_());
+      if (packet.getTag() != null) {
+         this.load(packet.getTag());
       }
    }
 

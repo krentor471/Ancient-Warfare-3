@@ -21,30 +21,30 @@ public class AwsTemplateBlockItem extends BlockItem {
 
    public static ItemStack create(Block block, String template) {
       ItemStack stack = new ItemStack(block);
-      stack.m_41784_().m_128359_("aw_template", template);
+      stack.getOrCreateTag().putString("aw_template", template);
       return stack;
    }
 
    public static String template(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag != null && tag.m_128441_("aw_template") ? tag.m_128461_("aw_template") : AwsTemplateIndex.defaultTemplate();
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("aw_template") ? tag.getString("aw_template") : AwsTemplateIndex.defaultTemplate();
    }
 
-   public Component m_7626_(ItemStack stack) {
+   public Component getName(ItemStack stack) {
       String template = template(stack);
       if (template.isBlank()) {
-         return Component.m_237115_(this.m_5671_(stack));
+         return Component.translatable(this.getDescriptionId(stack));
       } else {
          int slash = template.lastIndexOf(47);
          String fileName = slash >= 0 ? template.substring(slash + 1) : template;
-         return Component.m_237113_(fileName.endsWith(".aws") ? fileName.substring(0, fileName.length() - 4) : fileName);
+         return Component.literal(fileName.endsWith(".aws") ? fileName.substring(0, fileName.length() - 4) : fileName);
       }
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
       String template = template(stack);
       if (!template.isBlank()) {
-         tooltip.add(Component.m_237113_(template).m_130940_(ChatFormatting.DARK_GRAY));
+         tooltip.add(Component.literal(template).withStyle(ChatFormatting.DARK_GRAY));
       }
    }
 }

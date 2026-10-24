@@ -11,33 +11,33 @@ import net.minecraft.world.item.context.UseOnContext;
 
 public class StructureScannerItem extends Item {
    public StructureScannerItem() {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
    }
 
-   public InteractionResult m_6225_(UseOnContext context) {
-      if (context.m_43725_().f_46443_) {
+   public InteractionResult useOn(UseOnContext context) {
+      if (context.getLevel().isClientSide) {
          return InteractionResult.SUCCESS;
       } else {
-         ItemStack stack = context.m_43722_();
-         CompoundTag tag = stack.m_41784_();
-         BlockPos pos = context.m_8083_();
-         if (context.m_43723_() != null && context.m_43723_().m_6144_()) {
-            tag.m_128356_("BuildOrigin", pos.m_121878_());
-            context.m_43723_()
-               .m_5661_(
-                  Component.m_237110_("message.ancientwarfare.structure_scan.origin", new Object[]{pos.m_123341_(), pos.m_123342_(), pos.m_123343_()}), true
+         ItemStack stack = context.getItemInHand();
+         CompoundTag tag = stack.getOrCreateTag();
+         BlockPos pos = context.getClickedPos();
+         if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
+            tag.putLong("BuildOrigin", pos.asLong());
+            context.getPlayer()
+               .displayClientMessage(
+                  Component.translatable("message.ancientwarfare.structure_scan.origin", new Object[]{pos.getX(), pos.getY(), pos.getZ()}), true
                );
-         } else if (!tag.m_128441_("FirstPos")) {
-            tag.m_128356_("FirstPos", pos.m_121878_());
-            context.m_43723_()
-               .m_5661_(
-                  Component.m_237110_("message.ancientwarfare.structure_scan.first", new Object[]{pos.m_123341_(), pos.m_123342_(), pos.m_123343_()}), true
+         } else if (!tag.contains("FirstPos")) {
+            tag.putLong("FirstPos", pos.asLong());
+            context.getPlayer()
+               .displayClientMessage(
+                  Component.translatable("message.ancientwarfare.structure_scan.first", new Object[]{pos.getX(), pos.getY(), pos.getZ()}), true
                );
          } else {
-            tag.m_128356_("SecondPos", pos.m_121878_());
-            context.m_43723_()
-               .m_5661_(
-                  Component.m_237110_("message.ancientwarfare.structure_scan.second", new Object[]{pos.m_123341_(), pos.m_123342_(), pos.m_123343_()}), true
+            tag.putLong("SecondPos", pos.asLong());
+            context.getPlayer()
+               .displayClientMessage(
+                  Component.translatable("message.ancientwarfare.structure_scan.second", new Object[]{pos.getX(), pos.getY(), pos.getZ()}), true
                );
          }
 

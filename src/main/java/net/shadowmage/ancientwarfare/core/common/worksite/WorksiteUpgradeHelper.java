@@ -14,7 +14,7 @@ public final class WorksiteUpgradeHelper {
       if (upgrade != null && isAllowed(upgrade, quarry)) {
          for (int i = upgradeSlotStart; i < upgradeSlotStart + upgradeSlotCount; i++) {
             if (i != slot) {
-               WorksiteUpgrade existing = WorksiteUpgrade.fromStack(container.m_8020_(i));
+               WorksiteUpgrade existing = WorksiteUpgrade.fromStack(container.getItem(i));
                if (existing != null && upgrade.conflictsWith(existing)) {
                   return false;
                }
@@ -37,7 +37,7 @@ public final class WorksiteUpgradeHelper {
       ItemStack tool = new ItemStack(item);
       int level = getEnchantedToolsLevel(container, upgradeSlotStart, upgradeSlotCount);
       if (level > 0) {
-         tool.m_41663_(Enchantments.f_44987_, level);
+         tool.enchant(Enchantments.BLOCK_FORTUNE, level);
       }
 
       return tool;
@@ -79,7 +79,7 @@ public final class WorksiteUpgradeHelper {
 
    public static boolean hasUpgrade(Container container, int upgradeSlotStart, int upgradeSlotCount, WorksiteUpgrade upgrade) {
       for (int i = upgradeSlotStart; i < upgradeSlotStart + upgradeSlotCount; i++) {
-         if (WorksiteUpgrade.fromStack(container.m_8020_(i)) == upgrade) {
+         if (WorksiteUpgrade.fromStack(container.getItem(i)) == upgrade) {
             return true;
          }
       }

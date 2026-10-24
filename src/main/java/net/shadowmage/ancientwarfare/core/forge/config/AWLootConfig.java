@@ -15,8 +15,6 @@ public final class AWLootConfig {
    private static final DoubleValue GLOBAL_ROLL_MULTIPLIER;
    private static final DoubleValue GLOBAL_COUNT_MULTIPLIER;
    private static final BooleanValue PREVENT_DUPLICATE_RESEARCH;
-   private static final BooleanValue ICE_AND_FIRE_BONUS;
-   private static final BooleanValue SLASHBLADE_BONUS;
    private static final BooleanValue FILL_UNCONFIGURED_STRUCTURE_CONTAINERS;
    private static final ConfigValue<List<? extends String>> DISABLED_TABLES;
    private static final ConfigValue<List<? extends String>> TABLE_ROLL_MULTIPLIERS;
@@ -31,8 +29,8 @@ public final class AWLootConfig {
          int rolls = (int)Math.floor(exact);
          double fraction = exact - (double)rolls;
          if (fraction > 0.0) {
-            RandomSource random = RandomSource.m_216335_(seed ^ (long)table.hashCode() ^ 5931043124968374604L);
-            if (random.m_188500_() < fraction) {
+            RandomSource random = RandomSource.create(seed ^ (long)table.hashCode() ^ 5931043124968374604L);
+            if (random.nextDouble() < fraction) {
                rolls++;
             }
          }
@@ -51,14 +49,6 @@ public final class AWLootConfig {
       return (Boolean)PREVENT_DUPLICATE_RESEARCH.get();
    }
 
-   public static boolean iceAndFireBonusLoot() {
-      return (Boolean)ICE_AND_FIRE_BONUS.get();
-   }
-
-   public static boolean slashBladeBonusLoot() {
-      return (Boolean)SLASHBLADE_BONUS.get();
-   }
-
    public static boolean fillUnconfiguredStructureContainers() {
       return (Boolean)FILL_UNCONFIGURED_STRUCTURE_CONTAINERS.get();
    }
@@ -66,7 +56,7 @@ public final class AWLootConfig {
    private static boolean disabled(ResourceLocation table) {
       String target = table.toString();
 
-      for (String configured : (List)DISABLED_TABLES.get()) {
+      for (String configured : (List<String>)DISABLED_TABLES.get()) {
          if (target.equals(configured.trim().toLowerCase(Locale.ROOT))) {
             return true;
          }
@@ -78,7 +68,7 @@ public final class AWLootConfig {
    private static double tableMultiplier(ResourceLocation table) {
       String target = table.toString();
 
-      for (String configured : (List)TABLE_ROLL_MULTIPLIERS.get()) {
+      for (String configured : (List<String>)TABLE_ROLL_MULTIPLIERS.get()) {
          int separator = configured.lastIndexOf(61);
          if (separator > 0 && target.equals(configured.substring(0, separator).trim().toLowerCase(Locale.ROOT))) {
             try {
@@ -93,7 +83,7 @@ public final class AWLootConfig {
    }
 
    private static boolean validTableId(Object value) {
-      if (value instanceof String text && ResourceLocation.m_135820_(text.trim().toLowerCase(Locale.ROOT)) != null) {
+      if (value instanceof String text && ResourceLocation.tryParse(text.trim().toLowerCase(Locale.ROOT)) != null) {
          return true;
       }
 
@@ -105,7 +95,7 @@ public final class AWLootConfig {
          return false;
       } else {
          int separator = text.lastIndexOf(61);
-         if (separator > 0 && ResourceLocation.m_135820_(text.substring(0, separator).trim().toLowerCase(Locale.ROOT)) != null) {
+         if (separator > 0 && ResourceLocation.tryParse(text.substring(0, separator).trim().toLowerCase(Locale.ROOT)) != null) {
             try {
                double multiplier = Double.parseDouble(text.substring(separator + 1).trim());
                return multiplier >= 0.0 && multiplier <= 100.0;
@@ -144,10 +134,6 @@ public final class AWLootConfig {
          .defineInRange("globalItemCountMultiplier", 1.0, 0.0, 100.0);
       PREVENT_DUPLICATE_RESEARCH = builder.comment("Avoid duplicate research notes in one container. Default preserves the current remastered behavior.")
          .define("preventDuplicateResearchNotes", true);
-      ICE_AND_FIRE_BONUS = builder.comment("Allow the optional Ice and Fire structure bonus rewards when that mod is installed.")
-         .define("enableIceAndFireBonusLoot", true);
-      SLASHBLADE_BONUS = builder.comment("Allow the optional SlashBlade structure bonus rewards when that mod is installed.")
-         .define("enableSlashBladeBonusLoot", true);
       FILL_UNCONFIGURED_STRUCTURE_CONTAINERS = builder.comment(
             new String[]{
                "Fill otherwise empty containers in naturally generated AWS/AWT structures with a table inferred from the building purpose, nearby workstations and faction.",
@@ -162,7 +148,7 @@ public final class AWLootConfig {
       TABLE_ROLL_MULTIPLIERS = builder.comment(
             new String[]{
                "Optional per-table execution multipliers, applied after globalRollMultiplier.",
-               "Format: [\"ancientwarfare:chests/empire=0.5\", \"ancientwarfare:chests/dwarf=2.0\"]"
+               "Format: [\"ancientwarfare:chests/empire=0.5\", \"ancientwarfare:chests/norska=2.0\"]"
             }
          )
          .defineListAllowEmpty("tableRollMultipliers", List.of(), AWLootConfig::validMultiplierEntry);

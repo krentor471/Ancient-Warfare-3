@@ -23,34 +23,34 @@ public class OrderCopyingRecipe extends CustomRecipe {
    public ItemStack assemble(CraftingContainer container, RegistryAccess access) {
       OrderCopyingRecipe.OrderPair pair = getOrderPair(container);
       if (pair == null) {
-         return ItemStack.f_41583_;
+         return ItemStack.EMPTY;
       } else {
-         ItemStack result = pair.blank().m_41777_();
-         result.m_41764_(2);
-         result.m_41751_(pair.template().m_41783_() == null ? null : pair.template().m_41783_().m_6426_());
+         ItemStack result = pair.blank().copy();
+         result.setCount(2);
+         result.setTag(pair.template().getTag() == null ? null : pair.template().getTag().copy());
          return result;
       }
    }
 
-   public boolean m_8004_(int width, int height) {
+   public boolean canCraftInDimensions(int width, int height) {
       return width * height >= 2;
    }
 
-   public RecipeSerializer<?> m_7707_() {
+   public RecipeSerializer<?> getSerializer() {
       return AWCoreRegistryAccess.recipeSerializer(AWCoreIds.id("order_copying"));
    }
 
    private static OrderCopyingRecipe.OrderPair getOrderPair(CraftingContainer container) {
-      ItemStack first = ItemStack.f_41583_;
-      ItemStack second = ItemStack.f_41583_;
+      ItemStack first = ItemStack.EMPTY;
+      ItemStack second = ItemStack.EMPTY;
 
-      for (int i = 0; i < container.m_6643_(); i++) {
-         ItemStack stack = container.m_8020_(i);
-         if (!stack.m_41619_()) {
-            if (first.m_41619_()) {
+      for (int i = 0; i < container.getContainerSize(); i++) {
+         ItemStack stack = container.getItem(i);
+         if (!stack.isEmpty()) {
+            if (first.isEmpty()) {
                first = stack;
             } else {
-               if (!second.m_41619_()) {
+               if (!second.isEmpty()) {
                   return null;
                }
 
@@ -59,12 +59,12 @@ public class OrderCopyingRecipe extends CustomRecipe {
          }
       }
 
-      if (first.m_41619_() || second.m_41619_() || first.m_41720_() != second.m_41720_() || !isCopyableOrder(first)) {
+      if (first.isEmpty() || second.isEmpty() || first.getItem() != second.getItem() || !isCopyableOrder(first)) {
          return null;
-      } else if (first.m_41782_() == second.m_41782_()) {
+      } else if (first.hasTag() == second.hasTag()) {
          return null;
       } else {
-         return first.m_41782_() ? new OrderCopyingRecipe.OrderPair(first, second) : new OrderCopyingRecipe.OrderPair(second, first);
+         return first.hasTag() ? new OrderCopyingRecipe.OrderPair(first, second) : new OrderCopyingRecipe.OrderPair(second, first);
       }
    }
 

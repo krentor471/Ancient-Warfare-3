@@ -23,14 +23,14 @@ public class FishFarmControlMenu extends AbstractContainerMenu {
    public FishFarmControlMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.FISH_FARM_CONTROL), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      this.fishFarm = this.level.m_7702_(pos) instanceof FishFarmBlockEntity farm ? farm : null;
+      this.level = playerInventory.player.level();
+      this.fishFarm = this.level.getBlockEntity(pos) instanceof FishFarmBlockEntity farm ? farm : null;
       this.previewFish = this.fishFarm == null || this.fishFarm.harvestFish();
       this.previewInk = this.fishFarm == null || this.fishFarm.harvestInk();
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (this.fishFarm == null || this.level.f_46443_) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (this.fishFarm == null || this.level.isClientSide) {
          return false;
       } else if (id == 0) {
          this.fishFarm.toggleHarvestFish();
@@ -54,18 +54,18 @@ public class FishFarmControlMenu extends AbstractContainerMenu {
    }
 
    public boolean harvestFish() {
-      return this.level.f_46443_ ? this.previewFish : this.fishFarm == null || this.fishFarm.harvestFish();
+      return this.level.isClientSide ? this.previewFish : this.fishFarm == null || this.fishFarm.harvestFish();
    }
 
    public boolean harvestInk() {
-      return this.level.f_46443_ ? this.previewInk : this.fishFarm == null || this.fishFarm.harvestInk();
+      return this.level.isClientSide ? this.previewInk : this.fishFarm == null || this.fishFarm.harvestInk();
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.FISH_FARM));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.FISH_FARM));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

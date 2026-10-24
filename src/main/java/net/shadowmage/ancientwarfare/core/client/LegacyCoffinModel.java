@@ -20,114 +20,114 @@ public final class LegacyCoffinModel {
 
    public LegacyCoffinModel(ModelPart root, boolean wooden) {
       this.root = root;
-      this.lid = root.m_171324_("lid");
+      this.lid = root.getChild("lid");
       this.wooden = wooden;
    }
 
    public static LayerDefinition createWoodLayer() {
       MeshDefinition mesh = new MeshDefinition();
-      PartDefinition root = mesh.m_171576_();
-      root.m_171599_(
+      PartDefinition root = mesh.getRoot();
+      root.addOrReplaceChild(
          "side_r2",
-         CubeListBuilder.m_171558_().m_171514_(0, 35).m_171481_(0.0F, 0.0F, 0.0F, 1.0F, 9.0F, 26.0F),
-         PartPose.m_171423_(-5.0F, 15.0F, -7.89F, 0.0F, -0.11519173F, 0.0F)
+         CubeListBuilder.create().texOffs(0, 35).addBox(0.0F, 0.0F, 0.0F, 1.0F, 9.0F, 26.0F),
+         PartPose.offsetAndRotation(-5.0F, 15.0F, -7.89F, 0.0F, -0.11519173F, 0.0F)
       );
-      root.m_171599_(
-         "bottom", CubeListBuilder.m_171558_().m_171514_(24, 47).m_171481_(0.0F, 0.0F, 0.0F, 16.0F, 1.0F, 32.0F), PartPose.m_171419_(-8.0F, 22.9F, -8.0F)
+      root.addOrReplaceChild(
+         "bottom", CubeListBuilder.create().texOffs(24, 47).addBox(0.0F, 0.0F, 0.0F, 16.0F, 1.0F, 32.0F), PartPose.offset(-8.0F, 22.9F, -8.0F)
       );
-      root.m_171599_(
+      root.addOrReplaceChild(
          "side_l2",
-         CubeListBuilder.m_171558_().m_171514_(0, 0).m_171481_(0.0F, 0.0F, 0.0F, 1.0F, 9.0F, 26.0F),
-         PartPose.m_171423_(4.0F, 15.0F, -7.89F, 0.0F, 0.11519173F, 0.0F)
+         CubeListBuilder.create().texOffs(0, 0).addBox(0.0F, 0.0F, 0.0F, 1.0F, 9.0F, 26.0F),
+         PartPose.offsetAndRotation(4.0F, 15.0F, -7.89F, 0.0F, 0.11519173F, 0.0F)
       );
-      root.m_171599_(
-         "side_bottom", CubeListBuilder.m_171558_().m_171514_(0, 10).m_171481_(0.0F, 0.0F, 0.0F, 10.0F, 9.0F, 1.0F), PartPose.m_171419_(-5.0F, 15.0F, -8.0F)
+      root.addOrReplaceChild(
+         "side_bottom", CubeListBuilder.create().texOffs(0, 10).addBox(0.0F, 0.0F, 0.0F, 10.0F, 9.0F, 1.0F), PartPose.offset(-5.0F, 15.0F, -8.0F)
       );
-      root.m_171599_(
-         "side_top", CubeListBuilder.m_171558_().m_171514_(0, 0).m_171481_(0.0F, 0.0F, 0.0F, 10.0F, 9.0F, 1.0F), PartPose.m_171419_(-5.0F, 15.0F, 23.0F)
+      root.addOrReplaceChild(
+         "side_top", CubeListBuilder.create().texOffs(0, 0).addBox(0.0F, 0.0F, 0.0F, 10.0F, 9.0F, 1.0F), PartPose.offset(-5.0F, 15.0F, 23.0F)
       );
-      root.m_171599_(
+      root.addOrReplaceChild(
          "side_r1",
-         CubeListBuilder.m_171558_().m_171514_(28, 45).m_171481_(0.0F, 0.0F, 0.0F, 1.0F, 9.0F, 7.0F),
-         PartPose.m_171423_(-7.96F, 15.0F, 17.75F, 0.0F, 0.43633232F, 0.0F)
+         CubeListBuilder.create().texOffs(28, 45).addBox(0.0F, 0.0F, 0.0F, 1.0F, 9.0F, 7.0F),
+         PartPose.offsetAndRotation(-7.96F, 15.0F, 17.75F, 0.0F, 0.43633232F, 0.0F)
       );
-      root.m_171599_(
+      root.addOrReplaceChild(
          "side_l1",
-         CubeListBuilder.m_171558_().m_171514_(28, 10).m_171481_(0.0F, 0.0F, 0.0F, 1.0F, 9.0F, 7.0F),
-         PartPose.m_171423_(7.05F, 15.0F, 17.3F, 0.0F, -0.43633232F, 0.0F)
+         CubeListBuilder.create().texOffs(28, 10).addBox(0.0F, 0.0F, 0.0F, 1.0F, 9.0F, 7.0F),
+         PartPose.offsetAndRotation(7.05F, 15.0F, 17.3F, 0.0F, -0.43633232F, 0.0F)
       );
-      PartDefinition lid = root.m_171599_(
-         "lid", CubeListBuilder.m_171558_().m_171514_(24, 0).m_171481_(0.0F, -0.01F, 0.0F, 16.0F, 0.01F, 32.0F), PartPose.m_171419_(-8.0F, 14.1F, -8.0F)
+      PartDefinition lid = root.addOrReplaceChild(
+         "lid", CubeListBuilder.create().texOffs(24, 0).addBox(0.0F, -0.01F, 0.0F, 16.0F, 0.01F, 32.0F), PartPose.offset(-8.0F, 14.1F, -8.0F)
       );
-      lid.m_171599_(
+      lid.addOrReplaceChild(
          "side_r1",
-         CubeListBuilder.m_171558_().m_171514_(118, 45).m_171481_(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 7.0F),
-         PartPose.m_171423_(0.0F, -0.1F, 25.6F, 0.0F, 0.43633232F, 0.0F)
+         CubeListBuilder.create().texOffs(118, 45).addBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 7.0F),
+         PartPose.offsetAndRotation(0.0F, -0.1F, 25.6F, 0.0F, 0.43633232F, 0.0F)
       );
-      lid.m_171599_(
+      lid.addOrReplaceChild(
          "side_r2",
-         CubeListBuilder.m_171558_().m_171514_(90, 27).m_171481_(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 26.0F),
-         PartPose.m_171423_(3.0F, -0.1F, 0.0F, 0.0F, -0.11519173F, 0.0F)
+         CubeListBuilder.create().texOffs(90, 27).addBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 26.0F),
+         PartPose.offsetAndRotation(3.0F, -0.1F, 0.0F, 0.0F, -0.11519173F, 0.0F)
       );
-      lid.m_171599_(
+      lid.addOrReplaceChild(
          "side_l2",
-         CubeListBuilder.m_171558_().m_171514_(90, 0).m_171481_(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 26.0F),
-         PartPose.m_171423_(12.0F, -0.09F, 0.0F, 0.0F, 0.11519173F, 0.0F)
+         CubeListBuilder.create().texOffs(90, 0).addBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 26.0F),
+         PartPose.offsetAndRotation(12.0F, -0.09F, 0.0F, 0.0F, 0.11519173F, 0.0F)
       );
-      lid.m_171599_(
-         "side_bottom", CubeListBuilder.m_171558_().m_171514_(90, 2).m_171481_(0.0F, 0.0F, 0.0F, 10.0F, 1.0F, 1.0F), PartPose.m_171419_(3.0F, -0.11F, 0.0F)
+      lid.addOrReplaceChild(
+         "side_bottom", CubeListBuilder.create().texOffs(90, 2).addBox(0.0F, 0.0F, 0.0F, 10.0F, 1.0F, 1.0F), PartPose.offset(3.0F, -0.11F, 0.0F)
       );
-      lid.m_171599_(
+      lid.addOrReplaceChild(
          "side_l1",
-         CubeListBuilder.m_171558_().m_171514_(118, 18).m_171481_(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 7.0F),
-         PartPose.m_171423_(15.1F, -0.1F, 25.2F, 0.0F, -0.43633232F, 0.0F)
+         CubeListBuilder.create().texOffs(118, 18).addBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 7.0F),
+         PartPose.offsetAndRotation(15.1F, -0.1F, 25.2F, 0.0F, -0.43633232F, 0.0F)
       );
-      lid.m_171599_(
-         "side_top", CubeListBuilder.m_171558_().m_171514_(90, 0).m_171481_(0.0F, 0.0F, 0.0F, 10.0F, 1.0F, 1.0F), PartPose.m_171419_(3.0F, -0.11F, 31.0F)
+      lid.addOrReplaceChild(
+         "side_top", CubeListBuilder.create().texOffs(90, 0).addBox(0.0F, 0.0F, 0.0F, 10.0F, 1.0F, 1.0F), PartPose.offset(3.0F, -0.11F, 31.0F)
       );
-      return LayerDefinition.m_171565_(mesh, 144, 80);
+      return LayerDefinition.create(mesh, 144, 80);
    }
 
    public static LayerDefinition createStoneLayer() {
       MeshDefinition mesh = new MeshDefinition();
-      PartDefinition root = mesh.m_171576_();
-      PartDefinition base = root.m_171599_(
-         "base", CubeListBuilder.m_171558_().m_171514_(-48, 0).m_171481_(-12.0F, -4.0F, -24.0F, 24.0F, 4.0F, 48.0F), PartPose.m_171419_(0.0F, 24.0F, 0.0F)
+      PartDefinition root = mesh.getRoot();
+      PartDefinition base = root.addOrReplaceChild(
+         "base", CubeListBuilder.create().texOffs(-48, 0).addBox(-12.0F, -4.0F, -24.0F, 24.0F, 4.0F, 48.0F), PartPose.offset(0.0F, 24.0F, 0.0F)
       );
-      base.m_171599_("south", CubeListBuilder.m_171558_().m_171514_(0, 52).m_171481_(-12.0F, -12.0F, -24.0F, 24.0F, 12.0F, 4.0F), PartPose.f_171404_);
-      base.m_171599_(
+      base.addOrReplaceChild("south", CubeListBuilder.create().texOffs(0, 52).addBox(-12.0F, -12.0F, -24.0F, 24.0F, 12.0F, 4.0F), PartPose.ZERO);
+      base.addOrReplaceChild(
          "north",
-         CubeListBuilder.m_171558_().m_171514_(0, 52).m_171481_(-12.0F, -12.0F, -24.0F, 24.0F, 12.0F, 4.0F),
-         PartPose.m_171430_(0.0F, (float) -Math.PI, 0.0F)
+         CubeListBuilder.create().texOffs(0, 52).addBox(-12.0F, -12.0F, -24.0F, 24.0F, 12.0F, 4.0F),
+         PartPose.rotation(0.0F, (float) -Math.PI, 0.0F)
       );
-      base.m_171599_(
+      base.addOrReplaceChild(
          "left",
-         CubeListBuilder.m_171558_().m_171514_(0, 68).m_171481_(-24.0F, -12.0F, -12.0F, 48.0F, 12.0F, 4.0F),
-         PartPose.m_171430_(0.0F, (float) (Math.PI / 2), 0.0F)
+         CubeListBuilder.create().texOffs(0, 68).addBox(-24.0F, -12.0F, -12.0F, 48.0F, 12.0F, 4.0F),
+         PartPose.rotation(0.0F, (float) (Math.PI / 2), 0.0F)
       );
-      base.m_171599_(
+      base.addOrReplaceChild(
          "right",
-         CubeListBuilder.m_171558_().m_171514_(0, 68).m_171481_(-24.0F, -12.0F, -12.0F, 48.0F, 12.0F, 4.0F),
-         PartPose.m_171430_(0.0F, (float) (-Math.PI / 2), 0.0F)
+         CubeListBuilder.create().texOffs(0, 68).addBox(-24.0F, -12.0F, -12.0F, 48.0F, 12.0F, 4.0F),
+         PartPose.rotation(0.0F, (float) (-Math.PI / 2), 0.0F)
       );
-      PartDefinition lid = root.m_171599_(
-         "lid", CubeListBuilder.m_171558_().m_171514_(48, 0).m_171481_(-10.0F, -37.0F, -4.0F, 20.0F, 44.0F, 4.0F), PartPose.m_171419_(0.0F, 12.0F, -15.0F)
+      PartDefinition lid = root.addOrReplaceChild(
+         "lid", CubeListBuilder.create().texOffs(48, 0).addBox(-10.0F, -37.0F, -4.0F, 20.0F, 44.0F, 4.0F), PartPose.offset(0.0F, 12.0F, -15.0F)
       );
-      lid.m_171599_("inside", CubeListBuilder.m_171558_().m_171480_().m_171514_(2, 1).m_171481_(-9.5F, -36.5F, -3.5F, 19.0F, 43.0F, 3.0F), PartPose.f_171404_);
-      return LayerDefinition.m_171565_(mesh, 128, 128);
+      lid.addOrReplaceChild("inside", CubeListBuilder.create().mirror().texOffs(2, 1).addBox(-9.5F, -36.5F, -3.5F, 19.0F, 43.0F, 3.0F), PartPose.ZERO);
+      return LayerDefinition.create(mesh, 128, 128);
    }
 
    public void render(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, float open) {
       if (this.wooden) {
-         this.lid.f_104203_ = 0.0F;
-         this.lid.f_104204_ = 0.0F;
-         this.lid.f_104205_ = -open * (float) (Math.PI / 2);
+         this.lid.xRot = 0.0F;
+         this.lid.yRot = 0.0F;
+         this.lid.zRot = -open * (float) (Math.PI / 2);
       } else {
-         this.lid.f_104203_ = (float) (-Math.PI / 2);
-         this.lid.f_104204_ = -open * (float) (Math.PI / 2);
-         this.lid.f_104205_ = 0.0F;
+         this.lid.xRot = (float) (-Math.PI / 2);
+         this.lid.yRot = -open * (float) (Math.PI / 2);
+         this.lid.zRot = 0.0F;
       }
 
-      this.root.m_104301_(poseStack, consumer, light, overlay);
+      this.root.render(poseStack, consumer, light, overlay);
    }
 }

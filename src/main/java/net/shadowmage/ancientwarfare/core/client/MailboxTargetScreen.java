@@ -32,7 +32,7 @@ public class MailboxTargetScreen extends Screen {
    private boolean draggingScrollbar;
 
    public MailboxTargetScreen(Screen parent, MailboxBlockEntity box) {
-      super(Component.m_237115_("guistrings.automation.mailbox_target_select"));
+      super(Component.translatable("guistrings.automation.mailbox_target_select"));
       this.parent = parent;
       this.box = box;
    }
@@ -44,23 +44,23 @@ public class MailboxTargetScreen extends Screen {
       }
    }
 
-   protected void m_7856_() {
+   protected void init() {
       active = this;
-      this.left = (this.f_96543_ - 256) / 2;
-      this.top = (this.f_96544_ - 240) / 2;
-      String query = this.search == null ? "" : this.search.m_94155_();
-      this.search = new EditBox(this.f_96547_, this.left + 8, this.top + 8, 174, 16, Component.m_237115_("guistrings.automation.search"));
-      this.search.m_94199_(128);
-      this.search.m_94144_(query);
-      this.search.m_94151_(value -> this.firstRow = 0);
-      this.m_142416_(this.search);
-      this.m_142416_(new LegacyTexturedButton(this.left + 193, this.top + 10, 55, 12, Component.m_237115_("guistrings.npc.back"), button -> this.m_7379_()));
+      this.left = (this.width - 256) / 2;
+      this.top = (this.height - 240) / 2;
+      String query = this.search == null ? "" : this.search.getValue();
+      this.search = new EditBox(this.font, this.left + 8, this.top + 8, 174, 16, Component.translatable("guistrings.automation.search"));
+      this.search.setMaxLength(128);
+      this.search.setValue(query);
+      this.search.setResponder(value -> this.firstRow = 0);
+      this.addRenderableWidget(this.search);
+      this.addRenderableWidget(new LegacyTexturedButton(this.left + 193, this.top + 10, 55, 12, Component.translatable("guistrings.npc.back"), button -> this.onClose()));
       this.draggingScrollbar = false;
-      AWCorePlatform.requestMailboxList(this.box.m_58899_());
+      AWCorePlatform.requestMailboxList(this.box.getBlockPos());
    }
 
    private List<String> filteredEntries() {
-      String query = this.search == null ? "" : this.search.m_94155_().toLowerCase(Locale.ROOT);
+      String query = this.search == null ? "" : this.search.getValue().toLowerCase(Locale.ROOT);
       return query.isEmpty() ? this.entries : this.entries.stream().filter(entry -> entry.toLowerCase(Locale.ROOT).contains(query)).toList();
    }
 
@@ -96,13 +96,13 @@ public class MailboxTargetScreen extends Screen {
 
    private String fittedEntry(String entry) {
       int availableWidth = 222;
-      return this.f_96547_.m_92895_(entry) <= availableWidth ? entry : this.f_96547_.m_92834_(entry, availableWidth - this.f_96547_.m_92895_("...")) + "...";
+      return this.font.width(entry) <= availableWidth ? entry : this.font.plainSubstrByWidth(entry, availableWidth - this.font.width("...")) + "...";
    }
 
-   public void m_88315_(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-      this.m_280273_(graphics);
+   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+      this.renderBackground(graphics);
       LegacyGuiStyle.background(graphics, this.left, this.top, 256, 240);
-      graphics.m_280614_(this.f_96547_, this.f_96539_, this.left + 8, this.top + 27, -1, false);
+      graphics.drawString(this.font, this.title, this.left + 8, this.top + 27, -1, false);
       List<String> filtered = this.filteredEntries();
       this.clampScroll(filtered.size());
       LegacyGuiStyle.background(graphics, this.left + 8, this.top + 40, 240, 192);
@@ -111,8 +111,8 @@ public class MailboxTargetScreen extends Screen {
       int thumb = this.thumbHeight(filtered.size());
       int thumbY = this.top + 40 + 1 + (int)((long)(190 - thumb) * (long)this.firstRow / (long)Math.max(1, this.maxScroll(filtered.size())));
       LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, trackX + 1, thumbY, 10, thumb, 120, 120, 32, 128);
-      graphics.m_280262_();
-      graphics.m_280588_(this.left + 8 + 3, this.top + 40 + 3, trackX, this.top + 40 + 192 - 3);
+      graphics.flush();
+      graphics.enableScissor(this.left + 8 + 3, this.top + 40 + 3, trackX, this.top + 40 + 192 - 3);
       String tooltip = null;
 
       for (int row = 0; row < 15 && this.firstRow + row < filtered.size(); row++) {
@@ -120,24 +120,24 @@ public class MailboxTargetScreen extends Screen {
          int y = this.top + 40 + 3 + row * 12;
          boolean hovered = this.insideList((double)mouseX, (double)mouseY) && mouseY >= y && mouseY < y + 12;
          if (hovered) {
-            graphics.m_280509_(this.left + 8 + 3, y, trackX, y + 12, 1080057952);
-            if (this.f_96547_.m_92895_(entry) > 222) {
+            graphics.fill(this.left + 8 + 3, y, trackX, y + 12, 1080057952);
+            if (this.font.width(entry) > 222) {
                tooltip = entry;
             }
          }
 
-         graphics.m_280056_(this.f_96547_, this.fittedEntry(entry), this.left + 8 + 3, y + 2, hovered ? -6250336 : -1, false);
+         graphics.drawString(this.font, this.fittedEntry(entry), this.left + 8 + 3, y + 2, hovered ? -6250336 : -1, false);
       }
 
-      graphics.m_280262_();
-      graphics.m_280618_();
-      super.m_88315_(graphics, mouseX, mouseY, partialTick);
+      graphics.flush();
+      graphics.disableScissor();
+      super.render(graphics, mouseX, mouseY, partialTick);
       if (tooltip != null) {
-         graphics.m_280557_(this.f_96547_, Component.m_237113_(tooltip), mouseX, mouseY);
+         graphics.renderTooltip(this.font, Component.literal(tooltip), mouseX, mouseY);
       }
    }
 
-   public boolean m_6375_(double x, double y, int button) {
+   public boolean mouseClicked(double x, double y, int button) {
       List<String> filtered = this.filteredEntries();
       this.clampScroll(filtered.size());
       if (button == 0 && this.insideScrollbar(x, y) && this.maxScroll(filtered.size()) > 0) {
@@ -152,19 +152,19 @@ public class MailboxTargetScreen extends Screen {
                int separator = entry.lastIndexOf(" @ ");
                String name = separator < 0 ? entry : entry.substring(0, separator);
                this.box.setTargetName(name);
-               AWCorePlatform.sendMailboxConfig(this.box.m_58899_(), 1, name, false);
-               this.m_7379_();
+               AWCorePlatform.sendMailboxConfig(this.box.getBlockPos(), 1, name, false);
+               this.onClose();
                return true;
             }
          }
 
-         return super.m_6375_(x, y, button);
+         return super.mouseClicked(x, y, button);
       }
    }
 
-   public boolean m_6050_(double x, double y, double delta) {
+   public boolean mouseScrolled(double x, double y, double delta) {
       if (!this.insideList(x, y) && !this.insideScrollbar(x, y)) {
-         return super.m_6050_(x, y, delta);
+         return super.mouseScrolled(x, y, delta);
       } else {
          this.firstRow = this.firstRow - (int)Math.signum(delta) * 3;
          this.clampScroll(this.filteredEntries().size());
@@ -172,44 +172,44 @@ public class MailboxTargetScreen extends Screen {
       }
    }
 
-   public boolean m_7979_(double x, double y, int button, double dragX, double dragY) {
+   public boolean mouseDragged(double x, double y, int button, double dragX, double dragY) {
       if (button == 0 && this.draggingScrollbar) {
          this.scrollToMouse(y);
          return true;
       } else {
-         return super.m_7979_(x, y, button, dragX, dragY);
+         return super.mouseDragged(x, y, button, dragX, dragY);
       }
    }
 
-   public boolean m_6348_(double x, double y, int button) {
+   public boolean mouseReleased(double x, double y, int button) {
       if (button == 0) {
          this.draggingScrollbar = false;
       }
 
-      return super.m_6348_(x, y, button);
+      return super.mouseReleased(x, y, button);
    }
 
-   public void m_86600_() {
-      this.search.m_94120_();
+   public void tick() {
+      this.search.tick();
    }
 
-   public void m_7861_() {
+   public void removed() {
       if (active == this) {
          active = null;
       }
 
-      super.m_7861_();
+      super.removed();
    }
 
-   public void m_7379_() {
+   public void onClose() {
       if (active == this) {
          active = null;
       }
 
-      this.f_96541_.m_91152_(this.parent);
+      this.minecraft.setScreen(this.parent);
    }
 
-   public boolean m_7043_() {
+   public boolean isPauseScreen() {
       return false;
    }
 }

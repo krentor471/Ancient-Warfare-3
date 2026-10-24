@@ -21,13 +21,13 @@ public class CropFarmControlMenu extends AbstractContainerMenu {
    public CropFarmControlMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.CROP_FARM_CONTROL), containerId);
       this.pos = pos;
-      this.level = playerInventory.f_35978_.m_9236_();
-      this.cropFarm = this.level.m_7702_(pos) instanceof CropFarmBlockEntity farm ? farm : null;
+      this.level = playerInventory.player.level();
+      this.cropFarm = this.level.getBlockEntity(pos) instanceof CropFarmBlockEntity farm ? farm : null;
       this.previewAutoTill = this.cropFarm != null && this.cropFarm.autoTill();
    }
 
-   public boolean m_6366_(Player player, int id) {
-      if (id == 0 && this.cropFarm != null && !this.level.f_46443_) {
+   public boolean clickMenuButton(Player player, int id) {
+      if (id == 0 && this.cropFarm != null && !this.level.isClientSide) {
          this.cropFarm.toggleAutoTill();
          this.previewAutoTill = this.cropFarm.autoTill();
          return true;
@@ -43,14 +43,14 @@ public class CropFarmControlMenu extends AbstractContainerMenu {
    }
 
    public boolean autoTill() {
-      return this.level.f_46443_ ? this.previewAutoTill : this.cropFarm != null && this.cropFarm.autoTill();
+      return this.level.isClientSide ? this.previewAutoTill : this.cropFarm != null && this.cropFarm.autoTill();
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.CROP_FARM));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.CROP_FARM));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      return ItemStack.f_41583_;
+   public ItemStack quickMoveStack(Player player, int index) {
+      return ItemStack.EMPTY;
    }
 }

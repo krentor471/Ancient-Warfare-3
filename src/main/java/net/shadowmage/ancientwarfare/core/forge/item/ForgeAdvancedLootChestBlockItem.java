@@ -24,13 +24,13 @@ public final class ForgeAdvancedLootChestBlockItem extends AdvancedLootChestBloc
       consumer.accept(
          new IClientItemExtensions() {
             private final BlockEntityWithoutLevelRenderer renderer = new BlockEntityWithoutLevelRenderer(
-               Minecraft.m_91087_().m_167982_(), Minecraft.m_91087_().m_167973_()
+               Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels()
             ) {
-               public void m_108829_(
+               public void renderByItem(
                   ItemStack stack, ItemDisplayContext context, PoseStack poseStack, MultiBufferSource buffers, int packedLight, int packedOverlay
                ) {
-                  ChestBlockEntity chest = new ChestBlockEntity(BlockPos.f_121853_, Blocks.f_50087_.m_49966_());
-                  Minecraft.m_91087_().m_167982_().m_112272_(chest, poseStack, buffers, packedLight, packedOverlay);
+                  ChestBlockEntity chest = new ChestBlockEntity(BlockPos.ZERO, Blocks.CHEST.defaultBlockState());
+                  Minecraft.getInstance().getBlockEntityRenderDispatcher().renderItem(chest, poseStack, buffers, packedLight, packedOverlay);
                }
             };
 

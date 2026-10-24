@@ -32,19 +32,19 @@ public final class NpcEquipmentResolver {
    }
 
    public static NpcEquipmentResolver.WeaponType weaponType(ItemStack stack) {
-      if (stack == null || stack.m_41619_()) {
+      if (stack == null || stack.isEmpty()) {
          return NpcEquipmentResolver.WeaponType.NONE;
-      } else if (stack.m_41720_() instanceof CrossbowItem) {
+      } else if (stack.getItem() instanceof CrossbowItem) {
          return NpcEquipmentResolver.WeaponType.CROSSBOW;
-      } else if (stack.m_41720_() instanceof BowItem) {
+      } else if (stack.getItem() instanceof BowItem) {
          return NpcEquipmentResolver.WeaponType.BOW;
-      } else if (stack.m_41720_() instanceof TridentItem) {
+      } else if (stack.getItem() instanceof TridentItem) {
          return NpcEquipmentResolver.WeaponType.TRIDENT;
-      } else if (stack.m_41720_() instanceof ShieldItem || stack.m_41720_() instanceof NpcShieldItem) {
+      } else if (stack.getItem() instanceof ShieldItem || stack.getItem() instanceof NpcShieldItem) {
          return NpcEquipmentResolver.WeaponType.SHIELD;
-      } else if (stack.m_41720_() instanceof SwordItem) {
+      } else if (stack.getItem() instanceof SwordItem) {
          return NpcEquipmentResolver.WeaponType.SWORD;
-      } else if (stack.m_41720_() instanceof AxeItem) {
+      } else if (stack.getItem() instanceof AxeItem) {
          return NpcEquipmentResolver.WeaponType.AXE;
       } else {
          return attackDamageModifier(stack) > 0.0 ? NpcEquipmentResolver.WeaponType.MELEE : NpcEquipmentResolver.WeaponType.OTHER;
@@ -68,9 +68,9 @@ public final class NpcEquipmentResolver {
    }
 
    public static EquipmentSlot equipmentSlot(ItemStack stack) {
-      if (stack != null && !stack.m_41619_()) {
-         if (stack.m_41720_() instanceof ArmorItem armor) {
-            return armor.m_40402_();
+      if (stack != null && !stack.isEmpty()) {
+         if (stack.getItem() instanceof ArmorItem armor) {
+            return armor.getEquipmentSlot();
          } else {
             return weaponType(stack) == NpcEquipmentResolver.WeaponType.SHIELD ? EquipmentSlot.OFFHAND : EquipmentSlot.MAINHAND;
          }
@@ -80,16 +80,16 @@ public final class NpcEquipmentResolver {
    }
 
    public static double attackDamage(LivingEntity npc, ItemStack stack, LivingEntity target) {
-      double damage = npc.m_21133_(Attributes.f_22281_);
-      if (stack != null && !stack.m_41619_() && target != null) {
-         damage += (double)EnchantmentHelper.m_44833_(stack, target.m_6336_());
+      double damage = npc.getAttributeValue(Attributes.ATTACK_DAMAGE);
+      if (stack != null && !stack.isEmpty() && target != null) {
+         damage += (double)EnchantmentHelper.getDamageBonus(stack, target.getMobType());
       }
 
       return Math.max(0.0, damage);
    }
 
    public static double attackSpeed(LivingEntity npc) {
-      return npc.m_21051_(Attributes.f_22283_) == null ? 4.0 : Math.max(0.1, npc.m_21133_(Attributes.f_22283_));
+      return npc.getAttribute(Attributes.ATTACK_SPEED) == null ? 4.0 : Math.max(0.1, npc.getAttributeValue(Attributes.ATTACK_SPEED));
    }
 
    public static int meleeAttackInterval(LivingEntity npc) {
@@ -98,13 +98,13 @@ public final class NpcEquipmentResolver {
    }
 
    public static double meleeAttackReach(LivingEntity npc) {
-      ItemStack stack = npc == null ? ItemStack.f_41583_ : npc.m_21205_();
-      if (!stack.m_41619_() && stack.m_41720_() instanceof NpcWeaponItem npcWeapon) {
+      ItemStack stack = npc == null ? ItemStack.EMPTY : npc.getMainHandItem();
+      if (!stack.isEmpty() && stack.getItem() instanceof NpcWeaponItem npcWeapon) {
          return clampReach((double)npcWeapon.reach());
-      } else if (stack.m_41619_()) {
+      } else if (stack.isEmpty()) {
          return 3.0;
       } else {
-         Multimap<Attribute, AttributeModifier> modifiers = stack.m_41638_(EquipmentSlot.MAINHAND);
+         Multimap<Attribute, AttributeModifier> modifiers = stack.getAttributeModifiers(EquipmentSlot.MAINHAND);
          Attribute reachAttribute = AWCorePlatform.entityReachAttribute();
          if (reachAttribute == null) {
             return 3.0;
@@ -114,15 +114,15 @@ public final class NpcEquipmentResolver {
             double multiplyTotal = 1.0;
 
             for (AttributeModifier modifier : modifiers.get(reachAttribute)) {
-               switch (modifier.m_22217_()) {
+               switch (modifier.getOperation()) {
                   case ADDITION:
-                     addition += modifier.m_22218_();
+                     addition += modifier.getAmount();
                      break;
                   case MULTIPLY_BASE:
-                     multiplyBase += modifier.m_22218_();
+                     multiplyBase += modifier.getAmount();
                      break;
                   case MULTIPLY_TOTAL:
-                     multiplyTotal *= 1.0 + modifier.m_22218_();
+                     multiplyTotal *= 1.0 + modifier.getAmount();
                }
             }
 
@@ -140,15 +140,15 @@ public final class NpcEquipmentResolver {
    }
 
    private static double attackDamageModifier(ItemStack stack) {
-      return modifierValue(stack.m_41638_(EquipmentSlot.MAINHAND), Attributes.f_22281_);
+      return modifierValue(stack.getAttributeModifiers(EquipmentSlot.MAINHAND), Attributes.ATTACK_DAMAGE);
    }
 
    private static double modifierValue(Multimap<Attribute, AttributeModifier> modifiers, Attribute attribute) {
       double value = 0.0;
 
       for (AttributeModifier modifier : modifiers.get(attribute)) {
-         if (modifier.m_22217_() == Operation.ADDITION) {
-            value += modifier.m_22218_();
+         if (modifier.getOperation() == Operation.ADDITION) {
+            value += modifier.getAmount();
          }
       }
 

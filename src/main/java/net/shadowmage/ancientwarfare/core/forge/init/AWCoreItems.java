@@ -43,7 +43,6 @@ import net.shadowmage.ancientwarfare.core.item.ManualItem;
 import net.shadowmage.ancientwarfare.core.item.NpcShieldItem;
 import net.shadowmage.ancientwarfare.core.item.NpcSpawnerItem;
 import net.shadowmage.ancientwarfare.core.item.NpcWeaponItem;
-import net.shadowmage.ancientwarfare.core.item.OwnedNpcSpawnEggItem;
 import net.shadowmage.ancientwarfare.core.item.QuillItem;
 import net.shadowmage.ancientwarfare.core.item.ResearchBookItem;
 import net.shadowmage.ancientwarfare.core.item.ResearchNoteItem;
@@ -455,12 +454,6 @@ public final class AWCoreItems {
    public static final RegistryObject<Item> SIEGE_ENGINEER_NPC_SPAWN_EGG = REGISTER.register(
       "siege_engineer_npc_spawn_egg", () -> new ForgeSpawnEggItem(AWCoreEntityTypes.SIEGE_ENGINEER_NPC, 4868674, 13144378, new Properties())
    );
-   public static final RegistryObject<Item> MODERN_SOLDIER_NPC_SPAWN_EGG = REGISTER.register(
-      "modern_soldier_npc_spawn_egg", () -> new OwnedNpcSpawnEggItem(AWCoreEntityTypes.MODERN_SOLDIER_NPC, 4868674, 8030100, new Properties())
-   );
-   public static final RegistryObject<Item> SHIP_CAPTAIN_NPC_SPAWN_EGG = REGISTER.register(
-      "ship_captain_npc_spawn_egg", () -> new OwnedNpcSpawnEggItem(AWCoreEntityTypes.SHIP_CAPTAIN_NPC, 2504518, 13215307, new Properties())
-   );
    public static final RegistryObject<Item> FACTION_SOLDIER_NPC_SPAWN_EGG = REGISTER.register(
       "faction_soldier_npc_spawn_egg", () -> new ForgeSpawnEggItem(AWCoreEntityTypes.FACTION_SOLDIER_NPC, 3877412, 11547947, new Properties())
    );
@@ -488,9 +481,6 @@ public final class AWCoreItems {
    public static final RegistryObject<Item> FACTION_PRIEST_NPC_SPAWN_EGG = REGISTER.register(
       "faction_priest_npc_spawn_egg", () -> new ForgeSpawnEggItem(AWCoreEntityTypes.FACTION_PRIEST_NPC, 13157024, 7232059, new Properties())
    );
-   public static final RegistryObject<Item> FACTION_SPELLCASTER_NPC_SPAWN_EGG = REGISTER.register(
-      "faction_spellcaster_npc_spawn_egg", () -> new ForgeSpawnEggItem(AWCoreEntityTypes.FACTION_SPELLCASTER_NPC, 3088966, 9228543, new Properties())
-   );
    public static final RegistryObject<Item> NPC_SPAWNER = REGISTER.register("npc_spawner", NpcSpawnerItem::new);
    public static final RegistryObject<Item> WOODEN_COMMAND_BATON = REGISTER.register("wooden_command_baton", () -> new CommandBatonItem(Tiers.WOOD));
    public static final RegistryObject<Item> STONE_COMMAND_BATON = REGISTER.register("stone_command_baton", () -> new CommandBatonItem(Tiers.STONE));
@@ -498,6 +488,9 @@ public final class AWCoreItems {
    public static final RegistryObject<Item> GOLD_COMMAND_BATON = REGISTER.register("gold_command_baton", () -> new CommandBatonItem(Tiers.GOLD));
    public static final RegistryObject<Item> DIAMOND_COMMAND_BATON = REGISTER.register("diamond_command_baton", () -> new CommandBatonItem(Tiers.DIAMOND));
    public static final RegistryObject<Item> WORK_ORDER = REGISTER.register("work_order", WorkOrderItem::new);
+   public static final RegistryObject<Item> CONSTRUCTION_WAND = REGISTER.register(
+      "construction_wand", net.shadowmage.ancientwarfare.core.item.ConstructionWandItem::new
+   );
    public static final RegistryObject<Item> ROUTING_ORDER = REGISTER.register("routing_order", RoutingOrderItem::new);
    public static final RegistryObject<Item> TRADE_ORDER = REGISTER.register("trade_order", TradeOrderItem::new);
    public static final RegistryObject<Item> UPKEEP_ORDER = REGISTER.register("upkeep_order", UpkeepOrderItem::new);
@@ -548,7 +541,7 @@ public final class AWCoreItems {
    public static final RegistryObject<Item> SHIELD_BUFFLOKA = npcShield("shield_buffloka", Tiers.WOOD, 336);
    public static final RegistryObject<Item> COIN = REGISTER.register("coin", CoinItem::new);
    public static final RegistryObject<Item> FOOD_BUNDLE = REGISTER.register(
-      "food_bundle", () -> new Item(new Properties().m_41489_(new Builder().m_38760_(15).m_38758_(1.0F).m_38757_().m_38767_()))
+      "food_bundle", () -> new Item(new Properties().food(new Builder().nutrition(15).saturationMod(1.0F).meat().build()))
    );
    public static final RegistryObject<Item> BARD_INSTRUMENT = REGISTER.register("bard_instrument", BardInstrumentItem::new);
    public static final RegistryObject<Item> GATE_SPAWNER = REGISTER.register("gate_spawner", GateSpawnerItem::new);

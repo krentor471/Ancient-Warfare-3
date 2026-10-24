@@ -44,15 +44,15 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
    public SurvivalStructureBuilderBlockEntity(BlockPos pos, BlockState state) {
       super(AWCoreRegistryAccess.blockEntityType(AWCoreIds.STRUCTURE_BUILDER_TICKED), pos, state);
       this.origin = pos;
-      if (state.m_61138_(SurvivalStructureBuilderBlock.FACING)) {
-         this.facing = (Direction)state.m_61143_(SurvivalStructureBuilderBlock.FACING);
+      if (state.hasProperty(SurvivalStructureBuilderBlock.FACING)) {
+         this.facing = (Direction)state.getValue(SurvivalStructureBuilderBlock.FACING);
       }
    }
 
    public void configure(ItemStack stack, Direction placedFacing) {
       this.templateName = SurvivalStructureBuilderItem.templateName(stack);
-      this.origin = this.f_58858_;
-      this.facing = placedFacing != null && placedFacing.m_122434_().m_122479_() ? placedFacing : Direction.NORTH;
+      this.origin = this.worldPosition;
+      this.facing = placedFacing != null && placedFacing.getAxis().isHorizontal() ? placedFacing : Direction.NORTH;
       this.phase = SurvivalStructureBuilderItem.phase(stack);
       this.cursor = SurvivalStructureBuilderItem.cursor(stack);
       this.storedWorkEnergy = SurvivalStructureBuilderItem.storedWorkEnergy(stack);
@@ -77,7 +77,7 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
          }
 
          this.storedWorkEnergy = Math.max(0, this.storedWorkEnergy - consumed);
-         if (level.m_7702_(this.f_58858_) == this) {
+         if (level.getBlockEntity(this.worldPosition) == this) {
             this.markChangedAndSync();
          }
       }
@@ -93,7 +93,7 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
          while (consumed < budget && this.phase <= 2) {
             if (this.phase == 0) {
                AwsTemplatePlacer.IncrementalStep step = AwsTemplatePlacer.clearPlayerBuiltStep(
-                  level, this.origin, path, this.facing, this.cursor, budget - consumed, this.f_58858_
+                  level, this.origin, path, this.facing, this.cursor, budget - consumed, this.worldPosition
                );
                this.cursor = step.cursor();
                consumed += step.workUsed();
@@ -105,7 +105,7 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
                this.cursor = 0;
             } else if (this.phase == 1) {
                AwsTemplatePlacer.IncrementalStep step = AwsTemplatePlacer.placePlayerBuiltStep(
-                  level, this.origin, path, this.facing, this.cursor, budget - consumed, this.f_58858_
+                  level, this.origin, path, this.facing, this.cursor, budget - consumed, this.worldPosition
                );
                this.cursor = step.cursor();
                consumed += step.workUsed();
@@ -122,7 +122,7 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
             }
          }
       } catch (RuntimeException var7) {
-         AncientWarfareCore.LOG.warn("Unable to advance survival AWS builder {} at {}", new Object[]{path, this.f_58858_, var7});
+         AncientWarfareCore.LOG.warn("Unable to advance survival AWS builder {} at {}", new Object[]{path, this.worldPosition, var7});
          this.storedWorkEnergy = 0;
       }
 
@@ -141,32 +141,32 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
 
             while (consumed < budget && this.cursor < template.blocks().size() && inspected++ < inspectionLimit) {
                PlayerStructureTemplateData.TemplateBlock entry = template.blocks().get(this.cursor++);
-               BlockPos target = this.origin.m_121955_(rotateRelative(entry.relativePos(), this.facing));
+               BlockPos target = this.origin.offset(rotateRelative(entry.relativePos(), this.facing));
                if (this.phase == 0) {
-                  if (!entry.state().m_60795_() && entry.state().m_60734_() != Blocks.f_50454_) {
-                     BlockState existing = level.m_8055_(target);
-                     if (!target.equals(this.f_58858_)
-                        && level.m_7702_(target) == null
+                  if (!entry.state().isAir() && entry.state().getBlock() != Blocks.STRUCTURE_VOID) {
+                     BlockState existing = level.getBlockState(target);
+                     if (!target.equals(this.worldPosition)
+                        && level.getBlockEntity(target) == null
                         && AwsTemplatePlacer.isBasicNaturalTerrain(existing)
-                        && level.m_7731_(target, Blocks.f_50016_.m_49966_(), 18)) {
+                        && level.setBlock(target, Blocks.AIR.defaultBlockState(), 18)) {
                         consumed++;
                      }
                   }
-               } else if (!target.equals(this.f_58858_) && !entry.state().m_60795_() && entry.state().m_60734_() != Blocks.f_50454_) {
-                  BlockState intended = entry.state().m_60717_(rotation);
-                  BlockState existing = level.m_8055_(target);
+               } else if (!target.equals(this.worldPosition) && !entry.state().isAir() && entry.state().getBlock() != Blocks.STRUCTURE_VOID) {
+                  BlockState intended = entry.state().rotate(rotation);
+                  BlockState existing = level.getBlockState(target);
                   if (!existing.equals(intended)
-                     && (existing.m_60795_() || level.m_7702_(target) == null && AwsTemplatePlacer.isBasicNaturalTerrain(existing))
-                     && level.m_7731_(target, intended, 18)) {
+                     && (existing.isAir() || level.getBlockEntity(target) == null && AwsTemplatePlacer.isBasicNaturalTerrain(existing))
+                     && level.setBlock(target, intended, 18)) {
                      consumed++;
-                     BlockEntity placed = level.m_7702_(target);
+                     BlockEntity placed = level.getBlockEntity(target);
                      if (entry.blockEntityTag() != null && placed != null) {
-                        CompoundTag tag = entry.blockEntityTag().m_6426_();
-                        tag.m_128405_("x", target.m_123341_());
-                        tag.m_128405_("y", target.m_123342_());
-                        tag.m_128405_("z", target.m_123343_());
-                        placed.m_142466_(tag);
-                        placed.m_6596_();
+                        CompoundTag tag = entry.blockEntityTag().copy();
+                        tag.putInt("x", target.getX());
+                        tag.putInt("y", target.getY());
+                        tag.putInt("z", target.getZ());
+                        placed.load(tag);
+                        placed.setChanged();
                      }
                   }
                }
@@ -178,7 +178,7 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
                if (this.phase > 1) {
                   this.restorePlayerTemplateAnchor(level, template, rotation);
                   Set<Long> positions = new HashSet<>();
-                  template.blocks().forEach(entry -> positions.add(this.origin.m_121955_(rotateRelative(entry.relativePos(), this.facing)).m_121878_()));
+                  template.blocks().forEach(entry -> positions.add(this.origin.offset(rotateRelative(entry.relativePos(), this.facing)).asLong()));
                   AwsTemplatePlacer.refreshHorizontalConnections(level, positions);
                   this.completeAfterAnchorReplacement();
                   break;
@@ -194,20 +194,20 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
    }
 
    private void restorePlayerTemplateAnchor(ServerLevel level, PlayerStructureTemplateData.PlayerTemplate template, Rotation rotation) {
-      level.m_7471_(this.f_58858_, false);
+      level.removeBlock(this.worldPosition, false);
 
       for (PlayerStructureTemplateData.TemplateBlock entry : template.blocks()) {
-         BlockPos target = this.origin.m_121955_(rotateRelative(entry.relativePos(), this.facing));
-         if (target.equals(this.f_58858_) && !entry.state().m_60795_() && entry.state().m_60734_() != Blocks.f_50454_) {
-            level.m_7731_(target, entry.state().m_60717_(rotation), 18);
-            BlockEntity placed = level.m_7702_(target);
+         BlockPos target = this.origin.offset(rotateRelative(entry.relativePos(), this.facing));
+         if (target.equals(this.worldPosition) && !entry.state().isAir() && entry.state().getBlock() != Blocks.STRUCTURE_VOID) {
+            level.setBlock(target, entry.state().rotate(rotation), 18);
+            BlockEntity placed = level.getBlockEntity(target);
             if (entry.blockEntityTag() != null && placed != null) {
-               CompoundTag tag = entry.blockEntityTag().m_6426_();
-               tag.m_128405_("x", target.m_123341_());
-               tag.m_128405_("y", target.m_123342_());
-               tag.m_128405_("z", target.m_123343_());
-               placed.m_142466_(tag);
-               placed.m_6596_();
+               CompoundTag tag = entry.blockEntityTag().copy();
+               tag.putInt("x", target.getX());
+               tag.putInt("y", target.getY());
+               tag.putInt("z", target.getZ());
+               placed.load(tag);
+               placed.setChanged();
             }
 
             return;
@@ -232,10 +232,10 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
 
    public Component progressMessage() {
       int volume = this.progressVolume();
-      int percent = volume <= 0 ? 0 : Mth.m_14045_(Math.round((float)this.cursor * 100.0F / (float)volume), 0, 100);
+      int percent = volume <= 0 ? 0 : Mth.clamp(Math.round((float)this.cursor * 100.0F / (float)volume), 0, 100);
       String stageKey = this.phase == 0 ? "message.ancientwarfare.structure_builder.clearing" : "message.ancientwarfare.structure_builder.building";
-      return Component.m_237110_(
-         "message.ancientwarfare.structure_builder.progress", new Object[]{Component.m_237115_(stageKey), percent, this.storedWorkEnergy}
+      return Component.translatable(
+         "message.ancientwarfare.structure_builder.progress", new Object[]{Component.translatable(stageKey), percent, this.storedWorkEnergy}
       );
    }
 
@@ -247,7 +247,7 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
             return 0;
          }
       } else {
-         return this.f_58857_ instanceof ServerLevel serverLevel
+         return this.level instanceof ServerLevel serverLevel
             ? PlayerStructureTemplateData.get(serverLevel).template(this.templateName).map(template -> template.blocks().size()).orElse(0)
             : 0;
       }
@@ -267,7 +267,7 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
       } else {
          stack = new ItemStack(AWCoreRegistryAccess.block(AWCoreIds.STRUCTURE_BUILDER_TICKED));
          if (!this.templateName.isBlank()) {
-            stack.m_41714_(Component.m_237115_("block.ancientwarfare.structure_builder_ticked").m_130946_(": ").m_7220_(Component.m_237113_(this.templateName)));
+            stack.setHoverName(Component.translatable("block.ancientwarfare.structure_builder_ticked").append(": ").append(Component.literal(this.templateName)));
          }
       }
 
@@ -277,11 +277,11 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
 
    @Override
    public boolean hasWork() {
-      return this.f_58857_ != null
-            && !this.f_58857_.f_46443_
+      return this.level != null
+            && !this.level.isClientSide
             && !this.templateName.isBlank()
             && this.phase <= 2
-            && this.f_58857_.m_7702_(this.f_58858_) == this
+            && this.level.getBlockEntity(this.worldPosition) == this
          ? this.progressVolume() > 0
          : false;
    }
@@ -300,7 +300,7 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
       if (this.hasWork() && worker.canWorkAt(this.getWorkType())) {
          int amount = Math.max(1, Math.round(2.0F * worker.getWorkEffectiveness(this.getWorkType())));
          this.storedWorkEnergy = Math.min(256, this.storedWorkEnergy + amount);
-         this.m_6596_();
+         this.setChanged();
       }
    }
 
@@ -310,9 +310,9 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
    }
 
    private void clampProgress() {
-      this.phase = Mth.m_14045_(this.phase, 0, 2);
+      this.phase = Mth.clamp(this.phase, 0, 2);
       this.cursor = Math.max(0, this.cursor);
-      this.storedWorkEnergy = Mth.m_14045_(this.storedWorkEnergy, 0, 256);
+      this.storedWorkEnergy = Mth.clamp(this.storedWorkEnergy, 0, 256);
    }
 
    private static Rotation rotationFor(Direction facing) {
@@ -326,9 +326,9 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
 
    private static BlockPos rotateRelative(BlockPos pos, Direction facing) {
       return switch (facing) {
-         case EAST -> new BlockPos(-pos.m_123343_(), pos.m_123342_(), pos.m_123341_());
-         case SOUTH -> new BlockPos(-pos.m_123341_(), pos.m_123342_(), -pos.m_123343_());
-         case WEST -> new BlockPos(pos.m_123343_(), pos.m_123342_(), -pos.m_123341_());
+         case EAST -> new BlockPos(-pos.getZ(), pos.getY(), pos.getX());
+         case SOUTH -> new BlockPos(-pos.getX(), pos.getY(), -pos.getZ());
+         case WEST -> new BlockPos(pos.getZ(), pos.getY(), -pos.getX());
          default -> pos;
       };
    }
@@ -350,48 +350,48 @@ public class SurvivalStructureBuilderBlockEntity extends BlockEntity implements 
    }
 
    private void markChangedAndSync() {
-      this.m_6596_();
-      if (this.f_58857_ != null && !this.f_58857_.f_46443_) {
-         this.f_58857_.m_7260_(this.f_58858_, this.m_58900_(), this.m_58900_(), 2);
+      this.setChanged();
+      if (this.level != null && !this.level.isClientSide) {
+         this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 2);
       }
    }
 
-   public CompoundTag m_5995_() {
-      CompoundTag tag = super.m_5995_();
-      this.m_183515_(tag);
+   public CompoundTag getUpdateTag() {
+      CompoundTag tag = super.getUpdateTag();
+      this.saveAdditional(tag);
       return tag;
    }
 
    @Nullable
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
-      return ClientboundBlockEntityDataPacket.m_195640_(this);
+      return ClientboundBlockEntityDataPacket.create(this);
    }
 
    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {
-      CompoundTag tag = packet.m_131708_();
+      CompoundTag tag = packet.getTag();
       if (tag != null) {
-         this.m_142466_(tag);
+         this.load(tag);
       }
    }
 
-   protected void m_183515_(CompoundTag tag) {
-      super.m_183515_(tag);
-      tag.m_128359_("TemplateName", this.templateName);
-      tag.m_128405_("Phase", this.phase);
-      tag.m_128405_("Cursor", this.cursor);
-      tag.m_128405_("StoredWorkEnergy", this.storedWorkEnergy);
-      tag.m_128356_("Origin", this.origin.m_121878_());
-      tag.m_128344_("Facing", (byte)this.facing.m_122416_());
+   protected void saveAdditional(CompoundTag tag) {
+      super.saveAdditional(tag);
+      tag.putString("TemplateName", this.templateName);
+      tag.putInt("Phase", this.phase);
+      tag.putInt("Cursor", this.cursor);
+      tag.putInt("StoredWorkEnergy", this.storedWorkEnergy);
+      tag.putLong("Origin", this.origin.asLong());
+      tag.putByte("Facing", (byte)this.facing.get2DDataValue());
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
-      this.templateName = tag.m_128461_("TemplateName");
-      this.phase = tag.m_128451_("Phase");
-      this.cursor = tag.m_128451_("Cursor");
-      this.storedWorkEnergy = tag.m_128451_("StoredWorkEnergy");
-      this.origin = tag.m_128441_("Origin") ? BlockPos.m_122022_(tag.m_128454_("Origin")) : this.f_58858_;
-      this.facing = tag.m_128441_("Facing") ? Direction.m_122407_(tag.m_128445_("Facing")) : Direction.NORTH;
+   public void load(CompoundTag tag) {
+      super.load(tag);
+      this.templateName = tag.getString("TemplateName");
+      this.phase = tag.getInt("Phase");
+      this.cursor = tag.getInt("Cursor");
+      this.storedWorkEnergy = tag.getInt("StoredWorkEnergy");
+      this.origin = tag.contains("Origin") ? BlockPos.of(tag.getLong("Origin")) : this.worldPosition;
+      this.facing = tag.contains("Facing") ? Direction.from2DDataValue(tag.getByte("Facing")) : Direction.NORTH;
       this.clampProgress();
    }
 }

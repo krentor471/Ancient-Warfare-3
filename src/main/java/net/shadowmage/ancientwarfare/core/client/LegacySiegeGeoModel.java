@@ -7,7 +7,7 @@ import software.bernie.geckolib.model.GeoModel;
 
 abstract class LegacySiegeGeoModel<T extends CatapultMobileEntity> extends GeoModel<T> {
    protected void applyWheelRotation(T animatable, float partialTick) {
-      float wheelAngle = Mth.m_14179_(partialTick, animatable.wheelRotationPrev, animatable.wheelRotation);
+      float wheelAngle = Mth.lerp(partialTick, animatable.wheelRotationPrev, animatable.wheelRotation);
       this.setRotationX("FRWheelPivot", wheelAngle);
       this.setRotationX("FLWheelPivot", wheelAngle);
       this.setRotationX("RRWheelPivot", wheelAngle);
@@ -25,11 +25,11 @@ abstract class LegacySiegeGeoModel<T extends CatapultMobileEntity> extends GeoMo
       float crankAngle = 0.0F;
       if (animatable.getFireAnimationTicks() > 0) {
          if (elapsed <= 5.0F) {
-            float progress = Mth.m_14036_(elapsed / 5.0F, 0.0F, 1.0F);
-            armAngle = Mth.m_14179_(progress, 0.0F, 70.0F);
+            float progress = Mth.clamp(elapsed / 5.0F, 0.0F, 1.0F);
+            armAngle = Mth.lerp(progress, 0.0F, 70.0F);
          } else {
-            float progress = Mth.m_14036_((elapsed - 5.0F) / 22.0F, 0.0F, 1.0F);
-            armAngle = Mth.m_14179_(progress, 70.0F, 0.0F);
+            float progress = Mth.clamp((elapsed - 5.0F) / 22.0F, 0.0F, 1.0F);
+            armAngle = Mth.lerp(progress, 70.0F, 0.0F);
             crankAngle = progress * 360.0F;
          }
       }
@@ -46,13 +46,13 @@ abstract class LegacySiegeGeoModel<T extends CatapultMobileEntity> extends GeoMo
       float stringAngle = -64.0F;
       if (animatable.getFireAnimationTicks() > 0) {
          if (elapsed <= 8.0F) {
-            float progress = Mth.m_14036_(elapsed / 8.0F, 0.0F, 1.0F);
-            armAngle = Mth.m_14179_(progress, -27.0F, 90.0F);
-            stringAngle = Mth.m_14179_(progress, -64.0F, 90.0F);
+            float progress = Mth.clamp(elapsed / 8.0F, 0.0F, 1.0F);
+            armAngle = Mth.lerp(progress, -27.0F, 90.0F);
+            stringAngle = Mth.lerp(progress, -64.0F, 90.0F);
          } else {
-            float progress = Mth.m_14036_((elapsed - 8.0F) / 19.0F, 0.0F, 1.0F);
-            armAngle = Mth.m_14179_(progress, 90.0F, -27.0F);
-            stringAngle = Mth.m_14179_(progress, 90.0F, -64.0F);
+            float progress = Mth.clamp((elapsed - 8.0F) / 19.0F, 0.0F, 1.0F);
+            armAngle = Mth.lerp(progress, 90.0F, -27.0F);
+            stringAngle = Mth.lerp(progress, 90.0F, -64.0F);
          }
       }
 

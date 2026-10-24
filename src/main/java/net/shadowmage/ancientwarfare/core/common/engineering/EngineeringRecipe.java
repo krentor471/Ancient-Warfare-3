@@ -35,7 +35,7 @@ public record EngineeringRecipe(ResourceLocation id, EngineeringIngredient[] ing
                EngineeringIngredient ingredient = this.ingredients[slot];
                ItemStack stack = grid[slot];
                if (ingredient.isEmpty()) {
-                  if (!stack.m_41619_()) {
+                  if (!stack.isEmpty()) {
                      return null;
                   }
                } else {
@@ -59,7 +59,7 @@ public record EngineeringRecipe(ResourceLocation id, EngineeringIngredient[] ing
       List<Integer> occupied = new ArrayList<>();
 
       for (int slot = 0; slot < grid.length; slot++) {
-         if (!grid[slot].m_41619_()) {
+         if (!grid[slot].isEmpty()) {
             occupied.add(slot);
          }
       }
@@ -97,15 +97,15 @@ public record EngineeringRecipe(ResourceLocation id, EngineeringIngredient[] ing
    }
 
    public ItemStack assemble() {
-      return this.result.m_41777_();
+      return this.result.copy();
    }
 
    public boolean matches(CraftingContainer container, Level level) {
-      if (container.m_39347_() == 3 && container.m_39346_() == 3) {
+      if (container.getWidth() == 3 && container.getHeight() == 3) {
          ItemStack[] grid = new ItemStack[9];
 
          for (int slot = 0; slot < grid.length; slot++) {
-            grid[slot] = container.m_8020_(slot);
+            grid[slot] = container.getItem(slot);
          }
 
          return this.matches(grid);
@@ -118,16 +118,16 @@ public record EngineeringRecipe(ResourceLocation id, EngineeringIngredient[] ing
       return this.assemble();
    }
 
-   public boolean m_8004_(int width, int height) {
+   public boolean canCraftInDimensions(int width, int height) {
       return width >= 3 && height >= 3;
    }
 
-   public ItemStack m_8043_(RegistryAccess registryAccess) {
-      return this.result.m_41777_();
+   public ItemStack getResultItem(RegistryAccess registryAccess) {
+      return this.result.copy();
    }
 
-   public NonNullList<Ingredient> m_7527_() {
-      NonNullList<Ingredient> result = NonNullList.m_122780_(this.ingredients.length, Ingredient.f_43901_);
+   public NonNullList<Ingredient> getIngredients() {
+      NonNullList<Ingredient> result = NonNullList.withSize(this.ingredients.length, Ingredient.EMPTY);
 
       for (int slot = 0; slot < this.ingredients.length; slot++) {
          result.set(slot, this.ingredients[slot].ingredient());
@@ -136,19 +136,19 @@ public record EngineeringRecipe(ResourceLocation id, EngineeringIngredient[] ing
       return result;
    }
 
-   public ResourceLocation m_6423_() {
+   public ResourceLocation getId() {
       return this.id;
    }
 
-   public RecipeSerializer<?> m_7707_() {
+   public RecipeSerializer<?> getSerializer() {
       return AWCoreRegistryAccess.recipeSerializer(AWCoreIds.id("engineering"));
    }
 
-   public RecipeType<?> m_6671_() {
+   public RecipeType<?> getType() {
       return AWCoreRegistryAccess.recipeType(AWCoreIds.id("engineering"));
    }
 
-   public boolean m_5598_() {
+   public boolean isSpecial() {
       return true;
    }
 }

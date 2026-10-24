@@ -30,16 +30,16 @@ public class ProtectionFlagRenderer implements BlockEntityRenderer<ProtectionFla
    public void render(
       ProtectionFlagBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay
    ) {
-      int rotation = (Integer)blockEntity.m_58900_().m_61143_(ProtectionFlagBlock.ROTATION);
-      VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110458_(flagTexture(blockEntity.flagName())));
-      poseStack.m_85836_();
-      poseStack.m_85837_(0.5, 0.0, 0.5);
-      poseStack.m_252781_(Axis.f_252436_.m_252977_((float)(-rotation) * 22.5F));
-      poseStack.m_85841_(0.041666668F, 0.041666668F, 0.041666668F);
+      int rotation = (Integer)blockEntity.getBlockState().getValue(ProtectionFlagBlock.ROTATION);
+      VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(flagTexture(blockEntity.flagName())));
+      poseStack.pushPose();
+      poseStack.translate(0.5, 0.0, 0.5);
+      poseStack.mulPose(Axis.YP.rotationDegrees((float)(-rotation) * 22.5F));
+      poseStack.scale(0.041666668F, 0.041666668F, 0.041666668F);
       box(poseStack, consumer, 44.0F, 0.0F, -1.0F, 0.0F, -1.0F, 1.0F, 42.0F, 1.0F, packedLight, packedOverlay);
       box(poseStack, consumer, 0.0F, 42.0F, -10.0F, 40.0F, -1.0F, 10.0F, 42.0F, 1.0F, packedLight, packedOverlay);
       box(poseStack, consumer, 0.0F, 0.0F, -10.0F, 0.0F, -2.0F, 10.0F, 40.0F, -1.0F, packedLight, packedOverlay);
-      poseStack.m_85849_();
+      poseStack.popPose();
    }
 
    private static void box(
@@ -65,7 +65,7 @@ public class ProtectionFlagRenderer implements BlockEntityRenderer<ProtectionFla
       ProtectionFlagRenderer.Uv west = uv(u + z + x, v + z, u + z + x + z, v + z + y);
       ProtectionFlagRenderer.Uv up = uv(u + z + x, v + z, u + z, v);
       ProtectionFlagRenderer.Uv down = uv(u + z + x + x, v, u + z + x, v + z);
-      Pose pose = stack.m_85850_();
+      Pose pose = stack.last();
       quad(pose, consumer, north, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, 0.0F, 0.0F, 1.0F, light, overlay);
       quad(pose, consumer, south, maxX, minY, minZ, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, 0.0F, 0.0F, -1.0F, light, overlay);
       quad(pose, consumer, up, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ, minX, maxY, minZ, 0.0F, 1.0F, 0.0F, light, overlay);
@@ -109,9 +109,9 @@ public class ProtectionFlagRenderer implements BlockEntityRenderer<ProtectionFla
    private static void vertex(
       Pose pose, VertexConsumer consumer, float x, float y, float z, float u, float v, float nx, float ny, float nz, int light, int overlay
    ) {
-      Matrix4f matrix = pose.m_252922_();
-      Matrix3f normal = pose.m_252943_();
-      consumer.m_252986_(matrix, x, y, z).m_6122_(255, 255, 255, 255).m_7421_(u, v).m_86008_(overlay).m_85969_(light).m_252939_(normal, nx, ny, nz).m_5752_();
+      Matrix4f matrix = pose.pose();
+      Matrix3f normal = pose.normal();
+      consumer.vertex(matrix, x, y, z).color(255, 255, 255, 255).uv(u, v).overlayCoords(overlay).uv2(light).normal(normal, nx, ny, nz).endVertex();
    }
 
    private static ResourceLocation flagTexture(String flagName) {
@@ -119,7 +119,7 @@ public class ProtectionFlagRenderer implements BlockEntityRenderer<ProtectionFla
          String safeName = flagName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_./-]", "");
          return !safeName.isBlank() && !"generic".equals(safeName) ? TEXTURE_CACHE.computeIfAbsent(safeName, name -> {
             ResourceLocation requested = AWCoreIds.id("textures/entity/structure/banner/" + name + ".png");
-            return Minecraft.m_91087_().m_91098_().m_213713_(requested).isPresent() ? requested : FALLBACK_TEXTURE;
+            return Minecraft.getInstance().getResourceManager().getResource(requested).isPresent() ? requested : FALLBACK_TEXTURE;
          }) : FALLBACK_TEXTURE;
       } else {
          return FALLBACK_TEXTURE;

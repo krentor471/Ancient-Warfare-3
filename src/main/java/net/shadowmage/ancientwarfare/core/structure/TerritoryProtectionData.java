@@ -15,11 +15,11 @@ public final class TerritoryProtectionData extends SavedData {
    private final List<TerritoryProtectionData.Territory> territories = new ArrayList<>();
 
    public static TerritoryProtectionData get(ServerLevel level) {
-      return (TerritoryProtectionData)level.m_8895_().m_164861_(TerritoryProtectionData::load, TerritoryProtectionData::new, "ancientwarfare_territories");
+      return (TerritoryProtectionData)level.getDataStorage().computeIfAbsent(TerritoryProtectionData::load, TerritoryProtectionData::new, "ancientwarfare_territories");
    }
 
    public void register(BlockPos flagPos, BlockPos min, BlockPos max) {
-      TerritoryProtectionData.Territory replacement = new TerritoryProtectionData.Territory(flagPos.m_7949_(), min.m_7949_(), max.m_7949_(), false, null, "");
+      TerritoryProtectionData.Territory replacement = new TerritoryProtectionData.Territory(flagPos.immutable(), min.immutable(), max.immutable(), false, null, "");
 
       for (int i = 0; i < this.territories.size(); i++) {
          if (this.territories.get(i).flagPos().equals(flagPos)) {
@@ -31,13 +31,13 @@ public final class TerritoryProtectionData extends SavedData {
                      replacement.flagPos(), replacement.min(), replacement.max(), old.claimed(), old.owner(), old.ownerName()
                   )
                );
-            this.m_77762_();
+            this.setDirty();
             return;
          }
       }
 
       this.territories.add(replacement);
-      this.m_77762_();
+      this.setDirty();
    }
 
    public boolean isProtected(BlockPos pos) {
@@ -80,45 +80,45 @@ public final class TerritoryProtectionData extends SavedData {
             }
          }
 
-         this.m_77762_();
+         this.setDirty();
       }
    }
 
-   public CompoundTag m_7176_(CompoundTag tag) {
+   public CompoundTag save(CompoundTag tag) {
       ListTag list = new ListTag();
 
       for (TerritoryProtectionData.Territory territory : this.territories) {
          CompoundTag value = new CompoundTag();
-         value.m_128356_("Flag", territory.flagPos().m_121878_());
-         value.m_128356_("Min", territory.min().m_121878_());
-         value.m_128356_("Max", territory.max().m_121878_());
-         value.m_128379_("Claimed", territory.claimed());
+         value.putLong("Flag", territory.flagPos().asLong());
+         value.putLong("Min", territory.min().asLong());
+         value.putLong("Max", territory.max().asLong());
+         value.putBoolean("Claimed", territory.claimed());
          if (territory.owner() != null) {
-            value.m_128362_("Owner", territory.owner());
-            value.m_128359_("OwnerName", territory.ownerName());
+            value.putUUID("Owner", territory.owner());
+            value.putString("OwnerName", territory.ownerName());
          }
 
          list.add(value);
       }
 
-      tag.m_128365_("Territories", list);
+      tag.put("Territories", list);
       return tag;
    }
 
    private static TerritoryProtectionData load(CompoundTag tag) {
       TerritoryProtectionData data = new TerritoryProtectionData();
 
-      for (Tag raw : tag.m_128437_("Territories", 10)) {
+      for (Tag raw : tag.getList("Territories", 10)) {
          CompoundTag value = (CompoundTag)raw;
          data.territories
             .add(
                new TerritoryProtectionData.Territory(
-                  BlockPos.m_122022_(value.m_128454_("Flag")),
-                  BlockPos.m_122022_(value.m_128454_("Min")),
-                  BlockPos.m_122022_(value.m_128454_("Max")),
-                  value.m_128471_("Claimed"),
-                  value.m_128403_("Owner") ? value.m_128342_("Owner") : null,
-                  value.m_128461_("OwnerName")
+                  BlockPos.of(value.getLong("Flag")),
+                  BlockPos.of(value.getLong("Min")),
+                  BlockPos.of(value.getLong("Max")),
+                  value.getBoolean("Claimed"),
+                  value.hasUUID("Owner") ? value.getUUID("Owner") : null,
+                  value.getString("OwnerName")
                )
             );
       }
@@ -128,12 +128,12 @@ public final class TerritoryProtectionData extends SavedData {
 
    public static record Territory(BlockPos flagPos, BlockPos min, BlockPos max, boolean claimed, UUID owner, String ownerName) {
       public boolean contains(BlockPos pos) {
-         return pos.m_123341_() >= this.min.m_123341_()
-            && pos.m_123341_() <= this.max.m_123341_()
-            && pos.m_123342_() >= this.min.m_123342_()
-            && pos.m_123342_() <= this.max.m_123342_()
-            && pos.m_123343_() >= this.min.m_123343_()
-            && pos.m_123343_() <= this.max.m_123343_();
+         return pos.getX() >= this.min.getX()
+            && pos.getX() <= this.max.getX()
+            && pos.getY() >= this.min.getY()
+            && pos.getY() <= this.max.getY()
+            && pos.getZ() >= this.min.getZ()
+            && pos.getZ() <= this.max.getZ();
       }
 
       public boolean sameBounds(TerritoryProtectionData.Territory other) {
@@ -141,12 +141,12 @@ public final class TerritoryProtectionData extends SavedData {
       }
 
       public boolean intersects(BlockPos first, BlockPos second) {
-         return this.min.m_123341_() <= Math.max(first.m_123341_(), second.m_123341_())
-            && this.max.m_123341_() >= Math.min(first.m_123341_(), second.m_123341_())
-            && this.min.m_123342_() <= Math.max(first.m_123342_(), second.m_123342_())
-            && this.max.m_123342_() >= Math.min(first.m_123342_(), second.m_123342_())
-            && this.min.m_123343_() <= Math.max(first.m_123343_(), second.m_123343_())
-            && this.max.m_123343_() >= Math.min(first.m_123343_(), second.m_123343_());
+         return this.min.getX() <= Math.max(first.getX(), second.getX())
+            && this.max.getX() >= Math.min(first.getX(), second.getX())
+            && this.min.getY() <= Math.max(first.getY(), second.getY())
+            && this.max.getY() >= Math.min(first.getY(), second.getY())
+            && this.min.getZ() <= Math.max(first.getZ(), second.getZ())
+            && this.max.getZ() >= Math.min(first.getZ(), second.getZ());
       }
    }
 }

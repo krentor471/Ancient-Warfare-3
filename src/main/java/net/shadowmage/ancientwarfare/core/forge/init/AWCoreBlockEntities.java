@@ -41,39 +41,39 @@ import net.shadowmage.ancientwarfare.core.tile.WindmillBladeBlockEntity;
 public final class AWCoreBlockEntities {
    public static final DeferredRegister<BlockEntityType<?>> REGISTER = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, "ancientwarfare");
    public static final RegistryObject<BlockEntityType<MailboxBlockEntity>> MAILBOX = REGISTER.register(
-      "mailbox", () -> Builder.m_155273_(MailboxBlockEntity::new, new Block[]{(Block)AWCoreBlocks.MAILBOX.get()}).m_58966_(null)
+      "mailbox", () -> Builder.of(MailboxBlockEntity::new, new Block[]{(Block)AWCoreBlocks.MAILBOX.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<EngineeringStationBlockEntity>> ENGINEERING_STATION = REGISTER.register(
       "engineering_station",
-      () -> Builder.m_155273_(EngineeringStationBlockEntity::new, new Block[]{(Block)AWCoreBlocks.ENGINEERING_STATION.get()}).m_58966_(null)
+      () -> Builder.of(EngineeringStationBlockEntity::new, new Block[]{(Block)AWCoreBlocks.ENGINEERING_STATION.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<ResearchStationBlockEntity>> RESEARCH_STATION = REGISTER.register(
-      "research_station", () -> Builder.m_155273_(ResearchStationBlockEntity::new, new Block[]{(Block)AWCoreBlocks.RESEARCH_STATION.get()}).m_58966_(null)
+      "research_station", () -> Builder.of(ResearchStationBlockEntity::new, new Block[]{(Block)AWCoreBlocks.RESEARCH_STATION.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<CropFarmBlockEntity>> CROP_FARM = REGISTER.register(
-      "crop_farm", () -> Builder.m_155273_(CropFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.CROP_FARM.get()}).m_58966_(null)
+      "crop_farm", () -> Builder.of(CropFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.CROP_FARM.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<AnimalFarmBlockEntity>> ANIMAL_FARM = REGISTER.register(
-      "animal_farm", () -> Builder.m_155273_(AnimalFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.ANIMAL_FARM.get()}).m_58966_(null)
+      "animal_farm", () -> Builder.of(AnimalFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.ANIMAL_FARM.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<TreeFarmBlockEntity>> TREE_FARM = REGISTER.register(
-      "tree_farm", () -> Builder.m_155273_(TreeFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.TREE_FARM.get()}).m_58966_(null)
+      "tree_farm", () -> Builder.of(TreeFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.TREE_FARM.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<FishFarmBlockEntity>> FISH_FARM = REGISTER.register(
-      "fish_farm", () -> Builder.m_155273_(FishFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.FISH_FARM.get()}).m_58966_(null)
+      "fish_farm", () -> Builder.of(FishFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.FISH_FARM.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<FruitFarmBlockEntity>> FRUIT_FARM = REGISTER.register(
-      "fruit_farm", () -> Builder.m_155273_(FruitFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.FRUIT_FARM.get()}).m_58966_(null)
+      "fruit_farm", () -> Builder.of(FruitFarmBlockEntity::new, new Block[]{(Block)AWCoreBlocks.FRUIT_FARM.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<QuarryBlockEntity>> QUARRY = REGISTER.register(
-      "quarry", () -> Builder.m_155273_(QuarryBlockEntity::new, new Block[]{(Block)AWCoreBlocks.QUARRY.get()}).m_58966_(null)
+      "quarry", () -> Builder.of(QuarryBlockEntity::new, new Block[]{(Block)AWCoreBlocks.QUARRY.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<WarehouseControlBlockEntity>> WAREHOUSE_CONTROL = REGISTER.register(
-      "warehouse_control", () -> Builder.m_155273_(WarehouseControlBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_CONTROL.get()}).m_58966_(null)
+      "warehouse_control", () -> Builder.of(WarehouseControlBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_CONTROL.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<WarehouseStorageBlockEntity>> WAREHOUSE_STORAGE = REGISTER.register(
       "warehouse_storage",
-      () -> Builder.m_155273_(
+      () -> Builder.of(
                WarehouseStorageBlockEntity::new,
                new Block[]{
                   (Block)AWCoreBlocks.WAREHOUSE_STORAGE_SMALL.get(),
@@ -81,30 +81,30 @@ public final class AWCoreBlockEntities {
                   (Block)AWCoreBlocks.WAREHOUSE_STORAGE_LARGE.get()
                }
             )
-            .m_58966_(null)
+            .build(null)
    );
    public static final RegistryObject<BlockEntityType<WarehouseInterfaceBlockEntity>> WAREHOUSE_INTERFACE = REGISTER.register(
       "warehouse_interface",
-      () -> Builder.m_155273_(WarehouseInterfaceBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_INTERFACE.get()}).m_58966_(null)
+      () -> Builder.of(WarehouseInterfaceBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_INTERFACE.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<WarehouseCraftingStationBlockEntity>> WAREHOUSE_CRAFTING = REGISTER.register(
       "warehouse_crafting",
-      () -> Builder.m_155273_(WarehouseCraftingStationBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_CRAFTING.get()}).m_58966_(null)
+      () -> Builder.of(WarehouseCraftingStationBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_CRAFTING.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<AutoCraftingBlockEntity>> AUTO_CRAFTING = REGISTER.register(
-      "auto_crafting", () -> Builder.m_155273_(AutoCraftingBlockEntity::new, new Block[]{(Block)AWCoreBlocks.AUTO_CRAFTING.get()}).m_58966_(null)
+      "auto_crafting", () -> Builder.of(AutoCraftingBlockEntity::new, new Block[]{(Block)AWCoreBlocks.AUTO_CRAFTING.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<WarehouseStockViewerBlockEntity>> WAREHOUSE_STOCK_VIEWER = REGISTER.register(
       "warehouse_stock_viewer",
-      () -> Builder.m_155273_(WarehouseStockViewerBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_STOCK_VIEWER.get()}).m_58966_(null)
+      () -> Builder.of(WarehouseStockViewerBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_STOCK_VIEWER.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<WarehouseStockLinkerBlockEntity>> WAREHOUSE_STOCK_LINKER = REGISTER.register(
       "warehouse_stock_linker",
-      () -> Builder.m_155273_(WarehouseStockLinkerBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_STOCK_LINKER.get()}).m_58966_(null)
+      () -> Builder.of(WarehouseStockLinkerBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WAREHOUSE_STOCK_LINKER.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<TorqueTransportBlockEntity>> TORQUE_TRANSPORT = REGISTER.register(
       "torque_transport",
-      () -> Builder.m_155273_(
+      () -> Builder.of(
                TorqueTransportBlockEntity::new,
                new Block[]{
                   (Block)AWCoreBlocks.TORQUE_SHAFT_LIGHT.get(),
@@ -118,34 +118,34 @@ public final class AWCoreBlockEntities {
                   (Block)AWCoreBlocks.TORQUE_DISTRIBUTOR_HEAVY.get()
                }
             )
-            .m_58966_(null)
+            .build(null)
    );
    public static final RegistryObject<BlockEntityType<HandCrankedGeneratorBlockEntity>> HAND_CRANKED_GENERATOR = REGISTER.register(
       "hand_cranked_generator",
-      () -> Builder.m_155273_(HandCrankedGeneratorBlockEntity::new, new Block[]{(Block)AWCoreBlocks.HAND_CRANKED_GENERATOR.get()}).m_58966_(null)
+      () -> Builder.of(HandCrankedGeneratorBlockEntity::new, new Block[]{(Block)AWCoreBlocks.HAND_CRANKED_GENERATOR.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<TorqueGeneratorBlockEntity>> TORQUE_GENERATOR = REGISTER.register(
       "torque_generator",
-      () -> Builder.m_155273_(
+      () -> Builder.of(
                TorqueGeneratorBlockEntity::new,
                new Block[]{
                   (Block)AWCoreBlocks.STIRLING_GENERATOR.get(), (Block)AWCoreBlocks.WATERWHEEL_GENERATOR.get(), (Block)AWCoreBlocks.WINDMILL_GENERATOR.get()
                }
             )
-            .m_58966_(null)
+            .build(null)
    );
    public static final RegistryObject<BlockEntityType<WindmillBladeBlockEntity>> WINDMILL_BLADE = REGISTER.register(
-      "windmill_blade", () -> Builder.m_155273_(WindmillBladeBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WINDMILL_BLADE_RUNNING.get()}).m_58966_(null)
+      "windmill_blade", () -> Builder.of(WindmillBladeBlockEntity::new, new Block[]{(Block)AWCoreBlocks.WINDMILL_BLADE_RUNNING.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<ChunkLoaderBlockEntity>> CHUNK_LOADER_SIMPLE = REGISTER.register(
-      "chunk_loader_simple", () -> Builder.m_155273_(ChunkLoaderBlockEntity::new, new Block[]{(Block)AWCoreBlocks.CHUNK_LOADER_SIMPLE.get()}).m_58966_(null)
+      "chunk_loader_simple", () -> Builder.of(ChunkLoaderBlockEntity::new, new Block[]{(Block)AWCoreBlocks.CHUNK_LOADER_SIMPLE.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<TownHallBlockEntity>> TOWN_HALL = REGISTER.register(
-      "town_hall", () -> Builder.m_155273_(TownHallBlockEntity::new, new Block[]{(Block)AWCoreBlocks.TOWN_HALL.get()}).m_58966_(null)
+      "town_hall", () -> Builder.of(TownHallBlockEntity::new, new Block[]{(Block)AWCoreBlocks.TOWN_HALL.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<FlywheelControllerBlockEntity>> FLYWHEEL_CONTROLLER = REGISTER.register(
       "flywheel_controller",
-      () -> Builder.m_155273_(
+      () -> Builder.of(
                FlywheelControllerBlockEntity::new,
                new Block[]{
                   (Block)AWCoreBlocks.FLYWHEEL_CONTROLLER_LIGHT.get(),
@@ -153,11 +153,11 @@ public final class AWCoreBlockEntities {
                   (Block)AWCoreBlocks.FLYWHEEL_CONTROLLER_HEAVY.get()
                }
             )
-            .m_58966_(null)
+            .build(null)
    );
    public static final RegistryObject<BlockEntityType<FlywheelStorageBlockEntity>> FLYWHEEL_STORAGE = REGISTER.register(
       "flywheel_storage",
-      () -> Builder.m_155273_(
+      () -> Builder.of(
                FlywheelStorageBlockEntity::new,
                new Block[]{
                   (Block)AWCoreBlocks.FLYWHEEL_STORAGE_LIGHT.get(),
@@ -165,11 +165,11 @@ public final class AWCoreBlockEntities {
                   (Block)AWCoreBlocks.FLYWHEEL_STORAGE_HEAVY.get()
                }
             )
-            .m_58966_(null)
+            .build(null)
    );
    public static final RegistryObject<BlockEntityType<StructureContainerBlockEntity>> STRUCTURE_CONTAINER = REGISTER.register(
       "structure_container",
-      () -> Builder.m_155273_(
+      () -> Builder.of(
                StructureContainerBlockEntity::new,
                new Block[]{
                   (Block)AWCoreBlocks.LOOT_BASKET.get(),
@@ -178,27 +178,27 @@ public final class AWCoreBlockEntities {
                   (Block)AWCoreBlocks.STONE_COFFIN.get()
                }
             )
-            .m_58966_(null)
+            .build(null)
    );
    public static final RegistryObject<BlockEntityType<AdvancedLootChestBlockEntity>> ADVANCED_LOOT_CHEST = REGISTER.register(
       "advanced_loot_chest",
-      () -> Builder.m_155273_(AdvancedLootChestBlockEntity::new, new Block[]{(Block)AWCoreBlocks.ADVANCED_LOOT_CHEST.get()}).m_58966_(null)
+      () -> Builder.of(AdvancedLootChestBlockEntity::new, new Block[]{(Block)AWCoreBlocks.ADVANCED_LOOT_CHEST.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<AdvancedSpawnerBlockEntity>> ADVANCED_SPAWNER = REGISTER.register(
-      "advanced_spawner", () -> Builder.m_155273_(AdvancedSpawnerBlockEntity::new, new Block[]{(Block)AWCoreBlocks.ADVANCED_SPAWNER.get()}).m_58966_(null)
+      "advanced_spawner", () -> Builder.of(AdvancedSpawnerBlockEntity::new, new Block[]{(Block)AWCoreBlocks.ADVANCED_SPAWNER.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<ProtectionFlagBlockEntity>> PROTECTION_FLAG = REGISTER.register(
-      "protection_flag", () -> Builder.m_155273_(ProtectionFlagBlockEntity::new, new Block[]{(Block)AWCoreBlocks.PROTECTION_FLAG.get()}).m_58966_(null)
+      "protection_flag", () -> Builder.of(ProtectionFlagBlockEntity::new, new Block[]{(Block)AWCoreBlocks.PROTECTION_FLAG.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<GateProxyBlockEntity>> GATE_PROXY = REGISTER.register(
-      "gate_proxy", () -> Builder.m_155273_(GateProxyBlockEntity::new, new Block[]{(Block)AWCoreBlocks.GATE_PROXY.get()}).m_58966_(null)
+      "gate_proxy", () -> Builder.of(GateProxyBlockEntity::new, new Block[]{(Block)AWCoreBlocks.GATE_PROXY.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<DraftingStationBlockEntity>> DRAFTING_STATION = REGISTER.register(
-      "drafting_station", () -> Builder.m_155273_(DraftingStationBlockEntity::new, new Block[]{(Block)AWCoreBlocks.DRAFTING_STATION.get()}).m_58966_(null)
+      "drafting_station", () -> Builder.of(DraftingStationBlockEntity::new, new Block[]{(Block)AWCoreBlocks.DRAFTING_STATION.get()}).build(null)
    );
    public static final RegistryObject<BlockEntityType<SurvivalStructureBuilderBlockEntity>> STRUCTURE_BUILDER_TICKED = REGISTER.register(
       "structure_builder_ticked",
-      () -> Builder.m_155273_(SurvivalStructureBuilderBlockEntity::new, new Block[]{(Block)AWCoreBlocks.STRUCTURE_BUILDER_TICKED.get()}).m_58966_(null)
+      () -> Builder.of(SurvivalStructureBuilderBlockEntity::new, new Block[]{(Block)AWCoreBlocks.STRUCTURE_BUILDER_TICKED.get()}).build(null)
    );
 
    private AWCoreBlockEntities() {

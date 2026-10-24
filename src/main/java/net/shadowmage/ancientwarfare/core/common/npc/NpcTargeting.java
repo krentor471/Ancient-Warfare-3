@@ -22,19 +22,19 @@ public final class NpcTargeting {
    }
 
    private static TagKey<EntityType<?>> tag(String name) {
-      return TagKey.m_203882_(Registries.f_256939_, new ResourceLocation("ancientwarfare", name));
+      return TagKey.create(Registries.ENTITY_TYPE, new ResourceLocation("ancientwarfare", name));
    }
 
    public static NpcTargeting.Disposition disposition(LivingEntity target) {
-      if (NpcTargetWhitelist.contains(target.m_6095_())) {
+      if (NpcTargetWhitelist.contains(target.getType())) {
          return NpcTargeting.Disposition.FRIENDLY;
-      } else if (target.m_6095_().m_204039_(FRIENDLY)) {
+      } else if (target.getType().is(FRIENDLY)) {
          return NpcTargeting.Disposition.FRIENDLY;
-      } else if (target.m_6095_().m_204039_(NEUTRAL)) {
+      } else if (target.getType().is(NEUTRAL)) {
          return NpcTargeting.Disposition.NEUTRAL;
-      } else if (target.m_6095_().m_204039_(HOSTILE)) {
+      } else if (target.getType().is(HOSTILE)) {
          return NpcTargeting.Disposition.HOSTILE;
-      } else if ("minecraft".equals(EntityType.m_20613_(target.m_6095_()).m_135827_())) {
+      } else if ("minecraft".equals(EntityType.getKey(target.getType()).getNamespace())) {
          return target instanceof Monster ? NpcTargeting.Disposition.HOSTILE : NpcTargeting.Disposition.NEUTRAL;
       } else {
          return NpcTargeting.Disposition.HOSTILE;
@@ -42,36 +42,36 @@ public final class NpcTargeting {
    }
 
    public static boolean isAutomaticHostile(LivingEntity observer, LivingEntity target) {
-      return canHarm(observer, target)
-         && !(target instanceof Player)
+      return !(target instanceof Player)
          && !(target instanceof NpcOwnerAccess)
          && !(target instanceof NpcFactionAccess)
          && !(target instanceof ArmorStand)
          && !isOwnedOrTamed(target)
-         && disposition(target) == NpcTargeting.Disposition.HOSTILE;
+         && disposition(target) == NpcTargeting.Disposition.HOSTILE
+         && canHarm(observer, target);
    }
 
    public static boolean canHarm(LivingEntity observer, Entity target) {
       return observer != null
          && target != null
-         && target.m_6084_()
-         && (!(target instanceof Player player) || !player.m_7500_() && !player.m_5833_())
+         && target.isAlive()
+         && (!(target instanceof Player player) || !player.isCreative() && !player.isSpectator())
          && !isProtectedAlly(observer, target)
-         && !observer.m_7307_(target)
-         && !target.m_7307_(observer);
+         && !observer.isAlliedTo(target)
+         && !target.isAlliedTo(observer);
    }
 
    public static boolean isProtectedAlly(Entity observer, Entity target) {
       if (observer == null || target == null) {
          return false;
-      } else if (observer != target && !observer.m_20365_(target)) {
-         if (observer.m_5647_() != null && observer.m_5647_().m_83536_(target.m_5647_())) {
+      } else if (observer != target && !observer.isPassengerOfSameVehicle(target)) {
+         if (!observer.level().getScoreboard().getPlayerTeams().isEmpty() && observer.getTeam() != null && observer.getTeam().isAlliedTo(target.getTeam())) {
             return true;
          } else {
             UUID observerOwner = ownerId(observer);
             UUID targetOwner = ownerId(target);
-            return observerOwner != null && (observerOwner.equals(target.m_20148_()) || observerOwner.equals(targetOwner))
-               || targetOwner != null && targetOwner.equals(observer.m_20148_());
+            return observerOwner != null && (observerOwner.equals(target.getUUID()) || observerOwner.equals(targetOwner))
+               || targetOwner != null && targetOwner.equals(observer.getUUID());
          }
       } else {
          return true;
@@ -79,20 +79,20 @@ public final class NpcTargeting {
    }
 
    private static boolean isOwnedOrTamed(Entity entity) {
-      return entity instanceof TamableAnimal animal && animal.m_21824_() || entity instanceof OwnableEntity && ownerId(entity) != null;
+      return entity instanceof TamableAnimal animal && animal.isTame() || entity instanceof OwnableEntity && ownerId(entity) != null;
    }
 
    private static UUID ownerId(Entity entity) {
       if (entity instanceof Player player) {
-         return player.m_20148_();
+         return player.getUUID();
       } else if (entity instanceof NpcOwnerAccess npc) {
          return npc.getOwner().orElse(null);
       } else {
-         if (entity instanceof TamableAnimal animal && !animal.m_21824_()) {
+         if (entity instanceof TamableAnimal animal && !animal.isTame()) {
             return null;
          }
 
-         return entity instanceof OwnableEntity ownable ? ownable.m_21805_() : null;
+         return entity instanceof OwnableEntity ownable ? ownable.getOwnerUUID() : null;
       }
    }
 

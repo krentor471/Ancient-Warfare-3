@@ -15,29 +15,29 @@ public class AdvancedLootChestBlockEntity extends ChestBlockEntity {
       super(AWCoreRegistryAccess.blockEntityType(AWCoreIds.ADVANCED_LOOT_CHEST), pos, state);
    }
 
-   public void m_142466_(CompoundTag tag) {
-      super.m_142466_(tag);
+   public void load(CompoundTag tag) {
+      super.load(tag);
       CompoundTag ancientWarfareData = AWCorePlatform.blockEntityData(this);
-      if (this.f_58857_ instanceof ServerLevel) {
+      if (this.level instanceof ServerLevel) {
          AncientWarfareCore.LOG
             .debug(
                "Advanced loot chest block entity loaded: pos={}, block={}, type={}, items={}, configuredTable={}, rolls={}",
                new Object[]{
-                  this.f_58858_,
-                  this.m_58900_().m_60734_(),
+                  this.worldPosition,
+                  this.getBlockState().getBlock(),
                   this.getClass().getSimpleName(),
                   this.countNonEmpty(),
-                  ancientWarfareData.m_128461_("AWStructureLootTable"),
-                  ancientWarfareData.m_128451_("AWStructureLootRolls")
+                  ancientWarfareData.getString("AWStructureLootTable"),
+                  ancientWarfareData.getInt("AWStructureLootRolls")
                }
             );
          AncientWarfareCore.LOG
             .debug(
                "Advanced loot chest legacy settings loaded: pos={}, present={}, keys={}",
                new Object[]{
-                  this.f_58858_,
-                  ancientWarfareData.m_128441_("AWLegacyLootSettings"),
-                  ancientWarfareData.m_128441_("AWLegacyLootSettings") ? ancientWarfareData.m_128469_("AWLegacyLootSettings").m_128431_().size() : 0
+                  this.worldPosition,
+                  ancientWarfareData.contains("AWLegacyLootSettings"),
+                  ancientWarfareData.contains("AWLegacyLootSettings") ? ancientWarfareData.getCompound("AWLegacyLootSettings").getAllKeys().size() : 0
                }
             );
       }
@@ -46,8 +46,8 @@ public class AdvancedLootChestBlockEntity extends ChestBlockEntity {
    private int countNonEmpty() {
       int count = 0;
 
-      for (int slot = 0; slot < this.m_6643_(); slot++) {
-         if (!this.m_8020_(slot).m_41619_()) {
+      for (int slot = 0; slot < this.getContainerSize(); slot++) {
+         if (!this.getItem(slot).isEmpty()) {
             count++;
          }
       }

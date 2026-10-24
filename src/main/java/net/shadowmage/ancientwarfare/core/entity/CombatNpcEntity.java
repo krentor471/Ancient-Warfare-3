@@ -1,14 +1,25 @@
 package net.shadowmage.ancientwarfare.core.entity;
 
-import java.util.ArrayList;
+import net.shadowmage.ancientwarfare.core.forge.init.AWCoreBlocks;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.CampfireBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.ChatFormatting;
+import net.minecraft.server.level.ServerLevel;
+import java.util.UUID;
+import net.shadowmage.ancientwarfare.core.faction.FactionHeraldry;
+import net.shadowmage.ancientwarfare.core.faction.PlayerHeraldry;
 import java.util.EnumSet;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.syncher.EntityDataAccessor;
-import net.minecraft.network.syncher.EntityDataSerializers;
-import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -31,13 +42,11 @@ import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.Goal.Flag;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
-import net.minecraft.world.entity.ai.navigation.AmphibiousPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
@@ -52,30 +61,17 @@ import net.shadowmage.ancientwarfare.core.common.npc.CombatProfessionResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcCommandType;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcShielding;
+import net.shadowmage.ancientwarfare.core.common.npc.NpcStance;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcTargeting;
 import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreIds;
 import net.shadowmage.ancientwarfare.core.common.registry.AWCoreRegistryAccess;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireDragonCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireEquipmentCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippocampusCompat;
-import net.shadowmage.ancientwarfare.core.compat.IceAndFireHippogryphCompat;
-import net.shadowmage.ancientwarfare.core.compat.SlashBladeCompat;
 import net.shadowmage.ancientwarfare.core.item.CommandBatonItem;
 import net.shadowmage.ancientwarfare.core.menu.NpcInventoryMenu;
 
 public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttackMob {
-   private static final String TAG_SPELLBOOK_STACK = "SpellbookStack";
    private static final double MIN_RANGED_FOLLOW_RANGE = 48.0;
    private static final double RANGED_VERTICAL_TARGET_RANGE = 64.0;
-   private static final EntityDataAccessor<Integer> SWORDSMAN_COMBO = SynchedEntityData.m_135353_(CombatNpcEntity.class, EntityDataSerializers.f_135028_);
-   private static final int SWORDSMAN_POSE_TICKS = 10;
-   private static final double SWORDSMAN_SKILL_START_RANGE_SQR = 1024.0;
-   private static final double SWORDSMAN_SKILL_CANCEL_RANGE_SQR = 1600.0;
-   private static final int SWORDSMAN_SLASH_ART_INITIAL_DELAY_TICKS = 200;
-   private static final int SWORDSMAN_SLASH_ART_COOLDOWN_TICKS = 600;
-   private static final int SWORDSMAN_SLASH_ART_MIN_CHARGE = 4;
-   private static final int SWORDSMAN_SLASH_ART_GUARANTEED_CHARGE = 7;
    private static final double MOUNT_CHARGE_SPEED = 0.45;
    private static final double MOUNT_ATTACK_DISTANCE = 3.2;
    private static final double MOUNT_PASS_DISTANCE = 10.0;
@@ -84,6 +80,18 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    private static final double MOUNTED_ARCHER_RADIUS = 14.0;
    private static final double MOUNTED_ARCHER_MIN_RADIUS = 10.0;
    private static final double MOUNTED_ARCHER_MAX_RADIUS = 18.0;
+   private static final int TARGET_SCAN_INTERVAL = 5;
+   private static final double BARRAGE_RANGE = 48.0;
+   public static final int DEFAULT_BARRAGE_RADIUS = 4;
+   private static final double AGGRESSIVE_LEASH_SQ = 48.0 * 48.0;
+   /** A defensive soldier on a post fights only what comes this close to it. */
+   private static final double DEFENSIVE_LEASH_SQ = 12.0 * 12.0;
+   private static final double RANGED_LEASH_SQ = 24.0 * 24.0;
+   /** Within this of its post a holding soldier is not shoved out of line by others. */
+   private static final double AT_POST_SQ = 0.5;
+   private BlockPos barragePoint;
+   private int barrageRadius = DEFAULT_BARRAGE_RADIUS;
+   private NpcStance stance = NpcStance.DEFENSIVE;
    private int patrolIndex;
    private boolean patrolAtPoint;
    private int patrolTicksAtPoint;
@@ -94,61 +102,53 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    private boolean mountAttackedThisCharge;
    private boolean mountedArcherClockwise;
    private LivingEntity mountedArcherTarget;
-   private int swordsmanComboStep;
-   private int swordsmanPoseTicks;
-   private LivingEntity swordsmanComboTarget;
-   private int swordsmanComboTicks;
-   private boolean swordsmanComboActive;
-   private CombatNpcEntity.SwordsmanTechnique swordsmanTechnique = CombatNpcEntity.SwordsmanTechnique.NONE;
-   private CombatNpcEntity.SwordsmanTechnique swordsmanLastTechnique = CombatNpcEntity.SwordsmanTechnique.NONE;
-   private CombatNpcEntity.SwordsmanTechnique swordsmanPreviousTechnique = CombatNpcEntity.SwordsmanTechnique.NONE;
-   private boolean swordsmanAerialCleaveActive;
-   private int swordsmanAerialCleaveTicks;
-   private boolean swordsmanTechniqueFinished;
-   private int swordsmanRapidHitCooldown;
-   private int swordsmanRapidHitCount;
-   private int swordsmanTechniqueRecoveryTicks;
-   private int swordsmanLastSummonedSwordArt;
-   private int swordsmanPreviousSummonedSwordArt;
-   private int swordsmanChargedArt = 0;
-   private int swordsmanChargeType = 1;
-   private int swordsmanChargeTicks;
-   private boolean swordsmanChargedArtReleased;
-   private int swordsmanLastChargeType;
-   private int swordsmanPreviousChargeType;
-   private int swordsmanSlashArtCooldown = 200;
-   private int swordsmanSlashArtCharge;
-   private ItemStack legacySpellContainerStack = ItemStack.f_41583_;
 
-   protected void m_7472_(DamageSource source, int looting, boolean killedByPlayer) {
+   protected void dropCustomDeathLoot(DamageSource source, int looting, boolean killedByPlayer) {
       if (AWCorePlatform.gameplayConfig().playerSoldierEquipmentDropChance() < 0.0) {
-         super.m_7472_(source, looting, killedByPlayer);
+         super.dropCustomDeathLoot(source, looting, killedByPlayer);
       }
    }
 
-   protected void m_5907_() {
+   protected void dropEquipment() {
       double chance = AWCorePlatform.gameplayConfig().playerSoldierEquipmentDropChance();
       if (chance < 0.0) {
-         super.m_5907_();
-      } else if (!this.m_9236_().f_46443_ && this.m_9236_().m_46469_().m_46207_(GameRules.f_46135_)) {
+         super.dropEquipment();
+      } else if (!this.level().isClientSide && this.level().getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
          for (EquipmentSlot slot : EquipmentSlot.values()) {
-            ItemStack stack = this.m_6844_(slot);
-            if (!stack.m_41619_()
-               && !EnchantmentHelper.m_44924_(stack)
+            ItemStack stack = this.getItemBySlot(slot);
+            if (!stack.isEmpty()
+               && !EnchantmentHelper.hasVanishingCurse(stack)
                && chance > 0.0
-               && (chance >= 1.0 || this.f_19796_.m_188500_() < chance)
-               && this.m_19983_(stack.m_41777_()) != null) {
-               this.m_8061_(slot, ItemStack.f_41583_);
+               && (chance >= 1.0 || this.random.nextDouble() < chance)
+               && this.spawnAtLocation(stack.copy()) != null) {
+               this.setItemSlot(slot, ItemStack.EMPTY);
             }
          }
       }
    }
 
-   protected PathNavigation m_6037_(Level level) {
-      AmphibiousPathNavigation navigation = new AmphibiousPathNavigation(this, level);
-      navigation.m_7008_(true);
+   protected PathNavigation createNavigation(Level level) {
+      // Swims across water on walking paths: amphibious planning, which also searches up and down through water, cost most of a battle's tick.
+      NpcGroundNavigation navigation = new NpcGroundNavigation(this, level);
+      navigation.setCanFloat(true);
       return navigation;
    }
+
+   private static final EntityDataAccessor<Integer> VETERAN_NAME = SynchedEntityData.defineId(CombatNpcEntity.class, EntityDataSerializers.INT);
+   public static final int VETERAN_NAMES = 40;
+   private static final int KILL_EXPERIENCE = 10;
+   /** How hard a veteran's fall shakes his comrades, per rank. */
+   private static final float VETERAN_DEATH_MORALE = 20.0F;
+   private int kills;
+   private static final int CAMP_CHECK_TICKS = 40;
+   private static final int CAMP_RADIUS = 8;
+   private static final float CAMP_MORALE_FACTOR = 3.0F;
+   /** Health a resting soldier gets back at each check. */
+   private static final float CAMP_HEAL = 1.0F;
+   /** Whether a camp fire is near; not saved. */
+   private boolean atCamp;
+   /** Whether the owner has learned field camps; not saved. */
+   private boolean campBetter;
 
    public CombatNpcEntity(EntityType<? extends CombatNpcEntity> entityType, Level level) {
       super(entityType, level);
@@ -160,55 +160,112 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       return true;
    }
 
-   public static Builder createAttributes() {
-      return m_21552_()
-         .m_22268_(Attributes.f_22276_, 24.0)
-         .m_22268_(Attributes.f_22279_, 0.27)
-         .m_22268_(Attributes.f_22281_, 2.0)
-         .m_22268_(Attributes.f_22283_, 4.0)
-         .m_22268_(Attributes.f_22277_, 32.0);
-   }
-
    @Override
-   protected void m_8097_() {
-      super.m_8097_();
-      this.f_19804_.m_135372_(SWORDSMAN_COMBO, 0);
+   protected void defineSynchedData() {
+      super.defineSynchedData();
+      this.entityData.define(VETERAN_NAME, -1);
    }
 
-   protected void m_8099_() {
-      this.f_21345_.m_25352_(1, new CombatNpcEntity.MoveToCommandGoal(this, 1.0, 2.0));
-      this.f_21345_.m_25352_(1, new CombatNpcEntity.ShieldDefenseGoal(this));
-      this.f_21345_.m_25352_(0, new CombatNpcEntity.SwordsmanProjectileGuardGoal(this));
-      this.f_21345_.m_25352_(2, new CombatNpcEntity.CombatRangedAttackGoal(this));
-      this.f_21345_.m_25352_(2, new CombatNpcEntity.CombatMeleeAttackGoal(this, this.playerSprintNavigationSpeed(), true));
-      this.f_21345_.m_25352_(3, new CombatNpcEntity.CommanderAuraGoal(this));
-      this.f_21345_.m_25352_(3, new CombatNpcEntity.MedicHealGoal(this));
-      this.f_21345_.m_25352_(3, new CombatGroupFollowGoal(this));
-      this.f_21345_.m_25352_(4, new CombatNpcEntity.PatrolOrderGoal(this, 1.0));
-      this.f_21345_.m_25352_(5, new CombatNpcEntity.ReturnHomeGoal(this, 1.0));
-      this.f_21345_.m_25352_(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
-      this.f_21345_.m_25352_(7, new RandomLookAroundGoal(this));
-      this.f_21346_.m_25352_(1, new CombatNpcEntity.PlayerSoldierHurtByTargetGoal(this));
-      this.f_21346_
-         .m_25352_(
+   /** A kill counts as much as ten blows towards the next rank. */
+   public void onKill(LivingEntity victim) {
+      this.kills++;
+      // Where deeds are written down, soldiers learn from them half as fast again.
+      this.addCombatExperience(this.ownerKnows(net.shadowmage.ancientwarfare.core.research.PlayerResearch.CHRONICLES) ? KILL_EXPERIENCE * 3 / 2 : KILL_EXPERIENCE);
+   }
+
+   /** Beat a champion in the lists. */
+   public void onTournamentWin(int experience) {
+      this.addCombatExperience(experience);
+   }
+
+   public int getKills() {
+      return this.kills;
+   }
+
+   /** The personal name a veteran earns, as an index into the lang names; -1 for a recruit. */
+   public int getVeteranName() {
+      return (Integer)this.entityData.get(VETERAN_NAME);
+   }
+
+   /** On his first promotion the soldier is known by name; his owner hears of each promotion. */
+   @Override
+   protected void onPromoted(int rank) {
+      if (this.getVeteranName() < 0) {
+         this.entityData.set(VETERAN_NAME, this.random.nextInt(VETERAN_NAMES));
+      }
+
+      this.tellOwner(Component.translatable("veteran.ancientwarfare.promoted." + rank, this.veteranName(), this.kills).withStyle(ChatFormatting.GOLD));
+   }
+
+   private Component veteranName() {
+      return this.getVeteranName() < 0 ? this.getDisplayName() : Component.translatable("veteran.ancientwarfare.name." + this.getVeteranName());
+   }
+
+   private void tellOwner(Component message) {
+      if (this.level() instanceof ServerLevel serverLevel && this.getOwner().isPresent()) {
+         ServerPlayer owner = serverLevel.getServer().getPlayerList().getPlayer(this.getOwner().get());
+         if (owner != null) {
+            owner.sendSystemMessage(message);
+         }
+      }
+   }
+
+   /** The fall of a veteran is felt: his comrades are shaken and his owner is told. */
+   @Override
+   public void die(DamageSource damageSource) {
+      boolean veteran = !this.dead && !this.level().isClientSide && this.isEliteCombatRank();
+      Component name = this.veteranName();
+      super.die(damageSource);
+      if (veteran && this.dead) {
+         this.tellOwner(Component.translatable("veteran.ancientwarfare.fell", name, this.kills).withStyle(ChatFormatting.RED));
+      }
+   }
+
+   public static Builder createAttributes() {
+      return createMobAttributes()
+         .add(Attributes.MAX_HEALTH, 24.0)
+         .add(Attributes.MOVEMENT_SPEED, 0.27)
+         .add(Attributes.ATTACK_DAMAGE, 2.0)
+         .add(Attributes.ATTACK_SPEED, 4.0)
+         .add(Attributes.FOLLOW_RANGE, 32.0);
+   }
+
+   protected void registerGoals() {
+      this.goalSelector.addGoal(1, new CombatNpcEntity.MoveToCommandGoal(this, 1.0, 0.75));
+      this.goalSelector.addGoal(1, new CombatNpcEntity.ShieldDefenseGoal(this));
+      this.goalSelector.addGoal(1, new CombatNpcEntity.BarrageGoal(this));
+      this.goalSelector.addGoal(2, new CombatNpcEntity.CombatRangedAttackGoal(this));
+      this.goalSelector.addGoal(2, new CombatNpcEntity.CombatMeleeAttackGoal(this, this.playerSprintNavigationSpeed(), true));
+      this.goalSelector.addGoal(3, new CombatNpcEntity.CommanderAuraGoal(this));
+      this.goalSelector.addGoal(3, new CombatNpcEntity.MedicHealGoal(this));
+      this.goalSelector.addGoal(3, new CombatGroupFollowGoal(this));
+      this.goalSelector.addGoal(4, new CombatNpcEntity.HoldPositionGoal(this));
+      this.goalSelector.addGoal(5, new CombatNpcEntity.FaceHoldDirectionGoal(this));
+      this.goalSelector.addGoal(4, new CombatNpcEntity.PatrolOrderGoal(this, 1.0));
+      this.goalSelector.addGoal(5, new CombatNpcEntity.ReturnHomeGoal(this, 1.0));
+      this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+      this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
+      this.targetSelector.addGoal(1, new CombatNpcEntity.PlayerSoldierHurtByTargetGoal(this));
+      this.targetSelector
+         .addGoal(
             2,
-            new VerticalRangeTargetGoal(
+            new VerticalRangeTargetGoal<>(
                this,
                FactionNpcEntity.class,
-               2,
+               TARGET_SCAN_INTERVAL,
                false,
                false,
                target -> this.isHostileFactionNpc(target) && this.canAcquireCombatTarget(target),
                () -> this.isRangedCombatant() ? 64.0 : 4.0
             )
          );
-      this.f_21346_
-         .m_25352_(
+      this.targetSelector
+         .addGoal(
             3,
             new VerticalRangeTargetGoal<LivingEntity>(
                this,
                LivingEntity.class,
-               2,
+               TARGET_SCAN_INTERVAL,
                false,
                false,
                target -> this.canAttackTarget(target) && this.canAcquireCombatTarget(target),
@@ -218,37 +275,161 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    @Override
-   public void m_6710_(LivingEntity target) {
-      if (target != null && this.isFollowCombatRecallActive()) {
-         super.m_6710_(null);
-      } else if (target != null && !DragonRiderController.canAcquireTarget(this, target)) {
-         super.m_6710_(null);
+   public void setTarget(LivingEntity target) {
+      if (target != null && this.stance == NpcStance.PASSIVE && this.getCurrentCommand() != NpcCommandType.ATTACK) {
+         super.setTarget(null);
+      } else if (target != null && this.isFollowCombatRecallActive()) {
+         super.setTarget(null);
       } else {
-         super.m_6710_(target);
+         super.setTarget(target);
       }
    }
 
-   protected InteractionResult m_6071_(Player player, InteractionHand hand) {
+   protected InteractionResult mobInteract(Player player, InteractionHand hand) {
       if (this.tryAcceptFood(player, hand)) {
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
-      } else if (player.m_21120_(hand).m_41720_() instanceof CommandBatonItem) {
-         if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
-            CommandBatonItem.toggleNpcSelection(player.m_21120_(hand), player, this);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (PlayerHeraldry.isBanner(player.getItemInHand(hand)) && this.hasCommandPermission(player)) {
+         if (!this.level().isClientSide) {
+            this.takeBanner(player, hand);
          }
 
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      } else if (player.getItemInHand(hand).getItem() instanceof CommandBatonItem) {
+         if (!this.level().isClientSide && this.hasCommandPermission(player)) {
+            CommandBatonItem.clickNpc(player.getItemInHand(hand), player, this);
+         }
+
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
       } else {
          this.openNpcInventory(player);
-         return InteractionResult.m_19078_(this.m_9236_().f_46443_);
+         return InteractionResult.sidedSuccess(this.level().isClientSide);
+      }
+   }
+
+   /**
+    * Handed a banner, the soldier becomes the standard-bearer and wears it; its design becomes the
+    * owner's arms, painted on their soldiers' shields.
+    */
+   private void takeBanner(Player player, InteractionHand hand) {
+      ItemStack held = player.getItemInHand(hand);
+      ItemStack banner = held.copyWithCount(1);
+      ItemStack old = this.getItemBySlot(EquipmentSlot.HEAD);
+      if (!player.getAbilities().instabuild) {
+         held.shrink(1);
+      }
+
+      if (!old.isEmpty()) {
+         player.getInventory().placeItemBackInInventory(old);
+      }
+
+      this.setItemSlot(EquipmentSlot.HEAD, banner);
+      this.setDropChance(EquipmentSlot.HEAD, 2.0F);
+      UUID owner = this.getOwner().orElse(player.getUUID());
+      PlayerHeraldry.get((ServerLevel)this.level()).setArms(owner, banner);
+      this.paintShields();
+      player.sendSystemMessage(Component.translatable("heraldry.ancientwarfare.bearer", this.getDisplayName()));
+   }
+
+   /**
+    * A camp is a lit fire near the soldier: there his spirit comes back three times as fast. With a
+    * field tent by it as well he rests and his wounds heal, as long as no enemy is in sight.
+    */
+   /** Whether the soldier's owner has learned the research. */
+   private boolean ownerKnows(String research) {
+      return this.level() instanceof ServerLevel serverLevel && net.shadowmage.ancientwarfare.core.research.PlayerResearch.has(serverLevel, this.getOwner().orElse(null), research);
+   }
+
+   private void tickCamp() {
+      this.atCamp = false;
+      if (this.getOwner().isEmpty()) {
+         return;
+      }
+
+      this.campBetter = this.ownerKnows(net.shadowmage.ancientwarfare.core.research.PlayerResearch.FIELD_CAMPS);
+      if (this.ownerKnows(net.shadowmage.ancientwarfare.core.research.PlayerResearch.COURIERS) && isRoad(this.level().getBlockState(this.getBlockPosBelowThatAffectsMyMovement()))) {
+         // Messengers and remounts along the roads: the march goes quicker.
+         this.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, CAMP_CHECK_TICKS + 10, 0, false, false));
+      }
+
+      boolean fire = false;
+      boolean tent = false;
+      BlockPos origin = this.blockPosition();
+      for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-CAMP_RADIUS, -2, -CAMP_RADIUS), origin.offset(CAMP_RADIUS, 3, CAMP_RADIUS))) {
+         BlockState state = this.level().getBlockState(pos);
+         if (!fire && isCampFire(state)) {
+            fire = true;
+         } else if (!tent && state.is(AWCoreBlocks.FIELD_TENT.get())) {
+            tent = true;
+         }
+
+         if (fire && tent) {
+            break;
+         }
+      }
+
+      this.atCamp = fire;
+      if (fire && tent && this.getTarget() == null && this.getHealth() < this.getMaxHealth()) {
+         this.heal(this.campBetter ? CAMP_HEAL * 2.0F : CAMP_HEAL);
+         if (this.level() instanceof ServerLevel serverLevel && this.random.nextInt(3) == 0) {
+            serverLevel.sendParticles(ParticleTypes.HEART, this.getX(), this.getEyeY() + 0.4, this.getZ(), 1, 0.2, 0.1, 0.2, 0.0);
+         }
+      }
+   }
+
+   private static boolean isRoad(BlockState state) {
+      return state.is(net.minecraft.world.level.block.Blocks.DIRT_PATH)
+         || state.is(net.minecraft.world.level.block.Blocks.GRAVEL)
+         || state.is(net.minecraft.world.level.block.Blocks.COBBLESTONE)
+         || state.is(net.minecraft.world.level.block.Blocks.STONE_BRICKS)
+         || state.is(net.minecraft.world.level.block.Blocks.COARSE_DIRT);
+   }
+
+   private static boolean isCampFire(BlockState state) {
+      if (CampfireBlock.isLitCampfire(state)) {
+         return true;
+      }
+
+      ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+      return "ancientwarfare".equals(id.getNamespace()) && (id.getPath().startsWith("fire_pit") || id.getPath().equals("brazier_flame"));
+   }
+
+   public boolean isAtCamp() {
+      return this.atCamp;
+   }
+
+   @Override
+   protected float moraleRegenFactor() {
+      return this.atCamp ? (this.campBetter ? CAMP_MORALE_FACTOR * 5.0F / 3.0F : CAMP_MORALE_FACTOR) : 1.0F;
+   }
+
+   public boolean isStandardBearer() {
+      return PlayerHeraldry.isBanner(this.getItemBySlot(EquipmentSlot.HEAD));
+   }
+
+   private void paintShields() {
+      if (this.level() instanceof ServerLevel serverLevel && this.getOwner().isPresent()) {
+         PlayerHeraldry heraldry = PlayerHeraldry.get(serverLevel);
+         heraldry.paint(this.getOwner().get(), this.getOffhandItem());
+         heraldry.paint(this.getOwner().get(), this.getMainHandItem());
+      }
+   }
+
+   /** A fallen standard-bearer shakes his comrades far more than another man. */
+   @Override
+   protected float deathMoraleBlow() {
+      if (this.isStandardBearer()) {
+         return FactionHeraldry.BEARER_DEATH_MORALE;
+      } else {
+         return this.isEliteCombatRank() ? VETERAN_DEATH_MORALE * this.getCombatRank() : super.deathMoraleBlow();
       }
    }
 
    public void openNpcInventory(Player player) {
-      if (!this.m_9236_().f_46443_ && this.hasCommandPermission(player)) {
+      if (!this.level().isClientSide && this.hasCommandPermission(player)) {
          AWCorePlatform.openMenu(
             player,
-            new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.m_5446_()),
-            buffer -> buffer.writeInt(this.m_19879_())
+            new SimpleMenuProvider((containerId, inventory, openedPlayer) -> new NpcInventoryMenu(containerId, inventory, this), this.getDisplayName()),
+            buffer -> buffer.writeInt(this.getId())
          );
       }
    }
@@ -260,23 +441,16 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
    @Override
    public String getNpcSubtype() {
-      return this.isSpellcasterCombatant() ? "mage" : CombatProfessionResolver.subtypeFor(this.m_21205_(), this.m_21206_());
+      return CombatProfessionResolver.subtypeFor(this.getMainHandItem(), this.getOffhandItem());
    }
 
    @Override
-   public Component m_5677_() {
-      Component baseName;
-      if (!this.isLogicalDragonRider() && (this.m_20202_() == null || !IceAndFireDragonCompat.isDragon(this.m_20202_()))) {
-         if (this.m_20202_() != null && IceAndFireHippocampusCompat.isHippocampus(this.m_20202_())) {
-            baseName = Component.m_237115_("entity.ancientwarfare.combat.hippocampus_rider");
-         } else {
-            baseName = Component.m_237115_("entity.ancientwarfare.combat." + this.getNpcSubtype());
-         }
-      } else {
-         baseName = Component.m_237115_("entity.ancientwarfare.combat.dragon_rider");
-      }
-
-      return this.applyCombatRankName(baseName);
+   public Component getTypeName() {
+      Component baseName = Component.translatable("entity.ancientwarfare.combat." + this.getNpcSubtype());
+      int name = this.getVeteranName();
+      return name < 0
+         ? this.applyCombatRankName(baseName)
+         : Component.translatable("entity.ancientwarfare.combat.veteran", Component.translatable("veteran.ancientwarfare.name." + name), this.applyCombatRankName(baseName));
    }
 
    private boolean canAttackTarget(LivingEntity target) {
@@ -300,57 +474,30 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private boolean isRangedCombatant() {
-      return !this.isSpellcasterCombatant() && NpcEquipmentResolver.isRangedWeapon(this.m_21205_());
-   }
-
-   protected boolean isSpellcasterCombatant() {
-      return false;
+      return NpcEquipmentResolver.isRangedWeapon(this.getMainHandItem());
    }
 
    protected boolean canUseMeleeCombatGoal() {
-      return !this.isSpellcasterCombatant() && !this.isRangedCombatant();
-   }
-
-   public boolean isSpellcastingAnimation() {
-      return false;
+      return !this.isRangedCombatant();
    }
 
    private void ensureRangedFollowRange() {
       if (this.isRangedCombatant()) {
-         AttributeInstance followRange = this.m_21051_(Attributes.f_22277_);
+         AttributeInstance followRange = this.getAttribute(Attributes.FOLLOW_RANGE);
          if (followRange != null) {
-            followRange.m_22100_(Math.max(followRange.m_22115_(), 48.0));
+            followRange.setBaseValue(Math.max(followRange.getBaseValue(), 48.0));
          }
       }
    }
 
-   public boolean isSwordsman() {
-      return "swordsman".equals(this.getNpcSubtype());
-   }
-
-   public int getSwordsmanComboStep() {
-      return (Integer)this.f_19804_.m_135370_(SWORDSMAN_COMBO);
-   }
-
    @Override
-   public boolean m_7327_(Entity target) {
+   public boolean doHurtTarget(Entity target) {
       if (this.isRangedCombatant()) {
          return false;
-      } else if (this.isSwordsman()) {
-         boolean started = this.startSwordsmanCombo(target);
-         if (started) {
-            this.recordCombatAttack();
-         }
-
-         return started;
       } else {
          this.triggerMeleeAttackAnimation();
-         this.m_21011_(InteractionHand.MAIN_HAND, true);
-         boolean hit = super.m_7327_(target);
-         if (hit && target instanceof LivingEntity livingTarget) {
-            IceAndFireEquipmentCompat.applySupportedMeleeHit(this.m_21205_(), livingTarget, this);
-         }
-
+         this.swing(InteractionHand.MAIN_HAND, true);
+         boolean hit = super.doHurtTarget(target);
          if (hit) {
             this.recordCombatAttack();
          }
@@ -359,781 +506,45 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
    }
 
-   private boolean startSwordsmanCombo(Entity target) {
-      if (this.swordsmanComboActive) {
-         return true;
-      } else if (this.swordsmanTechniqueRecoveryTicks > 0) {
-         return false;
-      } else {
-         if (target instanceof LivingEntity livingTarget && livingTarget.m_6084_()) {
-            this.swordsmanComboTarget = livingTarget;
-            this.swordsmanComboTicks = 0;
-            this.swordsmanComboActive = true;
-            this.swordsmanAerialCleaveActive = false;
-            this.swordsmanAerialCleaveTicks = 0;
-            this.swordsmanTechniqueFinished = false;
-            this.swordsmanRapidHitCooldown = 0;
-            this.swordsmanRapidHitCount = 0;
-            this.swordsmanChargedArt = 0;
-            this.swordsmanChargeTicks = 0;
-            this.swordsmanChargedArtReleased = false;
-            this.swordsmanTechnique = this.chooseSwordsmanTechnique(livingTarget);
-            if (this.swordsmanTechnique != CombatNpcEntity.SwordsmanTechnique.NONE && this.executeSwordsmanTechniqueTick(0)) {
-               this.tryReleaseSwordsmanSummonedSword(livingTarget);
-               this.swordsmanPreviousTechnique = this.swordsmanLastTechnique;
-               this.swordsmanLastTechnique = this.swordsmanTechnique;
-               return true;
-            }
-
-            this.cancelSwordsmanCombo();
-            return false;
-         }
-
-         return false;
-      }
-   }
-
-   private void tryReleaseSwordsmanSummonedSword(LivingEntity target) {
-      if (SlashBladeCompat.canUseSummonedSwordArts(this)) {
-         int art = this.chooseSwordsmanSummonedSwordArt(target);
-         boolean released = SlashBladeCompat.performSummonedSwordArt(this, target, art);
-         if (!released && art != 1) {
-            art = 1;
-            released = SlashBladeCompat.performSummonedSwordArt(this, target, art);
-         }
-
-         if (released) {
-            this.swordsmanPreviousSummonedSwordArt = this.swordsmanLastSummonedSwordArt;
-            this.swordsmanLastSummonedSwordArt = art;
-         }
-      }
-   }
-
-   private int chooseSwordsmanSummonedSwordArt(LivingEntity target) {
-      double distance = Math.sqrt(this.m_20280_(target));
-      List<Integer> candidates = new ArrayList<>();
-      if (distance <= 5.5) {
-         candidates.add(2);
-         candidates.add(3);
-         candidates.add(4);
-         candidates.add(1);
-      } else if (distance <= 14.0) {
-         candidates.add(3);
-         candidates.add(4);
-         candidates.add(5);
-         candidates.add(1);
-      } else {
-         candidates.add(4);
-         candidates.add(5);
-         candidates.add(1);
-      }
-
-      if (candidates.size() > 1) {
-         candidates.removeIf(candidate -> candidate == this.swordsmanLastSummonedSwordArt);
-      }
-
-      int selected = candidates.get(this.m_217043_().m_188503_(candidates.size()));
-      if (candidates.size() > 1 && selected == this.swordsmanPreviousSummonedSwordArt && this.m_217043_().m_188501_() < 0.7F) {
-         List<Integer> alternatives = candidates.stream().filter(candidate -> candidate != this.swordsmanPreviousSummonedSwordArt).toList();
-         if (!alternatives.isEmpty()) {
-            selected = alternatives.get(this.m_217043_().m_188503_(alternatives.size()));
-         }
-      }
-
-      return selected;
-   }
-
-   private CombatNpcEntity.SwordsmanTechnique chooseSwordsmanTechnique(LivingEntity target) {
-      double distance = Math.sqrt(this.m_20280_(target));
-      double heightDifference = target.m_20186_() - this.m_20186_();
-      List<CombatNpcEntity.SwordsmanTechnique> candidates = new ArrayList<>();
-      int heldArt = SlashBladeCompat.getHeldSlashArt(this);
-      if (this.shouldUseSwordsmanSlashArt(target, heldArt, distance)) {
-         this.swordsmanChargeType = this.chooseSwordsmanChargeType(distance);
-         this.swordsmanChargeTicks = this.chargeTicksForType(this.swordsmanChargeType);
-         return CombatNpcEntity.SwordsmanTechnique.SLASH_ART;
-      } else {
-         if (!this.m_20096_() && !this.m_20159_()) {
-            if (heightDifference < -1.5 || distance > 5.0) {
-               return CombatNpcEntity.SwordsmanTechnique.AERIAL_CLEAVE;
-            }
-
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_A);
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_B);
-         } else if (distance <= 3.6) {
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.COMBO_A);
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.COMBO_B);
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.COMBO_C);
-            if (this.canLaunchSwordsmanAerialCombo(target)) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_A);
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_B);
-               if (heightDifference > 1.25) {
-                  candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_A);
-                  candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_B);
-               }
-            } else if (!this.m_20159_()) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.UPPER_CHAIN);
-            }
-
-            if (!this.m_20159_() && distance >= 2.0) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.RAPID_SLASH);
-            }
-         } else {
-            if (!this.m_20159_()) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.RAPID_SLASH);
-            }
-
-            if (this.canLaunchSwordsmanAerialCombo(target) && distance <= 4.5 && heightDifference > 1.25) {
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_A);
-               candidates.add(CombatNpcEntity.SwordsmanTechnique.AERIAL_COMBO_B);
-            }
-         }
-
-         if (candidates.isEmpty()) {
-            candidates.add(CombatNpcEntity.SwordsmanTechnique.COMBO_A);
-         }
-
-         if (candidates.size() > 1) {
-            candidates.removeIf(candidate -> candidate == this.swordsmanLastTechnique);
-         }
-
-         CombatNpcEntity.SwordsmanTechnique selected = candidates.get(this.m_217043_().m_188503_(candidates.size()));
-         if (candidates.size() > 1 && selected == this.swordsmanPreviousTechnique && this.m_217043_().m_188501_() < 0.65F) {
-            List<CombatNpcEntity.SwordsmanTechnique> alternatives = candidates.stream()
-               .filter(candidate -> candidate != this.swordsmanPreviousTechnique)
-               .toList();
-            if (!alternatives.isEmpty()) {
-               selected = alternatives.get(this.m_217043_().m_188503_(alternatives.size()));
-            }
-         }
-
-         return selected;
-      }
-   }
-
-   private boolean isChargedArtSuitableAtDistance(int art, double distance) {
-      return switch (art) {
-         case 1 -> distance <= 28.0;
-         case 2, 3, 4 -> distance <= 7.0;
-         case 5, 6, 7 -> distance >= 4.0 && distance <= 32.0;
-         case 8 -> distance >= 2.0 && distance <= 18.0;
-         default -> false;
-      };
-   }
-
-   private boolean shouldUseSwordsmanSlashArt(LivingEntity target, int heldArt, double distance) {
-      if (!this.m_20096_()
-         || this.m_20159_()
-         || this.swordsmanSlashArtCooldown > 0
-         || this.swordsmanSlashArtCharge < 4
-         || heldArt == 0
-         || !this.isChargedArtSuitableAtDistance(heldArt, distance)
-         || target.m_21223_() <= Math.max(8.0F, target.m_21233_() * 0.2F)) {
-         return false;
-      } else if (this.swordsmanSlashArtCharge >= 7) {
-         return true;
-      } else {
-         float chance = switch (this.swordsmanSlashArtCharge) {
-            case 4 -> 0.22F;
-            case 5 -> 0.38F;
-            default -> 0.6F;
-         };
-         return this.m_217043_().m_188501_() < chance;
-      }
-   }
-
-   private int chooseSwordsmanChargeType(double distance) {
-      List<Integer> candidates = new ArrayList<>();
-      candidates.add(1);
-      candidates.add(2);
-      if (SlashBladeCompat.canUseChargedSlashArt(this, 3) && distance >= 5.0 && this.m_217043_().m_188501_() < 0.22F) {
-         candidates.add(3);
-      }
-
-      if (candidates.size() > 1) {
-         candidates.removeIf(type -> type == this.swordsmanLastChargeType);
-      }
-
-      int selected = candidates.get(this.m_217043_().m_188503_(candidates.size()));
-      if (candidates.size() > 1 && selected == this.swordsmanPreviousChargeType && this.m_217043_().m_188501_() < 0.7F) {
-         List<Integer> alternatives = candidates.stream().filter(type -> type != this.swordsmanPreviousChargeType).toList();
-         if (!alternatives.isEmpty()) {
-            selected = alternatives.get(this.m_217043_().m_188503_(alternatives.size()));
-         }
-      }
-
-      if (!SlashBladeCompat.canUseChargedSlashArt(this, selected)) {
-         selected = 1;
-      }
-
-      return selected;
-   }
-
-   private int chargeTicksForType(int chargeType) {
-      return switch (chargeType) {
-         case 2 -> 10;
-         case 3 -> 26;
-         default -> 16;
-      };
-   }
-
-   private boolean canLaunchSwordsmanAerialCombo(LivingEntity target) {
-      if (!this.m_20159_() && this.m_20096_() && target != null && target.m_6084_()) {
-         if (this.m_20280_(target) > 20.25) {
-            return false;
-         } else {
-            AABB launchSpace = this.m_20191_().m_82377_(0.35, 0.0, 0.35).m_82363_(0.0, 3.75, 0.0);
-            return this.m_9236_().m_45756_(this, launchSpace);
-         }
-      } else {
-         return false;
-      }
-   }
-
-   private boolean performSwordsmanTechniqueHit(int move, float damageRatio, int knockback) {
-      if (this.swordsmanComboTarget != null
-         && !(this.m_20280_(this.swordsmanComboTarget) > 27.5625)
-         && SlashBladeCompat.performTechniqueHit(this, this.swordsmanComboTarget, move, damageRatio, knockback)) {
-         this.swordsmanComboStep = move;
-         this.swordsmanPoseTicks = 10;
-         this.f_19804_.m_135381_(SWORDSMAN_COMBO, move);
-         this.m_21011_(InteractionHand.MAIN_HAND, true);
-         return true;
-      } else {
-         return false;
-      }
-   }
-
-   private void setSwordsmanTechniquePose(int move) {
-      if (SlashBladeCompat.setTechniqueState(this, move)) {
-         this.swordsmanComboStep = move;
-         this.swordsmanPoseTicks = 10;
-         this.f_19804_.m_135381_(SWORDSMAN_COMBO, move);
-      }
-   }
-
-   private boolean executeSwordsmanTechniqueTick(int tick) {
-      return switch (this.swordsmanTechnique) {
-         case COMBO_A -> this.executeComboATick(tick);
-         case COMBO_B -> this.executeComboBTick(tick);
-         case COMBO_C -> this.executeComboCTick(tick);
-         case RAPID_SLASH -> this.executeRapidSlashTick(tick);
-         case UPPER_CHAIN -> this.executeUpperChainTick(tick);
-         case AERIAL_COMBO_A -> this.executeAerialComboATick(tick);
-         case AERIAL_COMBO_B -> this.executeAerialComboBTick(tick);
-         case AERIAL_CLEAVE -> this.executeAerialCleaveOnlyTick(tick);
-         case SLASH_ART -> this.executeChargedSlashArtTick(tick);
-         default -> false;
-      };
-   }
-
-   private boolean executeChargedSlashArtTick(int tick) {
-      if (this.swordsmanComboTarget != null && !this.m_20159_()) {
-         this.m_21573_().m_26573_();
-         this.m_21563_().m_24960_(this.swordsmanComboTarget, 90.0F, 90.0F);
-         this.faceSwordsmanTarget();
-         if (!this.swordsmanChargedArtReleased) {
-            this.m_20256_(this.m_20184_().m_82542_(0.05, 1.0, 0.05));
-            if (tick == 0 || tick % 4 == 0) {
-               this.setSwordsmanTechniquePose(19);
-               SlashBladeCompat.emitChargedSlashArtParticles(this, this.swordsmanChargeType);
-            }
-
-            if (tick < this.swordsmanChargeTicks) {
-               return true;
-            } else {
-               this.swordsmanChargedArt = SlashBladeCompat.beginChargedSlashArt(this, this.swordsmanComboTarget, this.swordsmanChargeType);
-               if (this.swordsmanChargedArt == 0) {
-                  return false;
-               } else {
-                  this.swordsmanChargedArtReleased = true;
-                  this.swordsmanSlashArtCooldown = 600;
-                  this.swordsmanSlashArtCharge = 0;
-                  this.swordsmanPreviousChargeType = this.swordsmanLastChargeType;
-                  this.swordsmanLastChargeType = this.swordsmanChargeType;
-                  this.setSwordsmanTechniquePose(SlashBladeCompat.getSlashArtPose(this.swordsmanChargedArt));
-                  return true;
-               }
-            }
-         } else {
-            int executionTick = tick - this.swordsmanChargeTicks;
-            if (SlashBladeCompat.isPiercingSlashArt(this.swordsmanChargedArt) && executionTick <= 7) {
-               this.dashSwordsmanTowardsTarget(this.m_20280_(this.swordsmanComboTarget));
-            } else {
-               this.m_20256_(this.m_20184_().m_82542_(0.25, 1.0, 0.25));
-            }
-
-            if (executionTick % 5 == 0) {
-               this.setSwordsmanTechniquePose(SlashBladeCompat.getSlashArtPose(this.swordsmanChargedArt));
-            }
-
-            if (!SlashBladeCompat.tickChargedSlashArt(this, this.swordsmanComboTarget, this.swordsmanChargedArt, this.swordsmanChargeType, executionTick)) {
-               return false;
-            } else {
-               if (executionTick >= SlashBladeCompat.getChargedSlashArtExecutionTicks(this.swordsmanChargedArt, this.swordsmanChargeType)) {
-                  this.swordsmanTechniqueFinished = true;
-               }
-
-               return true;
-            }
-         }
-      } else {
-         return false;
-      }
-   }
-
-   private void faceSwordsmanTarget() {
-      if (this.swordsmanComboTarget != null) {
-         Vec3 delta = this.swordsmanComboTarget.m_20182_().m_82546_(this.m_20182_());
-         if (!(delta.m_165925_() < 1.0E-6)) {
-            float yaw = (float)Math.toDegrees(Math.atan2(-delta.f_82479_, delta.f_82481_));
-            this.m_146922_(yaw);
-            this.m_5618_(yaw);
-            this.m_5616_(yaw);
-         }
-      }
-   }
-
-   private boolean executeComboATick(int tick) {
-      boolean powered = SlashBladeCompat.isPowered(this);
-
-      return switch (tick) {
-         case 0 -> this.performSwordsmanTechniqueHit(1, 0.44F, 0);
-         case 6 -> this.performSwordsmanTechniqueHit(2, 0.44F, 0);
-         case 13, 16 -> this.performSwordsmanTechniqueHit(3, 0.44F, 0);
-         case 22, 24 -> this.performSwordsmanTechniqueHit(powered ? 5 : 4, powered ? 1.0F : 0.44F, 0);
-         case 31, 33, 35 -> !powered || this.performSwordsmanTechniqueHit(6, 1.0F, 0);
-         default -> true;
-      };
-   }
-
-   private boolean executeComboBTick(int tick) {
-      return switch (tick) {
-         case 0 -> this.performSwordsmanTechniqueHit(1, 0.44F, 0);
-         default -> true;
-         case 6 -> this.performSwordsmanTechniqueHit(2, 0.44F, 0);
-         case 13, 16 -> this.performSwordsmanTechniqueHit(3, 0.44F, 0);
-         case 24, 26, 28, 30, 32, 34, 36, 38 -> this.performSwordsmanTechniqueHit(7, 0.244F, 0);
-         case 44, 46 -> this.performSwordsmanTechniqueHit(7, 0.5F, 1);
-      };
-   }
-
-   private boolean executeComboCTick(int tick) {
-      return switch (tick) {
-         case 0 -> this.performSwordsmanTechniqueHit(1, 0.44F, 0);
-         case 6 -> this.performSwordsmanTechniqueHit(2, 0.44F, 0);
-         case 18, 20 -> this.performSwordsmanTechniqueHit(8, 0.88F, 0);
-         default -> true;
-      };
-   }
-
-   private boolean executeRapidSlashTick(int tick) {
-      if (tick == 0) {
-         this.setSwordsmanTechniquePose(9);
-         return true;
-      } else if (this.swordsmanComboTarget != null && !this.m_20159_()) {
-         double distanceSqr = this.m_20280_(this.swordsmanComboTarget);
-         if (distanceSqr > 18.0625) {
-            this.dashSwordsmanTowardsTarget(distanceSqr);
-            if (tick % 7 == 1) {
-               this.setSwordsmanTechniquePose(9);
-            }
-
-            return true;
-         } else {
-            this.m_21573_().m_26573_();
-            this.m_20256_(this.m_20184_().m_82542_(0.35, 1.0, 0.35));
-            if (this.swordsmanRapidHitCooldown > 0) {
-               this.swordsmanRapidHitCooldown--;
-            } else if (this.swordsmanRapidHitCount < 4) {
-               if (!this.performSwordsmanTechniqueHit(9, 0.44F, 0)) {
-                  return false;
-               }
-
-               this.swordsmanRapidHitCount++;
-               this.swordsmanRapidHitCooldown = 2;
-            }
-
-            if (this.swordsmanRapidHitCount >= 4 && this.swordsmanRapidHitCooldown <= 0) {
-               this.swordsmanTechniqueFinished = true;
-            }
-
-            return true;
-         }
-      } else {
-         return false;
-      }
-   }
-
-   private void dashSwordsmanTowardsTarget(double distanceSqr) {
-      if (this.swordsmanComboTarget != null && !this.m_20159_()) {
-         this.m_21573_().m_26573_();
-         Vec3 direction = this.horizontalDirectionToSwordsmanTarget();
-         if (!(direction.m_82556_() < 1.0E-4)) {
-            double distance = Math.sqrt(distanceSqr);
-            double speed = distance > 16.0 ? 1.1 : (distance > 8.0 ? 0.92 : 0.72);
-            Vec3 motion = this.m_20184_();
-            this.m_20334_(direction.f_82479_ * speed, motion.f_82480_, direction.f_82481_ * speed);
-            float yaw = (float)Math.toDegrees(Math.atan2(-direction.f_82479_, direction.f_82481_));
-            this.m_146922_(yaw);
-            this.m_5618_(yaw);
-            this.m_5616_(yaw);
-            this.m_6858_(true);
-            this.f_19812_ = true;
-            if (this.f_19862_ && this.m_20096_()) {
-               this.m_21569_().m_24901_();
-            }
-         }
-      }
-   }
-
-   private boolean executeUpperChainTick(int tick) {
-      if (tick == 0) {
-         return this.performSwordsmanTechniqueHit(10, 0.5F, 1);
-      } else {
-         if (tick == 5) {
-            this.setSwordsmanTechniquePose(11);
-            this.m_20334_(this.m_20184_().f_82479_, 0.6, this.m_20184_().f_82481_);
-            this.m_6853_(false);
-            this.f_19812_ = true;
-         } else {
-            if (tick == 8) {
-               return this.performSwordsmanTechniqueHit(12, 0.6F, 1);
-            }
-
-            if (tick == 14) {
-               return this.performSwordsmanTechniqueHit(12, 0.6F, 1);
-            }
-         }
-
-         return true;
-      }
-   }
-
-   private boolean executeAerialComboATick(int tick) {
-      if (tick == 0) {
-         if (!this.performSwordsmanTechniqueHit(10, 0.5F, 1)) {
-            return false;
-         } else {
-            this.launchSwordsmanAerialCombo();
-            this.setSwordsmanTechniquePose(11);
-            return true;
-         }
-      } else {
-         if (this.shouldBeginSwordsmanAerialCleave(tick, 34)) {
-            this.beginSwordsmanAerialCleave();
-         }
-
-         if (this.swordsmanAerialCleaveActive) {
-            return this.tickSwordsmanAerialCleave();
-         } else {
-            this.hoverSwordsmanNearTarget();
-
-            return switch (tick) {
-               case 5 -> this.performSwordsmanTechniqueHit(13, 0.28F, 0);
-               case 11 -> this.performSwordsmanTechniqueHit(14, 0.28F, 0);
-               case 18, 20 -> this.performSwordsmanTechniqueHit(15, 0.28F, 2);
-               default -> true;
-            };
-         }
-      }
-   }
-
-   private boolean executeAerialComboBTick(int tick) {
-      if (tick == 0) {
-         if (!this.performSwordsmanTechniqueHit(10, 0.5F, 1)) {
-            return false;
-         } else {
-            this.launchSwordsmanAerialCombo();
-            this.setSwordsmanTechniquePose(11);
-            return true;
-         }
-      } else {
-         if (this.shouldBeginSwordsmanAerialCleave(tick, 40)) {
-            this.beginSwordsmanAerialCleave();
-         }
-
-         if (this.swordsmanAerialCleaveActive) {
-            return this.tickSwordsmanAerialCleave();
-         } else {
-            this.hoverSwordsmanNearTarget();
-
-            return switch (tick) {
-               case 5 -> this.performSwordsmanTechniqueHit(13, 0.28F, 0);
-               case 11 -> this.performSwordsmanTechniqueHit(14, 0.28F, 0);
-               case 19, 24 -> this.performSwordsmanTechniqueHit(16, 0.34F, 1);
-               case 31, 33 -> this.performSwordsmanTechniqueHit(17, 0.34F, 3);
-               default -> true;
-            };
-         }
-      }
-   }
-
-   private boolean executeAerialCleaveOnlyTick(int tick) {
-      if (!this.swordsmanAerialCleaveActive) {
-         this.beginSwordsmanAerialCleave();
-      }
-
-      return this.tickSwordsmanAerialCleave();
-   }
-
-   private void launchSwordsmanAerialCombo() {
-      if (!this.m_20159_()) {
-         this.m_21573_().m_26573_();
-         Vec3 motion = this.m_20184_();
-         Vec3 towardTarget = this.horizontalDirectionToSwordsmanTarget();
-         this.m_20334_(towardTarget.f_82479_ * 0.22, Math.max(0.72, motion.f_82480_), towardTarget.f_82481_ * 0.22);
-         this.m_6853_(false);
-         this.f_19812_ = true;
-      }
-   }
-
-   private void hoverSwordsmanNearTarget() {
-      if (this.swordsmanComboTarget != null && !this.m_20159_()) {
-         this.m_21573_().m_26573_();
-         Vec3 delta = this.swordsmanComboTarget.m_20182_().m_82520_(0.0, 1.0, 0.0).m_82546_(this.m_20182_());
-         double horizontalDistance = Math.sqrt(delta.f_82479_ * delta.f_82479_ + delta.f_82481_ * delta.f_82481_);
-         double x = Mth.m_14008_(delta.f_82479_ * 0.1, -0.24, 0.24);
-         double z = Mth.m_14008_(delta.f_82481_ * 0.1, -0.24, 0.24);
-         double y = Mth.m_14008_(delta.f_82480_ * 0.08, -0.08, 0.16);
-         if (horizontalDistance < 1.2) {
-            x *= 0.35;
-            z *= 0.35;
-         }
-
-         this.m_20334_(x, y, z);
-         this.f_19789_ = 0.0F;
-         this.m_6853_(false);
-         this.f_19812_ = true;
-      }
-   }
-
-   private boolean shouldBeginSwordsmanAerialCleave(int tick, int maximumAirTicks) {
-      if (this.swordsmanAerialCleaveActive || this.m_20159_()) {
-         return false;
-      } else if (tick < maximumAirTicks && this.swordsmanComboTarget != null) {
-         double horizontalDistanceSqr = this.horizontalDistanceSqr(this.swordsmanComboTarget);
-         double targetBelow = this.m_20186_() - this.swordsmanComboTarget.m_20186_();
-         return tick >= 16 && (targetBelow > 2.6 || horizontalDistanceSqr > 30.25 || !this.swordsmanComboTarget.m_6084_());
-      } else {
-         return true;
-      }
-   }
-
-   private void beginSwordsmanAerialCleave() {
-      this.swordsmanAerialCleaveActive = true;
-      this.swordsmanAerialCleaveTicks = 0;
-      this.setSwordsmanTechniquePose(18);
-      if (!this.m_20159_()) {
-         this.m_21573_().m_26573_();
-         Vec3 motion = this.m_20184_();
-         this.m_20334_(motion.f_82479_ * 0.35, Math.min(-0.35, motion.f_82480_), motion.f_82481_ * 0.35);
-         this.m_6853_(false);
-         this.f_19812_ = true;
-      }
-   }
-
-   private boolean tickSwordsmanAerialCleave() {
-      if (this.m_20159_()) {
-         return false;
-      } else {
-         this.swordsmanAerialCleaveTicks++;
-         this.f_19789_ = 0.0F;
-         Vec3 towardTarget = this.horizontalDirectionToSwordsmanTarget();
-         Vec3 motion = this.m_20184_();
-         double downwardSpeed = Math.max(-1.65, motion.f_82480_ - 0.24);
-         this.m_20334_(towardTarget.f_82479_ * 0.18, downwardSpeed, towardTarget.f_82481_ * 0.18);
-         this.f_19812_ = true;
-         if (this.swordsmanAerialCleaveTicks % 4 == 0
-            && this.swordsmanComboTarget != null
-            && this.m_20280_(this.swordsmanComboTarget) <= 22.5625
-            && !this.performSwordsmanTechniqueHit(18, 0.44F, 3)) {
-            return false;
-         } else {
-            if (this.m_20096_()) {
-               if (this.swordsmanComboTarget != null && this.m_20280_(this.swordsmanComboTarget) <= 27.5625) {
-                  this.performSwordsmanTechniqueHit(18, 0.44F, 3);
-               }
-
-               this.swordsmanTechniqueFinished = true;
-            } else if (this.swordsmanAerialCleaveTicks >= 45) {
-               this.swordsmanTechniqueFinished = true;
-            }
-
-            return true;
-         }
-      }
-   }
-
-   private Vec3 horizontalDirectionToSwordsmanTarget() {
-      if (this.swordsmanComboTarget == null) {
-         return Vec3.f_82478_;
-      } else {
-         Vec3 delta = this.swordsmanComboTarget.m_20182_().m_82546_(this.m_20182_());
-         Vec3 horizontal = new Vec3(delta.f_82479_, 0.0, delta.f_82481_);
-         return horizontal.m_82556_() < 1.0E-4 ? Vec3.f_82478_ : horizontal.m_82541_();
-      }
-   }
-
-   private double horizontalDistanceSqr(LivingEntity target) {
-      double x = target.m_20185_() - this.m_20185_();
-      double z = target.m_20189_() - this.m_20189_();
-      return x * x + z * z;
-   }
-
-   private void driveSwordsmanTowardsTarget(double speed, double stopDistance) {
-      if (this.swordsmanComboTarget != null && !this.m_20159_()) {
-         if (this.m_20280_(this.swordsmanComboTarget) > stopDistance * stopDistance) {
-            this.m_21573_().m_5624_(this.swordsmanComboTarget, speed);
-         } else {
-            this.m_21573_().m_26573_();
-         }
-      }
-   }
-
-   private void tickSwordsmanCombo() {
-      if (!this.m_9236_().f_46443_) {
-         if (this.swordsmanTechniqueRecoveryTicks > 0) {
-            this.swordsmanTechniqueRecoveryTicks--;
-         }
-
-         if (this.swordsmanSlashArtCooldown > 0) {
-            this.swordsmanSlashArtCooldown--;
-         }
-
-         if (this.swordsmanComboActive) {
-            if (!this.isSwordsman()) {
-               this.cancelSwordsmanCombo();
-            } else {
-               if (!this.isValidSwordsmanComboTarget()) {
-                  if (!this.swordsmanTechnique.aerial && !this.swordsmanAerialCleaveActive || this.m_20159_()) {
-                     this.cancelSwordsmanCombo();
-                     return;
-                  }
-
-                  this.swordsmanComboTarget = null;
-                  this.swordsmanTechnique = CombatNpcEntity.SwordsmanTechnique.AERIAL_CLEAVE;
-                  if (!this.swordsmanAerialCleaveActive) {
-                     this.beginSwordsmanAerialCleave();
-                  }
-               }
-
-               LivingEntity target = this.swordsmanComboTarget;
-               if (target != null) {
-                  this.m_21563_().m_24960_(target, 60.0F, 60.0F);
-               }
-
-               if (this.swordsmanTechnique.aerial
-                  || this.swordsmanTechnique == CombatNpcEntity.SwordsmanTechnique.RAPID_SLASH
-                  || this.swordsmanTechnique == CombatNpcEntity.SwordsmanTechnique.SLASH_ART
-                  || this.swordsmanTechnique == CombatNpcEntity.SwordsmanTechnique.UPPER_CHAIN && this.swordsmanComboTicks >= 5) {
-                  if ((this.swordsmanTechnique.aerial || this.swordsmanTechnique == CombatNpcEntity.SwordsmanTechnique.UPPER_CHAIN) && !this.m_20159_()) {
-                     this.m_21573_().m_26573_();
-                  }
-               } else {
-                  this.driveSwordsmanTowardsTarget(0.9, 2.75);
-               }
-
-               this.swordsmanComboTicks++;
-               if (!this.executeSwordsmanTechniqueTick(this.swordsmanComboTicks)) {
-                  this.cancelSwordsmanCombo();
-               } else if (this.swordsmanTechniqueFinished || this.swordsmanComboTicks >= this.swordsmanTechnique.durationTicks) {
-                  this.finishSwordsmanTechnique();
-               }
-            }
-         }
-      }
-   }
-
-   private boolean isValidSwordsmanComboTarget() {
-      return this.swordsmanComboTarget != null
-         && this.swordsmanComboTarget.m_6084_()
-         && this.swordsmanComboTarget.m_9236_() == this.m_9236_()
-         && this.m_20280_(this.swordsmanComboTarget) <= 1600.0;
-   }
-
-   private void cancelSwordsmanCombo() {
-      this.swordsmanComboActive = false;
-      this.swordsmanComboTarget = null;
-      this.swordsmanComboTicks = 0;
-      this.swordsmanComboStep = 0;
-      this.swordsmanPoseTicks = 0;
-      this.swordsmanTechnique = CombatNpcEntity.SwordsmanTechnique.NONE;
-      this.swordsmanAerialCleaveActive = false;
-      this.swordsmanAerialCleaveTicks = 0;
-      this.swordsmanTechniqueFinished = false;
-      this.swordsmanRapidHitCooldown = 0;
-      this.swordsmanRapidHitCount = 0;
-      this.swordsmanChargedArt = 0;
-      this.swordsmanChargeTicks = 0;
-      this.swordsmanChargedArtReleased = false;
-      this.m_6858_(false);
-      if (!this.m_9236_().f_46443_ && (Integer)this.f_19804_.m_135370_(SWORDSMAN_COMBO) != 0) {
-         this.f_19804_.m_135381_(SWORDSMAN_COMBO, 0);
-      }
-   }
-
-   private boolean isSwordsmanComboActive() {
-      return this.swordsmanComboActive;
-   }
-
-   private int getSwordsmanTechniqueCooldownTicks() {
-      return 4;
-   }
-
-   private void finishSwordsmanTechnique() {
-      if (this.swordsmanTechnique != CombatNpcEntity.SwordsmanTechnique.SLASH_ART) {
-         this.swordsmanSlashArtCharge = Math.min(7, this.swordsmanSlashArtCharge + 1);
-      }
-
-      this.swordsmanTechniqueRecoveryTicks = 8;
-      this.cancelSwordsmanCombo();
-   }
-
-   private boolean isSwordsmanAerialRecovery() {
-      return this.swordsmanComboActive && (this.swordsmanTechnique.aerial || this.swordsmanAerialCleaveActive);
-   }
-
-   public void m_6504_(LivingEntity target, float velocity) {
-      if (target != null && target.m_6084_()) {
+   public void performRangedAttack(LivingEntity target, float velocity) {
+      if (target != null && target.isAlive()) {
          this.recordCombatAttack();
-         if (NpcEquipmentResolver.isCrossbow(this.m_21205_())) {
+         if (NpcEquipmentResolver.isCrossbow(this.getMainHandItem())) {
             this.performCrossbowAttack(target);
          } else {
-            ItemStack projectileStack = this.m_6298_(this.m_21205_());
-            AbstractArrow arrow = ProjectileUtil.m_37300_(this, projectileStack, velocity);
-            this.positionDragonRiderArrow(arrow, target);
+            ItemStack projectileStack = this.getProjectile(this.getMainHandItem());
+            AbstractArrow arrow = ProjectileUtil.getMobArrow(this, projectileStack, velocity);
             float projectileSpeed = this.calculateProjectileVelocity(target);
-            Vec3 start = new Vec3(this.m_20185_(), arrow.m_20186_(), this.m_20189_());
+            Vec3 start = new Vec3(this.getX(), arrow.getY(), this.getZ());
             NpcRangedAttackHelper.BallisticShot shot = NpcRangedAttackHelper.findBallisticShot(this, target, start, (double)projectileSpeed, 0.05)
                .orElseGet(() -> this.fallbackRangedShot(target, start, projectileSpeed));
-            arrow.m_6686_(
-               shot.direction().f_82479_,
-               shot.direction().f_82480_,
-               shot.direction().f_82481_,
+            arrow.shoot(
+               shot.direction().x,
+               shot.direction().y,
+               shot.direction().z,
                shot.speed(),
-               (float)(14 - this.m_9236_().m_46791_().m_19028_() * 4)
+               (float)(14 - this.level().getDifficulty().getId() * 4)
             );
             NpcRangedAttackHelper.configureBowArrow(this, arrow, velocity);
-            this.m_5496_(SoundEvents.f_12382_, 1.0F, 1.0F / (this.m_217043_().m_188501_() * 0.4F + 0.8F));
-            this.m_9236_().m_7967_(arrow);
+            this.playSound(SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+            this.level().addFreshEntity(arrow);
          }
       }
    }
 
    private void performCrossbowAttack(LivingEntity target) {
-      ItemStack crossbow = this.m_21205_();
-      ItemStack projectileStack = this.m_6298_(crossbow);
-      if (projectileStack.m_41619_()) {
-         projectileStack = new ItemStack(Items.f_42412_);
+      ItemStack crossbow = this.getMainHandItem();
+      ItemStack projectileStack = this.getProjectile(crossbow);
+      if (projectileStack.isEmpty()) {
+         projectileStack = new ItemStack(Items.ARROW);
       }
 
       Vec3 aim = NpcRangedAttackHelper.predictTargetPosition(this, target, 3.15);
-      double x = aim.f_82479_ - this.m_20185_();
-      double y = aim.f_82480_ - this.m_20188_();
-      double z = aim.f_82481_ - this.m_20189_();
+      double x = aim.x - this.getX();
+      double y = aim.y - this.getEyeY();
+      double z = aim.z - this.getZ();
       double horizontal = Math.sqrt(x * x + z * z);
-      Vec3 direction = new Vec3(x, y + horizontal * 0.2, z).m_82541_();
+      Vec3 direction = new Vec3(x, y + horizontal * 0.2, z).normalize();
       int projectileCount = NpcRangedAttackHelper.crossbowProjectileCount(crossbow);
 
       for (int shot = 0; shot < projectileCount; shot++) {
@@ -1141,51 +552,37 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          double cos = Math.cos(angle);
          double sin = Math.sin(angle);
          Vec3 shotDirection = new Vec3(
-            direction.f_82479_ * cos - direction.f_82481_ * sin, direction.f_82480_, direction.f_82479_ * sin + direction.f_82481_ * cos
+            direction.x * cos - direction.z * sin, direction.y, direction.x * sin + direction.z * cos
          );
-         AbstractArrow arrow = ProjectileUtil.m_37300_(this, projectileStack, 1.0F);
-         this.positionDragonRiderArrow(arrow, target);
+         AbstractArrow arrow = ProjectileUtil.getMobArrow(this, projectileStack, 1.0F);
          NpcRangedAttackHelper.configureCrossbowArrow(this, arrow, crossbow);
-         arrow.m_6686_(shotDirection.f_82479_, shotDirection.f_82480_, shotDirection.f_82481_, 3.15F, (float)(8 - this.m_9236_().m_46791_().m_19028_() * 2));
-         this.m_9236_().m_7967_(arrow);
+         arrow.shoot(shotDirection.x, shotDirection.y, shotDirection.z, 3.15F, (float)(8 - this.level().getDifficulty().getId() * 2));
+         this.level().addFreshEntity(arrow);
       }
 
-      this.m_5496_(SoundEvents.f_11847_, 1.0F, 1.0F / (this.m_217043_().m_188501_() * 0.4F + 0.8F));
+      this.playSound(SoundEvents.CROSSBOW_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
    }
 
    private NpcRangedAttackHelper.BallisticShot fallbackRangedShot(LivingEntity target, Vec3 start, float speed) {
       Vec3 aim = NpcRangedAttackHelper.predictTargetPosition(this, target, (double)speed);
-      double horizontal = Math.sqrt(Math.pow(aim.f_82479_ - start.f_82479_, 2.0) + Math.pow(aim.f_82481_ - start.f_82481_, 2.0));
-      return new NpcRangedAttackHelper.BallisticShot(aim.m_82546_(start).m_82520_(0.0, horizontal * 0.2, 0.0).m_82541_(), speed);
+      double horizontal = Math.sqrt(Math.pow(aim.x - start.x, 2.0) + Math.pow(aim.z - start.z, 2.0));
+      return new NpcRangedAttackHelper.BallisticShot(aim.subtract(start).add(0.0, horizontal * 0.2, 0.0).normalize(), speed);
    }
 
    private boolean hasBallisticRangedShot(LivingEntity target) {
-      float speed = NpcEquipmentResolver.isCrossbow(this.m_21205_()) ? 3.15F : this.calculateProjectileVelocity(target);
-      return NpcRangedAttackHelper.findBallisticShot(this, target, this.m_146892_(), (double)speed, 0.05).isPresent();
+      float speed = NpcEquipmentResolver.isCrossbow(this.getMainHandItem()) ? 3.15F : this.calculateProjectileVelocity(target);
+      return NpcRangedAttackHelper.findBallisticShot(this, target, this.getEyePosition(), (double)speed, 0.05).isPresent();
    }
 
    private boolean canAcquireCombatTarget(LivingEntity target) {
-      return !DragonRiderController.canAcquireTarget(this, target) ? false : !this.isRangedCombatant() || this.hasBallisticRangedShot(target);
-   }
-
-   private void positionDragonRiderArrow(AbstractArrow arrow, LivingEntity target) {
-      if (this.isLogicalDragonRider()) {
-         Vec3 direction = this.targetAimDirection(target);
-         Vec3 origin = this.m_20182_().m_82520_(0.0, (double)this.m_20206_() * 0.55, 0.0).m_82549_(direction.m_82490_(1.35));
-         arrow.m_6034_(origin.f_82479_, origin.f_82480_, origin.f_82481_);
-      }
-   }
-
-   private Vec3 targetAimDirection(LivingEntity target) {
-      Vec3 aim = NpcRangedAttackHelper.predictTargetPosition(this, target, 3.15);
-      return aim.m_82546_(this.m_20182_().m_82520_(0.0, (double)this.m_20206_() * 0.55, 0.0)).m_82541_();
+      return !this.isRangedCombatant() || this.hasBallisticRangedShot(target);
    }
 
    private float calculateProjectileVelocity(LivingEntity target) {
-      double dx = target.m_20185_() - this.m_20185_();
-      double dz = target.m_20189_() - this.m_20189_();
+      double dx = target.getX() - this.getX();
+      double dz = target.getZ() - this.getZ();
       double distance = Math.sqrt(dx * dx + dz * dz);
-      double height = target.m_20227_(0.35) - this.m_20227_(0.9);
+      double height = target.getY(0.35) - this.getY(0.9);
       double gravity = 0.05;
       double angle = Math.toRadians(35.0);
       double cos = Math.cos(angle);
@@ -1199,28 +596,32 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    @Override
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
-      if (!this.legacySpellContainerStack.m_41619_()) {
-         tag.m_128365_("SpellbookStack", this.legacySpellContainerStack.m_41739_(new CompoundTag()));
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
+      tag.putInt("PatrolIndex", this.patrolIndex);
+      tag.putBoolean("PatrolAtPoint", this.patrolAtPoint);
+      tag.putInt("PatrolTicksAtPoint", this.patrolTicksAtPoint);
+      if (this.barragePoint != null) {
+         tag.putLong("BarragePoint", this.barragePoint.asLong());
+         tag.putInt("BarrageRadius", this.barrageRadius);
       }
 
-      tag.m_128405_("PatrolIndex", this.patrolIndex);
-      tag.m_128379_("PatrolAtPoint", this.patrolAtPoint);
-      tag.m_128405_("PatrolTicksAtPoint", this.patrolTicksAtPoint);
-      tag.m_128405_("SwordsmanSlashArtCooldown", this.swordsmanSlashArtCooldown);
-      tag.m_128405_("SwordsmanSlashArtCharge", this.swordsmanSlashArtCharge);
+      tag.putString("Stance", this.stance.serializedName());
+      tag.putInt("Kills", this.kills);
+      tag.putInt("VeteranName", this.getVeteranName());
    }
 
    @Override
-   public void m_7378_(CompoundTag tag) {
-      super.m_7378_(tag);
-      this.legacySpellContainerStack = tag.m_128425_("SpellbookStack", 10) ? ItemStack.m_41712_(tag.m_128469_("SpellbookStack")) : ItemStack.f_41583_;
-      this.patrolIndex = tag.m_128451_("PatrolIndex");
-      this.patrolAtPoint = tag.m_128471_("PatrolAtPoint");
-      this.patrolTicksAtPoint = tag.m_128451_("PatrolTicksAtPoint");
-      this.swordsmanSlashArtCooldown = tag.m_128441_("SwordsmanSlashArtCooldown") ? Math.max(0, tag.m_128451_("SwordsmanSlashArtCooldown")) : 200;
-      this.swordsmanSlashArtCharge = tag.m_128441_("SwordsmanSlashArtCharge") ? Mth.m_14045_(tag.m_128451_("SwordsmanSlashArtCharge"), 0, 7) : 0;
+   public void readAdditionalSaveData(CompoundTag tag) {
+      super.readAdditionalSaveData(tag);
+      this.patrolIndex = tag.getInt("PatrolIndex");
+      this.patrolAtPoint = tag.getBoolean("PatrolAtPoint");
+      this.patrolTicksAtPoint = tag.getInt("PatrolTicksAtPoint");
+      this.barragePoint = tag.contains("BarragePoint") ? BlockPos.of(tag.getLong("BarragePoint")) : null;
+      this.barrageRadius = tag.contains("BarrageRadius") ? tag.getInt("BarrageRadius") : DEFAULT_BARRAGE_RADIUS;
+      this.stance = NpcStance.byName(tag.getString("Stance"));
+      this.kills = tag.getInt("Kills");
+      this.entityData.set(VETERAN_NAME, tag.contains("VeteranName") ? tag.getInt("VeteranName") : -1);
    }
 
    @Override
@@ -1229,128 +630,217 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    @Override
-   protected boolean usesCustomMountedMovement() {
-      return this.m_20202_() instanceof Mob;
+   protected boolean usesMorale() {
+      return !"medic".equals(this.getNpcSubtype()) && !"engineer".equals(this.getNpcSubtype());
    }
 
    @Override
-   public void m_8107_() {
-      super.m_8107_();
-      if (!this.m_9236_().f_46443_ && !this.legacySpellContainerStack.m_41619_()) {
-         this.migrateLegacySpellContainer();
+   protected boolean isMoraleLeader() {
+      return this.isCommander() || this.isStandardBearer();
+   }
+
+   @Override
+   protected boolean holdsPositionAfterMove() {
+      return true;
+   }
+
+   public NpcStance getStance() {
+      return this.stance;
+   }
+
+   public void setStance(NpcStance stance) {
+      this.stance = stance;
+      if (stance == NpcStance.PASSIVE && this.getCurrentCommand() != NpcCommandType.ATTACK) {
+         this.setTarget(null);
+      }
+   }
+
+   @Override
+   protected double holdLeashSq() {
+      if (this.stance == NpcStance.AGGRESSIVE) {
+         return AGGRESSIVE_LEASH_SQ;
+      } else {
+         // Archers shoot from the post, so they keep targets as far as a bow carries.
+         return this.isRangedCombatant() ? RANGED_LEASH_SQ : DEFENSIVE_LEASH_SQ;
+      }
+   }
+
+   /**
+    * Area fire: a ranged soldier holds where it stands and shoots high arcs at the point until given another order.
+    * Returns false for soldiers without a bow or crossbow.
+    */
+   public boolean setBarrageCommand(BlockPos point, int radius) {
+      if (!this.isRangedCombatant()) {
+         return false;
       }
 
+      this.barrageRadius = Math.max(1, radius);
+
+      float yaw = (float)(Mth.atan2(point.getZ() + 0.5 - this.getZ(), point.getX() + 0.5 - this.getX()) * 180.0F / (float)Math.PI) - 90.0F;
+      this.setHoldCommand(this.blockPosition(), yaw);
+      this.barragePoint = point.immutable();
+      return true;
+   }
+
+   /** A soldier standing on its post holds the line: comrades and passers-by do not push it off its block. */
+   @Override
+   public boolean isPushable() {
+      if (this.isHoldingPosition() && !this.isPassenger() && (this.getTarget() == null || !this.getTarget().isAlive())) {
+         BlockPos post = this.getCommandTarget();
+         if (this.distanceToSqr(post.getX() + 0.5, post.getY(), post.getZ() + 0.5) <= AT_POST_SQ) {
+            return false;
+         }
+      }
+
+      return super.isPushable();
+   }
+
+   /** Shifts the post of a holding archer that walked into bow range, keeping its barrage order. */
+   private void moveHoldPosition(BlockPos pos) {
+      this.setCommandTarget(pos);
+   }
+
+   @Override
+   public void setHoldCommand(BlockPos pos) {
+      this.barragePoint = null;
+      super.setHoldCommand(pos);
+   }
+
+   @Override
+   public void setMoveCommand(BlockPos target, float yaw) {
+      this.barragePoint = null;
+      super.setMoveCommand(target, yaw);
+   }
+
+   @Override
+   public void queueMoveCommand(BlockPos target, float yaw) {
+      this.barragePoint = null;
+      super.queueMoveCommand(target, yaw);
+   }
+
+   @Override
+   public void setAttackCommand(LivingEntity target) {
+      this.barragePoint = null;
+      super.setAttackCommand(target);
+   }
+
+   @Override
+   public void clearCommand() {
+      this.barragePoint = null;
+      super.clearCommand();
+   }
+
+   private void performBarrageShot(Vec3 point) {
+      ItemStack weapon = this.getMainHandItem();
+      boolean crossbow = NpcEquipmentResolver.isCrossbow(weapon);
+      ItemStack projectileStack = this.getProjectile(weapon);
+      if (projectileStack.isEmpty()) {
+         projectileStack = new ItemStack(Items.ARROW);
+      }
+
+      AbstractArrow arrow = ProjectileUtil.getMobArrow(this, projectileStack, 1.0F);
+      Vec3 start = new Vec3(this.getX(), arrow.getY(), this.getZ());
+      // Spread evenly over the whole circle the player marked, not bunched in its middle.
+      double distance = this.barrageRadius * Math.sqrt(this.getRandom().nextDouble());
+      double angle = this.getRandom().nextDouble() * Math.PI * 2.0;
+      Vec3 aim = point.add(Math.cos(angle) * distance, 0.0, Math.sin(angle) * distance);
+      // Too close for a high arc: lob the arrow straight at the spot instead of drawing without shooting.
+      NpcRangedAttackHelper.BallisticShot shot = NpcRangedAttackHelper.findArcShot(start, aim, crossbow ? 3.15 : 3.0)
+         .orElseGet(() -> new NpcRangedAttackHelper.BallisticShot(aim.subtract(start).add(0.0, 1.5, 0.0).normalize(), 0.4F));
+      this.recordCombatAttack();
+      arrow.shoot(shot.direction().x, shot.direction().y, shot.direction().z, shot.speed(), 1.5F);
+      if (crossbow) {
+         NpcRangedAttackHelper.configureCrossbowArrow(this, arrow, weapon);
+      } else {
+         NpcRangedAttackHelper.configureBowArrow(this, arrow, 1.0F);
+      }
+
+      this.playSound(crossbow ? SoundEvents.CROSSBOW_SHOOT : SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+      this.level().addFreshEntity(arrow);
+   }
+
+   @Override
+   protected boolean usesCustomMountedMovement() {
+      return this.getVehicle() instanceof Mob;
+   }
+
+   @Override
+   public void aiStep() {
+      super.aiStep();
       this.ensureRangedFollowRange();
-      SlashBladeCompat.preserveNpcBladeDurability(this);
-      this.tickSwordsmanCombo();
-      this.tickSwordsmanPose();
-      SlashBladeCompat.preserveNpcBladeDurability(this);
-      if (!this.m_9236_().f_46443_ && this.getCurrentCommand() == NpcCommandType.ATTACK && (this.m_5448_() == null || !this.m_5448_().m_6084_())) {
+      if (!this.level().isClientSide && this.getCurrentCommand() == NpcCommandType.ATTACK && (this.getTarget() == null || !this.getTarget().isAlive())) {
          this.clearCommand();
-      }
-
-      if (this.isLogicalDragonRider() || this.m_20202_() != null && IceAndFireDragonCompat.isDragon(this.m_20202_())) {
-         DragonRiderController.tick(this);
-      }
-
-      if (this.m_20202_() != null && IceAndFireHippogryphCompat.isHippogryph(this.m_20202_())) {
-         HippogryphRiderController.tick(this);
-      }
-
-      if (this.m_20202_() != null && IceAndFireHippocampusCompat.isHippocampus(this.m_20202_())) {
-         HippocampusRiderController.tick(this);
       }
 
       if (this.isCommander()) {
          CombatGroupController.tick(this);
       }
 
+      if (!this.level().isClientSide && this.tickCount % 100 == 37) {
+         this.paintShields();
+      }
+
+      if (!this.level().isClientSide && this.tickCount % CAMP_CHECK_TICKS == 11) {
+         this.tickCamp();
+      }
+
       this.tickOwnedCavalryCharge();
       this.tickOwnedMountedArcherOrbit();
    }
 
-   private void migrateLegacySpellContainer() {
-      if (!this.legacySpellContainerStack.m_41619_()) {
-         if (this.m_21205_().m_41619_()) {
-            this.m_8061_(EquipmentSlot.MAINHAND, this.legacySpellContainerStack);
-            this.legacySpellContainerStack = ItemStack.f_41583_;
-         } else if (this.m_21206_().m_41619_()) {
-            this.m_8061_(EquipmentSlot.OFFHAND, this.legacySpellContainerStack);
-            this.legacySpellContainerStack = ItemStack.f_41583_;
-         } else if (!this.m_9236_().f_46443_) {
-            this.m_19983_(this.legacySpellContainerStack);
-            this.legacySpellContainerStack = ItemStack.f_41583_;
-         }
-      }
-   }
-
-   private void tickSwordsmanPose() {
-      if (!this.m_9236_().f_46443_) {
-         if (!this.isSwordsman()) {
-            this.cancelSwordsmanCombo();
-         } else {
-            if (this.swordsmanPoseTicks > 0 && --this.swordsmanPoseTicks == 0) {
-               this.f_19804_.m_135381_(SWORDSMAN_COMBO, 0);
-            }
-         }
-      }
-   }
-
    private void tickOwnedCavalryCharge() {
-      if (this.m_20202_() == null || !IceAndFireHippocampusCompat.isHippocampus(this.m_20202_()) && !IceAndFireHippogryphCompat.isHippogryph(this.m_20202_())) {
-         if (!this.isRangedCombatant()) {
-            if (this.m_20202_() instanceof Mob mount) {
-               if (!NpcWaterEscape.isRecoveryActive(this)) {
-                  LivingEntity target = this.m_5448_();
-                  if (this.getCurrentCommand() != NpcCommandType.MOVE || !this.updateMountedMoveMovement()) {
-                     if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
-                        this.stopMountedCharge(mount);
-                        this.mountPassDestination = null;
-                        this.mountAttackedThisCharge = false;
-                     } else if (this.validMountedTarget(target) || !this.shouldFollowCombatGroupFormation()) {
-                        if (this.validMountedTarget(target) || !this.updateMountedFollowMovement()) {
-                           if (this.usesCustomMountedMovement() && this.validMountedTarget(target)) {
-                              if (this.mountAttackCooldown > 0) {
-                                 this.mountAttackCooldown--;
-                              }
+      if (!this.isRangedCombatant()) {
+         if (this.getVehicle() instanceof Mob mount) {
+            if (!NpcWaterEscape.isRecoveryActive(this)) {
+               LivingEntity target = this.getTarget();
+               if ((this.getCurrentCommand() != NpcCommandType.MOVE || !this.updateMountedMoveMovement()) && !this.updateMountedHoldMovement()) {
+                  if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
+                     this.stopMountedCharge(mount);
+                     this.mountPassDestination = null;
+                     this.mountAttackedThisCharge = false;
+                  } else if (this.validMountedTarget(target) || !this.shouldFollowCombatGroupFormation()) {
+                     if (this.validMountedTarget(target) || !this.updateMountedFollowMovement()) {
+                        if (this.usesCustomMountedMovement() && this.validMountedTarget(target)) {
+                           if (this.mountAttackCooldown > 0) {
+                              this.mountAttackCooldown--;
+                           }
 
-                              this.m_21563_().m_24960_(target, 30.0F, 30.0F);
-                              if (this.mountPassDestination != null) {
-                                 Vec3 destination = this.mountPassDestination;
-                                 this.mountPassTicks--;
-                                 this.driveMountedCharge(mount, destination);
-                                 if (this.mountPassDestination == null) {
-                                    this.mountAttackedThisCharge = false;
-                                 } else {
-                                    if (this.mountPassTicks <= 0 || mount.m_20182_().m_82557_(destination) < 3.0) {
-                                       this.mountPassDestination = null;
-                                       this.mountAttackedThisCharge = false;
-                                    }
-                                 }
+                           this.getLookControl().setLookAt(target, 30.0F, 30.0F);
+                           if (this.mountPassDestination != null) {
+                              Vec3 destination = this.mountPassDestination;
+                              this.mountPassTicks--;
+                              this.driveMountedCharge(mount, destination);
+                              if (this.mountPassDestination == null) {
+                                 this.mountAttackedThisCharge = false;
                               } else {
-                                 double attackDistance = Math.max(3.2, NpcEquipmentResolver.meleeAttackReach(this));
-                                 if (mount.m_20280_(target) > attackDistance * attackDistance) {
+                                 if (this.mountPassTicks <= 0 || mount.position().distanceToSqr(destination) < 3.0) {
+                                    this.mountPassDestination = null;
                                     this.mountAttackedThisCharge = false;
-                                    this.driveMountedCharge(mount, target.m_20182_());
-                                 } else {
-                                    if (!this.mountAttackedThisCharge && this.mountAttackCooldown <= 0) {
-                                       this.m_6674_(InteractionHand.MAIN_HAND);
-                                       this.m_7327_(target);
-                                       this.mountAttackedThisCharge = true;
-                                       this.mountAttackCooldown = NpcEquipmentResolver.meleeAttackInterval(this);
-                                       Vec3 direction = target.m_20182_().m_82546_(mount.m_20182_());
-                                       Vec3 horizontal = new Vec3(direction.f_82479_, 0.0, direction.f_82481_);
-                                       horizontal = horizontal.m_82556_() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : horizontal.m_82541_();
-                                       this.mountPassDestination = target.m_20182_().m_82549_(horizontal.m_82490_(10.0));
-                                       this.mountPassTicks = 28;
-                                    }
                                  }
                               }
                            } else {
-                              this.stopMountedCharge(mount);
-                              this.mountPassDestination = null;
-                              this.mountAttackedThisCharge = false;
+                              double attackDistance = Math.max(3.2, NpcEquipmentResolver.meleeAttackReach(this));
+                              if (mount.distanceToSqr(target) > attackDistance * attackDistance) {
+                                 this.mountAttackedThisCharge = false;
+                                 this.driveMountedCharge(mount, target.position());
+                              } else {
+                                 if (!this.mountAttackedThisCharge && this.mountAttackCooldown <= 0) {
+                                    this.swing(InteractionHand.MAIN_HAND);
+                                    this.doHurtTarget(target);
+                                    this.mountAttackedThisCharge = true;
+                                    this.mountAttackCooldown = NpcEquipmentResolver.meleeAttackInterval(this);
+                                    Vec3 direction = target.position().subtract(mount.position());
+                                    Vec3 horizontal = new Vec3(direction.x, 0.0, direction.z);
+                                    horizontal = horizontal.lengthSqr() < 1.0E-4 ? new Vec3(0.0, 0.0, 1.0) : horizontal.normalize();
+                                    this.mountPassDestination = target.position().add(horizontal.scale(10.0));
+                                    this.mountPassTicks = 28;
+                                 }
+                              }
                            }
+                        } else {
+                           this.stopMountedCharge(mount);
+                           this.mountPassDestination = null;
+                           this.mountAttackedThisCharge = false;
                         }
                      }
                   }
@@ -1361,95 +851,93 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private void tickOwnedMountedArcherOrbit() {
-      if (this.m_20202_() == null || !IceAndFireHippocampusCompat.isHippocampus(this.m_20202_()) && !IceAndFireHippogryphCompat.isHippogryph(this.m_20202_())) {
-         if (!this.isRangedCombatant() || !(this.m_20202_() instanceof Mob mount)) {
+      if (!this.isRangedCombatant() || !(this.getVehicle() instanceof Mob mount)) {
+         this.mountedArcherTarget = null;
+      } else if (NpcWaterEscape.isRecoveryActive(this)) {
+         this.mountedArcherTarget = null;
+      } else {
+         LivingEntity target = this.getTarget();
+         if (this.getCurrentCommand() == NpcCommandType.MOVE && this.updateMountedMoveMovement() || this.updateMountedHoldMovement()) {
             this.mountedArcherTarget = null;
-         } else if (NpcWaterEscape.isRecoveryActive(this)) {
+         } else if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
             this.mountedArcherTarget = null;
-         } else {
-            LivingEntity target = this.m_5448_();
-            if (this.getCurrentCommand() == NpcCommandType.MOVE && this.updateMountedMoveMovement()) {
+         } else if (this.validMountedTarget(target) || !this.shouldFollowCombatGroupFormation()) {
+            if (!this.validMountedTarget(target) && this.updateMountedFollowMovement()) {
                this.mountedArcherTarget = null;
-            } else if (this.isFollowCombatRecallActive() && this.updateMountedFollowMovement()) {
+            } else if (!this.validMountedTarget(target)) {
                this.mountedArcherTarget = null;
-            } else if (this.validMountedTarget(target) || !this.shouldFollowCombatGroupFormation()) {
-               if (!this.validMountedTarget(target) && this.updateMountedFollowMovement()) {
-                  this.mountedArcherTarget = null;
-               } else if (!this.validMountedTarget(target)) {
-                  this.mountedArcherTarget = null;
-                  mount.m_21573_().m_26573_();
-                  mount.m_20256_(mount.m_20184_().m_82542_(0.45, 1.0, 0.45));
-               } else {
-                  if (this.mountedArcherTarget != target) {
-                     this.mountedArcherTarget = target;
-                     this.mountedArcherClockwise = this.m_217043_().m_188499_();
-                  }
-
-                  Vec3 offset = mount.m_20182_().m_82546_(target.m_20182_());
-                  Vec3 radial = new Vec3(offset.f_82479_, 0.0, offset.f_82481_);
-                  double distance = radial.m_82553_();
-                  if (distance < 0.001) {
-                     radial = new Vec3(1.0, 0.0, 0.0);
-                     distance = 1.0;
-                  } else {
-                     radial = radial.m_82490_(1.0 / distance);
-                  }
-
-                  double correction = (14.0 - distance) * 0.12;
-                  if (distance < 10.0) {
-                     correction = 1.0;
-                  }
-
-                  if (distance > 18.0) {
-                     correction = -1.0;
-                  }
-
-                  Vec3 direction = this.mountedOrbitDirection(radial, correction, this.mountedArcherClockwise);
-                  if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
-                     this.mountedArcherClockwise = !this.mountedArcherClockwise;
-                     direction = this.mountedOrbitDirection(radial, correction, this.mountedArcherClockwise);
-                     if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
-                        this.stopMountedCharge(mount);
-                        return;
-                     }
-                  }
-
-                  AttributeInstance movement = mount.m_21051_(Attributes.f_22279_);
-                  if (movement != null) {
-                     movement.m_22100_(Math.max(movement.m_22115_(), 0.45));
-                  }
-
-                  Vec3 current = mount.m_20184_();
-                  mount.m_20334_(direction.f_82479_ * 0.45, current.f_82480_, direction.f_82481_ * 0.45);
-                  mount.m_21573_().m_26573_();
-                  this.faceMountedDirection(mount, direction);
-                  this.faceRiderAtTarget(target);
+               mount.getNavigation().stop();
+               mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.45, 1.0, 0.45));
+            } else {
+               if (this.mountedArcherTarget != target) {
+                  this.mountedArcherTarget = target;
+                  this.mountedArcherClockwise = this.getRandom().nextBoolean();
                }
+
+               Vec3 offset = mount.position().subtract(target.position());
+               Vec3 radial = new Vec3(offset.x, 0.0, offset.z);
+               double distance = radial.length();
+               if (distance < 0.001) {
+                  radial = new Vec3(1.0, 0.0, 0.0);
+                  distance = 1.0;
+               } else {
+                  radial = radial.scale(1.0 / distance);
+               }
+
+               double correction = (14.0 - distance) * 0.12;
+               if (distance < 10.0) {
+                  correction = 1.0;
+               }
+
+               if (distance > 18.0) {
+                  correction = -1.0;
+               }
+
+               Vec3 direction = this.mountedOrbitDirection(radial, correction, this.mountedArcherClockwise);
+               if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
+                  this.mountedArcherClockwise = !this.mountedArcherClockwise;
+                  direction = this.mountedOrbitDirection(radial, correction, this.mountedArcherClockwise);
+                  if (!NpcMovementSafety.canContinueMountedOrbit(mount, direction)) {
+                     this.stopMountedCharge(mount);
+                     return;
+                  }
+               }
+
+               AttributeInstance movement = mount.getAttribute(Attributes.MOVEMENT_SPEED);
+               if (movement != null) {
+                  movement.setBaseValue(Math.max(movement.getBaseValue(), 0.45));
+               }
+
+               Vec3 current = mount.getDeltaMovement();
+               mount.setDeltaMovement(direction.x * 0.45, current.y, direction.z * 0.45);
+               mount.getNavigation().stop();
+               this.faceMountedDirection(mount, direction);
+               this.faceRiderAtTarget(target);
             }
          }
       }
    }
 
    private Vec3 mountedOrbitDirection(Vec3 radial, double correction, boolean clockwise) {
-      Vec3 tangent = clockwise ? new Vec3(-radial.f_82481_, 0.0, radial.f_82479_) : new Vec3(radial.f_82481_, 0.0, -radial.f_82479_);
-      return tangent.m_82549_(radial.m_82490_(correction)).m_82541_();
+      Vec3 tangent = clockwise ? new Vec3(-radial.z, 0.0, radial.x) : new Vec3(radial.z, 0.0, -radial.x);
+      return tangent.add(radial.scale(correction)).normalize();
    }
 
    private void faceMountedDirection(Mob mount, Vec3 direction) {
-      float yaw = (float)(Math.atan2(direction.f_82481_, direction.f_82479_) * 180.0F / (float)Math.PI) - 90.0F;
-      mount.m_146922_(yaw);
-      mount.m_5618_(yaw);
-      mount.m_5616_(yaw);
+      float yaw = (float)(Math.atan2(direction.z, direction.x) * 180.0F / (float)Math.PI) - 90.0F;
+      mount.setYRot(yaw);
+      mount.setYBodyRot(yaw);
+      mount.setYHeadRot(yaw);
    }
 
    private void faceRiderAtTarget(LivingEntity target) {
-      Vec3 direction = target.m_20182_().m_82546_(this.m_20182_());
-      Vec3 horizontal = new Vec3(direction.f_82479_, 0.0, direction.f_82481_);
-      if (!(horizontal.m_82556_() < 1.0E-4)) {
-         float yaw = (float)(Math.atan2(horizontal.f_82481_, horizontal.f_82479_) * 180.0F / (float)Math.PI) - 90.0F;
-         this.m_146922_(yaw);
-         this.m_5618_(yaw);
-         this.m_5616_(yaw);
+      Vec3 direction = target.position().subtract(this.position());
+      Vec3 horizontal = new Vec3(direction.x, 0.0, direction.z);
+      if (!(horizontal.lengthSqr() < 1.0E-4)) {
+         float yaw = (float)(Math.atan2(horizontal.z, horizontal.x) * 180.0F / (float)Math.PI) - 90.0F;
+         this.setYRot(yaw);
+         this.setYBodyRot(yaw);
+         this.setYHeadRot(yaw);
       }
    }
 
@@ -1458,102 +946,202 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private void driveMountedCharge(Mob mount, Vec3 destination) {
-      Vec3 delta = destination.m_82546_(mount.m_20182_());
-      Vec3 horizontal = new Vec3(delta.f_82479_, 0.0, delta.f_82481_);
-      if (!(horizontal.m_82556_() < 1.0E-4)) {
-         Vec3 direction = horizontal.m_82541_();
+      Vec3 delta = destination.subtract(mount.position());
+      Vec3 horizontal = new Vec3(delta.x, 0.0, delta.z);
+      if (!(horizontal.lengthSqr() < 1.0E-4)) {
+         Vec3 direction = horizontal.normalize();
          if (!NpcMovementSafety.canMoveMountedSafely(mount, direction)) {
             this.stopMountedCharge(mount);
             this.mountPassDestination = null;
          } else {
-            AttributeInstance movement = mount.m_21051_(Attributes.f_22279_);
+            AttributeInstance movement = mount.getAttribute(Attributes.MOVEMENT_SPEED);
             if (movement != null) {
-               movement.m_22100_(Math.max(movement.m_22115_(), 0.45));
+               movement.setBaseValue(Math.max(movement.getBaseValue(), 0.45));
             }
 
-            Vec3 current = mount.m_20184_();
-            mount.m_20334_(direction.f_82479_ * 0.45, current.f_82480_, direction.f_82481_ * 0.45);
-            mount.m_21573_().m_26573_();
-            float yaw = (float)(Math.atan2(direction.f_82481_, direction.f_82479_) * 180.0F / (float)Math.PI) - 90.0F;
-            mount.m_146922_(yaw);
-            mount.m_5618_(yaw);
-            mount.m_5616_(yaw);
-            this.m_146922_(yaw);
-            this.m_5618_(yaw);
-            this.m_5616_(yaw);
+            Vec3 current = mount.getDeltaMovement();
+            mount.setDeltaMovement(direction.x * 0.45, current.y, direction.z * 0.45);
+            mount.getNavigation().stop();
+            float yaw = (float)(Math.atan2(direction.z, direction.x) * 180.0F / (float)Math.PI) - 90.0F;
+            mount.setYRot(yaw);
+            mount.setYBodyRot(yaw);
+            mount.setYHeadRot(yaw);
+            this.setYRot(yaw);
+            this.setYBodyRot(yaw);
+            this.setYHeadRot(yaw);
          }
       }
    }
 
    private void stopMountedCharge(Mob mount) {
-      mount.m_21573_().m_26573_();
-      mount.m_20256_(mount.m_20184_().m_82542_(0.45, 1.0, 0.45));
+      mount.getNavigation().stop();
+      mount.setDeltaMovement(mount.getDeltaMovement().multiply(0.45, 1.0, 0.45));
    }
 
    boolean hasActivePatrolDeployment() {
       return this.getCurrentCommand() == NpcCommandType.NONE
-         && this.m_5448_() == null
+         && this.getTarget() == null
          && AWCoreRegistryAccess.is(this.getOrdersStack(), AWCoreIds.COMBAT_ORDER)
-         && CombatOrderData.matchesDimension(this.getOrdersStack(), this.m_9236_())
+         && CombatOrderData.matchesDimension(this.getOrdersStack(), this.level())
          && !CombatOrderData.getEntries(this.getOrdersStack()).isEmpty();
    }
 
    boolean hasActiveCombatDeployment() {
-      return !this.hasActivePatrolDeployment() && !this.shouldFollowCombatGroupFormation()
-         ? this.isSwordsman() && SlashBladeCompat.canUseThornsGuard(this) && NpcShielding.findIncomingProjectile(this) != null
-         : true;
+      return this.hasActivePatrolDeployment() || this.shouldFollowCombatGroupFormation();
    }
 
    private static class CombatMeleeAttackGoal extends MeleeAttackGoal {
+      private static final double DIRECT_STEER_SQ = 36.0;
+      private static final int APPROACH_TICK_STRIDE = 3;
       private final CombatNpcEntity npc;
+      private final double speed;
       private int weaponCooldown;
 
       private CombatMeleeAttackGoal(CombatNpcEntity npc, double speedModifier, boolean followTargetEvenIfNotSeen) {
          super(npc, speedModifier, followTargetEvenIfNotSeen);
          this.npc = npc;
+         this.speed = speedModifier;
       }
 
-      public boolean m_8036_() {
-         return this.npc.canUseMeleeCombatGoal() && super.m_8036_();
+      public boolean canUse() {
+         return this.npc.canUseMeleeCombatGoal() && super.canUse();
       }
 
-      public boolean m_8045_() {
-         return this.npc.canUseMeleeCombatGoal() && (this.npc.isSwordsmanAerialRecovery() || super.m_8045_());
+      public boolean canContinueToUse() {
+         return this.npc.canUseMeleeCombatGoal() && super.canContinueToUse();
       }
 
-      public void m_8037_() {
+      public void tick() {
          if (this.weaponCooldown > 0) {
             this.weaponCooldown--;
          }
 
-         super.m_8037_();
-         LivingEntity target = this.npc.m_5448_();
-         if (target != null && !this.npc.isSwordsman()) {
+         LivingEntity target = this.npc.getTarget();
+         if (target != null && this.closeIn(target)) {
+            return;
+         }
+
+         if (target != null && !this.npc.getNavigation().isDone() && (this.npc.tickCount + this.npc.getId()) % APPROACH_TICK_STRIDE != 0) {
+            // Still walking a path toward a target further off: the route rarely needs a refresh every tick.
+            this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
+            return;
+         }
+
+         super.tick();
+         if (target != null) {
             double holdDistance = NpcEquipmentResolver.meleeHoldDistance(this.npc);
-            if (this.npc.m_20280_(target) <= holdDistance * holdDistance && this.npc.hasMeleeLineOfSight(target)) {
-               this.npc.m_21573_().m_26573_();
-               this.npc.m_21563_().m_24960_(target, 30.0F, 30.0F);
+            if (this.npc.distanceToSqr(target) <= holdDistance * holdDistance && this.npc.hasMeleeLineOfSight(target)) {
+               this.npc.getNavigation().stop();
+               this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
             }
          }
       }
 
-      protected void m_6739_(LivingEntity target, double distanceSqr) {
-         if (!this.npc.isSwordsmanComboActive()) {
-            double attackReachSqr = this.npc.isSwordsman() ? 1024.0 : this.m_6639_(target);
-            if (distanceSqr <= attackReachSqr && this.weaponCooldown <= 0 && this.npc.hasMeleeLineOfSight(target)) {
-               boolean attacked = this.npc.m_7327_(target);
-               if (attacked) {
-                  this.weaponCooldown = this.npc.isSwordsman()
-                     ? this.npc.getSwordsmanTechniqueCooldownTicks()
-                     : NpcEquipmentResolver.meleeAttackInterval(this.npc);
-               }
+      /** Same as the faction soldiers' melee: step straight at a nearby target in plain sight instead of repathing. */
+      private boolean closeIn(LivingEntity target) {
+         double distanceSqr = this.npc.distanceToSqr(target);
+         if (distanceSqr > DIRECT_STEER_SQ || Math.abs(target.getY() - this.npc.getY()) > 1.0 || !this.npc.hasMeleeLineOfSight(target)) {
+            return false;
+         }
+
+         this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
+         double holdDistance = NpcEquipmentResolver.meleeHoldDistance(this.npc);
+         this.npc.getNavigation().stop();
+         if (distanceSqr > holdDistance * holdDistance) {
+            this.npc.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), this.speed);
+         }
+
+         this.checkAndPerformAttack(target, distanceSqr);
+         return true;
+      }
+
+      protected void checkAndPerformAttack(LivingEntity target, double distanceSqr) {
+         double attackReachSqr = this.getAttackReachSqr(target);
+         if (distanceSqr <= attackReachSqr && this.weaponCooldown <= 0 && this.npc.hasMeleeLineOfSight(target)) {
+            boolean attacked = this.npc.doHurtTarget(target);
+            if (attacked) {
+               this.weaponCooldown = NpcEquipmentResolver.meleeAttackInterval(this.npc);
             }
          }
       }
 
-      protected double m_6639_(LivingEntity target) {
+      protected double getAttackReachSqr(LivingEntity target) {
          double reach = NpcEquipmentResolver.meleeAttackReach(this.npc);
          return reach * reach;
+      }
+   }
+
+   /** Archers ordered to fire on a point loose high volleys at it, unless an enemy is already on top of them. */
+   private static class BarrageGoal extends Goal {
+      private static final double CLOSE_ENEMY_SQ = 100.0;
+      private final CombatNpcEntity npc;
+      private int drawTicks;
+      private int cooldown;
+
+      private BarrageGoal(CombatNpcEntity npc) {
+         this.npc = npc;
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+      }
+
+      public boolean canUse() {
+         BlockPos point = this.npc.barragePoint;
+         if (point == null || !this.npc.isRangedCombatant() || this.npc.isPassenger() || !this.npc.isHoldingPosition()) {
+            return false;
+         }
+
+         LivingEntity target = this.npc.getTarget();
+         return target == null || this.npc.distanceToSqr(target) > CLOSE_ENEMY_SQ;
+      }
+
+      public void tick() {
+         Vec3 point = Vec3.atBottomCenterOf(this.npc.barragePoint);
+         if (this.npc.distanceToSqr(point) > BARRAGE_RANGE * BARRAGE_RANGE) {
+            // Out of bow range: close in along the line to the point, then hold there and shoot.
+            if (this.npc.isUsingItem()) {
+               this.npc.stopUsingItem();
+            }
+
+            Vec3 back = this.npc.position().subtract(point).normalize().scale(BARRAGE_RANGE - 6.0);
+            Vec3 stand = point.add(back);
+            if (this.npc.getNavigation().isDone()) {
+               this.npc.getNavigation().moveTo(stand.x, stand.y, stand.z, 1.0);
+            }
+
+            return;
+         }
+
+         if (!this.npc.getNavigation().isDone()) {
+            this.npc.moveHoldPosition(this.npc.blockPosition());
+         }
+
+         this.npc.getNavigation().stop();
+         this.npc.getLookControl().setLookAt(point.x, point.y + this.npc.distanceToSqr(point) * 0.02, point.z, 30.0F, 30.0F);
+         if (this.cooldown > 0) {
+            this.cooldown--;
+         }
+
+         if (this.npc.isUsingItem()) {
+            int requiredDrawTicks = this.npc.getMainHandItem().getItem() instanceof CrossbowItem
+               ? NpcRangedAttackHelper.crossbowChargeDuration(this.npc.getMainHandItem())
+               : 20;
+            if (++this.drawTicks >= requiredDrawTicks) {
+               this.npc.performBarrageShot(point);
+               this.npc.stopUsingItem();
+               this.drawTicks = 0;
+               this.cooldown = NpcVolley.COOLDOWN_TICKS;
+            }
+         } else if (this.cooldown <= 0 && NpcVolley.canStartDraw(this.npc)) {
+            this.npc.startUsingItem(InteractionHand.MAIN_HAND);
+            this.drawTicks = 0;
+         }
+      }
+
+      public void stop() {
+         if (this.npc.isUsingItem()) {
+            this.npc.stopUsingItem();
+         }
+
+         this.drawTicks = 0;
       }
    }
 
@@ -1576,13 +1164,13 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       private CombatRangedAttackGoal(CombatNpcEntity npc) {
          this.npc = npc;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
-         this.target = this.npc.m_5448_();
+      public boolean canUse() {
+         this.target = this.npc.getTarget();
          this.npc.ensureRangedFollowRange();
-         boolean usable = !this.npc.isLogicalDragonRider() && this.npc.isRangedCombatant() && this.validTarget();
+         boolean usable = this.npc.isRangedCombatant() && this.validTarget();
          if (usable) {
             this.resetBallisticCheck();
          }
@@ -1590,51 +1178,51 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          return usable;
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          this.npc.ensureRangedFollowRange();
-         return !this.npc.isLogicalDragonRider() && this.npc.isRangedCombatant() && this.npc.m_5448_() == this.target && this.validTarget();
+         return this.npc.isRangedCombatant() && this.npc.getTarget() == this.target && this.validTarget();
       }
 
-      public void m_8056_() {
+      public void start() {
          this.resetBallisticCheck();
       }
 
-      public void m_8037_() {
-         this.target = this.npc.m_5448_();
+      public void tick() {
+         this.target = this.npc.getTarget();
          if (!this.validTarget()) {
             this.stopUsingWeapon();
          } else {
-            this.npc.m_21563_().m_24960_(this.target, 30.0F, 30.0F);
-            double distanceSqr = this.npc.m_20280_(this.target);
+            this.npc.getLookControl().setLookAt(this.target, 30.0F, 30.0F);
+            double distanceSqr = this.npc.distanceToSqr(this.target);
             if (this.cooldown > 0) {
                this.cooldown--;
             }
 
-            if (this.npc.m_6117_()) {
+            if (this.npc.isUsingItem()) {
                if (this.shouldRetreat(distanceSqr)) {
                   this.continueRetreating();
                } else {
                   this.clearRetreat();
-                  this.npc.m_21573_().m_26573_();
+                  this.npc.getNavigation().stop();
                }
 
-               int requiredDrawTicks = this.npc.m_21205_().m_41720_() instanceof CrossbowItem
-                  ? NpcRangedAttackHelper.crossbowChargeDuration(this.npc.m_21205_())
+               int requiredDrawTicks = this.npc.getMainHandItem().getItem() instanceof CrossbowItem
+                  ? NpcRangedAttackHelper.crossbowChargeDuration(this.npc.getMainHandItem())
                   : 20;
                if (++this.drawTicks >= requiredDrawTicks) {
-                  this.npc.m_6504_(this.target, 1.0F);
+                  this.npc.performRangedAttack(this.target, 1.0F);
                   this.stopUsingWeapon();
                   this.drawTicks = 0;
-                  this.cooldown = 30;
+                  this.cooldown = NpcVolley.COOLDOWN_TICKS;
                }
             } else if (!this.canShootTarget()) {
                this.stopUsingWeapon();
                this.clearRetreat();
                this.drawTicks = 0;
-               if (distanceSqr <= 144.0) {
-                  this.npc.m_21573_().m_5624_(this.target, this.npc.playerSprintNavigationSpeed());
+               if (distanceSqr <= 144.0 && !this.npc.isHoldingPosition()) {
+                  this.npc.getNavigation().moveTo(this.target, this.npc.playerSprintNavigationSpeed());
                } else {
-                  this.npc.m_21573_().m_26573_();
+                  this.npc.getNavigation().stop();
                }
             } else if (this.cooldown > 0 && this.shouldRetreat(distanceSqr)) {
                this.stopUsingWeapon();
@@ -1642,18 +1230,25 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
                this.continueRetreating();
             } else {
                this.clearRetreat();
-               this.npc.m_21573_().m_26573_();
-               if (this.cooldown <= 0) {
-                  this.npc.m_6672_(InteractionHand.MAIN_HAND);
+               this.npc.getNavigation().stop();
+               if (this.cooldown <= 0 && NpcVolley.canStartDraw(this.npc)) {
+                  LivingEntity spread = NpcVolley.spreadTarget(this.npc, this.target, this.npc::hasBallisticRangedShot);
+                  if (spread != this.target) {
+                     this.npc.setTarget(spread);
+                     this.target = spread;
+                     this.resetBallisticCheck();
+                  }
+
+                  this.npc.startUsingItem(InteractionHand.MAIN_HAND);
                   this.drawTicks = 0;
                }
             }
          }
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.stopUsingWeapon();
-         this.npc.m_21573_().m_26573_();
+         this.npc.getNavigation().stop();
          this.target = null;
          this.drawTicks = 0;
          this.resetBallisticCheck();
@@ -1679,8 +1274,8 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
 
       private void stopUsingWeapon() {
-         if (this.npc.m_6117_()) {
-            this.npc.m_5810_();
+         if (this.npc.isUsingItem()) {
+            this.npc.stopUsingItem();
          }
       }
 
@@ -1689,21 +1284,21 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
             this.retreatRepathTicks--;
          }
 
-         boolean reachedPoint = this.retreatPosition != null && this.npc.m_20182_().m_82557_(this.retreatPosition) < 2.25;
-         if (this.retreatPosition == null || this.retreatRepathTicks <= 0 || reachedPoint || this.npc.m_21573_().m_26571_()) {
-            Vec3 candidate = DefaultRandomPos.m_148407_(this.npc, 10, 4, this.target.m_20182_());
+         boolean reachedPoint = this.retreatPosition != null && this.npc.position().distanceToSqr(this.retreatPosition) < 2.25;
+         if (this.retreatPosition == null || this.retreatRepathTicks <= 0 || reachedPoint || this.npc.getNavigation().isDone()) {
+            Vec3 candidate = DefaultRandomPos.getPosAway(this.npc, 10, 4, this.target.position());
             if (candidate == null) {
-               Vec3 away = this.npc.m_20182_().m_82546_(this.target.m_20182_());
-               if (away.m_165925_() < 1.0E-4) {
+               Vec3 away = this.npc.position().subtract(this.target.position());
+               if (away.horizontalDistanceSqr() < 1.0E-4) {
                   return;
                }
 
-               candidate = this.npc.m_20182_().m_82549_(away.m_82541_().m_82490_(7.0));
+               candidate = this.npc.position().add(away.normalize().scale(7.0));
             }
 
             this.retreatPosition = candidate;
             this.retreatRepathTicks = 12;
-            this.npc.m_21573_().m_26519_(candidate.f_82479_, candidate.f_82480_, candidate.f_82481_, this.npc.playerSprintNavigationSpeed());
+            this.npc.getNavigation().moveTo(candidate.x, candidate.y, candidate.z, this.npc.playerSprintNavigationSpeed());
          }
       }
 
@@ -1713,6 +1308,11 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       }
 
       private boolean shouldRetreat(double distanceSqr) {
+         if (this.npc.isHoldingPosition()) {
+            // Ordered to stand: an archer keeps its place in the line instead of backing off.
+            return false;
+         }
+
          double distance = Math.sqrt(distanceSqr);
          return this.retreatPosition != null ? distance < 10.0 : distance < 6.0;
       }
@@ -1728,7 +1328,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          this.commander = commander;
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (!this.commander.isCommander()) {
             return false;
          } else if (this.cooldown > 0) {
@@ -1739,25 +1339,25 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          }
       }
 
-      public void m_8056_() {
+      public void start() {
          this.cooldown = 40;
          double range = 32.0;
-         AttributeInstance followRange = this.commander.m_21051_(Attributes.f_22277_);
+         AttributeInstance followRange = this.commander.getAttribute(Attributes.FOLLOW_RANGE);
          if (followRange != null) {
-            range = followRange.m_22135_();
+            range = followRange.getValue();
          }
 
-         AABB box = this.commander.m_20191_().m_82377_(range, range / 2.0, range);
+         AABB box = this.commander.getBoundingBox().inflate(range, range / 2.0, range);
 
-         for (PlayerOwnedNpcEntity ally : this.commander.m_9236_().m_6443_(PlayerOwnedNpcEntity.class, box, this::canBoost)) {
-            ally.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 200, 0, true, false));
-            ally.m_7292_(new MobEffectInstance(MobEffects.f_19605_, 200, 0, true, false));
+         for (PlayerOwnedNpcEntity ally : this.commander.level().getEntitiesOfClass(PlayerOwnedNpcEntity.class, box, this::canBoost)) {
+            ally.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 200, 0, true, false));
+            ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 0, true, false));
          }
       }
 
       private boolean canBoost(PlayerOwnedNpcEntity ally) {
          return ally != null
-            && ally.m_6084_()
+            && ally.isAlive()
             && ally != this.commander
             && ally.getOwner().equals(this.commander.getOwner())
             && (!(ally instanceof CombatNpcEntity combat) || !combat.isCommander());
@@ -1774,10 +1374,10 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       private MedicHealGoal(CombatNpcEntity medic) {
          this.medic = medic;
-         this.m_7021_(EnumSet.of(Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (!this.medic.isMedic() || this.medic.isGettingFood()) {
             return false;
          } else if (this.cooldown > 0) {
@@ -1789,53 +1389,53 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.medic.isMedic()
             && !this.medic.isGettingFood()
             && this.target != null
-            && this.target.m_6084_()
-            && this.target.m_21223_() < this.target.m_21233_()
-            && this.medic.m_20280_(this.target) <= 64.0;
+            && this.target.isAlive()
+            && this.target.getHealth() < this.target.getMaxHealth()
+            && this.medic.distanceToSqr(this.target) <= 64.0;
       }
 
-      public void m_8056_() {
+      public void start() {
          this.cooldown = 40;
       }
 
-      public void m_8037_() {
+      public void tick() {
          if (this.target != null) {
-            this.medic.m_21563_().m_148051_(this.target);
-            if (this.medic.m_20280_(this.target) > 36.0) {
-               this.medic.m_21573_().m_5624_(this.target, this.medic.playerWalkNavigationSpeed());
+            this.medic.getLookControl().setLookAt(this.target);
+            if (this.medic.distanceToSqr(this.target) > 36.0) {
+               this.medic.getNavigation().moveTo(this.target, this.medic.playerWalkNavigationSpeed());
             } else {
-               this.medic.m_21573_().m_26573_();
-               this.target.m_5634_(2.0F);
-               this.medic.m_6674_(InteractionHand.MAIN_HAND);
+               this.medic.getNavigation().stop();
+               this.target.heal(2.0F);
+               this.medic.swing(InteractionHand.MAIN_HAND);
                this.cooldown = 40;
                this.target = null;
             }
          }
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.target = null;
       }
 
       private LivingEntity findWoundedAlly() {
-         AABB box = this.medic.m_20191_().m_82400_(8.0);
+         AABB box = this.medic.getBoundingBox().inflate(8.0);
          return this.medic
-            .m_9236_()
-            .m_6443_(LivingEntity.class, box, this::canHeal)
+            .level()
+            .getEntitiesOfClass(LivingEntity.class, box, this::canHeal)
             .stream()
-            .min((first, second) -> Double.compare(this.medic.m_20280_(first), this.medic.m_20280_(second)))
+            .min((first, second) -> Double.compare(this.medic.distanceToSqr(first), this.medic.distanceToSqr(second)))
             .orElse(null);
       }
 
       private boolean canHeal(LivingEntity entity) {
-         if (entity == null || !entity.m_6084_() || entity == this.medic || entity.m_21223_() >= entity.m_21233_()) {
+         if (entity == null || !entity.isAlive() || entity == this.medic || entity.getHealth() >= entity.getMaxHealth()) {
             return false;
          } else if (entity instanceof Player player) {
-            return this.medic.getOwner().map(player.m_20148_()::equals).orElse(false);
+            return this.medic.getOwner().map(player.getUUID()::equals).orElse(false);
          } else {
             if (entity instanceof PlayerOwnedNpcEntity ally && ally.getOwner().isPresent() && ally.getOwner().equals(this.medic.getOwner())) {
                return true;
@@ -1847,6 +1447,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    private static class MoveToCommandGoal extends Goal {
+      private static final double NEAR_ENOUGH_SQ = 9.0;
       private final CombatNpcEntity npc;
       private final double speedModifier;
       private final double stopDistanceSq;
@@ -1856,45 +1457,125 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          this.npc = npc;
          this.speedModifier = speedModifier;
          this.stopDistanceSq = stopDistance * stopDistance;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (this.npc.getCurrentCommand() != NpcCommandType.MOVE) {
             return false;
          } else {
             this.target = this.npc.getCommandTarget();
-            return !BlockPos.f_121853_.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
+            return !BlockPos.ZERO.equals(this.target) && this.distanceToTargetSq() > this.stopDistanceSq;
          }
       }
 
-      public boolean m_8045_() {
-         return this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() > this.stopDistanceSq;
+      public boolean canContinueToUse() {
+         return this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && !this.arrived();
       }
 
-      public void m_8037_() {
-         this.npc.m_21563_().m_24946_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+      /** Close to the slot, or as close as the path gets: a blocked formation slot must not keep the order open forever. */
+      private boolean arrived() {
+         double distanceSq = this.distanceToTargetSq();
+         return distanceSq <= this.stopDistanceSq || distanceSq <= NEAR_ENOUGH_SQ && this.npc.getNavigation().isDone();
+      }
+
+      public void tick() {
+         this.npc.getLookControl().setLookAt((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
          this.npc
-            .m_21573_()
-            .m_26519_(
-               (double)this.target.m_123341_() + 0.5,
-               (double)this.target.m_123342_(),
-               (double)this.target.m_123343_() + 0.5,
+            .getNavigation()
+            .moveTo(
+               (double)this.target.getX() + 0.5,
+               (double)this.target.getY(),
+               (double)this.target.getZ() + 0.5,
                this.npc.playerSprintNavigationSpeed()
             );
       }
 
-      public void m_8041_() {
-         if (this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.distanceToTargetSq() <= this.stopDistanceSq) {
-            this.npc.clearCommand();
+      public void stop() {
+         if (this.npc.getCurrentCommand() == NpcCommandType.MOVE && this.target != null && this.arrived()) {
+            this.npc.completeMoveCommand();
          }
 
          this.target = null;
-         this.npc.m_21573_().m_26573_();
+         this.npc.getNavigation().stop();
       }
 
       private double distanceToTargetSq() {
-         return this.npc.m_20275_((double)this.target.m_123341_() + 0.5, (double)this.target.m_123342_(), (double)this.target.m_123343_() + 0.5);
+         return this.npc.distanceToSqr((double)this.target.getX() + 0.5, (double)this.target.getY(), (double)this.target.getZ() + 0.5);
+      }
+   }
+
+   private static class HoldPositionGoal extends Goal {
+      private static final double STOP_DISTANCE_SQ = 0.25;
+      private static final double STEP_DISTANCE_SQ = 4.0;
+      private final CombatNpcEntity npc;
+      private int repathTicks;
+
+      private HoldPositionGoal(CombatNpcEntity npc) {
+         this.npc = npc;
+         this.setFlags(EnumSet.of(Flag.MOVE));
+      }
+
+      public boolean canUse() {
+         return this.npc.isHoldingPosition() && !this.npc.isPassenger() && !this.hasLiveTarget() && this.distanceToHoldSq() > STOP_DISTANCE_SQ;
+      }
+
+      public boolean canContinueToUse() {
+         return this.canUse();
+      }
+
+      public void start() {
+         this.repathTicks = 0;
+      }
+
+      public void tick() {
+         BlockPos hold = this.npc.getCommandTarget();
+         if (this.distanceToHoldSq() <= STEP_DISTANCE_SQ) {
+            // The last step onto the slot: pathfinding stops a block short, so walk straight to the block centre.
+            this.npc.getNavigation().stop();
+            this.npc.getMoveControl().setWantedPosition((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5, 0.7);
+         } else if (this.repathTicks-- <= 0 || this.npc.getNavigation().isDone()) {
+            this.npc.getNavigation().moveTo((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5, 1.0);
+            this.repathTicks = 10;
+         }
+      }
+
+      public void stop() {
+         this.npc.getNavigation().stop();
+      }
+
+      private boolean hasLiveTarget() {
+         LivingEntity target = this.npc.getTarget();
+         return target != null && target.isAlive();
+      }
+
+      private double distanceToHoldSq() {
+         BlockPos hold = this.npc.getCommandTarget();
+         return this.npc.distanceToSqr((double)hold.getX() + 0.5, (double)hold.getY(), (double)hold.getZ() + 0.5);
+      }
+   }
+
+   /** A soldier standing in formation looks the way the formation faces instead of at passers-by. */
+   private static class FaceHoldDirectionGoal extends Goal {
+      private final CombatNpcEntity npc;
+
+      private FaceHoldDirectionGoal(CombatNpcEntity npc) {
+         this.npc = npc;
+         this.setFlags(EnumSet.of(Flag.LOOK));
+      }
+
+      public boolean canUse() {
+         return this.npc.isHoldingPosition() && !Float.isNaN(this.npc.getHoldYaw()) && this.npc.getTarget() == null;
+      }
+
+      public void tick() {
+         double yaw = Math.toRadians(this.npc.getHoldYaw());
+         this.npc.getLookControl().setLookAt(this.npc.getX() - Math.sin(yaw) * 8.0, this.npc.getEyeY(), this.npc.getZ() + Math.cos(yaw) * 8.0);
+         if (this.npc.getNavigation().isDone() && !this.npc.getMoveControl().hasWanted()) {
+            float holdYaw = this.npc.getHoldYaw();
+            this.npc.setYRot(Mth.rotLerp(0.3F, this.npc.getYRot(), holdYaw));
+            this.npc.setYBodyRot(this.npc.getYRot());
+         }
       }
    }
 
@@ -1908,13 +1589,13 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       private PatrolOrderGoal(CombatNpcEntity npc, double speedModifier) {
          this.npc = npc;
          this.speedModifier = speedModifier;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
-         if (this.npc.getCurrentCommand() == NpcCommandType.NONE && this.npc.m_5448_() == null) {
+      public boolean canUse() {
+         if (this.npc.getCurrentCommand() == NpcCommandType.NONE && this.npc.getTarget() == null) {
             if (AWCoreRegistryAccess.is(this.npc.getOrdersStack(), AWCoreIds.COMBAT_ORDER)
-               && CombatOrderData.matchesDimension(this.npc.getOrdersStack(), this.npc.m_9236_())) {
+               && CombatOrderData.matchesDimension(this.npc.getOrdersStack(), this.npc.level())) {
                this.entries = CombatOrderData.getEntries(this.npc.getOrdersStack());
                if (this.entries.isEmpty()) {
                   return false;
@@ -1933,30 +1614,30 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          }
       }
 
-      public boolean m_8045_() {
-         return this.m_8036_();
+      public boolean canContinueToUse() {
+         return this.canUse();
       }
 
-      public void m_8037_() {
+      public void tick() {
          BlockPos pos = this.entries.get(this.npc.patrolIndex);
-         double distance = this.npc.m_20275_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_(), (double)pos.m_123343_() + 0.5);
+         double distance = this.npc.distanceToSqr((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5);
          if (this.npc.patrolAtPoint) {
-            this.npc.m_21573_().m_26573_();
+            this.npc.getNavigation().stop();
             this.npc.patrolTicksAtPoint++;
             if (this.npc.patrolTicksAtPoint > 50) {
                this.moveToNextPoint();
             }
          } else {
             if (distance > 4.0) {
-               this.npc.m_21563_().m_24946_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_(), (double)pos.m_123343_() + 0.5);
-               if (this.npc.m_20202_() instanceof Mob mount) {
+               this.npc.getLookControl().setLookAt((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5);
+               if (this.npc.getVehicle() instanceof Mob mount) {
                   this.npc.patrolDrivingMount = true;
-                  mount.m_21573_().m_26519_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_(), (double)pos.m_123343_() + 0.5, this.speedModifier);
+                  mount.getNavigation().moveTo((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5, this.speedModifier);
                } else {
                   this.npc.patrolDrivingMount = false;
                   this.npc
-                     .m_21573_()
-                     .m_26519_((double)pos.m_123341_() + 0.5, (double)pos.m_123342_(), (double)pos.m_123343_() + 0.5, this.npc.playerWalkNavigationSpeed());
+                     .getNavigation()
+                     .moveTo((double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5, this.npc.playerWalkNavigationSpeed());
                }
             } else {
                this.npc.patrolDrivingMount = false;
@@ -1966,10 +1647,10 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          }
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.npc.patrolTicksAtPoint = 0;
          this.npc.patrolDrivingMount = false;
-         this.npc.m_21573_().m_26573_();
+         this.npc.getNavigation().stop();
       }
 
       private void moveToNextPoint() {
@@ -1991,25 +1672,25 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          this.npc = npc;
       }
 
-      public boolean m_8036_() {
-         LivingEntity attacker = this.npc.m_21188_();
-         return NpcTargeting.canHarm(this.npc, attacker) && super.m_8036_();
+      public boolean canUse() {
+         LivingEntity attacker = this.npc.getLastHurtByMob();
+         return NpcTargeting.canHarm(this.npc, attacker) && super.canUse();
       }
 
-      public void m_8056_() {
-         super.m_8056_();
-         LivingEntity attacker = this.npc.m_21188_();
+      public void start() {
+         super.start();
+         LivingEntity attacker = this.npc.getLastHurtByMob();
          if (NpcTargeting.canHarm(this.npc, attacker)) {
             this.npc
-               .m_9236_()
-               .m_6443_(
+               .level()
+               .getEntitiesOfClass(
                   CombatNpcEntity.class,
-                  this.npc.m_20191_().m_82377_(64.0, 16.0, 64.0),
-                  ally -> ally != this.npc && ally.m_6084_() && ally.getOwner().equals(this.npc.getOwner()) && NpcTargeting.canHarm(ally, attacker)
+                  this.npc.getBoundingBox().inflate(64.0, 16.0, 64.0),
+                  ally -> ally != this.npc && ally.isAlive() && ally.getOwner().equals(this.npc.getOwner()) && NpcTargeting.canHarm(ally, attacker)
                )
                .forEach(ally -> {
-                  ally.m_6703_(attacker);
-                  ally.m_6710_(attacker);
+                  ally.setLastHurtByMob(attacker);
+                  ally.setTarget(attacker);
                });
          }
       }
@@ -2025,10 +1706,10 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       private ReturnHomeGoal(CombatNpcEntity npc, double speedModifier) {
          this.npc = npc;
          this.speedModifier = speedModifier;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
       }
 
-      public boolean m_8036_() {
+      public boolean canUse() {
          if (!this.canReturnHome()) {
             return false;
          } else {
@@ -2037,39 +1718,39 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          }
       }
 
-      public boolean m_8045_() {
+      public boolean canContinueToUse() {
          return this.home != null && this.canReturnHome() && this.distanceToHomeSq() > 9.0;
       }
 
-      public void m_8056_() {
+      public void start() {
          this.repathTicks = 0;
       }
 
-      public void m_8037_() {
-         this.npc.m_21563_().m_24946_((double)this.home.m_123341_() + 0.5, (double)this.home.m_123342_(), (double)this.home.m_123343_() + 0.5);
-         if (this.repathTicks-- <= 0 || this.npc.m_21573_().m_26571_()) {
+      public void tick() {
+         this.npc.getLookControl().setLookAt((double)this.home.getX() + 0.5, (double)this.home.getY(), (double)this.home.getZ() + 0.5);
+         if (this.repathTicks-- <= 0 || this.npc.getNavigation().isDone()) {
             this.npc
-               .m_21573_()
-               .m_26519_((double)this.home.m_123341_() + 0.5, (double)this.home.m_123342_(), (double)this.home.m_123343_() + 0.5, this.speedModifier);
+               .getNavigation()
+               .moveTo((double)this.home.getX() + 0.5, (double)this.home.getY(), (double)this.home.getZ() + 0.5, this.speedModifier);
             this.repathTicks = 10;
          }
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.repathTicks = 0;
          this.home = null;
-         this.npc.m_21573_().m_26573_();
+         this.npc.getNavigation().stop();
       }
 
       private boolean canReturnHome() {
          if (this.npc.hasHome()
-            && !this.npc.m_20159_()
+            && !this.npc.isPassenger()
             && !this.npc.isGuiInteractionPaused()
             && !this.npc.isGettingFood()
             && this.npc.getCurrentCommand() == NpcCommandType.NONE
             && !this.npc.shouldFollowCombatGroupFormation()) {
-            LivingEntity target = this.npc.m_5448_();
-            return target != null && target.m_6084_() ? false : !this.hasActivePatrolOrder();
+            LivingEntity target = this.npc.getTarget();
+            return target != null && target.isAlive() ? false : !this.hasActivePatrolOrder();
          } else {
             return false;
          }
@@ -2077,12 +1758,12 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
 
       private boolean hasActivePatrolOrder() {
          return AWCoreRegistryAccess.is(this.npc.getOrdersStack(), AWCoreIds.COMBAT_ORDER)
-            && CombatOrderData.matchesDimension(this.npc.getOrdersStack(), this.npc.m_9236_())
+            && CombatOrderData.matchesDimension(this.npc.getOrdersStack(), this.npc.level())
             && !CombatOrderData.getEntries(this.npc.getOrdersStack()).isEmpty();
       }
 
       private double distanceToHomeSq() {
-         return this.npc.m_20275_((double)this.home.m_123341_() + 0.5, (double)this.home.m_123342_(), (double)this.home.m_123343_() + 0.5);
+         return this.npc.distanceToSqr((double)this.home.getX() + 0.5, (double)this.home.getY(), (double)this.home.getZ() + 0.5);
       }
    }
 
@@ -2095,12 +1776,12 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          this.npc = npc;
       }
 
-      public boolean m_8036_() {
-         return "soldier".equals(this.npc.getNpcSubtype()) && !this.npc.m_20159_() && NpcShielding.shouldRaiseShield(this.npc, this.npc.m_5448_());
+      public boolean canUse() {
+         return "soldier".equals(this.npc.getNpcSubtype()) && !this.npc.isPassenger() && NpcShielding.shouldRaiseShield(this.npc, this.npc.getTarget());
       }
 
-      public boolean m_8045_() {
-         if (this.m_8036_()) {
+      public boolean canContinueToUse() {
+         if (this.canUse()) {
             this.lingerTicks = 20;
             return true;
          } else {
@@ -2108,114 +1789,28 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
          }
       }
 
-      public void m_8056_() {
+      public void start() {
          this.lingerTicks = 20;
          this.npc.setShielding(true);
       }
 
-      public void m_8037_() {
-         LivingEntity target = this.npc.m_5448_();
+      public void tick() {
+         LivingEntity target = this.npc.getTarget();
          if (target != null) {
-            this.npc.m_21563_().m_148051_(target);
+            this.npc.getLookControl().setLookAt(target);
          }
 
-         if (NpcShielding.shouldRaiseShield(this.npc, this.npc.m_5448_())) {
+         if (NpcShielding.shouldRaiseShield(this.npc, this.npc.getTarget())) {
             this.lingerTicks = 20;
          }
 
          this.npc.setShielding(this.lingerTicks > 0);
       }
 
-      public void m_8041_() {
+      public void stop() {
          this.lingerTicks = 0;
          this.npc.setShielding(false);
       }
    }
 
-   private static class SwordsmanProjectileGuardGoal extends Goal {
-      private final CombatNpcEntity npc;
-      private Projectile threat;
-      private int guardLingerTicks;
-
-      private SwordsmanProjectileGuardGoal(CombatNpcEntity npc) {
-         this.npc = npc;
-         this.m_7021_(EnumSet.of(Flag.MOVE, Flag.LOOK));
-      }
-
-      public boolean m_8036_() {
-         if (this.npc.isSwordsman() && SlashBladeCompat.canUseThornsGuard(this.npc)) {
-            this.threat = NpcShielding.findIncomingProjectile(this.npc);
-            return this.threat != null;
-         } else {
-            return false;
-         }
-      }
-
-      public boolean m_8045_() {
-         if (this.npc.isSwordsman() && SlashBladeCompat.canUseThornsGuard(this.npc)) {
-            Projectile nextThreat = NpcShielding.findIncomingProjectile(this.npc);
-            if (nextThreat != null) {
-               this.threat = nextThreat;
-               this.guardLingerTicks = 4;
-               return true;
-            } else {
-               return this.guardLingerTicks-- > 0;
-            }
-         } else {
-            return false;
-         }
-      }
-
-      public void m_8056_() {
-         this.guardLingerTicks = 4;
-         this.npc.cancelSwordsmanCombo();
-         this.npc.m_21573_().m_26573_();
-         SlashBladeCompat.setThornsGuardInput(this.npc, true);
-      }
-
-      public void m_8037_() {
-         this.npc.m_21573_().m_26573_();
-         Vec3 motion = this.npc.m_20184_();
-         this.npc.m_20334_(0.0, motion.f_82480_, 0.0);
-         if (this.threat != null && this.threat.m_6084_()) {
-            this.npc.m_21563_().m_24950_(this.threat.m_20185_(), this.threat.m_20186_(), this.threat.m_20189_(), 90.0F, 90.0F);
-            Vec3 direction = this.threat.m_20182_().m_82546_(this.npc.m_20182_());
-            if (direction.m_165925_() > 1.0E-5) {
-               float yaw = (float)Math.toDegrees(Math.atan2(-direction.f_82479_, direction.f_82481_));
-               this.npc.m_146922_(yaw);
-               this.npc.m_5618_(yaw);
-               this.npc.m_5616_(yaw);
-            }
-         }
-
-         SlashBladeCompat.setThornsGuardInput(this.npc, true);
-      }
-
-      public void m_8041_() {
-         this.threat = null;
-         this.guardLingerTicks = 0;
-         SlashBladeCompat.setThornsGuardInput(this.npc, false);
-      }
-   }
-
-   private static enum SwordsmanTechnique {
-      NONE(0, false),
-      COMBO_A(42, false),
-      COMBO_B(54, false),
-      COMBO_C(30, false),
-      RAPID_SLASH(80, false),
-      UPPER_CHAIN(24, false),
-      AERIAL_COMBO_A(82, true),
-      AERIAL_COMBO_B(88, true),
-      AERIAL_CLEAVE(50, true),
-      SLASH_ART(64, false);
-
-      private final int durationTicks;
-      private final boolean aerial;
-
-      private SwordsmanTechnique(int durationTicks, boolean aerial) {
-         this.durationTicks = durationTicks;
-         this.aerial = aerial;
-      }
-   }
 }

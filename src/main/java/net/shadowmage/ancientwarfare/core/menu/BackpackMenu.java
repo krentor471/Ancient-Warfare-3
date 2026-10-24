@@ -23,23 +23,23 @@ public class BackpackMenu extends AbstractContainerMenu {
    public BackpackMenu(int containerId, Inventory playerInventory, InteractionHand hand) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.BACKPACK), containerId);
       this.hand = hand;
-      this.backpackStack = playerInventory.f_35978_.m_21120_(hand);
+      this.backpackStack = playerInventory.player.getItemInHand(hand);
       this.backpackSlots = BackpackItem.getSlotCount(this.backpackStack);
-      this.blockedHotbarSlot = hand == InteractionHand.MAIN_HAND ? playerInventory.f_35977_ : -1;
+      this.blockedHotbarSlot = hand == InteractionHand.MAIN_HAND ? playerInventory.selected : -1;
       this.backpackInventory = new SimpleContainer(this.backpackSlots) {
-         public boolean m_7013_(int slot, ItemStack stack) {
+         public boolean canPlaceItem(int slot, ItemStack stack) {
             return !AWCoreRegistryAccess.is(stack, AWCoreIds.BACKPACK);
          }
 
-         public void m_6596_() {
-            super.m_6596_();
+         public void setChanged() {
+            super.setChanged();
             BackpackMenu.this.saveBackpackItems();
          }
       };
       this.loadBackpackItems();
 
       for (int i = 0; i < this.backpackSlots; i++) {
-         this.m_38897_(new BackpackMenu.BackpackSlot(this.backpackInventory, i, 8 + i % 9 * 18, 8 + i / 9 * 18));
+         this.addSlot(new BackpackMenu.BackpackSlot(this.backpackInventory, i, 8 + i % 9 * 18, 8 + i / 9 * 18));
       }
 
       this.addPlayerInventory(playerInventory, 8 + this.backpackSlots / 9 * 18 + 8);
@@ -56,27 +56,27 @@ public class BackpackMenu extends AbstractContainerMenu {
    private void addPlayerInventory(Inventory playerInventory, int top) {
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, top + row * 18));
+            this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, top + row * 18));
          }
       }
 
       for (int col = 0; col < 9; col++) {
          if (col == this.blockedHotbarSlot) {
-            this.m_38897_(new BackpackMenu.LockedSlot(playerInventory, col, 8 + col * 18, top + 58));
+            this.addSlot(new BackpackMenu.LockedSlot(playerInventory, col, 8 + col * 18, top + 58));
          } else {
-            this.m_38897_(new Slot(playerInventory, col, 8 + col * 18, top + 58));
+            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, top + 58));
          }
       }
    }
 
    private void loadBackpackItems() {
-      CompoundTag tag = this.backpackStack.m_41784_();
-      if (tag.m_128441_("backpackItems")) {
-         CompoundTag itemsTag = tag.m_128469_("backpackItems");
+      CompoundTag tag = this.backpackStack.getOrCreateTag();
+      if (tag.contains("backpackItems")) {
+         CompoundTag itemsTag = tag.getCompound("backpackItems");
 
          for (int i = 0; i < this.backpackSlots; i++) {
-            if (itemsTag.m_128441_("slot" + i)) {
-               this.backpackInventory.m_6836_(i, ItemStack.m_41712_(itemsTag.m_128469_("slot" + i)));
+            if (itemsTag.contains("slot" + i)) {
+               this.backpackInventory.setItem(i, ItemStack.of(itemsTag.getCompound("slot" + i)));
             }
          }
       }
@@ -86,52 +86,52 @@ public class BackpackMenu extends AbstractContainerMenu {
       CompoundTag itemsTag = new CompoundTag();
 
       for (int i = 0; i < this.backpackSlots; i++) {
-         ItemStack stack = this.backpackInventory.m_8020_(i);
-         if (!stack.m_41619_()) {
-            itemsTag.m_128365_("slot" + i, stack.m_41739_(new CompoundTag()));
+         ItemStack stack = this.backpackInventory.getItem(i);
+         if (!stack.isEmpty()) {
+            itemsTag.put("slot" + i, stack.save(new CompoundTag()));
          }
       }
 
-      this.backpackStack.m_41784_().m_128365_("backpackItems", itemsTag);
+      this.backpackStack.getOrCreateTag().put("backpackItems", itemsTag);
    }
 
-   public boolean m_6875_(Player player) {
-      return player.m_21120_(this.hand) == this.backpackStack && AWCoreRegistryAccess.is(this.backpackStack, AWCoreIds.BACKPACK);
+   public boolean stillValid(Player player) {
+      return player.getItemInHand(this.hand) == this.backpackStack && AWCoreRegistryAccess.is(this.backpackStack, AWCoreIds.BACKPACK);
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      ItemStack result = ItemStack.f_41583_;
-      Slot slot = (Slot)this.f_38839_.get(index);
-      if (slot != null && slot.m_6657_()) {
-         ItemStack stack = slot.m_7993_();
-         result = stack.m_41777_();
+   public ItemStack quickMoveStack(Player player, int index) {
+      ItemStack result = ItemStack.EMPTY;
+      Slot slot = (Slot)this.slots.get(index);
+      if (slot != null && slot.hasItem()) {
+         ItemStack stack = slot.getItem();
+         result = stack.copy();
          if (index < this.backpackSlots) {
-            if (!this.m_38903_(stack, this.backpackSlots, this.f_38839_.size(), true)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(stack, this.backpackSlots, this.slots.size(), true)) {
+               return ItemStack.EMPTY;
             }
          } else {
             if (AWCoreRegistryAccess.is(stack, AWCoreIds.BACKPACK)) {
-               return ItemStack.f_41583_;
+               return ItemStack.EMPTY;
             }
 
-            if (!this.m_38903_(stack, 0, this.backpackSlots, false)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(stack, 0, this.backpackSlots, false)) {
+               return ItemStack.EMPTY;
             }
          }
 
-         if (stack.m_41619_()) {
-            slot.m_5852_(ItemStack.f_41583_);
+         if (stack.isEmpty()) {
+            slot.set(ItemStack.EMPTY);
          } else {
-            slot.m_6654_();
+            slot.setChanged();
          }
       }
 
       return result;
    }
 
-   public void m_6877_(Player player) {
+   public void removed(Player player) {
       this.saveBackpackItems();
-      super.m_6877_(player);
+      super.removed(player);
    }
 
    private static class BackpackSlot extends Slot {
@@ -139,7 +139,7 @@ public class BackpackMenu extends AbstractContainerMenu {
          super(container, slot, x, y);
       }
 
-      public boolean m_5857_(ItemStack stack) {
+      public boolean mayPlace(ItemStack stack) {
          return !AWCoreRegistryAccess.is(stack, AWCoreIds.BACKPACK);
       }
    }
@@ -149,11 +149,11 @@ public class BackpackMenu extends AbstractContainerMenu {
          super(container, slot, x, y);
       }
 
-      public boolean m_8010_(Player player) {
+      public boolean mayPickup(Player player) {
          return false;
       }
 
-      public boolean m_5857_(ItemStack stack) {
+      public boolean mayPlace(ItemStack stack) {
          return false;
       }
    }

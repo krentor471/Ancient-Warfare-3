@@ -23,13 +23,21 @@ minecraft {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
+            // GeckoLib's mixins need their refmap remapped to run in the dev environment.
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
             mods {
                 "${mod_id}" {
                     source sourceSets.main
                 }
             }
         }
-        client {}
+        client {
+            // ./gradlew runClient -PquickPlay=localhost:25565 joins that server straight away.
+            if (project.hasProperty('quickPlay')) {
+                args '--quickPlayMultiplayer', project.property('quickPlay')
+            }
+        }
         server {
             args '--nogui'
         }
@@ -42,15 +50,24 @@ repositories {
         url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
         content { includeGroupByRegex('software\\.bernie.*') }
     }
+    maven {
+        name = 'JEI'
+        url = 'https://maven.blamejared.com/'
+        content { includeGroup('mezz.jei') }
+    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xmaxerrs' << '2000'
 }
 
 jar {
@@ -64,4 +81,11 @@ jar {
         ])
     }
     finalizedBy 'reobfJar'
+}
+
+processResources {
+    inputs.property 'mod_version', mod_version
+    filesMatching('META-INF/mods.toml') {
+        expand(mod_version: mod_version)
+    }
 }

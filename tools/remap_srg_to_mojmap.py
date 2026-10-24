@@ -3,7 +3,7 @@
 
 Usage: python3 tools/remap_srg_to_mojmap.py src/main/java
 
-Downloads MCPConfig 1.20.1 (obf -> srg) and Mojang client/server mappings
+Downloads MCPConfig 1.20.1 (obf -> srg) and Mojang client mappings
 (mojang -> obf), composes them into srg -> mojang and rewrites the sources in place.
 """
 import io, json, re, sys, urllib.request, zipfile
@@ -24,7 +24,8 @@ def fetch(url, name):
     p = CACHE / name
     if not p.exists():
         print("downloading", url)
-        p.write_bytes(urllib.request.urlopen(url).read())
+        req = urllib.request.Request(url, headers={"User-Agent": "aw3-remap/1.0"})
+        p.write_bytes(urllib.request.urlopen(req).read())
     return p.read_bytes()
 
 
@@ -33,7 +34,7 @@ def mojang_mappings():
     ver_url = next(v["url"] for v in manifest["versions"] if v["id"] == MC)
     ver = json.loads(fetch(ver_url, f"{MC}.json"))
     texts = [fetch(ver["downloads"][k]["url"], f"{k}.txt").decode()
-             for k in ("client_mappings", "server_mappings")]
+             for k in ("client_mappings",)]  # joined.tsrg uses client obf names
     classes = {}  # obf class -> (moj class, {(obf name, obf desc or None): moj name})
     moj2obf = {}
     parsed = []
@@ -76,7 +77,7 @@ def srg_to_moj(classes):
     out, cls = {}, None
     for line in tsrg[1:]:
         if not line.startswith("\t"):
-            cls = line.split(" ")[0]
+            cls = line.split(" ")[0].replace("/", ".")
             continue
         if line.startswith("\t\t"):
             continue  # parameters

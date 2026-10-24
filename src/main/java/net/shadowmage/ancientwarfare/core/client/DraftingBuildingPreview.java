@@ -120,7 +120,7 @@ public final class DraftingBuildingPreview implements AutoCloseable {
    }
 
    private static DraftingPreviewData loadBuiltIn(String path) {
-      AwsTemplatePlacer.PreviewData preview = AwsTemplatePlacer.preview(path, BlockPos.f_121853_, Direction.NORTH);
+      AwsTemplatePlacer.PreviewData preview = AwsTemplatePlacer.preview(path, BlockPos.ZERO, Direction.NORTH);
       if (preview.blocks().size() > 1048576) {
          throw new IllegalArgumentException("Drafting preview source too large");
       } else {
@@ -192,8 +192,8 @@ public final class DraftingBuildingPreview implements AutoCloseable {
 
    public Component dimensions() {
       return this.data != null && !this.data.cells().isEmpty()
-         ? Component.m_237110_("gui.ancientwarfare.drafting.preview_size", new Object[]{this.data.sizeX(), this.data.sizeY(), this.data.sizeZ()})
-         : Component.m_237119_();
+         ? Component.translatable("gui.ancientwarfare.drafting.preview_size", new Object[]{this.data.sizeX(), this.data.sizeY(), this.data.sizeZ()})
+         : Component.empty();
    }
 
    public void resetView() {
@@ -258,52 +258,52 @@ public final class DraftingBuildingPreview implements AutoCloseable {
 
          if (this.opaque.isEmpty() && this.translucent.isEmpty()) {
             String key = this.unavailable ? "preview_unavailable" : (this.isLoading() ? "preview_loading" : "preview_empty");
-            graphics.m_280653_(
-               Minecraft.m_91087_().f_91062_, Component.m_237115_("gui.ancientwarfare.drafting." + key), left + width / 2, top + height / 2 - 4, -2039584
+            graphics.drawCenteredString(
+               Minecraft.getInstance().font, Component.translatable("gui.ancientwarfare.drafting." + key), left + width / 2, top + height / 2 - 4, -2039584
             );
          } else {
-            graphics.m_280262_();
+            graphics.flush();
             DraftingBuildingPreview.GlState previous = new DraftingBuildingPreview.GlState();
-            PoseStack pose = graphics.m_280168_();
-            graphics.m_280588_(left, top, left + width, top + height);
-            pose.m_85836_();
+            PoseStack pose = graphics.pose();
+            graphics.enableScissor(left, top, left + width, top + height);
+            pose.pushPose();
 
             try {
                RenderSystem.depthMask(true);
                RenderSystem.clearDepth(1.0);
-               RenderSystem.clear(256, Minecraft.f_91002_);
+               RenderSystem.clear(256, Minecraft.ON_OSX);
                RenderSystem.enableDepthTest();
                RenderSystem.depthFunc(515);
                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-               Lighting.m_84931_();
+               Lighting.setupFor3DItems();
                DraftingBuildingPreview.ViewFit fit = fit(
                   this.data.sizeX(), this.data.sizeY(), this.data.sizeZ(), this.yaw, this.pitch, width, height, this.zoom
                );
-               pose.m_85837_((double)left + (double)width * 0.5, (double)top + (double)height * 0.5, 400.0);
-               pose.m_85841_((float)fit.scale(), (float)(-fit.scale()), (float)fit.scale());
-               pose.m_252781_(Axis.f_252529_.m_252977_(this.pitch));
-               pose.m_252781_(Axis.f_252436_.m_252977_(this.yaw));
-               pose.m_85837_((double)(-this.data.sizeX()) * 0.5, (double)(-this.data.sizeY()) * 0.5, (double)(-this.data.sizeZ()) * 0.5);
+               pose.translate((double)left + (double)width * 0.5, (double)top + (double)height * 0.5, 400.0);
+               pose.scale((float)fit.scale(), (float)(-fit.scale()), (float)fit.scale());
+               pose.mulPose(Axis.XP.rotationDegrees(this.pitch));
+               pose.mulPose(Axis.YP.rotationDegrees(this.yaw));
+               pose.translate((double)(-this.data.sizeX()) * 0.5, (double)(-this.data.sizeY()) * 0.5, (double)(-this.data.sizeZ()) * 0.5);
 
                for (DraftingBuildingPreview.Mesh mesh : this.opaque) {
-                  mesh.draw(pose.m_85850_().m_252922_());
+                  mesh.draw(pose.last().pose());
                }
 
                Vector3f direction = cameraDirection(this.yaw, this.pitch);
 
                for (DraftingBuildingPreview.Mesh mesh : this.translucent) {
                   mesh.sort(direction, this.yaw, this.pitch);
-                  mesh.draw(pose.m_85850_().m_252922_());
+                  mesh.draw(pose.last().pose());
                }
             } catch (RuntimeException var18) {
                this.failPreview(var18);
             } finally {
-               VertexBuffer.m_85931_();
-               pose.m_85849_();
+               VertexBuffer.unbind();
+               pose.popPose();
                RenderSystem.depthMask(true);
-               RenderSystem.clear(256, Minecraft.f_91002_);
-               graphics.m_280618_();
-               Lighting.m_84931_();
+               RenderSystem.clear(256, Minecraft.ON_OSX);
+               graphics.disableScissor();
+               Lighting.setupFor3DItems();
                previous.restore();
             }
          }
@@ -316,7 +316,7 @@ public final class DraftingBuildingPreview implements AutoCloseable {
       PoseStack blockPose = new PoseStack();
       MultiBufferSource target = requestedType -> {
          boolean transparent = isTranslucent(requestedType);
-         RenderType type = transparent ? RenderType.m_110470_(TextureAtlas.f_118259_) : requestedType;
+         RenderType type = transparent ? RenderType.entityTranslucentCull(TextureAtlas.LOCATION_BLOCKS) : requestedType;
          Map<RenderType, DraftingBuildingPreview.LayerBuilder> collection = transparent ? this.transparentBuilders : this.opaqueBuilders;
          if (collection.size() >= 8 && !collection.containsKey(type)) {
             throw new IllegalStateException("Too many drafting preview render layers");
@@ -328,14 +328,14 @@ public final class DraftingBuildingPreview implements AutoCloseable {
       try {
          while (this.cursor < end) {
             DraftingPreviewData.Cell cell = this.data.cells().get(this.cursor++);
-            if (cell.state().m_60799_() == RenderShape.MODEL) {
-               blockPose.m_85836_();
+            if (cell.state().getRenderShape() == RenderShape.MODEL) {
+               blockPose.pushPose();
 
                try {
-                  blockPose.m_252880_((float)cell.pos().m_123341_(), (float)cell.pos().m_123342_(), (float)cell.pos().m_123343_());
-                  Minecraft.m_91087_().m_91289_().m_110912_(cell.state(), blockPose, target, 15728880, OverlayTexture.f_118083_);
+                  blockPose.translate((float)cell.pos().getX(), (float)cell.pos().getY(), (float)cell.pos().getZ());
+                  Minecraft.getInstance().getBlockRenderer().renderSingleBlock(cell.state(), blockPose, target, 15728880, OverlayTexture.NO_OVERLAY);
                } finally {
-                  blockPose.m_85849_();
+                  blockPose.popPose();
                }
             }
 
@@ -371,19 +371,19 @@ public final class DraftingBuildingPreview implements AutoCloseable {
       } catch (RuntimeException var17) {
          this.failPreview(var17);
       } finally {
-         VertexBuffer.m_85931_();
+         VertexBuffer.unbind();
       }
    }
 
    private static boolean isTranslucent(RenderType type) {
-      return type == RenderType.m_110466_()
-         || type == RenderType.m_110469_()
-         || type == RenderType.m_110472_()
-         || type == Sheets.m_110792_()
-         || type == Sheets.m_110791_()
-         || type == RenderType.m_110473_(TextureAtlas.f_118259_)
-         || type == RenderType.m_110470_(TextureAtlas.f_118259_)
-         || type == RenderType.m_110467_(TextureAtlas.f_118259_);
+      return type == RenderType.translucent()
+         || type == RenderType.translucentMovingBlock()
+         || type == RenderType.translucentNoCrumbling()
+         || type == Sheets.translucentCullBlockSheet()
+         || type == Sheets.translucentItemSheet()
+         || type == RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS)
+         || type == RenderType.entityTranslucentCull(TextureAtlas.LOCATION_BLOCKS)
+         || type == RenderType.itemEntityTranslucentCull(TextureAtlas.LOCATION_BLOCKS);
    }
 
    private void failPreview(RuntimeException exception) {
@@ -487,50 +487,50 @@ public final class DraftingBuildingPreview implements AutoCloseable {
          this.delegate = delegate;
       }
 
-      public VertexConsumer m_5483_(double x, double y, double z) {
-         this.delegate.m_5483_(x, y, z);
+      public VertexConsumer vertex(double x, double y, double z) {
+         this.delegate.vertex(x, y, z);
          return this;
       }
 
-      public VertexConsumer m_6122_(int r, int g, int b, int a) {
-         this.delegate.m_6122_(r, g, b, a);
+      public VertexConsumer color(int r, int g, int b, int a) {
+         this.delegate.color(r, g, b, a);
          return this;
       }
 
-      public VertexConsumer m_7421_(float u, float v) {
-         this.delegate.m_7421_(u, v);
+      public VertexConsumer uv(float u, float v) {
+         this.delegate.uv(u, v);
          return this;
       }
 
-      public VertexConsumer m_7122_(int u, int v) {
-         this.delegate.m_7122_(u, v);
+      public VertexConsumer overlayCoords(int u, int v) {
+         this.delegate.overlayCoords(u, v);
          return this;
       }
 
-      public VertexConsumer m_7120_(int u, int v) {
-         this.delegate.m_7120_(u, v);
+      public VertexConsumer uv2(int u, int v) {
+         this.delegate.uv2(u, v);
          return this;
       }
 
-      public VertexConsumer m_5601_(float x, float y, float z) {
-         this.delegate.m_5601_(x, y, z);
+      public VertexConsumer normal(float x, float y, float z) {
+         this.delegate.normal(x, y, z);
          return this;
       }
 
-      public void m_5752_() {
+      public void endVertex() {
          if (++DraftingBuildingPreview.this.vertices > 1048576) {
             throw new IllegalStateException("Drafting preview vertex limit exceeded");
          } else {
-            this.delegate.m_5752_();
+            this.delegate.endVertex();
          }
       }
 
-      public void m_7404_(int r, int g, int b, int a) {
-         this.delegate.m_7404_(r, g, b, a);
+      public void defaultColor(int r, int g, int b, int a) {
+         this.delegate.defaultColor(r, g, b, a);
       }
 
-      public void m_141991_() {
-         this.delegate.m_141991_();
+      public void unsetDefaultColor() {
+         this.delegate.unsetDefaultColor();
       }
    }
 
@@ -589,36 +589,36 @@ public final class DraftingBuildingPreview implements AutoCloseable {
 
       private LayerBuilder(RenderType type) {
          this.type = type;
-         if (type.m_173186_() != Mode.QUADS) {
+         if (type.mode() != Mode.QUADS) {
             throw new IllegalStateException("Non-quad block model");
          } else {
-            this.builder.m_166779_(type.m_173186_(), type.m_110508_());
+            this.builder.begin(type.mode(), type.format());
             this.consumer = DraftingBuildingPreview.this.new BoundedConsumer(this.builder);
          }
       }
 
       private DraftingBuildingPreview.Mesh finish(boolean transparent) {
-         if (this.builder.m_231164_()) {
-            this.builder.m_231168_();
+         if (this.builder.isCurrentBatchEmpty()) {
+            this.builder.endOrDiscardIfEmpty();
             return null;
          } else {
             SortState sortState = null;
             if (transparent) {
                Vector3f direction = DraftingBuildingPreview.cameraDirection(DraftingBuildingPreview.this.yaw, DraftingBuildingPreview.this.pitch);
-               this.builder.m_277127_(VertexSorting.m_277161_(point -> -point.dot(direction)));
-               sortState = this.builder.m_166770_();
+               this.builder.setQuadSorting(VertexSorting.byDistance(point -> -point.dot(direction)));
+               sortState = this.builder.getSortState();
             }
 
-            RenderedBuffer rendered = this.builder.m_231175_();
+            RenderedBuffer rendered = this.builder.end();
             VertexBuffer buffer = null;
             boolean handedToUpload = false;
 
             DraftingBuildingPreview.Mesh exception;
             try {
                buffer = new VertexBuffer(Usage.STATIC);
-               buffer.m_85921_();
+               buffer.bind();
                handedToUpload = true;
-               buffer.m_231221_(rendered);
+               buffer.upload(rendered);
                exception = new DraftingBuildingPreview.Mesh(this.type, buffer, sortState);
             } catch (RuntimeException var10) {
                if (buffer != null) {
@@ -628,7 +628,7 @@ public final class DraftingBuildingPreview implements AutoCloseable {
                throw var10;
             } finally {
                if (!handedToUpload) {
-                  rendered.m_231200_();
+                  rendered.release();
                }
             }
 
@@ -637,7 +637,7 @@ public final class DraftingBuildingPreview implements AutoCloseable {
       }
 
       private void discard() {
-         this.builder.m_85730_();
+         this.builder.discard();
       }
    }
 
@@ -658,19 +658,19 @@ public final class DraftingBuildingPreview implements AutoCloseable {
 
       private void sort(Vector3f direction, float yaw, float pitch) {
          if (this.sortState != null && (this.sortedYaw != yaw || this.sortedPitch != pitch)) {
-            this.indices.m_166779_(this.type.m_173186_(), this.type.m_110508_());
-            this.indices.m_166775_(this.sortState);
-            this.indices.m_277127_(VertexSorting.m_277161_(point -> -point.dot(direction)));
-            RenderedBuffer rendered = this.indices.m_231175_();
+            this.indices.begin(this.type.mode(), this.type.format());
+            this.indices.restoreSortState(this.sortState);
+            this.indices.setQuadSorting(VertexSorting.byDistance(point -> -point.dot(direction)));
+            RenderedBuffer rendered = this.indices.end();
             boolean handedToUpload = false;
 
             try {
-               this.buffer.m_85921_();
+               this.buffer.bind();
                handedToUpload = true;
-               this.buffer.m_231221_(rendered);
+               this.buffer.upload(rendered);
             } finally {
                if (!handedToUpload) {
-                  rendered.m_231200_();
+                  rendered.release();
                }
             }
 
@@ -680,14 +680,14 @@ public final class DraftingBuildingPreview implements AutoCloseable {
       }
 
       private void draw(Matrix4f pose) {
-         this.type.m_110185_();
+         this.type.setupRenderState();
 
          try {
-            this.buffer.m_85921_();
+            this.buffer.bind();
             Matrix4f modelView = new Matrix4f(RenderSystem.getModelViewMatrix()).mul(pose);
-            this.buffer.m_253207_(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
+            this.buffer.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
          } finally {
-            this.type.m_110188_();
+            this.type.clearRenderState();
          }
       }
 

@@ -30,6 +30,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -40,6 +42,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.shadowmage.ancientwarfare.core.client.BardMusicPlaybackManager;
+import net.shadowmage.ancientwarfare.core.common.npc.FormationPlanner;
 import net.shadowmage.ancientwarfare.core.common.worksite.BoundedArea;
 import net.shadowmage.ancientwarfare.core.entity.BallistaMobileEntity;
 import net.shadowmage.ancientwarfare.core.entity.BallistaTurretStandEntity;
@@ -85,26 +88,26 @@ public final class ForgeClientWorldEvents {
    }
 
    private static void handleVehicleInput() {
-      Minecraft minecraft = Minecraft.m_91087_();
-      if (minecraft.f_91074_ != null && minecraft.f_91080_ == null) {
-         Entity vehicle = minecraft.f_91074_.m_20202_();
+      Minecraft minecraft = Minecraft.getInstance();
+      if (minecraft.player != null && minecraft.screen == null) {
+         Entity vehicle = minecraft.player.getVehicle();
          if (vehicle instanceof ChestPushcartEntity cart) {
-            long window = minecraft.m_91268_().m_85439_();
+            long window = minecraft.getWindow().getWindow();
             float forward = 0.0F;
             float turn = 0.0F;
-            if (InputConstants.m_84830_(window, 87)) {
+            if (InputConstants.isKeyDown(window, 87)) {
                forward++;
             }
 
-            if (InputConstants.m_84830_(window, 83)) {
+            if (InputConstants.isKeyDown(window, 83)) {
                forward--;
             }
 
-            if (InputConstants.m_84830_(window, 65)) {
+            if (InputConstants.isKeyDown(window, 65)) {
                turn++;
             }
 
-            if (InputConstants.m_84830_(window, 68)) {
+            if (InputConstants.isKeyDown(window, 68)) {
                turn--;
             }
 
@@ -115,9 +118,9 @@ public final class ForgeClientWorldEvents {
             } else if (vehicle instanceof CatapultTurretStandEntity catapultStand) {
                if (forward != 0.0F || turn != 0.0F) {
                   AWCoreNetwork.sendVehicleInput(forward, -turn);
-                  if (forward != 0.0F && minecraft.f_91074_ != null) {
+                  if (forward != 0.0F && minecraft.player != null) {
                      int nextPercent = Math.max(0, Math.min(30, Math.round(catapultStand.getVelocityBonus() * 100.0F + forward)));
-                     minecraft.f_91074_.m_5661_(Component.m_237110_("guistrings.vehicle.catapult_velocity_bonus", new Object[]{nextPercent}), true);
+                     minecraft.player.displayClientMessage(Component.translatable("guistrings.vehicle.catapult_velocity_bonus", new Object[]{nextPercent}), true);
                   }
                }
             } else if (vehicle instanceof CannonMobileEntity cartCannon) {
@@ -130,17 +133,17 @@ public final class ForgeClientWorldEvents {
             } else if (vehicle instanceof TrebuchetTurretEntity turretTrebuchet) {
                if (forward != 0.0F || turn != 0.0F) {
                   AWCoreNetwork.sendVehicleInput(forward, turn);
-                  if (forward != 0.0F && minecraft.f_91074_ != null) {
+                  if (forward != 0.0F && minecraft.player != null) {
                      int nextPercent = Math.max(0, Math.min(30, Math.round(turretTrebuchet.getVelocityBonus() * 100.0F + forward)));
-                     minecraft.f_91074_.m_5661_(Component.m_237110_("guistrings.vehicle.catapult_velocity_bonus", new Object[]{nextPercent}), true);
+                     minecraft.player.displayClientMessage(Component.translatable("guistrings.vehicle.catapult_velocity_bonus", new Object[]{nextPercent}), true);
                   }
                }
             } else if (vehicle instanceof TrebuchetFixedEntity fixedTrebuchet) {
                if (forward != 0.0F) {
                   AWCoreNetwork.sendVehicleInput(forward, 0.0F);
-                  if (minecraft.f_91074_ != null) {
+                  if (minecraft.player != null) {
                      int nextPercent = Math.max(0, Math.min(30, Math.round(fixedTrebuchet.getVelocityBonus() * 100.0F + forward)));
-                     minecraft.f_91074_.m_5661_(Component.m_237110_("guistrings.vehicle.catapult_velocity_bonus", new Object[]{nextPercent}), true);
+                     minecraft.player.displayClientMessage(Component.translatable("guistrings.vehicle.catapult_velocity_bonus", new Object[]{nextPercent}), true);
                   }
                }
             } else {
@@ -152,66 +155,66 @@ public final class ForgeClientWorldEvents {
                float yawDelta = 0.0F;
                float velocityDelta = 0.0F;
                CatapultMobileEntity catapult = (CatapultMobileEntity)vehicle;
-               if (!catapult.hasFixedTurret() && ForgeClientInputEvents.BALLISTA_LEFT.m_90857_()) {
+               if (!catapult.hasFixedTurret() && ForgeClientInputEvents.BALLISTA_LEFT.isDown()) {
                   yawDelta--;
                }
 
-               if (!catapult.hasFixedTurret() && ForgeClientInputEvents.BALLISTA_RIGHT.m_90857_()) {
+               if (!catapult.hasFixedTurret() && ForgeClientInputEvents.BALLISTA_RIGHT.isDown()) {
                   yawDelta++;
                }
 
-               if (ForgeClientInputEvents.BALLISTA_UP.m_90857_()) {
+               if (ForgeClientInputEvents.BALLISTA_UP.isDown()) {
                   velocityDelta++;
                }
 
-               if (ForgeClientInputEvents.BALLISTA_DOWN.m_90857_()) {
+               if (ForgeClientInputEvents.BALLISTA_DOWN.isDown()) {
                   velocityDelta--;
                }
 
                if (yawDelta != 0.0F || velocityDelta != 0.0F) {
                   AWCoreNetwork.sendAdjustBallistaTurret(velocityDelta, yawDelta);
-                  if (velocityDelta != 0.0F && minecraft.f_91074_ != null) {
+                  if (velocityDelta != 0.0F && minecraft.player != null) {
                      int nextPercent = Math.max(0, Math.min(30, Math.round(catapult.getVelocityBonus() * 100.0F + velocityDelta)));
-                     minecraft.f_91074_.m_5661_(Component.m_237110_("guistrings.vehicle.catapult_velocity_bonus", new Object[]{nextPercent}), true);
+                     minecraft.player.displayClientMessage(Component.translatable("guistrings.vehicle.catapult_velocity_bonus", new Object[]{nextPercent}), true);
                   }
                }
 
-               boolean fireDown = InputConstants.m_84830_(window, 32);
+               boolean fireDown = InputConstants.isKeyDown(window, 32);
                if (fireDown && !ballistaFireWasDown) {
                   AWCoreNetwork.sendFireBallista();
                }
 
                ballistaFireWasDown = fireDown;
             } else if (vehicle instanceof CatapultTurretStandEntity) {
-               boolean fireDown = InputConstants.m_84830_(window, 32);
+               boolean fireDown = InputConstants.isKeyDown(window, 32);
                if (fireDown && !ballistaFireWasDown) {
                   AWCoreNetwork.sendFireBallista();
                }
 
                ballistaFireWasDown = fireDown;
             } else if (vehicle instanceof CannonTurretStandEntity) {
-               boolean fireDown = InputConstants.m_84830_(window, 32);
+               boolean fireDown = InputConstants.isKeyDown(window, 32);
                if (fireDown && !ballistaFireWasDown) {
                   AWCoreNetwork.sendFireBallista();
                }
 
                ballistaFireWasDown = fireDown;
             } else if (vehicle instanceof TrebuchetFixedEntity) {
-               boolean fireDown = InputConstants.m_84830_(window, 32);
+               boolean fireDown = InputConstants.isKeyDown(window, 32);
                if (fireDown && !ballistaFireWasDown) {
                   AWCoreNetwork.sendFireBallista();
                }
 
                ballistaFireWasDown = fireDown;
             } else if (vehicle instanceof HwachaEntity) {
-               boolean fireDown = InputConstants.m_84830_(window, 32);
+               boolean fireDown = InputConstants.isKeyDown(window, 32);
                if (fireDown) {
                   AWCoreNetwork.sendFireBallista();
                }
 
                ballistaFireWasDown = fireDown;
             } else if (vehicle instanceof BatteringRamEntity) {
-               boolean fireDown = InputConstants.m_84830_(window, 32);
+               boolean fireDown = InputConstants.isKeyDown(window, 32);
                if (fireDown && !ballistaFireWasDown) {
                   AWCoreNetwork.sendFireBallista();
                }
@@ -221,11 +224,11 @@ public final class ForgeClientWorldEvents {
 
             if (vehicle instanceof CannonMobileEntity) {
                float pitchDelta = 0.0F;
-               if (ForgeClientInputEvents.BALLISTA_UP.m_90857_()) {
+               if (ForgeClientInputEvents.BALLISTA_UP.isDown()) {
                   pitchDelta++;
                }
 
-               if (ForgeClientInputEvents.BALLISTA_DOWN.m_90857_()) {
+               if (ForgeClientInputEvents.BALLISTA_DOWN.isDown()) {
                   pitchDelta--;
                }
 
@@ -235,19 +238,19 @@ public final class ForgeClientWorldEvents {
             } else if (vehicle instanceof BallistaMobileEntity) {
                float pitchDeltax = 0.0F;
                float yawDeltax = 0.0F;
-               if (!(vehicle instanceof BallistaTurretStandEntity) && ForgeClientInputEvents.BALLISTA_UP.m_90857_()) {
+               if (!(vehicle instanceof BallistaTurretStandEntity) && ForgeClientInputEvents.BALLISTA_UP.isDown()) {
                   pitchDeltax++;
                }
 
-               if (!(vehicle instanceof BallistaTurretStandEntity) && ForgeClientInputEvents.BALLISTA_DOWN.m_90857_()) {
+               if (!(vehicle instanceof BallistaTurretStandEntity) && ForgeClientInputEvents.BALLISTA_DOWN.isDown()) {
                   pitchDeltax--;
                }
 
-               if (!(vehicle instanceof BallistaTurretStandEntity) && ForgeClientInputEvents.BALLISTA_LEFT.m_90857_()) {
+               if (!(vehicle instanceof BallistaTurretStandEntity) && ForgeClientInputEvents.BALLISTA_LEFT.isDown()) {
                   yawDeltax--;
                }
 
-               if (!(vehicle instanceof BallistaTurretStandEntity) && ForgeClientInputEvents.BALLISTA_RIGHT.m_90857_()) {
+               if (!(vehicle instanceof BallistaTurretStandEntity) && ForgeClientInputEvents.BALLISTA_RIGHT.isDown()) {
                   yawDeltax++;
                }
 
@@ -255,7 +258,7 @@ public final class ForgeClientWorldEvents {
                   AWCoreNetwork.sendAdjustBallistaTurret(pitchDeltax, yawDeltax);
                }
 
-               boolean fireDown = InputConstants.m_84830_(window, 32);
+               boolean fireDown = InputConstants.isKeyDown(window, 32);
                if (fireDown && !ballistaFireWasDown) {
                   AWCoreNetwork.sendFireBallista();
                }
@@ -271,24 +274,24 @@ public final class ForgeClientWorldEvents {
    @SubscribeEvent
    public static void renderWorkBounds(RenderLevelStageEvent event) {
       if (event.getStage() == Stage.AFTER_TRANSLUCENT_BLOCKS) {
-         Minecraft minecraft = Minecraft.m_91087_();
-         if (minecraft.f_91073_ != null && minecraft.f_91074_ != null) {
+         Minecraft minecraft = Minecraft.getInstance();
+         if (minecraft.level != null && minecraft.player != null) {
             PoseStack poseStack = event.getPoseStack();
-            Vec3 camera = event.getCamera().m_90583_();
-            BufferSource bufferSource = minecraft.m_91269_().m_110104_();
-            VertexConsumer consumer = bufferSource.m_6299_(RenderType.m_110504_());
+            Vec3 camera = event.getCamera().getPosition();
+            BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+            VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
             List<SurvivalStructureBuilderBlockEntity> structureBuilders = new ArrayList<>();
-            poseStack.m_85836_();
-            poseStack.m_85837_(-camera.f_82479_, -camera.f_82480_, -camera.f_82481_);
-            int centerChunkX = minecraft.f_91074_.m_20183_().m_123341_() >> 4;
-            int centerChunkZ = minecraft.f_91074_.m_20183_().m_123343_() >> 4;
+            poseStack.pushPose();
+            poseStack.translate(-camera.x, -camera.y, -camera.z);
+            int centerChunkX = minecraft.player.blockPosition().getX() >> 4;
+            int centerChunkZ = minecraft.player.blockPosition().getZ() >> 4;
 
             for (int chunkX = centerChunkX - 4; chunkX <= centerChunkX + 4; chunkX++) {
                for (int chunkZ = centerChunkZ - 4; chunkZ <= centerChunkZ + 4; chunkZ++) {
-                  if (minecraft.f_91073_.m_7232_(chunkX, chunkZ)) {
-                     LevelChunk chunk = minecraft.f_91073_.m_6325_(chunkX, chunkZ);
+                  if (minecraft.level.hasChunk(chunkX, chunkZ)) {
+                     LevelChunk chunk = minecraft.level.getChunk(chunkX, chunkZ);
 
-                     for (BlockEntity blockEntity : chunk.m_62954_().values()) {
+                     for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
                         if (blockEntity instanceof BoundedArea area) {
                            renderBounds(poseStack, consumer, area);
                         }
@@ -303,14 +306,16 @@ public final class ForgeClientWorldEvents {
             }
 
             renderSelectedNpcBoxes(poseStack, consumer, minecraft);
-            bufferSource.m_109912_(RenderType.m_110504_());
+            net.shadowmage.ancientwarfare.core.client.ConstructionClient.render(poseStack, consumer, minecraft);
+            renderOrderPreview(poseStack, consumer, minecraft, event.getPartialTick());
+            bufferSource.endBatch(RenderType.lines());
             Set<ForgeClientWorldEvents.PreviewKey> visibleGhosts = new HashSet<>();
 
             for (SurvivalStructureBuilderBlockEntity builder : structureBuilders) {
                renderStructureBuilderGhost(poseStack, bufferSource, minecraft, builder, visibleGhosts);
             }
 
-            bufferSource.m_109912_(RenderType.m_110466_());
+            bufferSource.endBatch(RenderType.translucent());
             GHOST_PREVIEW_CACHE.entrySet().removeIf(entry -> {
                if (visibleGhosts.contains(entry.getKey())) {
                   return false;
@@ -319,7 +324,7 @@ public final class ForgeClientWorldEvents {
                   return true;
                }
             });
-            poseStack.m_85849_();
+            poseStack.popPose();
          }
       }
    }
@@ -328,14 +333,14 @@ public final class ForgeClientWorldEvents {
       AwsTemplatePlacer.PreviewData preview = structurePreview(builder);
       if (preview != null) {
          AABB bounds = new AABB(
-            (double)preview.min().m_123341_(),
-            (double)preview.min().m_123342_(),
-            (double)preview.min().m_123343_(),
-            (double)preview.max().m_123341_() + 1.0,
-            (double)preview.max().m_123342_() + 1.0,
-            (double)preview.max().m_123343_() + 1.0
+            (double)preview.min().getX(),
+            (double)preview.min().getY(),
+            (double)preview.min().getZ(),
+            (double)preview.max().getX() + 1.0,
+            (double)preview.max().getY() + 1.0,
+            (double)preview.max().getZ() + 1.0
          );
-         LevelRenderer.m_109646_(poseStack, lineConsumer, bounds, 1.0F, 1.0F, 1.0F, 1.0F);
+         LevelRenderer.renderLineBox(poseStack, lineConsumer, bounds, 1.0F, 1.0F, 1.0F, 1.0F);
       }
    }
 
@@ -359,16 +364,16 @@ public final class ForgeClientWorldEvents {
             cache.buildNextBatch(minecraft);
             cache.render(poseStack);
          } else {
-            MultiBufferSource ghostBuffers = ignored -> new ForgeClientWorldEvents.AlphaVertexConsumer(bufferSource.m_6299_(RenderType.m_110466_()), 0.32F);
+            MultiBufferSource ghostBuffers = ignored -> new ForgeClientWorldEvents.AlphaVertexConsumer(bufferSource.getBuffer(RenderType.translucent()), 0.32F);
 
             for (AwsTemplatePlacer.PreviewBlock previewBlock : blocks) {
                BlockPos pos = previewBlock.pos();
                BlockState state = previewBlock.state();
-               if (builder.buildPhase() < 1 || minecraft.f_91073_.m_8055_(pos) != state) {
-                  poseStack.m_85836_();
-                  poseStack.m_252880_((float)pos.m_123341_(), (float)pos.m_123342_(), (float)pos.m_123343_());
-                  minecraft.m_91289_().m_110912_(state, poseStack, ghostBuffers, 15728880, OverlayTexture.f_118083_);
-                  poseStack.m_85849_();
+               if (builder.buildPhase() < 1 || minecraft.level.getBlockState(pos) != state) {
+                  poseStack.pushPose();
+                  poseStack.translate((float)pos.getX(), (float)pos.getY(), (float)pos.getZ());
+                  minecraft.getBlockRenderer().renderSingleBlock(state, poseStack, ghostBuffers, 15728880, OverlayTexture.NO_OVERLAY);
+                  poseStack.popPose();
                }
             }
          }
@@ -407,33 +412,131 @@ public final class ForgeClientWorldEvents {
       }
    }
 
-   private static void renderSelectedNpcBoxes(PoseStack poseStack, VertexConsumer consumer, Minecraft minecraft) {
-      if (minecraft.f_91074_.m_21205_().m_41720_() instanceof CommandBatonItem || minecraft.f_91074_.m_21206_().m_41720_() instanceof CommandBatonItem) {
-         ItemStack baton = minecraft.f_91074_.m_21205_().m_41720_() instanceof CommandBatonItem ? minecraft.f_91074_.m_21205_() : minecraft.f_91074_.m_21206_();
-         AABB search = minecraft.f_91074_.m_20191_().m_82400_(128.0);
+   private static final double BARRAGE_PREVIEW_RANGE = 64.0;
+   private static String previewKey = "";
+   private static List<FormationPlanner.Spot> previewSpots = List.of();
 
-         for (PlayerOwnedNpcEntity npc : minecraft.f_91073_
-            .m_6443_(
+   private static void renderSelectedNpcBoxes(PoseStack poseStack, VertexConsumer consumer, Minecraft minecraft) {
+      if (minecraft.player.getMainHandItem().getItem() instanceof CommandBatonItem || minecraft.player.getOffhandItem().getItem() instanceof CommandBatonItem) {
+         ItemStack baton = minecraft.player.getMainHandItem().getItem() instanceof CommandBatonItem ? minecraft.player.getMainHandItem() : minecraft.player.getOffhandItem();
+         AABB search = minecraft.player.getBoundingBox().inflate(128.0);
+
+         for (PlayerOwnedNpcEntity npc : minecraft.level
+            .getEntitiesOfClass(
                PlayerOwnedNpcEntity.class,
                search,
-               entity -> entity.m_6084_()
-                     && entity.getOwner().map(owner -> owner.equals(minecraft.f_91074_.m_20148_())).orElse(true)
-                     && CommandBatonItem.selectsNpc(baton, entity.m_20148_())
+               entity -> entity.isAlive()
+                     && entity.getOwner().map(owner -> owner.equals(minecraft.player.getUUID())).orElse(true)
+                     && CommandBatonItem.selectsNpc(baton, entity.getUUID())
             )) {
-            AABB box = npc.m_20191_().m_82400_(0.06);
-            LevelRenderer.m_109646_(poseStack, consumer, box, 1.0F, 1.0F, 1.0F, 1.0F);
+            AABB box = npc.getBoundingBox().inflate(0.06);
+            LevelRenderer.renderLineBox(poseStack, consumer, box, 1.0F, 1.0F, 1.0F, 1.0F);
          }
+      }
+   }
+
+   /**
+    * Shows an order before it is given: the slots the selection would take (moving with the baton or drawing a line in
+    * the command view) and the circle archers would cover with a barrage.
+    */
+   private static void renderOrderPreview(PoseStack poseStack, VertexConsumer consumer, Minecraft minecraft, float partialTick) {
+      ItemStack baton = CommandViewScreen.heldBaton(minecraft);
+      if (!(baton.getItem() instanceof CommandBatonItem)) {
+         return;
+      }
+
+      int selected = CommandBatonItem.selectionCount(baton);
+      if (CommandViewScreen.isOpen(minecraft)) {
+         List<BlockPos> stroke = CommandViewScreen.previewStroke();
+         if (stroke.size() >= 2 && selected > 0) {
+            String key = "shape" + stroke.hashCode() + "/" + selected + "/" + CommandBatonItem.getFormation(baton);
+            if (!key.equals(previewKey)) {
+               previewKey = key;
+               previewSpots = CommandBatonItem.previewShapeSpots(minecraft.level, baton, stroke, selected);
+            }
+
+            renderSpots(poseStack, consumer, previewSpots);
+         }
+
+         BlockPos center = CommandViewScreen.previewBarrageCenter();
+         if (center != null) {
+            renderCircle(poseStack, consumer, center, CommandViewScreen.previewBarrageRadius());
+         }
+      } else if (selected > 0 && CommandBatonItem.isMoveMode(baton) && minecraft.hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK) {
+         BlockPos target = hit.getBlockPos().relative(hit.getDirection());
+         List<PlayerOwnedNpcEntity> npcs = minecraft.level
+            .getEntitiesOfClass(
+               PlayerOwnedNpcEntity.class,
+               minecraft.player.getBoundingBox().inflate(CommandBatonItem.COMMAND_VIEW_RANGE),
+               npc -> npc.isAlive() && CommandBatonItem.selectsNpc(baton, npc.getUUID())
+            );
+         String key = "grid" + target + "/" + npcs.size() + "/" + CommandBatonItem.getFormation(baton) + "/" + minecraft.player.getDirection();
+         if (!key.equals(previewKey)) {
+            previewKey = key;
+            previewSpots = CommandBatonItem.previewSpots(minecraft.level, minecraft.player, baton, target, npcs);
+         }
+
+         renderSpots(poseStack, consumer, previewSpots);
+      } else if (CommandBatonItem.isBarrageMode(baton)
+         && minecraft.player.pick(BARRAGE_PREVIEW_RANGE, partialTick, false) instanceof BlockHitResult hit
+         && hit.getType() == HitResult.Type.BLOCK) {
+         renderCircle(poseStack, consumer, hit.getBlockPos().relative(hit.getDirection()), CommandBatonItem.getBarrageRadius(baton));
+      }
+   }
+
+   private static void renderSpots(PoseStack poseStack, VertexConsumer consumer, List<FormationPlanner.Spot> spots) {
+      for (FormationPlanner.Spot spot : spots) {
+         BlockPos pos = spot.pos();
+         LevelRenderer.renderLineBox(
+            poseStack, consumer, new AABB(pos.getX() + 0.2, pos.getY() + 0.02, pos.getZ() + 0.2, pos.getX() + 0.8, pos.getY() + 0.12, pos.getZ() + 0.8), 1.0F, 0.85F, 0.2F, 1.0F
+         );
+         // A short stroke shows which way the man in this slot will face.
+         double yaw = Math.toRadians(spot.yaw());
+         double cx = pos.getX() + 0.5;
+         double cz = pos.getZ() + 0.5;
+         line(poseStack, consumer, cx, pos.getY() + 0.07, cz, cx - Math.sin(yaw) * 0.7, pos.getY() + 0.07, cz + Math.cos(yaw) * 0.7, 1.0F, 0.85F, 0.2F);
+      }
+   }
+
+   private static void renderCircle(PoseStack poseStack, VertexConsumer consumer, BlockPos center, int radius) {
+      double cx = center.getX() + 0.5;
+      double cz = center.getZ() + 0.5;
+      double y = center.getY() + 0.1;
+      int segments = Math.max(16, radius * 6);
+
+      for (int i = 0; i < segments; i++) {
+         double a0 = Math.PI * 2.0 * i / segments;
+         double a1 = Math.PI * 2.0 * (i + 1) / segments;
+         line(poseStack, consumer, cx + Math.cos(a0) * radius, y, cz + Math.sin(a0) * radius, cx + Math.cos(a1) * radius, y, cz + Math.sin(a1) * radius, 1.0F, 0.3F, 0.2F);
+      }
+
+      line(poseStack, consumer, cx - 0.5, y, cz, cx + 0.5, y, cz, 1.0F, 0.3F, 0.2F);
+      line(poseStack, consumer, cx, y, cz - 0.5, cx, y, cz + 0.5, 1.0F, 0.3F, 0.2F);
+   }
+
+   private static void line(PoseStack poseStack, VertexConsumer consumer, double x0, double y0, double z0, double x1, double y1, double z1, float r, float g, float b) {
+      PoseStack.Pose pose = poseStack.last();
+      float nx = (float)(x1 - x0);
+      float ny = (float)(y1 - y0);
+      float nz = (float)(z1 - z0);
+      float length = (float)Math.sqrt(nx * nx + ny * ny + nz * nz);
+      if (length > 1.0E-4F) {
+         nx /= length;
+         ny /= length;
+         nz /= length;
+         consumer.vertex(pose.pose(), (float)x0, (float)y0, (float)z0).color(r, g, b, 1.0F).normal(pose.normal(), nx, ny, nz).endVertex();
+         consumer.vertex(pose.pose(), (float)x1, (float)y1, (float)z1).color(r, g, b, 1.0F).normal(pose.normal(), nx, ny, nz).endVertex();
       }
    }
 
    private static void renderBounds(PoseStack poseStack, VertexConsumer consumer, BoundedArea area) {
       BlockPos min = area.getBoundsMin();
       BlockPos max = area.getBoundsMax();
-      double maxY = (double)max.m_123342_() + (area instanceof AnimalFarmBlockEntity ? 3.0 : 1.0);
+      double maxY = (double)max.getY() + (area instanceof AnimalFarmBlockEntity ? 3.0 : 1.0);
       AABB bounds = new AABB(
-         (double)min.m_123341_(), (double)min.m_123342_(), (double)min.m_123343_(), (double)max.m_123341_() + 1.0, maxY, (double)max.m_123343_() + 1.0
+         (double)min.getX(), (double)min.getY(), (double)min.getZ(), (double)max.getX() + 1.0, maxY, (double)max.getZ() + 1.0
       );
-      LevelRenderer.m_109646_(poseStack, consumer, bounds, 1.0F, 1.0F, 1.0F, 0.9F);
+      LevelRenderer.renderLineBox(poseStack, consumer, bounds, 1.0F, 1.0F, 1.0F, 0.9F);
    }
 
    private static final class AlphaVertexConsumer implements VertexConsumer {
@@ -445,46 +548,46 @@ public final class ForgeClientWorldEvents {
          this.alpha = Math.max(0, Math.min(255, Math.round(alpha * 255.0F)));
       }
 
-      public VertexConsumer m_5483_(double x, double y, double z) {
-         this.delegate.m_5483_(x, y, z);
+      public VertexConsumer vertex(double x, double y, double z) {
+         this.delegate.vertex(x, y, z);
          return this;
       }
 
-      public VertexConsumer m_6122_(int red, int green, int blue, int ignoredAlpha) {
-         this.delegate.m_6122_(red, green, blue, this.alpha);
+      public VertexConsumer color(int red, int green, int blue, int ignoredAlpha) {
+         this.delegate.color(red, green, blue, this.alpha);
          return this;
       }
 
-      public VertexConsumer m_7421_(float u, float v) {
-         this.delegate.m_7421_(u, v);
+      public VertexConsumer uv(float u, float v) {
+         this.delegate.uv(u, v);
          return this;
       }
 
-      public VertexConsumer m_7122_(int u, int v) {
-         this.delegate.m_7122_(u, v);
+      public VertexConsumer overlayCoords(int u, int v) {
+         this.delegate.overlayCoords(u, v);
          return this;
       }
 
-      public VertexConsumer m_7120_(int u, int v) {
-         this.delegate.m_7120_(u, v);
+      public VertexConsumer uv2(int u, int v) {
+         this.delegate.uv2(u, v);
          return this;
       }
 
-      public VertexConsumer m_5601_(float x, float y, float z) {
-         this.delegate.m_5601_(x, y, z);
+      public VertexConsumer normal(float x, float y, float z) {
+         this.delegate.normal(x, y, z);
          return this;
       }
 
-      public void m_5752_() {
-         this.delegate.m_5752_();
+      public void endVertex() {
+         this.delegate.endVertex();
       }
 
-      public void m_7404_(int red, int green, int blue, int ignoredAlpha) {
-         this.delegate.m_7404_(red, green, blue, this.alpha);
+      public void defaultColor(int red, int green, int blue, int ignoredAlpha) {
+         this.delegate.defaultColor(red, green, blue, this.alpha);
       }
 
-      public void m_141991_() {
-         this.delegate.m_141991_();
+      public void unsetDefaultColor() {
+         this.delegate.unsetDefaultColor();
       }
    }
 
@@ -499,9 +602,9 @@ public final class ForgeClientWorldEvents {
 
       private void buildNextBatch(Minecraft minecraft) {
          if (this.nextBlock < this.preview.blocks().size()) {
-            RenderType renderType = RenderType.m_110466_();
-            BufferBuilder builder = new BufferBuilder(renderType.m_110507_());
-            builder.m_166779_(renderType.m_173186_(), renderType.m_110508_());
+            RenderType renderType = RenderType.translucent();
+            BufferBuilder builder = new BufferBuilder(renderType.bufferSize());
+            builder.begin(renderType.mode(), renderType.format());
             MultiBufferSource target = ignored -> new ForgeClientWorldEvents.AlphaVertexConsumer(builder, 0.32F);
             PoseStack blockPose = new PoseStack();
             BlockPos min = this.preview.min();
@@ -509,20 +612,20 @@ public final class ForgeClientWorldEvents {
             for (int end = Math.min(this.nextBlock + 1536, this.preview.blocks().size()); this.nextBlock < end; this.nextBlock++) {
                AwsTemplatePlacer.PreviewBlock previewBlock = this.preview.blocks().get(this.nextBlock);
                BlockPos pos = previewBlock.pos();
-               blockPose.m_85836_();
-               blockPose.m_252880_(
-                  (float)(pos.m_123341_() - min.m_123341_()), (float)(pos.m_123342_() - min.m_123342_()), (float)(pos.m_123343_() - min.m_123343_())
+               blockPose.pushPose();
+               blockPose.translate(
+                  (float)(pos.getX() - min.getX()), (float)(pos.getY() - min.getY()), (float)(pos.getZ() - min.getZ())
                );
-               minecraft.m_91289_().m_110912_(previewBlock.state(), blockPose, target, 15728880, OverlayTexture.f_118083_);
-               blockPose.m_85849_();
+               minecraft.getBlockRenderer().renderSingleBlock(previewBlock.state(), blockPose, target, 15728880, OverlayTexture.NO_OVERLAY);
+               blockPose.popPose();
             }
 
-            RenderedBuffer rendered = builder.m_231168_();
+            RenderedBuffer rendered = builder.endOrDiscardIfEmpty();
             if (rendered != null) {
                VertexBuffer vertexBuffer = new VertexBuffer(Usage.STATIC);
-               vertexBuffer.m_85921_();
-               vertexBuffer.m_231221_(rendered);
-               VertexBuffer.m_85931_();
+               vertexBuffer.bind();
+               vertexBuffer.upload(rendered);
+               VertexBuffer.unbind();
                this.batches.add(vertexBuffer);
             }
          }
@@ -530,20 +633,20 @@ public final class ForgeClientWorldEvents {
 
       private void render(PoseStack poseStack) {
          if (!this.batches.isEmpty()) {
-            RenderType renderType = RenderType.m_110466_();
-            poseStack.m_85836_();
+            RenderType renderType = RenderType.translucent();
+            poseStack.pushPose();
             BlockPos min = this.preview.min();
-            poseStack.m_252880_((float)min.m_123341_(), (float)min.m_123342_(), (float)min.m_123343_());
-            renderType.m_110185_();
+            poseStack.translate((float)min.getX(), (float)min.getY(), (float)min.getZ());
+            renderType.setupRenderState();
 
             for (VertexBuffer batch : this.batches) {
-               batch.m_85921_();
-               batch.m_253207_(poseStack.m_85850_().m_252922_(), RenderSystem.getProjectionMatrix(), GameRenderer.m_172649_());
+               batch.bind();
+               batch.drawWithShader(poseStack.last().pose(), RenderSystem.getProjectionMatrix(), GameRenderer.getRendertypeTranslucentShader());
             }
 
-            VertexBuffer.m_85931_();
-            renderType.m_110188_();
-            poseStack.m_85849_();
+            VertexBuffer.unbind();
+            renderType.clearRenderState();
+            poseStack.popPose();
          }
       }
 

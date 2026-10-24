@@ -26,20 +26,20 @@ public class ResearchStationMenu extends AbstractContainerMenu {
    public ResearchStationMenu(int containerId, Inventory playerInventory, BlockPos pos) {
       super(AWCoreRegistryAccess.menu(AWCoreIds.RESEARCH_STATION), containerId);
       this.pos = pos;
-      if (playerInventory.f_35978_.m_9236_().m_7702_(pos) instanceof ResearchStationBlockEntity researchStation) {
+      if (playerInventory.player.level().getBlockEntity(pos) instanceof ResearchStationBlockEntity researchStation) {
          this.container = researchStation;
       } else {
          this.container = new SimpleContainer(10);
       }
 
-      this.container.m_5856_(playerInventory.f_35978_);
-      this.m_38897_(new ResearchBookSlot(this.container, 0, 8, 22));
+      this.container.startOpen(playerInventory.player);
+      this.addSlot(new ResearchBookSlot(this.container, 0, 8, 22));
       int yBase = 98;
       int slotNum = 1;
 
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 3; col++) {
-            this.m_38897_(new Slot(this.container, slotNum++, 26 + col * 18, yBase + row * 18));
+            this.addSlot(new Slot(this.container, slotNum++, 26 + col * 18, yBase + row * 18));
          }
       }
 
@@ -76,6 +76,20 @@ public class ResearchStationMenu extends AbstractContainerMenu {
       return total <= 0 ? 0.0F : Math.min(1.0F, (float)this.getCurrentProgress() / (float)total);
    }
 
+   /** Science gathered in the book, and what the technology on the desk costs (0 when it is being studied already). */
+   public int getScience() {
+      return net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.getScience(this.getResearchBook());
+   }
+
+   public BlockPos pos() {
+      return this.pos;
+   }
+
+   public int getNeededScience() {
+      ResearchGoal goal = this.getDisplayGoal();
+      return goal == null || goal == this.getCurrentGoal() ? 0 : net.shadowmage.ancientwarfare.core.common.research.ResearchBookData.scienceCost(this.getResearchBook(), goal);
+   }
+
    public List<ItemStack> getCurrentResearchResources() {
       ResearchGoal goal = this.getDisplayGoal();
       return goal == null ? List.of() : goal.resources();
@@ -96,34 +110,38 @@ public class ResearchStationMenu extends AbstractContainerMenu {
       return current == null ? null : ResearchRegistry.get(current);
    }
 
+   public ItemStack book() {
+      return this.getResearchBook();
+   }
+
    private ItemStack getResearchBook() {
-      return this.container.m_8020_(0);
+      return this.container.getItem(0);
    }
 
    private void addPlayerInventory(Inventory playerInventory) {
       int top = 156;
 
       for (int col = 0; col < 9; col++) {
-         this.m_38897_(new Slot(playerInventory, col, 8 + col * 18, top + 4 + 54));
+         this.addSlot(new Slot(playerInventory, col, 8 + col * 18, top + 4 + 54));
       }
 
       for (int row = 0; row < 3; row++) {
          for (int col = 0; col < 9; col++) {
-            this.m_38897_(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, top + row * 18));
+            this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, top + row * 18));
          }
       }
    }
 
-   public boolean m_6366_(Player player, int id) {
+   public boolean clickMenuButton(Player player, int id) {
       ItemStack book = this.getResearchBook();
-      if (book.m_41619_() || ResearchBookItem.getResearcherName(book) == null) {
+      if (book.isEmpty() || ResearchBookItem.getResearcherName(book) == null) {
          return false;
       } else if (id >= 100) {
          int queueIndex = id - 100;
          List<String> queued = ResearchBookItem.getQueuedResearch(book);
          if (queueIndex >= 0 && queueIndex < queued.size()) {
             ResearchBookItem.removeQueuedResearch(book, queued.get(queueIndex));
-            this.container.m_6596_();
+            this.container.setChanged();
             return true;
          } else {
             return false;
@@ -133,7 +151,7 @@ public class ResearchStationMenu extends AbstractContainerMenu {
          if (goal != null) {
             boolean changed = ResearchBookItem.queueResearch(book, goal.id());
             if (changed) {
-               this.container.m_6596_();
+               this.container.setChanged();
             }
 
             return changed;
@@ -149,7 +167,7 @@ public class ResearchStationMenu extends AbstractContainerMenu {
 
    public List<ResearchGoal> getLearnableResearch() {
       ItemStack book = this.getResearchBook();
-      if (book.m_41619_()) {
+      if (book.isEmpty()) {
          return List.of();
       } else {
          List<String> queued = ResearchBookItem.getQueuedResearch(book);
@@ -173,40 +191,40 @@ public class ResearchStationMenu extends AbstractContainerMenu {
       return index >= 0 && index < queued.size() ? ResearchRegistry.get(queued.get(index)) : null;
    }
 
-   public boolean m_6875_(Player player) {
-      return m_38889_(ContainerLevelAccess.m_39289_(player.m_9236_(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.RESEARCH_STATION));
+   public boolean stillValid(Player player) {
+      return stillValid(ContainerLevelAccess.create(player.level(), this.pos), player, AWCoreRegistryAccess.block(AWCoreIds.RESEARCH_STATION));
    }
 
-   public ItemStack m_7648_(Player player, int index) {
-      ItemStack result = ItemStack.f_41583_;
-      Slot slot = (Slot)this.f_38839_.get(index);
-      if (slot.m_6657_()) {
-         ItemStack stack = slot.m_7993_();
-         result = stack.m_41777_();
+   public ItemStack quickMoveStack(Player player, int index) {
+      ItemStack result = ItemStack.EMPTY;
+      Slot slot = (Slot)this.slots.get(index);
+      if (slot.hasItem()) {
+         ItemStack stack = slot.getItem();
+         result = stack.copy();
          if (index < 10) {
-            if (!this.m_38903_(stack, 10, this.f_38839_.size(), true)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(stack, 10, this.slots.size(), true)) {
+               return ItemStack.EMPTY;
             }
          } else if (AWCoreRegistryAccess.is(stack, AWCoreIds.RESEARCH_BOOK)) {
-            if (!this.m_38903_(stack, 0, 1, false)) {
-               return ItemStack.f_41583_;
+            if (!this.moveItemStackTo(stack, 0, 1, false)) {
+               return ItemStack.EMPTY;
             }
-         } else if (!this.m_38903_(stack, 1, 10, false)) {
-            return ItemStack.f_41583_;
+         } else if (!this.moveItemStackTo(stack, 1, 10, false)) {
+            return ItemStack.EMPTY;
          }
 
-         if (stack.m_41619_()) {
-            slot.m_5852_(ItemStack.f_41583_);
+         if (stack.isEmpty()) {
+            slot.set(ItemStack.EMPTY);
          } else {
-            slot.m_6654_();
+            slot.setChanged();
          }
       }
 
       return result;
    }
 
-   public void m_6877_(Player player) {
-      super.m_6877_(player);
-      this.container.m_5785_(player);
+   public void removed(Player player) {
+      super.removed(player);
+      this.container.stopOpen(player);
    }
 }

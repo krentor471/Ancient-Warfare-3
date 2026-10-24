@@ -20,9 +20,9 @@ public abstract class LegacyOrderScreen<T extends AbstractContainerMenu> extends
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
-      this.registerLayoutRect("order viewport", 0, this.orderViewportTop, this.f_97726_, this.orderViewportHeight, false);
+   protected void init() {
+      super.init();
+      this.registerLayoutRect("order viewport", 0, this.orderViewportTop, this.imageWidth, this.orderViewportHeight, false);
       this.clampOrderScroll();
    }
 
@@ -42,10 +42,10 @@ public abstract class LegacyOrderScreen<T extends AbstractContainerMenu> extends
 
    protected final void drawOrderViewportBackground(GuiGraphics graphics) {
       this.clampOrderScroll();
-      LegacyGuiStyle.background(graphics, this.f_97735_, this.f_97736_ + this.orderViewportTop, this.f_97726_, this.orderViewportHeight);
+      LegacyGuiStyle.background(graphics, this.leftPos, this.topPos + this.orderViewportTop, this.imageWidth, this.orderViewportHeight);
       if (this.isOrderViewportActive()) {
-         int x = this.f_97735_ + this.f_97726_ - 12;
-         int y = this.f_97736_ + this.orderViewportTop;
+         int x = this.leftPos + this.imageWidth - 12;
+         int y = this.topPos + this.orderViewportTop;
          LegacyGuiStyle.quarteredTexture(graphics, LegacyGuiStyle.WIDGETS, x, y, 12, this.orderViewportHeight, 80, 120, 40, 128);
          int thumbHeight = this.orderThumbHeight();
          int trackHeight = this.orderViewportHeight - 2 - thumbHeight;
@@ -55,66 +55,66 @@ public abstract class LegacyOrderScreen<T extends AbstractContainerMenu> extends
    }
 
    protected final void beginOrderViewport(GuiGraphics graphics) {
-      graphics.m_280262_();
-      graphics.m_280588_(
-         this.f_97735_ + 3,
-         this.f_97736_ + this.orderViewportTop + 3,
-         this.f_97735_ + this.f_97726_ - 12,
-         this.f_97736_ + this.orderViewportTop + this.orderViewportHeight - 3
+      graphics.flush();
+      graphics.enableScissor(
+         this.leftPos + 3,
+         this.topPos + this.orderViewportTop + 3,
+         this.leftPos + this.imageWidth - 12,
+         this.topPos + this.orderViewportTop + this.orderViewportHeight - 3
       );
    }
 
    protected final void endOrderViewport(GuiGraphics graphics) {
-      graphics.m_280262_();
-      graphics.m_280618_();
+      graphics.flush();
+      graphics.disableScissor();
    }
 
    protected final boolean insideOrderViewport(double mouseX, double mouseY) {
       return this.isOrderViewportActive()
-         && inside(mouseX, mouseY, this.f_97735_ + 3, this.f_97736_ + this.orderViewportTop + 3, this.f_97726_ - 12 - 3, this.orderViewportHeight - 6);
+         && inside(mouseX, mouseY, this.leftPos + 3, this.topPos + this.orderViewportTop + 3, this.imageWidth - 12 - 3, this.orderViewportHeight - 6);
    }
 
-   public boolean m_6375_(double mouseX, double mouseY, int button) {
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
       this.clampOrderScroll();
       if (button == 0
          && this.isOrderViewportActive()
          && this.maxOrderScroll() > 0
-         && inside(mouseX, mouseY, this.f_97735_ + this.f_97726_ - 12, this.f_97736_ + this.orderViewportTop, 12, this.orderViewportHeight)) {
+         && inside(mouseX, mouseY, this.leftPos + this.imageWidth - 12, this.topPos + this.orderViewportTop, 12, this.orderViewportHeight)) {
          this.draggingOrderScrollbar = true;
          this.scrollOrderToMouse(mouseY);
          return true;
       } else {
-         return super.m_6375_(mouseX, mouseY, button);
+         return super.mouseClicked(mouseX, mouseY, button);
       }
    }
 
-   public boolean m_6050_(double mouseX, double mouseY, double delta) {
-      if (this.isOrderViewportActive() && inside(mouseX, mouseY, this.f_97735_, this.f_97736_ + this.orderViewportTop, this.f_97726_, this.orderViewportHeight)
+   public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+      if (this.isOrderViewportActive() && inside(mouseX, mouseY, this.leftPos, this.topPos + this.orderViewportTop, this.imageWidth, this.orderViewportHeight)
          )
        {
          this.clampOrderScroll();
          this.scrollPixels = Math.max(0, Math.min(this.maxOrderScroll(), this.scrollPixels - (int)Math.signum(delta) * 18));
          return true;
       } else {
-         return super.m_6050_(mouseX, mouseY, delta);
+         return super.mouseScrolled(mouseX, mouseY, delta);
       }
    }
 
-   public boolean m_7979_(double mouseX, double mouseY, int button, double dragX, double dragY) {
+   public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
       if (this.draggingOrderScrollbar && button == 0 && this.isOrderViewportActive()) {
          this.scrollOrderToMouse(mouseY);
          return true;
       } else {
-         return super.m_7979_(mouseX, mouseY, button, dragX, dragY);
+         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
       }
    }
 
-   public boolean m_6348_(double mouseX, double mouseY, int button) {
+   public boolean mouseReleased(double mouseX, double mouseY, int button) {
       if (button == 0) {
          this.draggingOrderScrollbar = false;
       }
 
-      return super.m_6348_(mouseX, mouseY, button);
+      return super.mouseReleased(mouseX, mouseY, button);
    }
 
    private int orderThumbHeight() {
@@ -125,7 +125,7 @@ public abstract class LegacyOrderScreen<T extends AbstractContainerMenu> extends
    private void scrollOrderToMouse(double mouseY) {
       int thumbHeight = this.orderThumbHeight();
       double track = (double)Math.max(1, this.orderViewportHeight - 2 - thumbHeight);
-      double position = mouseY - (double)this.f_97736_ - (double)this.orderViewportTop - 1.0 - (double)thumbHeight / 2.0;
+      double position = mouseY - (double)this.topPos - (double)this.orderViewportTop - 1.0 - (double)thumbHeight / 2.0;
       this.scrollPixels = (int)Math.round(Math.max(0.0, Math.min(1.0, position / track)) * (double)this.maxOrderScroll());
    }
 

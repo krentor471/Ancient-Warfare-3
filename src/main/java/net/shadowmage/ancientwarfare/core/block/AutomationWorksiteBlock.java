@@ -33,24 +33,24 @@ import net.shadowmage.ancientwarfare.core.tile.BasicWorksiteBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class AutomationWorksiteBlock extends BaseEntityBlock {
-   public static final DirectionProperty FACING = HorizontalDirectionalBlock.f_54117_;
-   private static final VoxelShape SHAPE = m_49796_(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+   public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+   private static final VoxelShape SHAPE = box(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
    private final BiFunction<BlockPos, BlockState, BlockEntity> blockEntityFactory;
 
    public AutomationWorksiteBlock(Properties properties, BiFunction<BlockPos, BlockState, BlockEntity> blockEntityFactory) {
       super(properties);
       this.blockEntityFactory = blockEntityFactory;
-      this.m_49959_((BlockState)((BlockState)this.f_49792_.m_61090_()).m_61124_(FACING, Direction.NORTH));
+      this.registerDefaultState((BlockState)((BlockState)this.stateDefinition.any()).setValue(FACING, Direction.NORTH));
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos pos, BlockState state) {
+   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
       return this.blockEntityFactory.apply(pos, state);
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState state, BlockEntityType<T> type) {
-      return level.f_46443_ ? null : (tickerLevel, pos, tickerState, blockEntity) -> {
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+      return level.isClientSide ? null : (tickerLevel, pos, tickerState, blockEntity) -> {
          if (blockEntity instanceof BasicWorksiteBlockEntity worksite) {
             BasicWorksiteBlockEntity.tickStoredEnergy(tickerLevel, pos, tickerState, worksite);
          }
@@ -58,48 +58,48 @@ public class AutomationWorksiteBlock extends BaseEntityBlock {
    }
 
    @Nullable
-   public BlockState m_5573_(BlockPlaceContext context) {
-      return (BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_().m_122424_());
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      return (BlockState)this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING});
+   protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
+      builder.add(new Property[]{FACING});
    }
 
-   public InteractionResult m_6227_(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-      if (!level.f_46443_ && level.m_7702_(pos) instanceof BasicWorksiteBlockEntity worksite) {
+   public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+      if (!level.isClientSide && level.getBlockEntity(pos) instanceof BasicWorksiteBlockEntity worksite) {
          if (worksite instanceof MenuProvider provider) {
             AWCorePlatform.openBlockMenu(player, provider, pos);
          } else {
-            player.m_5661_(
-               Component.m_237110_(
+            player.displayClientMessage(
+               Component.translatable(
                   "guistrings.automation.worksite_status",
-                  new Object[]{Component.m_237115_(worksite.getDescriptionId()), worksite.getStoredEnergy(), worksite.getMaxEnergy()}
+                  new Object[]{Component.translatable(worksite.getDescriptionId()), worksite.getStoredEnergy(), worksite.getMaxEnergy()}
                ),
                true
             );
          }
       }
 
-      return InteractionResult.m_19078_(level.f_46443_);
+      return InteractionResult.sidedSuccess(level.isClientSide);
    }
 
-   public void m_6810_(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-      if (!state.m_60713_(newState.m_60734_()) && level.m_7702_(pos) instanceof BasicWorksiteBlockEntity worksite) {
+   public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+      if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof BasicWorksiteBlockEntity worksite) {
          worksite.releaseChunkLoading();
          if (worksite instanceof Container container) {
-            Containers.m_19002_(level, pos, container);
+            Containers.dropContents(level, pos, container);
          }
       }
 
-      super.m_6810_(state, level, pos, newState, movedByPiston);
+      super.onRemove(state, level, pos, newState, movedByPiston);
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.MODEL;
    }
 
-   public VoxelShape m_5940_(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return SHAPE;
    }
 }

@@ -21,43 +21,43 @@ import net.shadowmage.ancientwarfare.core.menu.TradeOrderMenu;
 
 public class TradeOrderItem extends Item {
    public TradeOrderItem() {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
    }
 
-   public InteractionResult m_6225_(UseOnContext context) {
-      Player player = context.m_43723_();
+   public InteractionResult useOn(UseOnContext context) {
+      Player player = context.getPlayer();
       if (player == null) {
          return InteractionResult.PASS;
       } else {
-         this.openTradeOrder(context.m_43725_(), player, context.m_43724_());
-         return InteractionResult.m_19078_(context.m_43725_().f_46443_);
+         this.openTradeOrder(context.getLevel(), player, context.getHand());
+         return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
       }
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
       this.openTradeOrder(level, player, hand);
-      return InteractionResultHolder.m_19092_(player.m_21120_(hand), level.f_46443_);
+      return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
    }
 
    private void openTradeOrder(Level level, Player player, InteractionHand hand) {
-      if (!level.f_46443_) {
+      if (!level.isClientSide) {
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(
                (containerId, inventory, openedPlayer) -> new TradeOrderMenu(containerId, inventory, hand),
-               Component.m_237115_("container.ancientwarfare.trade_order")
+               Component.translatable("container.ancientwarfare.trade_order")
             ),
             buffer -> {
-               buffer.m_130068_(hand);
+               buffer.writeEnum(hand);
                buffer.writeInt(-1);
             }
          );
       }
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
       List<TradeOrderData.TradeEntry> trades = TradeOrderData.getTrades(stack);
-      tooltip.add(Component.m_237110_("tooltip.ancientwarfare.trade_order.entries", new Object[]{trades.size(), 8}).m_130940_(ChatFormatting.GRAY));
-      tooltip.add(Component.m_237115_("tooltip.ancientwarfare.trade_order.porting_note").m_130940_(ChatFormatting.DARK_GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.trade_order.entries", new Object[]{trades.size(), 8}).withStyle(ChatFormatting.GRAY));
+      tooltip.add(Component.translatable("tooltip.ancientwarfare.trade_order.porting_note").withStyle(ChatFormatting.DARK_GRAY));
    }
 }

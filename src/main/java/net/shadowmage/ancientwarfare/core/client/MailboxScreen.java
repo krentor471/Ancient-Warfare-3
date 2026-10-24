@@ -21,28 +21,28 @@ public class MailboxScreen extends LegacyContainerScreen<MailboxMenu> {
    }
 
    @Override
-   protected void m_7856_() {
-      super.m_7856_();
+   protected void init() {
+      super.init();
       this.registerLayoutRect("mailbox name", 8, 8, 83, 9, true);
       this.registerLayoutRect("target name", 8, 56, 83, 9, true);
-      this.legacyButton("select name", 95, 8, 75, 12, Component.m_237115_("guistrings.automation.mailbox_name_select"), button -> this.openNames(false));
-      this.legacyButton("select target", 95, 56, 75, 12, Component.m_237115_("guistrings.automation.mailbox_target_select"), button -> this.openNames(true));
-      this.legacyButton("set sides", 95, 192, 75, 12, Component.m_237115_("guistrings.inventory.setsides"), button -> {
-         if (this.f_96541_.f_91072_ != null) {
-            this.f_96541_.f_91072_.m_105208_(((MailboxMenu)this.f_97732_).f_38840_, 0);
+      this.legacyButton("select name", 95, 8, 75, 12, Component.translatable("guistrings.automation.mailbox_name_select"), button -> this.openNames(false));
+      this.legacyButton("select target", 95, 56, 75, 12, Component.translatable("guistrings.automation.mailbox_target_select"), button -> this.openNames(true));
+      this.legacyButton("set sides", 95, 192, 75, 12, Component.translatable("guistrings.inventory.setsides"), button -> {
+         if (this.minecraft.gameMode != null) {
+            this.minecraft.gameMode.handleInventoryButtonClick(((MailboxMenu)this.menu).containerId, 0);
          }
       });
       this.autoExport = this.addLegacyWidget(
          "auto export",
          new LegacyCheckbox(
-            this.f_97735_ + 8,
-            this.f_97736_ + 224 - 32,
+            this.leftPos + 8,
+            this.topPos + 224 - 32,
             12,
-            Component.m_237115_("guistrings.automation.auto_output"),
-            ((MailboxMenu)this.f_97732_).box.isAutoExport(),
+            Component.translatable("guistrings.automation.auto_output"),
+            ((MailboxMenu)this.menu).box.isAutoExport(),
             checked -> {
-               ((MailboxMenu)this.f_97732_).box.setAutoExport(checked);
-               AWCorePlatform.sendMailboxConfig(((MailboxMenu)this.f_97732_).box.m_58899_(), 3, "", checked);
+               ((MailboxMenu)this.menu).box.setAutoExport(checked);
+               AWCorePlatform.sendMailboxConfig(((MailboxMenu)this.menu).box.getBlockPos(), 3, "", checked);
             }
          ),
          8,
@@ -53,14 +53,14 @@ public class MailboxScreen extends LegacyContainerScreen<MailboxMenu> {
       this.privateBox = this.addLegacyWidget(
          "private mailbox",
          new LegacyCheckbox(
-            this.f_97735_ + 8,
-            this.f_97736_ + 224 - 20,
+            this.leftPos + 8,
+            this.topPos + 224 - 20,
             12,
-            Component.m_237115_("guistrings.automation.private_mailbox"),
-            ((MailboxMenu)this.f_97732_).box.isPrivateBox(),
+            Component.translatable("guistrings.automation.private_mailbox"),
+            ((MailboxMenu)this.menu).box.isPrivateBox(),
             checked -> {
-               ((MailboxMenu)this.f_97732_).box.setPrivateBox(checked);
-               AWCorePlatform.sendMailboxConfig(((MailboxMenu)this.f_97732_).box.m_58899_(), 2, "", checked);
+               ((MailboxMenu)this.menu).box.setPrivateBox(checked);
+               AWCorePlatform.sendMailboxConfig(((MailboxMenu)this.menu).box.getBlockPos(), 2, "", checked);
             }
          ),
          8,
@@ -71,28 +71,28 @@ public class MailboxScreen extends LegacyContainerScreen<MailboxMenu> {
    }
 
    private void openNames(boolean target) {
-      this.f_96541_
-         .m_91152_(
+      this.minecraft
+         .setScreen(
             (Screen)(target
-               ? new MailboxTargetScreen(this, ((MailboxMenu)this.f_97732_).box)
-               : new MailboxNameSelectScreen(this, ((MailboxMenu)this.f_97732_).box))
+               ? new MailboxTargetScreen(this, ((MailboxMenu)this.menu).box)
+               : new MailboxNameSelectScreen(this, ((MailboxMenu)this.menu).box))
          );
    }
 
-   protected void m_280003_(GuiGraphics graphics, int mouseX, int mouseY) {
-      graphics.m_280056_(this.f_96547_, this.fittedName(((MailboxMenu)this.f_97732_).box.getMailboxName()), 8, 8, -12566464, false);
-      graphics.m_280056_(this.f_96547_, this.fittedName(((MailboxMenu)this.f_97732_).box.getTargetName()), 8, 56, -12566464, false);
-      this.autoExport.setChecked(((MailboxMenu)this.f_97732_).box.isAutoExport());
-      this.privateBox.setChecked(((MailboxMenu)this.f_97732_).box.isPrivateBox());
+   protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+      graphics.drawString(this.font, this.fittedName(((MailboxMenu)this.menu).box.getMailboxName()), 8, 8, -12566464, false);
+      graphics.drawString(this.font, this.fittedName(((MailboxMenu)this.menu).box.getTargetName()), 8, 56, -12566464, false);
+      this.autoExport.setChecked(((MailboxMenu)this.menu).box.isAutoExport());
+      this.privateBox.setChecked(((MailboxMenu)this.menu).box.isPrivateBox());
    }
 
    private String fittedName(String value) {
       int maxWidth = 83;
-      if (this.f_96547_.m_92895_(value) <= maxWidth) {
+      if (this.font.width(value) <= maxWidth) {
          return value;
       } else {
          String ellipsis = "...";
-         return this.f_96547_.m_92834_(value, maxWidth - this.f_96547_.m_92895_(ellipsis)) + ellipsis;
+         return this.font.plainSubstrByWidth(value, maxWidth - this.font.width(ellipsis)) + ellipsis;
       }
    }
 }

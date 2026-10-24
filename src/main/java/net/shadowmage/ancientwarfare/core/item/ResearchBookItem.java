@@ -29,7 +29,7 @@ public class ResearchBookItem extends Item {
    private static final int MAX_RESEARCHER_NAME_LENGTH = 32;
 
    public ResearchBookItem() {
-      super(new Properties().m_41487_(1));
+      super(new Properties().stacksTo(1));
    }
 
    @Nullable
@@ -97,51 +97,54 @@ public class ResearchBookItem extends Item {
       return ResearchBookData.findNextResearch(stack);
    }
 
-   public InteractionResultHolder<ItemStack> m_7203_(Level level, Player player, InteractionHand hand) {
-      ItemStack stack = player.m_21120_(hand);
-      if (!level.f_46443_) {
-         if (hasResearcherName(stack) && !player.m_6144_()) {
+   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+      ItemStack stack = player.getItemInHand(hand);
+      if (!level.isClientSide) {
+         if (hasResearcherName(stack) && !player.isShiftKeyDown()) {
             AWCorePlatform.openMenu(
                player,
                new SimpleMenuProvider(
                   (containerId, inventory, openedPlayer) -> new ResearchBookMenu(containerId, inventory),
-                  Component.m_237115_("item.ancientwarfare.research_book")
+                  Component.translatable("item.ancientwarfare.research_book")
                )
             );
          } else {
-            ResearchBookData.setResearcherName(stack, player.m_7755_().getString());
-            player.m_5661_(Component.m_237115_("guistrings.research.researcher_set"), true);
+            ResearchBookData.setResearcherName(stack, player.getName().getString());
+            player.displayClientMessage(Component.translatable("guistrings.research.researcher_set"), true);
          }
       }
 
-      return InteractionResultHolder.m_19092_(stack, level.f_46443_);
+      return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+   public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
       String researcherName = getResearcherName(stack);
       if (researcherName == null) {
-         tooltip.add(Component.m_237115_("tooltip.ancientwarfare.research_book.researcher_none").m_130940_(ChatFormatting.GRAY));
-         tooltip.add(Component.m_237115_("tooltip.ancientwarfare.research_book.assign").m_130940_(ChatFormatting.DARK_GRAY));
+         tooltip.add(Component.translatable("tooltip.ancientwarfare.research_book.researcher_none").withStyle(ChatFormatting.GRAY));
+         tooltip.add(Component.translatable("tooltip.ancientwarfare.research_book.assign").withStyle(ChatFormatting.DARK_GRAY));
       } else {
-         tooltip.add(Component.m_237110_("tooltip.ancientwarfare.research_book.researcher", new Object[]{researcherName}).m_130940_(ChatFormatting.GRAY));
+         tooltip.add(Component.translatable("tooltip.ancientwarfare.research_book.researcher", new Object[]{researcherName}).withStyle(ChatFormatting.GRAY));
          String current = getCurrentResearch(stack);
          if (current != null && ResearchRegistry.get(current) != null) {
             ResearchGoal goal = ResearchRegistry.get(current);
             tooltip.add(
-               Component.m_237110_("tooltip.ancientwarfare.research_book.current", new Object[]{goal.translatedName(), getCurrentProgress(stack), goal.time()})
-                  .m_130940_(ChatFormatting.GRAY)
+               Component.translatable("tooltip.ancientwarfare.research_book.current", new Object[]{goal.translatedName(), getCurrentProgress(stack), goal.time()})
+                  .withStyle(ChatFormatting.GRAY)
             );
          }
 
          tooltip.add(
-            Component.m_237110_("tooltip.ancientwarfare.research_book.queued", new Object[]{getQueuedResearch(stack).size()}).m_130940_(ChatFormatting.GRAY)
+            Component.translatable("tooltip.ancientwarfare.research_book.queued", new Object[]{getQueuedResearch(stack).size()}).withStyle(ChatFormatting.GRAY)
          );
          tooltip.add(
-            Component.m_237110_("tooltip.ancientwarfare.research_book.completed", new Object[]{getCompletedResearch(stack).size()})
-               .m_130940_(ChatFormatting.GRAY)
+            Component.translatable("guistrings.research.science", ResearchBookData.getScience(stack)).withStyle(ChatFormatting.AQUA)
          );
-         tooltip.add(Component.m_237115_("tooltip.ancientwarfare.research_book.view").m_130940_(ChatFormatting.DARK_GRAY));
-         tooltip.add(Component.m_237115_("tooltip.ancientwarfare.research_book.reassign").m_130940_(ChatFormatting.DARK_GRAY));
+         tooltip.add(
+            Component.translatable("tooltip.ancientwarfare.research_book.completed", new Object[]{getCompletedResearch(stack).size()})
+               .withStyle(ChatFormatting.GRAY)
+         );
+         tooltip.add(Component.translatable("tooltip.ancientwarfare.research_book.view").withStyle(ChatFormatting.DARK_GRAY));
+         tooltip.add(Component.translatable("tooltip.ancientwarfare.research_book.reassign").withStyle(ChatFormatting.DARK_GRAY));
       }
    }
 

@@ -24,29 +24,29 @@ public final class ForgeSpawnerCommands {
    public static void registerCommands(RegisterCommandsEvent event) {
       event.getDispatcher()
          .register(
-            (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.m_82127_("awspawner").requires(source -> source.m_6761_(2)))
+            (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("awspawner").requires(source -> source.hasPermission(2)))
                   .then(
-                     Commands.m_82127_("creative")
+                     Commands.literal("creative")
                         .then(
-                           Commands.m_82129_("enabled", BoolArgumentType.bool())
+                           Commands.argument("enabled", BoolArgumentType.bool())
                               .executes(
-                                 context -> setCreative(((CommandSourceStack)context.getSource()).m_81375_(), BoolArgumentType.getBool(context, "enabled"))
+                                 context -> setCreative(((CommandSourceStack)context.getSource()).getPlayerOrException(), BoolArgumentType.getBool(context, "enabled"))
                               )
                         )
                   ))
-               .then(Commands.m_82127_("status").executes(context -> status(((CommandSourceStack)context.getSource()).m_81375_())))
+               .then(Commands.literal("status").executes(context -> status(((CommandSourceStack)context.getSource()).getPlayerOrException())))
          );
    }
 
    private static int setCreative(ServerPlayer player, boolean enabled) {
-      AdvancedSpawnerWorldData.get(player.m_284548_()).setCreativePlayersActivateSpawners(enabled);
-      player.m_213846_(Component.m_237113_("Advanced spawner creative activation: " + (enabled ? "enabled" : "disabled")));
+      AdvancedSpawnerWorldData.get(player.serverLevel()).setCreativePlayersActivateSpawners(enabled);
+      player.sendSystemMessage(Component.literal("Advanced spawner creative activation: " + (enabled ? "enabled" : "disabled")));
       return 1;
    }
 
    private static int status(ServerPlayer player) {
-      boolean enabled = AdvancedSpawnerWorldData.get(player.m_284548_()).creativePlayersActivateSpawners();
-      player.m_213846_(Component.m_237113_("Advanced spawner creative activation is " + (enabled ? "enabled" : "disabled")));
+      boolean enabled = AdvancedSpawnerWorldData.get(player.serverLevel()).creativePlayersActivateSpawners();
+      player.sendSystemMessage(Component.literal("Advanced spawner creative activation is " + (enabled ? "enabled" : "disabled")));
       return enabled ? 1 : 0;
    }
 }

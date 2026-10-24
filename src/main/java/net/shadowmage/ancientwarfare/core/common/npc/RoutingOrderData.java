@@ -32,19 +32,19 @@ public final class RoutingOrderData {
       if (orders == null) {
          return entries;
       } else {
-         ListTag list = orders.m_128437_("entryList", 10);
+         ListTag list = orders.getList("entryList", 10);
 
          for (int i = 0; i < list.size(); i++) {
-            CompoundTag entry = list.m_128728_(i);
+            CompoundTag entry = list.getCompound(i);
             entries.add(
                new RoutingOrderData.RouteEntry(
-                  BlockPos.m_122022_(entry.m_128454_("pos")),
-                  entry.m_128461_("dim"),
-                  direction(entry.m_128451_("side")),
-                  routeType(entry.m_128451_("type")),
+                  BlockPos.of(entry.getLong("pos")),
+                  entry.getString("dim"),
+                  direction(entry.getInt("side")),
+                  routeType(entry.getInt("type")),
                   readFilters(entry),
-                  entry.m_128471_("ignoreDamage"),
-                  entry.m_128471_("ignoreTag")
+                  entry.getBoolean("ignoreDamage"),
+                  entry.getBoolean("ignoreTag")
                )
             );
          }
@@ -56,10 +56,10 @@ public final class RoutingOrderData {
    public static boolean addEntry(ItemStack stack, Level level, BlockPos pos, Direction side) {
       List<RoutingOrderData.RouteEntry> entries = getEntries(stack);
       if (pos != null && entries.size() < 16) {
-         String dimension = level == null ? "" : level.m_46472_().m_135782_().toString();
+         String dimension = level == null ? "" : level.dimension().location().toString();
          entries.add(
             new RoutingOrderData.RouteEntry(
-               pos.m_7949_(), dimension, side == null ? Direction.DOWN : side, RoutingOrderData.RouteType.FILL_TARGET_TO, emptyFilters(), false, false
+               pos.immutable(), dimension, side == null ? Direction.DOWN : side, RoutingOrderData.RouteType.FILL_TARGET_TO, emptyFilters(), false, false
             )
          );
          setEntries(stack, entries);
@@ -180,9 +180,9 @@ public final class RoutingOrderData {
          if (entryIndex >= 0 && entryIndex < entries.size()) {
             RoutingOrderData.RouteEntry entry = entries.get(entryIndex);
             List<ItemStack> filters = copyFilters(entry.filters());
-            ItemStack ghost = value != null && !value.m_41619_() ? value.m_41777_() : ItemStack.f_41583_;
-            if (!ghost.m_41619_()) {
-               ghost.m_41764_(Math.min(ghost.m_41613_(), ghost.m_41741_()));
+            ItemStack ghost = value != null && !value.isEmpty() ? value.copy() : ItemStack.EMPTY;
+            if (!ghost.isEmpty()) {
+               ghost.setCount(Math.min(ghost.getCount(), ghost.getMaxStackSize()));
             }
 
             filters.set(filterSlot, ghost);
@@ -207,22 +207,22 @@ public final class RoutingOrderData {
       ListTag list = new ListTag();
       entries.stream().limit(16L).forEach(routeEntry -> {
          CompoundTag entry = new CompoundTag();
-         entry.m_128356_("pos", routeEntry.pos().m_121878_());
-         entry.m_128359_("dim", routeEntry.dimension());
-         entry.m_128405_("side", routeEntry.side().ordinal());
-         entry.m_128405_("type", routeEntry.routeType().ordinal());
-         entry.m_128379_("ignoreDamage", routeEntry.ignoreDamage());
-         entry.m_128379_("ignoreTag", routeEntry.ignoreTag());
+         entry.putLong("pos", routeEntry.pos().asLong());
+         entry.putString("dim", routeEntry.dimension());
+         entry.putInt("side", routeEntry.side().ordinal());
+         entry.putInt("type", routeEntry.routeType().ordinal());
+         entry.putBoolean("ignoreDamage", routeEntry.ignoreDamage());
+         entry.putBoolean("ignoreTag", routeEntry.ignoreTag());
          writeFilters(entry, routeEntry.filters());
          list.add(entry);
       });
-      orders.m_128365_("entryList", list);
-      stack.m_41784_().m_128365_("orders", orders);
+      orders.put("entryList", list);
+      stack.getOrCreateTag().put("orders", orders);
    }
 
    private static CompoundTag getOrdersTag(ItemStack stack) {
-      CompoundTag tag = stack.m_41783_();
-      return tag != null && tag.m_128425_("orders", 10) ? tag.m_128469_("orders") : null;
+      CompoundTag tag = stack.getTag();
+      return tag != null && tag.contains("orders", 10) ? tag.getCompound("orders") : null;
    }
 
    private static Direction direction(int ordinal) {
@@ -239,7 +239,7 @@ public final class RoutingOrderData {
       List<ItemStack> filters = new ArrayList<>();
 
       for (int i = 0; i < 12; i++) {
-         filters.add(ItemStack.f_41583_);
+         filters.add(ItemStack.EMPTY);
       }
 
       return filters;
@@ -249,7 +249,7 @@ public final class RoutingOrderData {
       List<ItemStack> filters = emptyFilters();
 
       for (int i = 0; i < Math.min(12, source.size()); i++) {
-         filters.set(i, source.get(i).m_41777_());
+         filters.set(i, source.get(i).copy());
       }
 
       return filters;
@@ -257,13 +257,13 @@ public final class RoutingOrderData {
 
    private static List<ItemStack> readFilters(CompoundTag entry) {
       List<ItemStack> filters = emptyFilters();
-      ListTag list = entry.m_128437_("filterList", 10);
+      ListTag list = entry.getList("filterList", 10);
 
       for (int i = 0; i < list.size(); i++) {
-         CompoundTag stackTag = list.m_128728_(i);
-         int slot = stackTag.m_128451_("slot");
+         CompoundTag stackTag = list.getCompound(i);
+         int slot = stackTag.getInt("slot");
          if (slot >= 0 && slot < 12) {
-            filters.set(slot, ItemStack.m_41712_(stackTag));
+            filters.set(slot, ItemStack.of(stackTag));
          }
       }
 
@@ -275,14 +275,14 @@ public final class RoutingOrderData {
 
       for (int i = 0; i < Math.min(12, filters.size()); i++) {
          ItemStack filter = filters.get(i);
-         if (!filter.m_41619_()) {
-            CompoundTag stackTag = filter.m_41739_(new CompoundTag());
-            stackTag.m_128405_("slot", i);
+         if (!filter.isEmpty()) {
+            CompoundTag stackTag = filter.save(new CompoundTag());
+            stackTag.putInt("slot", i);
             list.add(stackTag);
          }
       }
 
-      entry.m_128365_("filterList", list);
+      entry.put("filterList", list);
    }
 
    public static record RouteEntry(

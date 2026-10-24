@@ -143,7 +143,7 @@ public final class AwtWorldGenTemplateRegistry {
 
    public static record Template(String path, String name, int weight, int chunks, boolean biomeWhiteList, Set<String> biomes) {
       public boolean acceptsBiome(Holder<Biome> biome) {
-         ResourceLocation key = biome.m_203543_().map(value -> value.m_135782_()).orElse(null);
+         ResourceLocation key = biome.unwrapKey().map(value -> value.location()).orElse(null);
          boolean listed = key != null && this.biomes.contains(key.toString());
          if (!listed) {
             listed = BiomeFamilyMatcher.matchesAny(biome, this.biomes);

@@ -11,7 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import net.shadowmage.ancientwarfare.core.item.TrebuchetFixedItem;
 
 public class TrebuchetFixedEntity extends TrebuchetMobileEntity {
-   private static final Component MENU_TITLE = Component.m_237115_("container.ancientwarfare.trebuchet_fixed");
+   private static final Component MENU_TITLE = Component.translatable("container.ancientwarfare.trebuchet_fixed");
 
    public TrebuchetFixedEntity(EntityType<? extends TrebuchetFixedEntity> type, Level level) {
       super(type, level);
@@ -29,7 +29,7 @@ public class TrebuchetFixedEntity extends TrebuchetMobileEntity {
 
    @Override
    protected void updateVehicleMotion() {
-      this.m_20256_(Vec3.f_82478_);
+      this.setDeltaMovement(Vec3.ZERO);
    }
 
    @Override
@@ -43,10 +43,10 @@ public class TrebuchetFixedEntity extends TrebuchetMobileEntity {
    }
 
    @Override
-   protected void m_19956_(Entity passenger, MoveFunction moveFunction) {
-      if (this.m_20363_(passenger)) {
-         Vec3 offset = this.getPassengerOffset().m_82524_(-this.m_146908_() * (float) (Math.PI / 180.0));
-         moveFunction.m_20372_(passenger, this.m_20185_() + offset.f_82479_, this.m_20186_() + offset.f_82480_, this.m_20189_() + offset.f_82481_);
+   protected void positionRider(Entity passenger, MoveFunction moveFunction) {
+      if (this.hasPassenger(passenger)) {
+         Vec3 offset = this.getPassengerOffset().yRot(-this.getYRot() * (float) (Math.PI / 180.0));
+         moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
       }
    }
 
@@ -55,7 +55,7 @@ public class TrebuchetFixedEntity extends TrebuchetMobileEntity {
       ItemStack stack = new ItemStack(TrebuchetFixedItem.itemForMaterialLevel(this.getMaterialLevel()));
       CompoundTag tag = new CompoundTag();
       this.saveCartData(tag);
-      stack.m_41784_().m_128365_("TrebuchetFixedData", tag);
+      stack.getOrCreateTag().put("TrebuchetFixedData", tag);
       return stack;
    }
 

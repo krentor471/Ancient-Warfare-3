@@ -16,11 +16,11 @@ public final class WarehouseDataSlots {
       for (int i = 0; i < slots.length; i++) {
          final int shift = i * 16;
          slots[i] = new DataSlot() {
-            public int m_6501_() {
+            public int get() {
                return (int)(getter.getAsLong() >>> shift) & 65535;
             }
 
-            public void m_6422_(int value) {
+            public void set(int value) {
                long mask = 65535L << shift;
                setter.accept(getter.getAsLong() & ~mask | (long)(value & 65535) << shift);
             }
@@ -36,11 +36,11 @@ public final class WarehouseDataSlots {
       for (int i = 0; i < slots.length; i++) {
          final int shift = i * 16;
          slots[i] = new DataSlot() {
-            public int m_6501_() {
+            public int get() {
                return getter.getAsInt() >>> shift & 65535;
             }
 
-            public void m_6422_(int value) {
+            public void set(int value) {
                int mask = 65535 << shift;
                setter.accept(getter.getAsInt() & ~mask | (value & 65535) << shift);
             }
