@@ -50,7 +50,7 @@ public final class FactionChatter {
       Map.entry("trader", 5),
       Map.entry("priest", 4),
       Map.entry("bard", 4),
-      Map.entry("idle", 12),
+      Map.entry("idle", 100),
       Map.entry("theft", 4),
       Map.entry("bed", 3),
       Map.entry("morning", 4),
