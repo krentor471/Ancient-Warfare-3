@@ -567,13 +567,19 @@ public final class AwsWorldGenerator {
 
       int lowest = targetY - distance;
       int highest = targetY + distance;
-      if (surface < lowest && plainGround(level.getBlockState(surfacePos))) {
+      BlockState old = level.getBlockState(surfacePos);
+      if (old.is(Blocks.GRAVEL) || old.is(Blocks.DIRT_PATH)) {
+         // A road keeps its surface as it is sloped.
+         top = old;
+      }
+
+      if (surface < lowest && plainGround(old)) {
          for (int y = surface + 1; y < lowest; y++) {
             level.setBlock(new BlockPos(x, y, z), fill, 2);
          }
 
          level.setBlock(new BlockPos(x, lowest, z), top, 2);
-      } else if (surface > highest && plainGround(level.getBlockState(surfacePos))) {
+      } else if (surface > highest && plainGround(old)) {
          for (int y = surface; y > highest; y--) {
             BlockPos pos = new BlockPos(x, y, z);
             if (!plainGround(level.getBlockState(pos))) {
@@ -595,9 +601,8 @@ public final class AwsWorldGenerator {
          || state.is(net.minecraft.tags.BlockTags.SAND)
          || state.is(net.minecraft.tags.BlockTags.TERRACOTTA)
          || state.is(Blocks.GRAVEL)
-         || state.is(Blocks.SNOW_BLOCK)
-         || state.is(Blocks.SANDSTONE)
-         || state.is(Blocks.RED_SANDSTONE);
+         || state.is(Blocks.DIRT_PATH)
+         || state.is(Blocks.SNOW_BLOCK);
    }
 
    private static boolean aquaticCellsSafe(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, Direction facing) {

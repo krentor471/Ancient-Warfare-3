@@ -264,8 +264,9 @@ public final class FactionGrowth {
          }
 
          // Built on the town's own level when the ground is near it, so the town does not sit on one level and its new houses on another.
-         if (floor == FactionWorldData.NO_FLOOR || Math.abs(y - floor) <= MAX_LIFT) {
-            return new BlockPos(x, floor == FactionWorldData.NO_FLOOR ? y : floor, z);
+         boolean free = floor == FactionWorldData.NO_FLOOR || floor == FactionWorldData.FOLLOWS_GROUND;
+         if (free || Math.abs(y - floor) <= MAX_LIFT) {
+            return new BlockPos(x, free ? y : floor, z);
          }
 
          if (fallback == null) {

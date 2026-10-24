@@ -57,6 +57,8 @@ public final class FactionWorldData extends SavedData {
    public static final String PLAYER_VILLAGE_KIND = "playervillage";
    /** A settlement whose ground level was never recorded. */
    public static final int NO_FLOOR = Integer.MIN_VALUE;
+   /** A settlement built along the land rather than on one level; its new buildings follow the land too. */
+   public static final int FOLLOWS_GROUND = Integer.MIN_VALUE + 1;
    private static final int VILLAGE_HALF_SIZE = 24;
    /** What a player's village counts as in trade income; its villagers are not counted. */
    private static final int PLAYER_VILLAGE_POPULATION = 20;

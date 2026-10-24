@@ -76,6 +76,9 @@ public final class AwtWorldGenerationData extends SavedData {
             value.putInt("MaxSurface", town.maxSurface);
             value.putIntArray("SurfaceSamples", town.surfaceSamples);
             value.putInt("Settlement", town.settlement);
+            if (town.heights != null) {
+               value.putIntArray("Heights", town.heights);
+            }
             list.add(value);
          }
       }
@@ -105,6 +108,7 @@ public final class AwtWorldGenerationData extends SavedData {
          town.settlement = value.getInt("Settlement");
          town.minSurface = value.getInt("MinSurface");
          town.maxSurface = value.getInt("MaxSurface");
+         town.heights = value.contains("Heights") ? value.getIntArray("Heights") : null;
 
          for (int sample : value.getIntArray("SurfaceSamples")) {
             town.surfaceSamples.add(sample);
@@ -157,6 +161,11 @@ public final class AwtWorldGenerationData extends SavedData {
       public final List<Integer> surfaceSamples = new ArrayList<>();
       /** The faction settlement this town is built for, still on paper until it completes; 0 for none. */
       public int settlement;
+      /**
+       * The land's height on the survey grid, row by row; the town follows it instead of standing on
+       * one levelled square. Null for a town begun before towns followed the land.
+       */
+      public int[] heights;
 
       public TownTask(String path, String name, int x, int y, int z) {
          this.path = path;
