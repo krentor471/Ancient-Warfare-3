@@ -107,6 +107,24 @@ public final class ForgeFactionCommands {
                            )
                      )
                )
+               .then(
+                  Commands.literal("treaty").requires(source -> source.hasPermission(2))
+                     .then(
+                        Commands.argument("faction", StringArgumentType.word())
+                           .suggests((context, builder) -> SharedSuggestionProvider.suggest(FactionRegistry.factionNames(), builder))
+                           .then(
+                              Commands.argument("state", StringArgumentType.word())
+                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(java.util.Arrays.stream(RelationState.values()).map(r -> r.name().toLowerCase(java.util.Locale.ROOT)), builder))
+                                 .executes(
+                                    context -> setTreaty(
+                                          ((CommandSourceStack)context.getSource()).getPlayerOrException(),
+                                          StringArgumentType.getString(context, "faction"),
+                                          StringArgumentType.getString(context, "state")
+                                       )
+                                 )
+                           )
+                     )
+               )
          );
    }
 
@@ -1266,6 +1284,19 @@ public final class ForgeFactionCommands {
       int standing = FactionStandingData.get(player.serverLevel()).setStanding(player.getUUID(), faction, value);
       player.sendSystemMessage(Component.literal("Faction " + faction + " standing set to " + standing));
       return standing;
+   }
+
+   private static int setTreaty(ServerPlayer player, String faction, String state) {
+      RelationState relation;
+      try {
+         relation = RelationState.valueOf(state.toUpperCase(java.util.Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+         player.sendSystemMessage(Component.literal("Unknown treaty " + state));
+         return 0;
+      }
+      FactionStandingData.get(player.serverLevel()).setTreaty(player.getUUID(), faction, relation);
+      player.sendSystemMessage(Component.literal("Faction " + faction + " treaty set to " + relation));
+      return 1;
    }
 
    private static int addStanding(ServerPlayer player, String faction, int value) {

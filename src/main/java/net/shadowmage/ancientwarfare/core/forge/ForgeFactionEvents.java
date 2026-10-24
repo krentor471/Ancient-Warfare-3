@@ -179,6 +179,17 @@ public final class ForgeFactionEvents {
       }
    }
 
+   /** Monsters a player kills count toward the hunts the towns have asked for. */
+   @SubscribeEvent
+   public static void onMonsterDeath(LivingDeathEvent event) {
+      if (event.getEntity() instanceof net.minecraft.world.entity.monster.Enemy
+         && !(event.getEntity() instanceof FactionNpcEntity)
+         && event.getEntity().level() instanceof ServerLevel serverLevel
+         && event.getSource().getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+         net.shadowmage.ancientwarfare.core.faction.FactionQuests.onMonsterKilled(serverLevel, event.getEntity(), player);
+      }
+   }
+
    @SubscribeEvent
    public static void onFactionNpcDeath(LivingDeathEvent event) {
       if (event.getEntity() instanceof FactionNpcEntity npc && npc.level() instanceof ServerLevel serverLevel) {

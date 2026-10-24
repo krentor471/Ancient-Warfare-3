@@ -36,11 +36,14 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreBlocks;
  * grows, a bounty on bandits or on the soldiers of a country it is at war with, a letter to carry
  * along the roads to a friendly town. A player takes up to three at a time, brings goods to the
  * board, and is paid in silver and goodwill; the town gets the food or stores, so helping a town
- * through a famine or a winter is the work itself.
+ * through a famine or a winter is the work itself. A town at war asks for arms for its garrison, a
+ * town with plague for medicine, and any town for a hunt of the monsters that prowl around it.
  */
 public final class FactionQuests {
-   public static final int MAX_TAKEN = 3;
-   private static final int OFFERS = 3;
+   public static final int MAX_TAKEN = 5;
+   private static final int OFFERS = 5;
+   /** How far from its town a monster may fall and still count for a hunt. */
+   private static final int HUNT_RANGE = 192;
    private static final int BOARD_RANGE = 128;
    private static final long QUEST_DAYS = 5L;
    private static final long BOARD_TICKS = 100L;
@@ -59,7 +62,10 @@ public final class FactionQuests {
       FOOD,
       MATERIALS,
       BOUNTY,
-      LETTER
+      LETTER,
+      ARMS,
+      MEDICINE,
+      HUNT
    }
 
    private record Goods(String item, int count, int worth) {
@@ -68,13 +74,30 @@ public final class FactionQuests {
    /** Food a town asks for: so many of an item, each worth so many rations. */
    private static final Goods[] FOOD = {
       new Goods("minecraft:bread", 16, 3), new Goods("minecraft:wheat", 32, 1), new Goods("minecraft:carrot", 32, 1), new Goods("minecraft:potato", 32, 1),
-      new Goods("minecraft:cooked_beef", 12, 4), new Goods("minecraft:cooked_porkchop", 12, 4), new Goods("minecraft:baked_potato", 24, 2)
+      new Goods("minecraft:cooked_beef", 12, 4), new Goods("minecraft:cooked_porkchop", 12, 4), new Goods("minecraft:baked_potato", 24, 2),
+      new Goods("minecraft:cooked_chicken", 12, 3), new Goods("minecraft:cooked_mutton", 12, 4), new Goods("minecraft:cooked_cod", 16, 2),
+      new Goods("minecraft:apple", 24, 1), new Goods("minecraft:pumpkin_pie", 8, 4), new Goods("minecraft:beetroot", 32, 1)
    };
    /** Building goods: so many of an item, adding so much to one of the faction's stores (wood, stone, iron). */
    private static final Goods[] MATERIALS = {
-      new Goods("#minecraft:logs", 32, FactionResources.WOOD), new Goods("minecraft:cobblestone", 48, FactionResources.STONE), new Goods("minecraft:iron_ingot", 8, FactionResources.IRON)
+      new Goods("#minecraft:logs", 32, FactionResources.WOOD), new Goods("minecraft:cobblestone", 48, FactionResources.STONE), new Goods("minecraft:iron_ingot", 8, FactionResources.IRON),
+      new Goods("minecraft:leather", 12, FactionResources.LEATHER), new Goods("#minecraft:wool", 16, FactionResources.WOOL), new Goods("minecraft:coal", 16, FactionResources.COAL),
+      new Goods("minecraft:copper_ingot", 12, FactionResources.COPPER)
    };
-   private static final int[] MATERIAL_STORE = {10, 10, 4};
+   private static final int[] MATERIAL_STORE = {10, 10, 4, 6, 6, 6, 5};
+   /** What a garrison asks for; the count is all the goods' worth. */
+   private static final Goods[] ARMS = {
+      new Goods("minecraft:arrow", 48, 0), new Goods("minecraft:bow", 3, 0), new Goods("minecraft:iron_sword", 3, 0), new Goods("minecraft:shield", 2, 0),
+      new Goods("minecraft:iron_helmet", 2, 0)
+   };
+   /** Armed by the player, a garrison takes on this many more men. */
+   private static final int ARMS_GARRISON = 2;
+   private static final Goods[] MEDICINE = {
+      new Goods("minecraft:honey_bottle", 6, 0), new Goods("minecraft:golden_carrot", 4, 0), new Goods("minecraft:milk_bucket", 3, 0), new Goods("minecraft:glistering_melon_slice", 3, 0)
+   };
+   /** Days of plague a delivery of medicine cuts short. */
+   private static final int MEDICINE_DAYS = 3;
+   private static final int MEDICINE_HEALTH = 10;
 
    public static final class Quest {
       final long id;
@@ -215,6 +238,16 @@ public final class FactionQuests {
          weights.add(2);
       }
 
+      kinds.add(Type.ARMS);
+      weights.add(enemy(level, data, town, RandomSource.create(random.nextLong())) != null ? 3 : 1);
+      if (town.plague() > 0) {
+         kinds.add(Type.MEDICINE);
+         weights.add(5);
+      }
+
+      kinds.add(Type.HUNT);
+      weights.add(FactionSeasons.season(level) == FactionSeasons.Season.WINTER ? 3 : 2);
+
       List<Quest> offers = new ArrayList<>();
       for (int index = 0; index < OFFERS && !kinds.isEmpty(); index++) {
          int total = weights.stream().mapToInt(Integer::intValue).sum();
@@ -252,6 +285,18 @@ public final class FactionQuests {
             String enemy = enemy(level, data, town, random);
             int count = 5 + random.nextInt(4);
             return new Quest(id, town.id(), day, index, type, enemy == null ? BANDITS : enemy, count, 10 + count * 2, enemy == null ? 4 : 6, 0);
+         }
+         case ARMS -> {
+            Goods goods = ARMS[random.nextInt(ARMS.length)];
+            return new Quest(id, town.id(), day, index, type, goods.item, goods.count, 10 + random.nextInt(6), 4, 0);
+         }
+         case MEDICINE -> {
+            Goods goods = MEDICINE[random.nextInt(MEDICINE.length)];
+            return new Quest(id, town.id(), day, index, type, goods.item, goods.count, 12 + random.nextInt(6), 6, 0);
+         }
+         case HUNT -> {
+            int count = 8 + random.nextInt(7);
+            return new Quest(id, town.id(), day, index, type, "", count, 6 + count, 3, 0);
          }
          default -> {
             FactionWorldData.Settlement to = letterTo(level, data, town, RandomSource.create(random.nextLong()));
@@ -315,8 +360,8 @@ public final class FactionQuests {
          return false;
       }
 
-      if (target.equals("#minecraft:logs")) {
-         return stack.is(ItemTags.LOGS);
+      if (target.startsWith("#")) {
+         return stack.is(ItemTags.create(new ResourceLocation(target.substring(1))));
       }
 
       return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString().equals(target);
@@ -328,6 +373,9 @@ public final class FactionQuests {
       return switch (quest.type) {
          case FOOD -> Component.translatable("quest.ancientwarfare.food", quest.count, itemName(quest.target), townName);
          case MATERIALS -> Component.translatable("quest.ancientwarfare.materials", quest.count, itemName(quest.target), townName);
+         case ARMS -> Component.translatable("quest.ancientwarfare.arms", quest.count, itemName(quest.target), townName);
+         case MEDICINE -> Component.translatable("quest.ancientwarfare.medicine", quest.count, itemName(quest.target), townName);
+         case HUNT -> Component.translatable("quest.ancientwarfare.hunt", quest.count, townName, HUNT_RANGE);
          case BOUNTY -> FactionDiplomacy.isOutlaw(quest.target)
             ? Component.translatable("quest.ancientwarfare.bounty.bandits", quest.count, townName)
             : Component.translatable("quest.ancientwarfare.bounty", quest.count, FactionNews.factionName(quest.target), townName);
@@ -353,7 +401,7 @@ public final class FactionQuests {
    private static Component progressLine(ServerLevel level, Quest quest) {
       long left = Math.max(0L, quest.expires - today(level));
       return switch (quest.type) {
-         case FOOD, MATERIALS, BOUNTY -> Component.translatable("quest.ancientwarfare.progress", quest.progress, quest.count, left);
+         case FOOD, MATERIALS, BOUNTY, ARMS, MEDICINE, HUNT -> Component.translatable("quest.ancientwarfare.progress", quest.progress, quest.count, left);
          case LETTER -> Component.translatable("quest.ancientwarfare.progress.letter", left);
       };
    }
@@ -396,8 +444,8 @@ public final class FactionQuests {
 
    private static boolean deliverableAt(Quest quest, FactionWorldData.Settlement town) {
       return switch (quest.type) {
-         case FOOD, MATERIALS -> quest.town == town.id();
-         case BOUNTY -> quest.town == town.id() && quest.progress >= quest.count;
+         case FOOD, MATERIALS, ARMS, MEDICINE -> quest.town == town.id();
+         case BOUNTY, HUNT -> quest.town == town.id() && quest.progress >= quest.count;
          case LETTER -> quest.destination == town.id();
       };
    }
@@ -454,7 +502,7 @@ public final class FactionQuests {
       }
 
       switch (quest.type) {
-         case FOOD, MATERIALS -> {
+         case FOOD, MATERIALS, ARMS, MEDICINE -> {
             int brought = takeItems(player, quest.target, quest.count - quest.progress);
             if (brought == 0) {
                player.sendSystemMessage(Component.translatable("quest.ancientwarfare.nothing", itemName(quest.target)).withStyle(ChatFormatting.RED));
@@ -529,6 +577,11 @@ public final class FactionQuests {
                   data.stores(town.faction())[MATERIALS[i].worth] += MATERIAL_STORE[i];
                }
             }
+         } else if (quest.type == Type.ARMS) {
+            town.garrison += ARMS_GARRISON;
+         } else if (quest.type == Type.MEDICINE) {
+            town.plague = Math.max(0, town.plague - MEDICINE_DAYS);
+            town.health = Math.min(100, town.health + MEDICINE_HEALTH);
          }
 
          FactionStandingData.get(level).adjustStanding(player.getUUID(), town.faction(), quest.standing);
@@ -578,6 +631,30 @@ public final class FactionQuests {
                quest.progress >= quest.count
                   ? Component.translatable("quest.ancientwarfare.bounty.met", name).withStyle(ChatFormatting.GREEN)
                   : Component.translatable("quest.ancientwarfare.bounty.progress", quest.progress, quest.count).withStyle(ChatFormatting.YELLOW),
+               quest.progress < quest.count
+            );
+            return;
+         }
+      }
+   }
+
+   /** A hunt counts the monsters a player kills near the town that asked. */
+   public static void onMonsterKilled(ServerLevel level, net.minecraft.world.entity.LivingEntity monster, ServerPlayer player) {
+      FactionWorldData data = FactionWorldData.get(level);
+      List<Quest> mine = data.allQuests().get(player.getUUID());
+      if (mine == null) {
+         return;
+      }
+
+      for (Quest quest : mine) {
+         FactionWorldData.Settlement town = quest.type == Type.HUNT && !quest.done && quest.progress < quest.count ? byId(data, quest.town) : null;
+         if (town != null && town.horizontalDistanceSquared(monster.getX(), monster.getZ()) <= (double)HUNT_RANGE * HUNT_RANGE) {
+            quest.progress++;
+            data.setDirty();
+            player.displayClientMessage(
+               quest.progress >= quest.count
+                  ? Component.translatable("quest.ancientwarfare.hunt.met", townName(town)).withStyle(ChatFormatting.GREEN)
+                  : Component.translatable("quest.ancientwarfare.hunt.progress", quest.progress, quest.count).withStyle(ChatFormatting.YELLOW),
                quest.progress < quest.count
             );
             return;

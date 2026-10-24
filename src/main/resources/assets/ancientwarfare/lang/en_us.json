@@ -1826,7 +1826,6 @@
   "quest.ancientwarfare.reward": "Reward: %s silver, +%s standing",
   "quest.ancientwarfare.progress": "Done %s of %s, days left: %s",
   "quest.ancientwarfare.progress.letter": "Hand the letter in at the board of that town, days left: %s",
-  "quest.ancientwarfare.too_many": "You already have %s tasks: finish or give up one first.",
   "quest.ancientwarfare.taken": "Task taken: %s",
   "quest.ancientwarfare.nothing": "You have no %s with you.",
   "quest.ancientwarfare.no_letter": "You do not have the letter with you.",
@@ -2738,5 +2737,12 @@
   "crime.ancientwarfare.theft_seen": "You were seen stealing. Standing with %1$s: %2$s (now %3$s).",
   "crime.ancientwarfare.theft_found": "In %1$s they have noticed something missing, and you are suspected. Standing: %2$s (now %3$s).",
   "crime.ancientwarfare.bed_seen": "You were caught in someone else's bed. Standing with %1$s: %2$s (now %3$s).",
-  "crime.ancientwarfare.bed": "This bed belongs to someone. A room can be had at the tavern."
+  "crime.ancientwarfare.bed": "This bed belongs to someone. A room can be had at the tavern.",
+  "quest.ancientwarfare.arms": "Arms for the garrison (%3$s): bring %2$s, %1$s of them.",
+  "quest.ancientwarfare.medicine": "Plague in the town (%3$s): bring %2$s, %1$s of them, to tend the sick.",
+  "quest.ancientwarfare.hunt": "Monsters at the walls (%2$s): kill %1$s monsters within %3$s blocks of the town.",
+  "quest.ancientwarfare.hunt.progress": "Monsters slain: %s of %s",
+  "quest.ancientwarfare.hunt.met": "The land around is cleared: go back to the quest board (%s).",
+  "quest.ancientwarfare.item.wool": "wool",
+  "quest.ancientwarfare.too_many": "You have taken %s tasks, as many as you can: finish one or give one up first."
 }

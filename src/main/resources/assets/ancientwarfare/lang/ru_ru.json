@@ -1816,8 +1816,8 @@
   "gui.ancientwarfare.quest_board.done": "Выполнено",
   "gui.ancientwarfare.quest_board.turn_in": "Сдать",
   "gui.ancientwarfare.quest_board.abandon": "Отказаться",
-  "quest.ancientwarfare.food": "Еда для поселения (%3$s): принесите %2$s, %1$s шт.",
-  "quest.ancientwarfare.materials": "Стройка (%3$s): принесите %2$s, %1$s шт.",
+  "quest.ancientwarfare.food": "Еда для поселения (%3$s). Принесите: %2$s, %1$s шт.",
+  "quest.ancientwarfare.materials": "Стройка (%3$s). Принесите: %2$s, %1$s шт.",
   "quest.ancientwarfare.bounty.bandits": "Разбойники на дорогах (%2$s): убейте %1$s разбойников.",
   "quest.ancientwarfare.bounty": "Война с врагом (%2$s): убейте %1$s их воинов, заказчик %3$s.",
   "quest.ancientwarfare.letter": "Доставьте запечатанное письмо в поселение %s (%s), %s.",
@@ -1826,7 +1826,6 @@
   "quest.ancientwarfare.reward": "Награда: %s серебра, +%s к репутации",
   "quest.ancientwarfare.progress": "Сделано %s из %s, осталось дней: %s",
   "quest.ancientwarfare.progress.letter": "Сдайте письмо на доске заданий того поселения, осталось дней: %s",
-  "quest.ancientwarfare.too_many": "У вас уже %s задания: сначала выполните одно или откажитесь.",
   "quest.ancientwarfare.taken": "Задание взято: %s",
   "quest.ancientwarfare.nothing": "У вас с собой нет: %s.",
   "quest.ancientwarfare.no_letter": "Письма у вас с собой нет.",
@@ -2738,5 +2737,12 @@
   "crime.ancientwarfare.theft_seen": "Вас застали за кражей. %1$s: отношение %2$s (теперь %3$s).",
   "crime.ancientwarfare.theft_found": "Пропажу заметили, подозревают вас. %1$s: отношение %2$s (теперь %3$s).",
   "crime.ancientwarfare.bed_seen": "Вас застали в чужой постели. %1$s: отношение %2$s (теперь %3$s).",
-  "crime.ancientwarfare.bed": "Это чужая постель. Комнату можно снять в таверне."
+  "crime.ancientwarfare.bed": "Это чужая постель. Комнату можно снять в таверне.",
+  "quest.ancientwarfare.arms": "Оружие для гарнизона (%3$s). Принесите: %2$s, %1$s шт.",
+  "quest.ancientwarfare.medicine": "Мор в поселении (%3$s). Принесите: %2$s, %1$s шт., чтобы лечить больных.",
+  "quest.ancientwarfare.hunt": "Чудовища у стен (%2$s): убейте %1$s чудовищ не дальше %3$s блоков от поселения.",
+  "quest.ancientwarfare.hunt.progress": "Чудовищ убито: %s из %s",
+  "quest.ancientwarfare.hunt.met": "Окрестности очищены: вернитесь к доске заданий (%s).",
+  "quest.ancientwarfare.item.wool": "шерсть",
+  "quest.ancientwarfare.too_many": "Заданий взято: %s, больше нельзя. Сначала выполните одно или откажитесь."
 }

@@ -341,7 +341,7 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
          return vanilla("skeleton");
       } else if (containsAny(path, "ghoul", "zombie", "undead", "vampire", "mummy", "unburied", "undertaker", "scarecrow")) {
          return vanilla("husk");
-      } else if (containsAny(path, "ghost", "wraith", "banshee", "specter", "spirit", "foglet")) {
+      } else if (containsAny(path, "ghost", "wraith", "banshee", "specter", "spirit", "foglet", "shrieker")) {
          return vanilla("vex");
       } else if (containsAny(path, "spider", "scuttler", "cavefisher", "ant_hill")) {
          return vanilla("cave_spider");
@@ -369,8 +369,16 @@ public class AdvancedSpawnerBlockEntity extends BlockEntity implements MenuProvi
          return vanilla("silverfish");
       } else if (containsAny(path, "pixie", "sprite", "fairy")) {
          return vanilla("allay");
+      } else if (containsAny(path, "merchant", "peddler")) {
+         return vanilla("wandering_trader");
       } else if (containsAny(path, "villager", "trader", "butler", "dwarf")) {
          return vanilla("villager");
+      } else if (containsAny(path, "demon", "fiend", "hellhound")) {
+         return vanilla("blaze");
+      } else if (containsAny(path, "valkyrie", "knight", "warrior", "amazon", "berserker")) {
+         return vanilla("vindicator");
+      } else if (containsAny(path, "rust")) {
+         return vanilla("silverfish");
       } else if (containsAny(path, "bear", "yeti", "frostmaw")) {
          return vanilla("polar_bear");
       } else {
