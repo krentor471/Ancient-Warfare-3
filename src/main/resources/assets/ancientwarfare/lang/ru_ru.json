@@ -2496,7 +2496,6 @@
   "news.ancientwarfare.son_born": "%1$s: правитель %2$s стал отцом, родился сын %3$s.",
   "news.ancientwarfare.daughter_born": "%1$s: правитель %2$s стал отцом, родилась дочь %3$s.",
   "news.ancientwarfare.child_died": "%1$s: умер ребёнок правителя, %2$s, в возрасте %3$s.",
-  "news.ancientwarfare.son_heir": "%1$s: %2$s, сын правителя %3$s, достиг совершеннолетия и объявлен наследником.",
   "gui.ancientwarfare.deal.marriage": "Брак с дочерью",
   "deal.ancientwarfare.already_married": "Правитель (%s): у вас уже есть жена.",
   "deal.ancientwarfare.no_daughter": "Правитель (%s): у меня нет дочери на выданье.",
@@ -2709,5 +2708,10 @@
   "name.ancientwarfare.faith.p1": "Святыня Старых богов",
   "name.ancientwarfare.faith.p2": "Святыня Духов предков",
   "name.ancientwarfare.faith.p3": "Святыня Очищающего Пламени",
-  "name.ancientwarfare.faith.s0": ""
+  "name.ancientwarfare.faith.s0": "",
+  "news.ancientwarfare.son_heir": "%1$s: наследник престола теперь %2$s, сын правителя %3$s.",
+  "news.ancientwarfare.brother_heir": "%1$s: у правителя %3$s нет сына, наследником объявлен его брат %2$s.",
+  "news.ancientwarfare.brother_died": "%1$s: умер %2$s, брат правителя %3$s, в возрасте %4$s.",
+  "news.ancientwarfare.sister_died": "%1$s: умерла %2$s, сестра правителя %3$s, в возрасте %4$s.",
+  "family.ancientwarfare.tip.son_heir": "Сын %s, возраст %s, наследник"
 }

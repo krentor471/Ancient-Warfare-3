@@ -2496,7 +2496,6 @@
   "news.ancientwarfare.son_born": "%1$s: a son, %3$s, is born to ruler %2$s.",
   "news.ancientwarfare.daughter_born": "%1$s: a daughter, %3$s, is born to ruler %2$s.",
   "news.ancientwarfare.child_died": "%1$s: the ruler's child %2$s has died at the age of %3$s.",
-  "news.ancientwarfare.son_heir": "%1$s: %2$s, son of ruler %3$s, has come of age and is named heir.",
   "gui.ancientwarfare.deal.marriage": "Marry daughter",
   "deal.ancientwarfare.already_married": "Ruler (%s): you already have a wife.",
   "deal.ancientwarfare.no_daughter": "Ruler (%s): I have no daughter of age to give you.",
@@ -2709,5 +2708,10 @@
   "name.ancientwarfare.faith.p1": "Holy site of the Old Gods",
   "name.ancientwarfare.faith.p2": "Holy site of the Ancestors",
   "name.ancientwarfare.faith.p3": "Holy site of the Cleansing Flame",
-  "name.ancientwarfare.faith.s0": ""
+  "name.ancientwarfare.faith.s0": "",
+  "news.ancientwarfare.son_heir": "%1$s: %2$s, son of ruler %3$s, is now heir to the throne.",
+  "news.ancientwarfare.brother_heir": "%1$s: ruler %3$s has no son; his brother %2$s is named heir.",
+  "news.ancientwarfare.brother_died": "%1$s: %2$s, brother of ruler %3$s, has died at the age of %4$s.",
+  "news.ancientwarfare.sister_died": "%1$s: %2$s, sister of ruler %3$s, has died at the age of %4$s.",
+  "family.ancientwarfare.tip.son_heir": "Son %s, age %s, heir"
 }

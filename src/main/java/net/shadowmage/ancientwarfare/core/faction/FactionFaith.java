@@ -486,6 +486,7 @@ public final class FactionFaith extends SavedData {
          if (heresy.answer == 1) {
             // Persecuted until half the realm holds to it: a war of faith.
             FactionCourt.Role role = FactionPeople.has(FactionRulers.ruler(data, heresy.faction, random).character(), FactionPeople.Character.PIOUS)
+                  && FactionCourt.adult(level, heresy.faction, FactionCourt.Role.HEIR)
                ? FactionCourt.Role.HEIR
                : FactionCourt.Role.PRIEST;
             if (!FactionRebellions.religiousWar(level, data, heresy.faction, role, heresy.towns, heresy.faith)) {
