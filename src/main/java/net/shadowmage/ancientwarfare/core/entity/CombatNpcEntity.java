@@ -42,7 +42,6 @@ import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.Goal.Flag;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
-import net.minecraft.world.entity.ai.navigation.AmphibiousPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.monster.RangedAttackMob;
@@ -129,7 +128,8 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    }
 
    protected PathNavigation createNavigation(Level level) {
-      AmphibiousPathNavigation navigation = new AmphibiousPathNavigation(this, level);
+      // Swims across water on walking paths: amphibious planning, which also searches up and down through water, cost most of a battle's tick.
+      NpcGroundNavigation navigation = new NpcGroundNavigation(this, level);
       navigation.setCanFloat(true);
       return navigation;
    }

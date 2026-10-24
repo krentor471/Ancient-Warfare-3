@@ -8,7 +8,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier.Builder;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
-import net.minecraft.world.entity.ai.navigation.AmphibiousPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -45,7 +44,8 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
    }
 
    protected PathNavigation createNavigation(Level level) {
-      AmphibiousPathNavigation navigation = new AmphibiousPathNavigation(this, level);
+      // Swims across water on walking paths: amphibious planning, which also searches up and down through water, cost most of a battle's tick.
+      NpcGroundNavigation navigation = new NpcGroundNavigation(this, level);
       navigation.setCanFloat(true);
       return navigation;
    }

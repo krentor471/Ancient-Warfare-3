@@ -2,7 +2,9 @@ package net.shadowmage.ancientwarfare.core.structure;
 
 import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BiomeTags;
@@ -11,8 +13,13 @@ import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.common.platform.PlatformTagAccess;
 
 public final class BiomeFamilyMatcher {
+   /** Families by biome and by configured id: worked out once, read on every placement check. Never modified once cached. */
+   private static final Map<Biome, EnumSet<BiomeFamilyMatcher.Family>> BIOMES = new ConcurrentHashMap<>();
+   private static final Map<String, EnumSet<BiomeFamilyMatcher.Family>> IDS = new ConcurrentHashMap<>();
+
    private BiomeFamilyMatcher() {
    }
+
 
    public static boolean matchesAny(Holder<Biome> biome, Set<String> configuredBiomeIds) {
       if (biome != null && configuredBiomeIds != null && !configuredBiomeIds.isEmpty()) {
@@ -35,6 +42,10 @@ public final class BiomeFamilyMatcher {
    }
 
    private static EnumSet<BiomeFamilyMatcher.Family> familiesOf(Holder<Biome> biome) {
+      return BIOMES.computeIfAbsent(biome.value(), value -> computeFamilies(biome));
+   }
+
+   private static EnumSet<BiomeFamilyMatcher.Family> computeFamilies(Holder<Biome> biome) {
       EnumSet<BiomeFamilyMatcher.Family> families = EnumSet.noneOf(BiomeFamilyMatcher.Family.class);
       ResourceLocation key = biome.unwrapKey().map(value -> value.location()).orElse(null);
       String path = key == null ? "" : key.getPath().toLowerCase(Locale.ROOT);
@@ -130,6 +141,10 @@ public final class BiomeFamilyMatcher {
    }
 
    private static EnumSet<BiomeFamilyMatcher.Family> familiesOf(String biomeId) {
+      return biomeId == null ? EnumSet.noneOf(BiomeFamilyMatcher.Family.class) : IDS.computeIfAbsent(biomeId, BiomeFamilyMatcher::computeFamilies);
+   }
+
+   private static EnumSet<BiomeFamilyMatcher.Family> computeFamilies(String biomeId) {
       if (biomeId != null && !biomeId.isBlank()) {
          String path = biomeId.toLowerCase(Locale.ROOT);
          int separator = path.indexOf(58);
