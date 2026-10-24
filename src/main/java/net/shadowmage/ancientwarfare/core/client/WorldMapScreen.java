@@ -400,11 +400,11 @@ public class WorldMapScreen extends Screen {
       if (minecraft.player != null) {
          int px = (int)Math.round(this.screenX(minecraft.player.getX()));
          int pz = (int)Math.round(this.screenY(minecraft.player.getZ()));
-         // A dot with a short line the way the player faces.
-         double yaw = Math.toRadians(minecraft.player.getYRot());
-         this.line(graphics, px, pz, px - Math.sin(yaw) * 9, pz + Math.cos(yaw) * 9, 0xFF000000, 2);
-         graphics.fill(px - 3, pz - 3, px + 4, pz + 4, 0xFF000000);
-         graphics.fill(px - 2, pz - 2, px + 3, pz + 3, 0xFFFFFFFF);
+         // An arrowhead the way the player faces, white on a black rim, above the signs and names.
+         graphics.pose().pushPose();
+         graphics.pose().translate(0.0F, 0.0F, 150.0F);
+         this.drawPlayerArrow(graphics, px, pz, Math.toRadians(minecraft.player.getYRot()));
+         graphics.pose().popPose();
       }
 
       this.renderScaleBar(graphics, right - SCALE_BAR_WIDTH - 8, bottom - 14);
@@ -635,6 +635,52 @@ public class WorldMapScreen extends Screen {
    }
 
    /** A line drawn as small squares of the given width; roads are short segments, so this stays cheap. */
+   /** A broad arrowhead with a notched tail, pointing along the yaw, drawn a pixel at a time. */
+   private void drawPlayerArrow(GuiGraphics graphics, int x, int y, double yaw) {
+      double forwardX = -Math.sin(yaw);
+      double forwardY = Math.cos(yaw);
+      // The tip, the two barbs and the notch, in the arrow's own frame (ahead, aside).
+      double[][] shape = {{11.0, 0.0}, {-8.0, 8.0}, {-3.0, 0.0}, {-8.0, -8.0}};
+      double[][] rim = new double[4][];
+      double[][] body = new double[4][];
+      for (int i = 0; i < 4; i++) {
+         rim[i] = place(x, y, forwardX, forwardY, shape[i][0] * 1.25 + 0.5, shape[i][1] * 1.25);
+         body[i] = place(x, y, forwardX, forwardY, shape[i][0], shape[i][1]);
+      }
+
+      for (int dy = -15; dy <= 15; dy++) {
+         for (int dx = -15; dx <= 15; dx++) {
+            double cx = x + dx + 0.5;
+            double cy = y + dy + 0.5;
+            if (inside(body, cx, cy)) {
+               graphics.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, 0xFFFFFFFF);
+            } else if (inside(rim, cx, cy)) {
+               graphics.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, 0xFF000000);
+            }
+         }
+      }
+
+      graphics.fill(x - 1, y - 1, x + 1, y + 1, 0xFFD02020);
+   }
+
+   private static double[] place(int x, int y, double forwardX, double forwardY, double ahead, double aside) {
+      return new double[]{x + forwardX * ahead - forwardY * aside, y + forwardY * ahead + forwardX * aside};
+   }
+
+   /** Whether a point lies inside a polygon, by counting the edges a ray from it crosses. */
+   private static boolean inside(double[][] polygon, double x, double y) {
+      boolean in = false;
+      for (int i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+         double[] a = polygon[i];
+         double[] b = polygon[j];
+         if ((a[1] > y) != (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) {
+            in = !in;
+         }
+      }
+
+      return in;
+   }
+
    private void line(GuiGraphics graphics, double x0, double y0, double x1, double y1, int color, int width) {
       int steps = (int)Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
 
@@ -750,13 +796,13 @@ public class WorldMapScreen extends Screen {
          names.add(Component.translatable("gui.ancientwarfare.world_map.kind." + kind.name().toLowerCase(java.util.Locale.ROOT)));
       }
 
-      int lineHeight = 10;
+      int lineHeight = 13;
       int rows = Math.max(1, (bottom - top - 6) / lineHeight);
       int columns = (names.size() + rows - 1) / rows;
       rows = (names.size() + columns - 1) / columns;
       int columnWidth = 0;
       for (Component name : names) {
-         columnWidth = Math.max(columnWidth, 13 + this.font.width(name) + 8);
+         columnWidth = Math.max(columnWidth, 17 + this.font.width(name) + 8);
       }
 
       graphics.fill(x, top, x + columnWidth * columns + 2, top + rows * lineHeight + 6, 0xEE181410);
@@ -764,13 +810,13 @@ public class WorldMapScreen extends Screen {
          int cx = x + 4 + (i / rows) * columnWidth;
          int cy = top + 4 + (i % rows) * lineHeight;
          if (entries.get(i) instanceof Integer color) {
-            graphics.fill(cx, cy, cx + 9, cy + 8, 0xFF000000);
-            graphics.fill(cx + 1, cy + 1, cx + 8, cy + 7, color);
+            graphics.fill(cx + 1, cy, cx + 12, cy + 10, 0xFF000000);
+            graphics.fill(cx + 2, cy + 1, cx + 11, cy + 9, color);
          } else if (entries.get(i) instanceof WorldMap.Kind kind) {
-            this.drawIcon(graphics, kind, cx + 4, cy + 4, 0xFFB0B0B0, 0xFF000000);
+            this.drawIcon(graphics, kind, cx + 6, cy + 5, 0xFFD8D8D8, 0xFF000000);
          }
 
-         graphics.drawString(this.font, names.get(i), cx + 13, cy, 0xFFE0E0E0);
+         graphics.drawString(this.font, names.get(i), cx + 17, cy + 1, 0xFFE0E0E0);
       }
    }
 

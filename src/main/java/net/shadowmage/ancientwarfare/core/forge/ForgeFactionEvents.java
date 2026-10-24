@@ -73,6 +73,16 @@ public final class ForgeFactionEvents {
    }
 
    /** Townsfolk cry out when a player breaks their things. */
+   /** What a blast knocks out of a town is remembered, to be mended once the fighting stops. */
+   @SubscribeEvent
+   public static void onBlastInTown(net.minecraftforge.event.level.ExplosionEvent.Detonate event) {
+      if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level) {
+         net.shadowmage.ancientwarfare.core.faction.FactionRepairs.record(
+            level, net.minecraft.core.BlockPos.containing(event.getExplosion().getPosition()), event.getAffectedBlocks()
+         );
+      }
+   }
+
    @SubscribeEvent
    public static void onBreakInTown(net.minecraftforge.event.level.BlockEvent.BreakEvent event) {
       if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level && !event.getPlayer().isCreative()) {

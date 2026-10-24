@@ -34,6 +34,8 @@ public final class AwtWorldGenerator {
    private static final int BLEND_RADIUS = 10;
    private static final int ROAD_BLOCKS_PER_TICK = 384;
    private static final int MAX_SURFACE_RANGE = 18;
+   /** A survey refuses a site where more than one sample in this many is water. */
+   private static final int WATER_SHARE = 50;
    private static final int FACTION_SITE_RANGE = 15;
    private static final int FACTION_TOWN_SURVEY_RANGE = 28;
    private static final int SITE_ATTEMPTS = 12;
@@ -188,7 +190,8 @@ public final class AwtWorldGenerator {
                int sx = x - halfSize + halfSize * 2 * gx / 4;
                int sz = z - halfSize + halfSize * 2 * gz / 4;
                NaturalGenerationContext.markChunk(new ChunkPos(sx >> 4, sz >> 4));
-               int y = level.getChunk(sx >> 4, sz >> 4).getHeight(Types.MOTION_BLOCKING_NO_LEAVES, sx & 15, sz & 15);
+               // The height map gives the block above the top one: the water itself is one lower.
+               int y = level.getChunk(sx >> 4, sz >> 4).getHeight(Types.MOTION_BLOCKING_NO_LEAVES, sx & 15, sz & 15) - 1;
                if (!level.getFluidState(new BlockPos(sx, y, sz)).isEmpty()) {
                   AncientWarfareCore.LOG.debug("Faction town site {}, {}: water at {}, {}", x, z, sx, sz);
                   return false;
@@ -437,6 +440,9 @@ public final class AwtWorldGenerator {
          task.minSurface = Math.min(task.minSurface, y);
          task.maxSurface = Math.max(task.maxSurface, y);
          task.surfaceSamples.add(y);
+         if (!level.getFluidState(new BlockPos(x, y, z)).isEmpty()) {
+            task.water++;
+         }
          task.progress = index + 1;
       }
 
@@ -449,7 +455,11 @@ public final class AwtWorldGenerator {
          int representativeRange = high - low;
          // A faction must build its capital and villages somewhere in its own hilly land; their sites were checked already.
          int maxRange = FactionTowns.isGenerated(task.path) ? FACTION_TOWN_SURVEY_RANGE : MAX_SURFACE_RANGE;
-         if (representativeRange > maxRange) {
+         if (task.water * WATER_SHARE > total) {
+            // A lake or a river runs through the site: a town would stand in it.
+            task.phase = AwtWorldGenerationData.Phase.FAILED;
+            AncientWarfareCore.LOG.info("Rejected queued AWT town {} at {}, {} during survey: water under {} of {} samples", new Object[]{task.name, task.x, task.z, task.water, total});
+         } else if (representativeRange > maxRange) {
             task.phase = AwtWorldGenerationData.Phase.FAILED;
             AncientWarfareCore.LOG
                .info(

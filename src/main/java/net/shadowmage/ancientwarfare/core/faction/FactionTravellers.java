@@ -142,7 +142,7 @@ public final class FactionTravellers {
          for (int i = 0; i < points.size(); i++) {
             double distance = distance(player, points.get(i));
             near |= distance < NOTICE_RANGE;
-            if (start < 0 && distance >= MIN_SPAWN_DISTANCE && distance <= MAX_SPAWN_DISTANCE && i > 2 && i < points.size() - 3) {
+            if (start < 0 && distance >= MIN_SPAWN_DISTANCE && distance <= MAX_SPAWN_DISTANCE && i > 2 && i < points.size() - 3 && !FactionCaravans.inTown(data, points.get(i))) {
                start = i;
             }
          }

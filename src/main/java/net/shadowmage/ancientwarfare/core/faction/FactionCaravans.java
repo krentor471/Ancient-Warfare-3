@@ -58,6 +58,8 @@ public final class FactionCaravans {
    /** Points ahead of the caravan where bandits wait. */
    private static final int AMBUSH_AHEAD = 8;
    private static final double CARAVAN_SPEED = 0.25;
+   /** A caravan neither starts nor walks on this close to a settlement's edge. */
+   private static final int TOWN_MARGIN = 4;
    /** Roads laid over rough ground keep a few drops; a fall this high does no harm. */
    private static final int CARAVAN_DROP = 3;
    /** Advance checks without reaching the next road point before the caravan counts as stuck. */
@@ -153,7 +155,7 @@ public final class FactionCaravans {
          for (int i = 0; i < points.size(); i++) {
             double distance = distance(player, points.get(i));
             near |= distance < NOTICE_RANGE;
-            if (start < 0 && distance >= MIN_SPAWN_DISTANCE && distance <= MAX_SPAWN_DISTANCE && i > 2 && i < points.size() - 3) {
+            if (start < 0 && distance >= MIN_SPAWN_DISTANCE && distance <= MAX_SPAWN_DISTANCE && i > 2 && i < points.size() - 3 && !inTown(data, points.get(i))) {
                start = i;
             }
          }
@@ -224,6 +226,19 @@ public final class FactionCaravans {
          standings.setTreaty(robber.getUUID(), caravan.faction, RelationState.WAR);
          robber.sendSystemMessage(Component.translatable("caravan.ancientwarfare.robbed", FactionNews.factionName(caravan.faction)));
       }
+   }
+
+   /** Whether a road point lies inside a town or fort, or just outside its edge; posts beside the road do not count. */
+   static boolean inTown(FactionWorldData data, long point) {
+      int x = FactionRoads.unpackX(point);
+      int z = FactionRoads.unpackZ(point);
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if ((FactionTownLife.isTown(settlement) || FactionAI.isFort(settlement)) && settlement.contains(x, z, TOWN_MARGIN)) {
+            return true;
+         }
+      }
+
+      return false;
    }
 
    private static double distance(Entity entity, long point) {
@@ -526,7 +541,8 @@ public final class FactionCaravans {
             this.index += this.direction;
             this.stuck = 0;
             next = true;
-            if (this.index < 0 || this.index >= points.size()) {
+            // A caravan is done at the gates: walled towns keep theirs shut, and it would only stand stuck inside.
+            if (this.index < 0 || this.index >= points.size() || inTown(data, points.get(this.index))) {
                return false;
             }
          } else if (++this.stuck >= STUCK_CHECKS && level.getNearestPlayer(traderNpc, HIDDEN_RANGE) == null) {
