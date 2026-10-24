@@ -315,6 +315,23 @@ public final class ForgeFactionCommands {
                      )
                )
          );
+      // Run by clicking a traveller's offer in chat.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awroad")
+               .then(
+                  Commands.argument("group", IntegerArgumentType.integer())
+                     .then(
+                        Commands.argument("action", StringArgumentType.word())
+                           .executes(context -> {
+                              net.shadowmage.ancientwarfare.core.faction.FactionTravellers.act(
+                                 context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "group"), StringArgumentType.getString(context, "action")
+                              );
+                              return 1;
+                           })
+                     )
+               )
+         );
       // Run by clicking a mercenary captain's offer in chat.
       event.getDispatcher()
          .register(
@@ -643,6 +660,24 @@ public final class ForgeFactionCommands {
                                  .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("war", "neutral", "pact", "alliance"), builder))
                                  .executes(context -> setTreaty(context.getSource(), faction(context, "faction"), StringArgumentType.getString(context, "state")))
                            )
+                     )
+               )
+               .then(
+                  Commands.literal("traveller")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        Commands.argument("kind", StringArgumentType.word())
+                           .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("pilgrims", "peddler", "messenger", "refugees", "patrol", "shepherd", "hunter", "knight", "tax_collector", "procession"), builder))
+                           .executes(context -> {
+                              boolean sent = net.shadowmage.ancientwarfare.core.faction.FactionTravellers.spawnNear(
+                                 context.getSource().getLevel(), context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "kind")
+                              );
+                              if (!sent) {
+                                 context.getSource().sendFailure(Component.literal("No finished road 40-90 blocks from you, or no such kind"));
+                              }
+
+                              return sent ? 1 : 0;
+                           })
                      )
                )
                .then(

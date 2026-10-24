@@ -129,7 +129,8 @@ public final class ForgeFactionEvents {
    @SubscribeEvent
    public static void onTournamentDamage(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
       if (!event.getEntity().level().isClientSide
-         && FactionTournaments.onDamage(event.getEntity(), event.getSource().getEntity(), event.getAmount())) {
+         && (FactionTournaments.onDamage(event.getEntity(), event.getSource().getEntity(), event.getAmount())
+            || net.shadowmage.ancientwarfare.core.faction.FactionTravellers.onDamage(event.getEntity(), event.getSource().getEntity(), event.getAmount()))) {
          event.setCanceled(true);
       }
    }
@@ -189,6 +190,17 @@ public final class ForgeFactionEvents {
       }
    }
 
+   /** A beast of a shepherd's flock a player kills is taken from its country. */
+   @SubscribeEvent
+   public static void onFlockDeath(LivingDeathEvent event) {
+      if (event.getEntity() instanceof net.minecraft.world.entity.animal.Animal beast
+         && beast.level() instanceof ServerLevel serverLevel
+         && event.getSource().getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+         && net.shadowmage.ancientwarfare.core.faction.FactionTravellers.isTraveller(beast)) {
+         net.shadowmage.ancientwarfare.core.faction.FactionTravellers.onKilled(serverLevel, beast, player);
+      }
+   }
+
    /** Monsters a player kills count toward the hunts the towns have asked for. */
    @SubscribeEvent
    public static void onMonsterDeath(LivingDeathEvent event) {
@@ -210,6 +222,10 @@ public final class ForgeFactionEvents {
          }
          if (event.getSource().getEntity() instanceof Player player) {
             FactionCaravans.onNpcKilled(serverLevel, npc, player);
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+               net.shadowmage.ancientwarfare.core.faction.FactionTravellers.onKilled(serverLevel, npc, serverPlayer);
+            }
+
             net.shadowmage.ancientwarfare.core.faction.FactionTownLife.onNpcKilled(serverLevel, npc, player);
             net.shadowmage.ancientwarfare.core.faction.FactionQuests.onNpcKilled(serverLevel, npc, player);
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
