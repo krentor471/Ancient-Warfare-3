@@ -260,6 +260,22 @@ public final class ForgeFactionCommands {
                   return 1;
                })))
          );
+      // Run by clicking the buttons under a happening in a town.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awtown")
+               .then(Commands.argument("encounter", IntegerArgumentType.integer())
+                  .then(Commands.argument("choice", StringArgumentType.word()).executes(context -> {
+                     if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                        net.shadowmage.ancientwarfare.core.faction.TownEncounters.answer(
+                           player, IntegerArgumentType.getInteger(context, "encounter"), StringArgumentType.getString(context, "choice")
+                        );
+                        return 1;
+                     }
+
+                     return 0;
+                  })))
+         );
       // Run by clicking the buttons under a faction's demand after an incident.
       event.getDispatcher()
          .register(
@@ -499,6 +515,13 @@ public final class ForgeFactionCommands {
                   net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(context.getSource().getLevel(), context.getSource().getPlayerOrException());
                   return 1;
                }))
+               .then(Commands.literal("encounter").requires(source -> source.hasPermission(2)).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.TownEncounters.force(context.getSource().getPlayerOrException(), "");
+                  return 1;
+               }).then(Commands.argument("key", StringArgumentType.word()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.TownEncounters.force(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "key"));
+                  return 1;
+               })))
                .then(Commands.literal("prebuild").requires(source -> source.hasPermission(2)).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(context.getSource().getLevel()).setPrebuilt(false);
                   return 1;

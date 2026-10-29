@@ -153,6 +153,7 @@ public final class ForgeAwsWorldGenerationEvents {
       LargeIslandWorldGenerator.shutdown();
       LAST_PLAYER_CHUNKS.clear();
       net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.reset();
+      net.shadowmage.ancientwarfare.core.faction.TownEncounters.reset();
       cooldown = 0;
    }
 

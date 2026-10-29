@@ -74,6 +74,10 @@ public final class TownsfolkFavours {
    private TownsfolkFavours() {
    }
 
+   static boolean matchesItem(ItemStack stack, String item) {
+      return matches(stack, item);
+   }
+
    private static boolean matches(ItemStack stack, String item) {
       if (item.startsWith("#")) {
          return stack.is(TagKey.create(net.minecraft.core.registries.Registries.ITEM, new ResourceLocation(item.substring(1))));

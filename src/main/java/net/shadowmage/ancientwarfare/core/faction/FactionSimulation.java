@@ -103,6 +103,7 @@ public final class FactionSimulation {
       FactionTravellers.tick(level, data);
       FactionRumours.tick(level, data);
       FactionTownLife.tick(level, data);
+      TownEncounters.tick(level, data);
       FactionGrowth.tick(level, data);
       FactionRepairs.tick(level, data);
       FreeVillages.tick(level, data);

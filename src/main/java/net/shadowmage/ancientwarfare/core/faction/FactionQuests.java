@@ -65,7 +65,29 @@ public final class FactionQuests {
       LETTER,
       ARMS,
       MEDICINE,
-      HUNT
+      HUNT,
+      TOOLS,
+      BOOKS,
+      ALCHEMY,
+      FESTIVAL,
+      CLOTH,
+      RELICS,
+      BUILDING
+   }
+
+   /** The kinds of quest that are only goods brought to the board, each with its wares. */
+   private static final java.util.Map<Type, Goods[]> WARES = java.util.Map.of(
+      Type.TOOLS, new Goods[]{new Goods("minecraft:iron_pickaxe", 2, 0), new Goods("minecraft:shears", 3, 0), new Goods("minecraft:iron_hoe", 3, 0), new Goods("minecraft:bucket", 4, 0), new Goods("minecraft:lantern", 6, 0), new Goods("minecraft:iron_axe", 2, 0)},
+      Type.BOOKS, new Goods[]{new Goods("minecraft:book", 6, 0), new Goods("minecraft:paper", 32, 0), new Goods("minecraft:map", 2, 0), new Goods("minecraft:writable_book", 2, 0), new Goods("minecraft:ink_sac", 12, 0)},
+      Type.ALCHEMY, new Goods[]{new Goods("minecraft:glowstone_dust", 12, 0), new Goods("minecraft:redstone", 24, 0), new Goods("minecraft:nether_wart", 8, 0), new Goods("minecraft:spider_eye", 8, 0), new Goods("minecraft:glass_bottle", 12, 0), new Goods("minecraft:sugar", 24, 0)},
+      Type.FESTIVAL, new Goods[]{new Goods("minecraft:cake", 2, 0), new Goods("minecraft:pumpkin_pie", 8, 0), new Goods("minecraft:sweet_berries", 32, 0), new Goods("minecraft:cookie", 32, 0), new Goods("minecraft:honey_bottle", 6, 0)},
+      Type.CLOTH, new Goods[]{new Goods("#minecraft:wool", 24, 0), new Goods("minecraft:string", 32, 0), new Goods("minecraft:leather_boots", 3, 0), new Goods("minecraft:leather_chestplate", 2, 0), new Goods("#minecraft:banners", 2, 0)},
+      Type.RELICS, new Goods[]{new Goods("minecraft:gold_ingot", 6, 0), new Goods("minecraft:candle", 8, 0), new Goods("minecraft:emerald", 3, 0), new Goods("minecraft:amethyst_shard", 8, 0)},
+      Type.BUILDING, new Goods[]{new Goods("minecraft:stone_bricks", 64, 0), new Goods("#minecraft:planks", 64, 0), new Goods("minecraft:glass", 24, 0), new Goods("minecraft:bricks", 48, 0), new Goods("#minecraft:logs", 48, 0)}
+   );
+
+   private static boolean wares(Type type) {
+      return WARES.containsKey(type);
    }
 
    private record Goods(String item, int count, int worth) {
@@ -247,6 +269,24 @@ public final class FactionQuests {
 
       kinds.add(Type.HUNT);
       weights.add(FactionSeasons.season(level) == FactionSeasons.Season.WINTER ? 3 : 2);
+      // What a town's own trades and buildings want.
+      List<String> built = town.buildings();
+      kinds.add(Type.TOOLS);
+      weights.add(built.stream().anyMatch(b -> b.contains("smith") || b.contains("mine")) ? 3 : 1);
+      kinds.add(Type.BOOKS);
+      weights.add(built.stream().anyMatch(b -> b.contains("library") || b.contains("school") || b.contains("scribe")) ? 3 : 1);
+      kinds.add(Type.ALCHEMY);
+      weights.add(built.stream().anyMatch(b -> b.contains("alchem") || b.contains("apothec") || b.contains("herb")) ? 3 : 1);
+      kinds.add(Type.FESTIVAL);
+      weights.add(town.order() < 50 ? 3 : 1);
+      kinds.add(Type.CLOTH);
+      weights.add(FactionSeasons.season(level) == FactionSeasons.Season.WINTER ? 3 : 1);
+      kinds.add(Type.RELICS);
+      weights.add(built.stream().anyMatch(b -> b.contains("shrine") || b.contains("chapel") || b.contains("temple")) ? 2 : 1);
+      if (!town.plan().isEmpty()) {
+         kinds.add(Type.BUILDING);
+         weights.add(3);
+      }
 
       List<Quest> offers = new ArrayList<>();
       for (int index = 0; index < OFFERS && !kinds.isEmpty(); index++) {
@@ -315,6 +355,12 @@ public final class FactionQuests {
          case HUNT -> {
             int count = 8 + random.nextInt(7);
             return new Quest(id, town.id(), day, index, type, "", count, 6 + count, 3, 0);
+         }
+         case TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> {
+            Goods[] wares = WARES.get(type);
+            Goods goods = wares[random.nextInt(wares.length)];
+            int reward = 8 + random.nextInt(8) + (type == Type.BUILDING ? 6 : 0) + (type == Type.RELICS ? 4 : 0);
+            return new Quest(id, town.id(), day, index, type, goods.item, goods.count, reward, 4, 0);
          }
          default -> {
             FactionWorldData.Settlement to = letterTo(level, data, town, RandomSource.create(random.nextLong()));
@@ -394,6 +440,9 @@ public final class FactionQuests {
          case ARMS -> Component.translatable("quest.ancientwarfare.arms", quest.count, itemName(quest.target), townName);
          case MEDICINE -> Component.translatable("quest.ancientwarfare.medicine", quest.count, itemName(quest.target), townName);
          case HUNT -> Component.translatable("quest.ancientwarfare.hunt", quest.count, townName, HUNT_RANGE);
+         case TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> Component.translatable(
+            "quest.ancientwarfare." + quest.type.name().toLowerCase(java.util.Locale.ROOT), quest.count, itemName(quest.target), townName
+         );
          case BOUNTY -> FactionDiplomacy.isOutlaw(quest.target)
             ? Component.translatable("quest.ancientwarfare.bounty.bandits", quest.count, townName)
             : Component.translatable("quest.ancientwarfare.bounty", quest.count, FactionNews.factionName(quest.target), townName);
@@ -419,7 +468,7 @@ public final class FactionQuests {
    private static Component progressLine(ServerLevel level, Quest quest) {
       long left = Math.max(0L, quest.expires - today(level));
       return switch (quest.type) {
-         case FOOD, MATERIALS, BOUNTY, ARMS, MEDICINE, HUNT -> Component.translatable("quest.ancientwarfare.progress", quest.progress, quest.count, left);
+         case FOOD, MATERIALS, BOUNTY, ARMS, MEDICINE, HUNT, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> Component.translatable("quest.ancientwarfare.progress", quest.progress, quest.count, left);
          case LETTER -> Component.translatable("quest.ancientwarfare.progress.letter", left);
       };
    }
@@ -462,7 +511,7 @@ public final class FactionQuests {
 
    private static boolean deliverableAt(Quest quest, FactionWorldData.Settlement town) {
       return switch (quest.type) {
-         case FOOD, MATERIALS, ARMS, MEDICINE -> quest.town == town.id();
+         case FOOD, MATERIALS, ARMS, MEDICINE, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> quest.town == town.id();
          case BOUNTY, HUNT -> quest.town == town.id() && quest.progress >= quest.count;
          case LETTER -> quest.destination == town.id();
       };
@@ -520,7 +569,7 @@ public final class FactionQuests {
       }
 
       switch (quest.type) {
-         case FOOD, MATERIALS, ARMS, MEDICINE -> {
+         case FOOD, MATERIALS, ARMS, MEDICINE, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> {
             int brought = takeItems(player, quest.target, quest.count - quest.progress);
             if (brought == 0) {
                player.sendSystemMessage(Component.translatable("quest.ancientwarfare.nothing", itemName(quest.target)).withStyle(ChatFormatting.RED));
@@ -601,6 +650,17 @@ public final class FactionQuests {
          } else if (quest.type == Type.MEDICINE) {
             town.plague = Math.max(0, town.plague - MEDICINE_DAYS);
             town.health = Math.min(100, town.health + MEDICINE_HEALTH);
+         } else if (quest.type == Type.FESTIVAL) {
+            town.order = Math.min(100, town.order + 10);
+         } else if (quest.type == Type.ALCHEMY) {
+            town.health = Math.min(100, town.health + 5);
+         } else if (quest.type == Type.RELICS) {
+            town.order = Math.min(100, town.order + 5);
+         } else if (quest.type == Type.BUILDING && !town.plan().isEmpty()) {
+            // The materials hurry the next building on: the town pays half its cost less.
+            town.wealth += 15;
+         } else if (wares(quest.type)) {
+            town.wealth += 10;
          }
 
          FactionStandingData.get(level).adjustStanding(player.getUUID(), town.faction(), quest.standing);
