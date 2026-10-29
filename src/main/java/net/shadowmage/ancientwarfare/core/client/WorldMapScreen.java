@@ -452,6 +452,14 @@ public class WorldMapScreen extends Screen {
       }
 
       lines.add(Component.translatable("gui.ancientwarfare.world_map.mood", life[WorldMap.LIFE_ORDER], life[WorldMap.LIFE_LOYALTY]));
+      if (life.length > WorldMap.LIFE_WAITING) {
+         lines.add(Component.translatable("gui.ancientwarfare.world_map.wealth", life[WorldMap.LIFE_WEALTH], life[WorldMap.LIFE_DEFENCE]));
+         lines.add(
+            life[WorldMap.LIFE_WAITING] > 0
+               ? Component.translatable("gui.ancientwarfare.world_map.buildings_waiting", life[WorldMap.LIFE_BUILDINGS], life[WorldMap.LIFE_WAITING])
+               : Component.translatable("gui.ancientwarfare.world_map.buildings", life[WorldMap.LIFE_BUILDINGS])
+         );
+      }
       if ((flags & WorldMap.FLAG_HUNGRY) != 0) {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.hungry").withStyle(net.minecraft.ChatFormatting.RED));
       }

@@ -530,6 +530,9 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Famine", settlement.famine);
          entry.putInt("Growth", settlement.growth);
          entry.putInt("Grown", settlement.grown);
+         entry.putInt("Wealth", settlement.wealth);
+         entry.put("Buildings", strings(settlement.buildings));
+         entry.put("Plan", strings(settlement.plan));
          if (settlement.floor != NO_FLOOR) {
             entry.putInt("Floor", settlement.floor);
          }
@@ -790,6 +793,14 @@ public final class FactionWorldData extends SavedData {
             settlement.plague = entry.getInt("Plague");
             settlement.growth = entry.getInt("Growth");
             settlement.grown = entry.getInt("Grown");
+            settlement.wealth = entry.getInt("Wealth");
+            for (net.minecraft.nbt.Tag raw : entry.getList("Buildings", Tag.TAG_STRING)) {
+               settlement.buildings.add(raw.getAsString());
+            }
+
+            for (net.minecraft.nbt.Tag raw : entry.getList("Plan", Tag.TAG_STRING)) {
+               settlement.plan.add(raw.getAsString());
+            }
             settlement.floor = entry.contains("Floor") ? entry.getInt("Floor") : NO_FLOOR;
             settlement.board = entry.contains("Board") ? BlockPos.of(entry.getLong("Board")) : null;
             for (net.minecraft.nbt.Tag raw : entry.getList("Halls", 10)) {
@@ -1484,6 +1495,12 @@ public final class FactionWorldData extends SavedData {
       BlockPos board;
       /** The tavern, smithy, stables and guild halls the town has put up as it grew; see FactionGrowth. */
       final List<Hall> halls = new ArrayList<>();
+      /** Silver in the settlement's own purse; see TownBuildings. */
+      int wealth;
+      /** The kinds of the buildings it has put up as it grew, in order; see TownBuildings.Kind. */
+      final List<String> buildings = new ArrayList<>();
+      /** Buildings decided on and paid for, waiting to be put up. */
+      final List<String> plan = new ArrayList<>();
 
       Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
          this.id = id;
@@ -1581,6 +1598,18 @@ public final class FactionWorldData extends SavedData {
          this.floor = floor;
       }
 
+      public int wealth() {
+         return this.wealth;
+      }
+
+      public List<String> buildings() {
+         return this.buildings;
+      }
+
+      public List<String> plan() {
+         return this.plan;
+      }
+
       public List<Hall> halls() {
          return this.halls;
       }
@@ -1655,5 +1684,14 @@ public final class FactionWorldData extends SavedData {
 
    /** A hall a town put up as it grew: what it is and the box it stands in. */
    public record Hall(String kind, BlockPos min, BlockPos max) {
+   }
+
+   private static ListTag strings(List<String> values) {
+      ListTag list = new ListTag();
+      for (String value : values) {
+         list.add(net.minecraft.nbt.StringTag.valueOf(value));
+      }
+
+      return list;
    }
 }

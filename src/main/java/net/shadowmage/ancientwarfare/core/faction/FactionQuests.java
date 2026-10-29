@@ -230,7 +230,7 @@ public final class FactionQuests {
       kinds.add(Type.FOOD);
       weights.add(hungry ? 4 : 1);
       kinds.add(Type.MATERIALS);
-      weights.add(town.growth > 0 ? 3 : 2);
+      weights.add(!town.plan().isEmpty() ? 3 : 2);
       kinds.add(Type.BOUNTY);
       weights.add(enemy(level, data, town, random) != null ? 3 : 2);
       if (letterTo(level, data, town, RandomSource.create(random.nextLong())) != null) {

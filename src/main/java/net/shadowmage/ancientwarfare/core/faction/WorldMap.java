@@ -229,7 +229,7 @@ public final class WorldMap {
    }
 
    /** Indices into Marker.life, and the flags in its last entry; see life(). */
-   public static final int LIFE_PEOPLE = 0, LIFE_GARRISON = 1, LIFE_FOOD_DAYS = 2, LIFE_HEALTH = 3, LIFE_ORDER = 4, LIFE_LOYALTY = 5, LIFE_FLAGS = 6, LIFE_RANK = 7, LIFE_PRICES = 8;
+   public static final int LIFE_PEOPLE = 0, LIFE_GARRISON = 1, LIFE_FOOD_DAYS = 2, LIFE_HEALTH = 3, LIFE_ORDER = 4, LIFE_LOYALTY = 5, LIFE_FLAGS = 6, LIFE_RANK = 7, LIFE_WEALTH = 8, LIFE_BUILDINGS = 9, LIFE_DEFENCE = 10, LIFE_WAITING = 11, LIFE_PRICES = 12;
    public static final int FLAG_FAMINE = 1, FLAG_PLAGUE = 2, FLAG_HUNGRY = 4, FLAG_TAKEN = 8, FLAG_PORT = 16;
 
    /** As life(), followed by the town's prices of the goods (see TownMarkets.priceList) where it has a market. */
@@ -249,7 +249,8 @@ public final class WorldMap {
          | (settlement.capturedFrom().isEmpty() ? 0 : FLAG_TAKEN)
          | (settlement.port() == null ? 0 : FLAG_PORT);
       return new int[]{
-         settlement.population(), settlement.garrison(), settlement.food() / mouths, settlement.health(), settlement.order(), settlement.loyalty(), flags, FactionPorts.rank(settlement)
+         settlement.population(), settlement.garrison(), settlement.food() / mouths, settlement.health(), settlement.order(), settlement.loyalty(), flags, FactionPorts.rank(settlement),
+         settlement.wealth(), TownBuildings.total(settlement), TownBuildings.defence(settlement), settlement.plan().size()
       };
    }
 

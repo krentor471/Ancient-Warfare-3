@@ -65,7 +65,7 @@ public final class FactionSimulation {
          case FactionTowns.VILLAGE -> 30;
          default -> 12;
       };
-      return base + settlement.tier() * base / 2 + settlement.grown() * FactionGrowth.ROOM_PER_PIECE + settlement.garrison();
+      return base + settlement.tier() * base / 2 + TownBuildings.room(settlement) + settlement.garrison();
    }
 
    public static void tick(ServerLevel level) {
