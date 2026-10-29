@@ -3289,5 +3289,7 @@
   "head.ancientwarfare.steal.hint": "Стащить кошель из казны деревни. Поймают — будет плохо",
   "head.ancientwarfare.steal.ok": "Ты тихо срезаешь кошель: %s сер.",
   "head.ancientwarfare.steal.bad": "Тебя поймали за руку! Староста в ярости, страна это запомнит.",
-  "head.ancientwarfare.steal.watchful": "Староста сегодня глаз не сводит с кошеля."
+  "head.ancientwarfare.steal.watchful": "Староста сегодня глаз не сводит с кошеля.",
+  "diplomacy.ancientwarfare.faith.kin": "Вера: %s, общая с: %s (единоверцы ладят)",
+  "diplomacy.ancientwarfare.faith.alone": "Вера: %s, ни с кем из известных общей нет (иноверцы не доверяют)"
 }

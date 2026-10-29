@@ -3289,5 +3289,7 @@
   "head.ancientwarfare.steal.hint": "Lift the village purse. If caught, it goes badly",
   "head.ancientwarfare.steal.ok": "You quietly cut the purse: %s silver.",
   "head.ancientwarfare.steal.bad": "Caught red-handed! The head is furious and the country will remember.",
-  "head.ancientwarfare.steal.watchful": "The head keeps an eye on his purse today."
+  "head.ancientwarfare.steal.watchful": "The head keeps an eye on his purse today.",
+  "diplomacy.ancientwarfare.faith.kin": "Faith: %s, shared with %s (they like each other)",
+  "diplomacy.ancientwarfare.faith.alone": "Faith: %s, shared with no realm you know (others distrust it)"
 }

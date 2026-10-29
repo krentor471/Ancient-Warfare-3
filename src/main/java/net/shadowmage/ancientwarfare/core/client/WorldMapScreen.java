@@ -110,17 +110,9 @@ public class WorldMapScreen extends Screen {
          this.scale = Double.isNaN(savedX) ? Math.min(this.mapWidth(), this.mapHeight()) / (double)(WorldMap.SIZE * WorldMap.STEP) : savedScale;
       }
 
-      this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.world_map.center_player"), button -> this.centerOnPlayer()).bounds(MARGIN, 2, 90, 18).build()
-      );
-      this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.chronicle.button"), button -> AWCoreNetwork.sendChronicleOpen())
-            .bounds(MARGIN + 94, 2, 70, 18)
-            .build()
-      );
-      this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.world_map.key"), button -> showKey = !showKey).bounds(MARGIN + 168, 2, 80, 18).build()
-      );
+      this.addRenderableWidget(new ParchmentButton(MARGIN, 5, 90, 14, Component.translatable("gui.ancientwarfare.world_map.center_player"), button -> this.centerOnPlayer()));
+      this.addRenderableWidget(new ParchmentButton(MARGIN + 94, 5, 70, 14, Component.translatable("gui.ancientwarfare.chronicle.button"), button -> AWCoreNetwork.sendChronicleOpen()));
+      this.addRenderableWidget(new ParchmentButton(MARGIN + 168, 5, 80, 14, Component.translatable("gui.ancientwarfare.world_map.key"), button -> showKey = !showKey, () -> showKey));
    }
 
    private void centerOnPlayer() {
@@ -365,8 +357,13 @@ public class WorldMapScreen extends Screen {
       int top = MARGIN;
       int right = left + this.mapWidth();
       int bottom = top + this.mapHeight();
-      graphics.fill(left - 2, top - 2, right + 2, bottom + 2, 0xFF2A2018);
-      graphics.fill(left - 1, top - 1, right + 1, bottom + 1, 0xFF8A7650);
+      // A wooden board like the diplomacy window's, holding the header, the map and the legend.
+      graphics.fill(MARGIN - 12, 0, this.width - MARGIN + 12, this.height, 0xFF0B0907);
+      graphics.fill(MARGIN - 11, 1, this.width - MARGIN + 11, this.height - 1, 0xFF8A6A2E);
+      graphics.fill(MARGIN - 10, 2, this.width - MARGIN + 10, this.height - 2, 0xFF2A2018);
+      graphics.fill(left - 3, top - 3, right + 3, bottom + 3, 0xFF0B0907);
+      graphics.fill(left - 2, top - 2, right + 2, bottom + 2, 0xFF8A6A2E);
+      graphics.fill(left - 1, top - 1, right + 1, bottom + 1, 0xFF4A3B26);
       graphics.enableScissor(left, top, right, bottom);
       graphics.fill(left, top, right, bottom, this.data.terrain().length == 0 ? 0xFF000000 : SEA_COLOR);
       double size = WorldMap.SIZE * WorldMap.STEP * this.scale;
@@ -420,11 +417,11 @@ public class WorldMapScreen extends Screen {
       graphics.disableScissor();
       // The title follows the buttons; the hint takes the rest of the line when it fits.
       int titleX = Math.max(this.width / 2 - this.font.width(this.title) / 2, BUTTONS_END + 8);
-      graphics.drawString(this.font, this.title, titleX, 8, -1);
+      graphics.drawString(this.font, this.title, titleX, 8, 0xFFE8C15A);
       Component hint = Component.translatable("gui.ancientwarfare.world_map.hint");
       int hintX = this.width - MARGIN - this.font.width(hint);
       if (hintX > titleX + this.font.width(this.title) + 12) {
-         graphics.drawString(this.font, hint, hintX, 8, 0xFFA0A0A0);
+         graphics.drawString(this.font, hint, hintX, 8, 0xFFA89F8E);
       }
       this.renderLegend(graphics, left, bottom + 4);
       if (mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom) {
@@ -520,7 +517,12 @@ public class WorldMapScreen extends Screen {
             lines.add(FactionNames.component(hovered.name()).withStyle(net.minecraft.ChatFormatting.GOLD));
          }
 
-         lines.add(Component.translatable("gui.ancientwarfare.world_map.kind." + hovered.kind().name().toLowerCase(java.util.Locale.ROOT)));
+         boolean ranked = hovered.life().length > WorldMap.LIFE_RANK && hovered.life()[WorldMap.LIFE_RANK] >= 0;
+         if (!ranked) {
+            // A ranked town says what it is by its rank below; the bare sign would only contradict it.
+            lines.add(Component.translatable("gui.ancientwarfare.world_map.kind." + hovered.kind().name().toLowerCase(java.util.Locale.ROOT)));
+         }
+
          String faction = this.data.factions().get(hovered.faction());
          if (!faction.isEmpty()) {
             lines.add(WorldMap.ownerName(faction));
@@ -556,7 +558,42 @@ public class WorldMapScreen extends Screen {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.click_to_teleport"));
       }
 
-      graphics.renderComponentTooltip(this.font, lines, mouseX, mouseY);
+      this.drawCard(graphics, lines, mouseX, mouseY);
+   }
+
+   /** The tooltip as a card of the map's own wood and gold, kept on screen. */
+   private void drawCard(GuiGraphics graphics, List<Component> lines, int mouseX, int mouseY) {
+      int width = 0;
+      for (Component line : lines) {
+         width = Math.max(width, this.font.width(line));
+      }
+
+      int height = lines.size() * 10 + 6;
+      int x = mouseX + 12;
+      int y = mouseY - 6;
+      if (x + width + 8 > this.width - 4) {
+         x = mouseX - width - 16;
+      }
+
+      y = Math.max(4, Math.min(y, this.height - height - 4));
+      graphics.pose().pushPose();
+      graphics.pose().translate(0.0F, 0.0F, 400.0F);
+      graphics.fill(x - 2, y - 2, x + width + 8, y + height + 2, 0xFF0B0907);
+      graphics.fill(x - 1, y - 1, x + width + 7, y + height + 1, 0xFF8A6A2E);
+      graphics.fill(x, y, x + width + 6, y + height, 0xF5221C16);
+      int lineY = y + 4;
+      for (int i = 0; i < lines.size(); i++) {
+         Component line = lines.get(i);
+         int color = line.getStyle().getColor() == null ? (i == 0 ? 0xFFE8C15A : 0xFFF2E8D5) : 0xFFFFFFFF;
+         graphics.drawString(this.font, line, x + 3, lineY, color, false);
+         if (i == 0 && lines.size() > 1) {
+            graphics.fill(x + 3, lineY + 9, x + width + 3, lineY + 10, 0xFF4A3B26);
+         }
+
+         lineY += 10;
+      }
+
+      graphics.pose().popPose();
    }
 
    private void renderLegend(GuiGraphics graphics, int x, int y) {
@@ -576,7 +613,7 @@ public class WorldMapScreen extends Screen {
          }
 
          graphics.fill(cursor, y + 1, cursor + 8, y + 9, factionColor(faction));
-         graphics.drawString(this.font, name, cursor + 11, y + 1, -1);
+         graphics.drawString(this.font, name, cursor + 11, y + 1, 0xFFF2E8D5);
          cursor += width;
       }
 
@@ -792,12 +829,22 @@ public class WorldMapScreen extends Screen {
          }
       }
 
-      int length = Math.max(1, (int)Math.round(blocks * this.scale));
-      graphics.fill(x - 3, y - 11, x + length + 3, y + 6, 0x90000000);
-      graphics.fill(x, y, x + length, y + 3, 0xFFFFFFFF);
-      graphics.fill(x, y - 2, x + 1, y + 3, 0xFFFFFFFF);
-      graphics.fill(x + length - 1, y - 2, x + length, y + 3, 0xFFFFFFFF);
-      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.world_map.scale", blocks), x, y - 10, 0xFFFFFFFF);
+      int length = Math.max(4, (int)Math.round(blocks * this.scale));
+      Component label = Component.translatable("gui.ancientwarfare.world_map.scale", blocks);
+      int boxRight = x + Math.max(length, this.font.width(label));
+      x = Math.min(x, x + length - (boxRight - x));
+      // A card with a gold rim, and a bar of alternating dark and light quarters, as on old maps.
+      graphics.fill(x - 4, y - 13, x + Math.max(length, this.font.width(label)) + 4, y + 7, 0xFF8A6A2E);
+      graphics.fill(x - 3, y - 12, x + Math.max(length, this.font.width(label)) + 3, y + 6, 0xEE221C16);
+      for (int i = 0; i < 4; i++) {
+         int from = x + length * i / 4;
+         int to = x + length * (i + 1) / 4;
+         graphics.fill(from, y, to, y + 4, i % 2 == 0 ? 0xFFF2E8D5 : 0xFF3A2E1E);
+      }
+
+      graphics.fill(x, y - 1, x + length, y, 0xFFE8C15A);
+      graphics.fill(x, y + 4, x + length, y + 5, 0xFFE8C15A);
+      graphics.drawString(this.font, label, x, y - 10, 0xFFF2E8D5, false);
    }
 
    private WorldMap.Marker markerAt(double mouseX, double mouseY) {
@@ -854,7 +901,8 @@ public class WorldMapScreen extends Screen {
          columnWidth = Math.max(columnWidth, 17 + this.font.width(name) + 8);
       }
 
-      graphics.fill(x, top, x + columnWidth * columns + 2, top + rows * lineHeight + 6, 0xEE181410);
+      graphics.fill(x - 1, top - 1, x + columnWidth * columns + 3, top + rows * lineHeight + 7, 0xFF8A6A2E);
+      graphics.fill(x, top, x + columnWidth * columns + 2, top + rows * lineHeight + 6, 0xF0221C16);
       for (int i = 0; i < names.size(); i++) {
          int cx = x + 4 + (i / rows) * columnWidth;
          int cy = top + 4 + (i % rows) * lineHeight;
