@@ -189,6 +189,11 @@ public class TradeWorkGoal extends Goal {
 
    @Override
    public void tick() {
+      if (this.target == null) {
+         // The work is done; the goal ends on its next check.
+         return;
+      }
+
       this.left--;
       this.npc.getLookControl().setLookAt(this.target.getX() + 0.5, this.target.getY() + 0.5, this.target.getZ() + 0.5);
       if (this.npc.distanceToSqr(this.target.getX() + 0.5, this.target.getY(), this.target.getZ() + 0.5) > 6.25) {

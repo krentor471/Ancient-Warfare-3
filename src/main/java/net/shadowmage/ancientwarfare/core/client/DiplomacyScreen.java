@@ -35,8 +35,8 @@ import net.shadowmage.ancientwarfare.core.research.PlayerResearch;
  * overview with what the player can do, its court and what it wants, and a deal with its ruler.
  */
 public class DiplomacyScreen extends Screen {
-   private static final int MAX_WIDTH = 560;
-   private static final int MAX_HEIGHT = 340;
+   private static final int MAX_WIDTH = 640;
+   private static final int MAX_HEIGHT = 380;
    /** Below this height the header is a single line, without the large portrait. */
    private static final int ROOMY_HEIGHT = 300;
    private static final int DEAL_ROW = 17;
@@ -241,6 +241,14 @@ public class DiplomacyScreen extends Screen {
          case TIES -> {
          }
          default -> this.initOverview(entry);
+      }
+
+      // Every button in the window's own wood and gold rather than the stone grey of the menus.
+      for (net.minecraft.client.gui.components.events.GuiEventListener child : new ArrayList<>(this.children())) {
+         if (child instanceof Button button && !(child instanceof ParchmentButton)) {
+            this.removeWidget(button);
+            this.addRenderableWidget(ParchmentButton.restyle(button));
+         }
       }
    }
 
@@ -793,6 +801,14 @@ public class DiplomacyScreen extends Screen {
       }
 
       int textX = x + portrait + 6;
+      // A banner in the realm's colours behind its name, fading into the page, as a flag in a grand atlas.
+      for (int i = 0; i < 120 && textX + i < right; i++) {
+         int alpha = Math.max(0, 0x90 - i * 0x90 / 120);
+         graphics.fill(textX - 2 + i, y, textX - 1 + i, y + 14, alpha << 24 | color & 0xFFFFFF);
+      }
+
+      graphics.fill(x - 1, y, x + portrait + 1, y + 1, GOLD_COLOR);
+      graphics.fill(x - 1, y + portrait + 1, x + portrait + 1, y + portrait + 2, GOLD_COLOR);
       graphics.pose().pushPose();
       graphics.pose().translate(textX, y + 1, 0.0F);
       graphics.pose().scale(1.5F, 1.5F, 1.0F);

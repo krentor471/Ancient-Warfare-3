@@ -35,4 +35,21 @@ public class ParchmentButton extends Button {
       var font = Minecraft.getInstance().font;
       graphics.drawCenteredString(font, this.getMessage(), x + this.width / 2, y + (this.height - 8) / 2, color);
    }
+
+   /** Wraps a vanilla button, keeping its press, label, tooltip and whether it is active, but drawn in wood and gold. */
+   public static ParchmentButton restyle(Button original) {
+      ParchmentButton styled = new ParchmentButton(original.getX(), original.getY(), original.getWidth(), original.getHeight(), original.getMessage(), ignored -> original.onPress()) {
+         @Override
+         protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            this.active = original.active;
+            this.visible = original.visible;
+            this.setMessage(original.getMessage());
+            this.setTooltip(original.getTooltip());
+            super.renderWidget(graphics, mouseX, mouseY, partialTick);
+         }
+      };
+      styled.active = original.active;
+      styled.setTooltip(original.getTooltip());
+      return styled;
+   }
 }

@@ -306,7 +306,7 @@ public final class PlayerDiplomacy {
                FactionRulers.ruler(data, faction, player.getRandom()).trait(),
                stores(data, faction),
                FactionCourt.courtView(player.serverLevel(), faction, player.getUUID()),
-               withFaith(player, faction, FactionCourt.goalLines(player, faction)),
+               FactionCourt.goalLines(player, faction),
                FactionIntrigue.pendingMask(player.serverLevel(), player.getUUID(), faction)
                   | (data.spies().stream().anyMatch(spy -> spy.player().equals(player.getUUID()) && spy.faction().equals(faction)) ? SPY_PENDING : 0),
                ties,
@@ -315,7 +315,7 @@ public final class PlayerDiplomacy {
                FactionRulers.person(data, faction, player.getRandom()),
                FactionFamilies.view(player.serverLevel(), faction),
                FactionFamilies.tips(player.serverLevel(), faction),
-               hosts(player.serverLevel(), faction)
+               withFaith(player, faction, hosts(player.serverLevel(), faction))
             )
          );
       }
