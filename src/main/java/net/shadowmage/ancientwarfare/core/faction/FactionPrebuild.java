@@ -14,10 +14,13 @@ import net.minecraft.world.effect.MobEffects;
  * around spawn are raised at full speed, with no regard for tick time, while players wait safely.
  */
 public final class FactionPrebuild {
-   /** How far from spawn the world is finished before play. */
+   /** How far from spawn the world is finished before play, unless the player asks for more. */
    static final int RADIUS = 1000;
-   /** The longest the world is given, in ticks, before play begins anyway. */
+   /** The longest the usual prebuild is given, in ticks, before play begins anyway. */
    private static final long MAX_TICKS = 20L * 60L * 8L;
+   /** A wider prebuild, asked for by command, may run this long: two hours. */
+   private static final long WIDE_MAX_TICKS = 20L * 60L * 120L;
+   private static int radius = RADIUS;
    private static final int CHECK_TICKS = 20;
 
    private static boolean active;
@@ -35,12 +38,30 @@ public final class FactionPrebuild {
    /** True when this spot is inside the area finished before play. */
    public static boolean covers(ServerLevel level, int x, int z) {
       BlockPos spawn = level.getSharedSpawnPos();
+      if (radius <= 0) {
+         return true;
+      }
+
       long dx = x - spawn.getX();
       long dz = z - spawn.getZ();
-      return dx * dx + dz * dz <= (long)RADIUS * RADIUS;
+      return dx * dx + dz * dz <= (long)radius * radius;
+   }
+
+   /** Starts a prebuild out to this radius from spawn, 0 for the whole world. */
+   public static void start(ServerLevel level, int wanted) {
+      FactionWorldData data = FactionWorldData.get(level);
+      data.setPrebuildRadius(wanted);
+      data.setPrebuilt(false);
+      started = -1L;
+   }
+
+   /** Ends a prebuild now; the rest is built as players come near. */
+   public static void stop(ServerLevel level) {
+      finish(level, FactionWorldData.get(level));
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {
+      radius = data.prebuildRadius();
       if (data.prebuilt()) {
          if (active) {
             finish(level, data);
@@ -76,7 +97,8 @@ public final class FactionPrebuild {
 
       boolean roads = FactionRoads.unfinishedNear(level, data);
 
-      if (waiting == 0 && !roads || level.getGameTime() - started > MAX_TICKS) {
+      long limit = radius == RADIUS ? MAX_TICKS : WIDE_MAX_TICKS;
+      if (waiting == 0 && !roads || level.getGameTime() - started > limit) {
          finish(level, data);
          return;
       }
@@ -87,8 +109,9 @@ public final class FactionPrebuild {
       }
 
       float done = total == 0 ? 1.0F : 1.0F - (float)waiting / total;
-      float time = (float)(level.getGameTime() - started) / MAX_TICKS;
+      float time = (float)(level.getGameTime() - started) / limit;
       bar.setProgress(Math.max(0.0F, Math.min(1.0F, Math.max(done * 0.9F, time))));
+      bar.setName(Component.translatable("faction.ancientwarfare.prebuild_count", total - waiting, total, FactionRoads.unfinishedCount(level, data)));
       for (ServerPlayer player : level.players()) {
          bar.addPlayer(player);
          player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 4, false, false));
@@ -98,6 +121,8 @@ public final class FactionPrebuild {
    private static void finish(ServerLevel level, FactionWorldData data) {
       active = false;
       data.setPrebuilt(true);
+      // A later wider prebuild is asked for again; the usual one is what a new world starts with.
+      data.setPrebuildRadius(RADIUS);
       if (bar != null) {
          bar.removeAllPlayers();
          bar = null;

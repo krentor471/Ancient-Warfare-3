@@ -3413,5 +3413,6 @@
   "watch.ancientwarfare.judge": "Судья",
   "watch.ancientwarfare.judge_wanted": "Тебя ищет стража. Заплати штраф (%s серебра) сам, и дело закрыто.",
   "watch.ancientwarfare.judge_law": "Закон един для всех. Не бери чужого, и мы не увидимся.",
-  "town.ancientwarfare.hall.courthouse": "%s: построили суд с темницей."
+  "town.ancientwarfare.hall.courthouse": "%s: построили суд с темницей.",
+  "faction.ancientwarfare.prebuild_count": "Державы строят мир: поселений готово %s из %s, дорог осталось %s"
 }

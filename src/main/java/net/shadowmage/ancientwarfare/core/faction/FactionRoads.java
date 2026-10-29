@@ -92,6 +92,12 @@ public final class FactionRoads {
 
    /** True while a road with both ends built and inside the prebuild area is still unfinished. */
    static boolean unfinishedNear(ServerLevel level, FactionWorldData data) {
+      return unfinishedCount(level, data) > 0;
+   }
+
+   /** Roads within the prebuild still to lay. */
+   static int unfinishedCount(ServerLevel level, FactionWorldData data) {
+      int count = 0;
       for (FactionWorldData.Route route : data.routes()) {
          if (route.blocked() || route.road() == FactionWorldData.RoadState.DONE || route.road() == FactionWorldData.RoadState.FAILED) {
             continue;
@@ -102,11 +108,11 @@ public final class FactionRoads {
          if (from != null && to != null && from.built() && to.built()
             && FactionPrebuild.covers(level, from.center().getX(), from.center().getZ())
             && FactionPrebuild.covers(level, to.center().getX(), to.center().getZ())) {
-            return true;
+            count++;
          }
       }
 
-      return false;
+      return count;
    }
 
    /** Lays one stretch of one unfinished road no player is near. */

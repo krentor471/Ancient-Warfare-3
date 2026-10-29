@@ -538,9 +538,18 @@ public final class ForgeFactionCommands {
                   return 1;
                })))
                .then(Commands.literal("prebuild").requires(source -> source.hasPermission(2)).executes(context -> {
-                  net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(context.getSource().getLevel()).setPrebuilt(false);
+                  net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.start(context.getSource().getLevel(), 1000);
                   return 1;
-               }))
+               }).then(Commands.literal("all").executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.start(context.getSource().getLevel(), 0);
+                  return 1;
+               })).then(Commands.literal("stop").executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.stop(context.getSource().getLevel());
+                  return 1;
+               })).then(Commands.argument("radius", IntegerArgumentType.integer(500, 30000)).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.start(context.getSource().getLevel(), IntegerArgumentType.getInteger(context, "radius"));
+                  return 1;
+               })))
                .then(Commands.literal("rankup").requires(source -> source.hasPermission(2)).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.FactionPorts.force(context.getSource().getLevel(), context.getSource().getPlayerOrException(), false);
                   return 1;

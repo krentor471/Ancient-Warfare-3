@@ -70,6 +70,8 @@ public final class FactionWorldData extends SavedData {
    public static final int NEW_REGION_SCALE = 130;
    private boolean historyDone;
    private boolean prebuilt;
+   /** How far from spawn the prebuild reaches; 0 for the whole world. */
+   private int prebuildRadius = 1000;
    /** The world's news, oldest first, as text components in JSON; see FactionNews. */
    private final List<ChronicleEntry> chronicle = new ArrayList<>();
    public static final int CHRONICLE_SIZE = 400;
@@ -218,6 +220,15 @@ public final class FactionWorldData extends SavedData {
 
    public boolean prebuilt() {
       return this.prebuilt;
+   }
+
+   public int prebuildRadius() {
+      return this.prebuildRadius;
+   }
+
+   public void setPrebuildRadius(int radius) {
+      this.prebuildRadius = radius;
+      this.setDirty();
    }
 
    public void setPrebuilt(boolean prebuilt) {
@@ -624,6 +635,7 @@ public final class FactionWorldData extends SavedData {
       tag.putLong("DayOffset", this.dayOffset);
       tag.putBoolean("HistoryDone", this.historyDone);
       tag.putBoolean("Prebuilt", this.prebuilt);
+      tag.putInt("PrebuildRadius", this.prebuildRadius);
       ListTag chronicleList = new ListTag();
 
       for (ChronicleEntry entry : this.chronicle) {
@@ -895,6 +907,9 @@ public final class FactionWorldData extends SavedData {
       data.historyDone = tag.getBoolean("HistoryDone");
       // Worlds from before the prebuild phase were already played in.
       data.prebuilt = !tag.contains("Prebuilt") || tag.getBoolean("Prebuilt");
+      if (tag.contains("PrebuildRadius")) {
+         data.prebuildRadius = tag.getInt("PrebuildRadius");
+      }
 
       for (Tag element : tag.getList("Chronicle", Tag.TAG_COMPOUND)) {
          CompoundTag line = (CompoundTag)element;
