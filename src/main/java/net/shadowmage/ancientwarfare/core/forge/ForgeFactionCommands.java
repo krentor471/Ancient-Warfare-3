@@ -260,6 +260,15 @@ public final class ForgeFactionCommands {
                   return 1;
                })))
          );
+      // Run by clicking a caravan master's offer of escort work.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awcaravan")
+               .then(Commands.literal("escort").then(Commands.argument("route", IntegerArgumentType.integer()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionCaravans.escort(context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "route"));
+                  return 1;
+               })))
+         );
       // Run by clicking the buttons under a happening in a town.
       event.getDispatcher()
          .register(

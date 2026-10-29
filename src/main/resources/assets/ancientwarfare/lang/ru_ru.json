@@ -3350,5 +3350,21 @@
   "council.ancientwarfare.guild.member": "Рады видеть брата по гильдии. Для тебя всегда найдётся подряд.",
   "council.ancientwarfare.guild.join": "Вступить в гильдию (%s сер.)",
   "council.ancientwarfare.guild.joined": "Добро пожаловать в гильдию! Мастера этого города продают тебе дешевле.",
-  "council.ancientwarfare.guild.contract": "Взять подряд гильдии"
+  "council.ancientwarfare.guild.contract": "Взять подряд гильдии",
+  "calendar.ancientwarfare.fair": "В %s ярмарка! Съезжаются купцы, товары дешевле (%s, %s).",
+  "calendar.ancientwarfare.tournament": "В %s сегодня турнир! Герольд на площади ждёт бойцов (%s, %s).",
+  "calendar.ancientwarfare.feast": "В %s устраивают пир, всех добрых гостей зовут к столу (%s, %s).",
+  "calendar.ancientwarfare.feast_guest": "Ты пируешь в %s: сытно, весело, тебя запомнят.",
+  "calendar.ancientwarfare.herald": "Герольд",
+  "calendar.ancientwarfare.herald.call": "Слушайте! Турнир %s открыт! Кто выйдет против нашего чемпиона?",
+  "calendar.ancientwarfare.herald.self": "Выйти самому",
+  "calendar.ancientwarfare.herald.soldier": "Выставить бойца",
+  "town.ancientwarfare.festival.fair": "ярмарка",
+  "town.ancientwarfare.festival.tournament": "турнир",
+  "town.ancientwarfare.festival.feast": "пир",
+  "caravan.ancientwarfare.escort_offer": "Караван %s ищет охрану до ближайшего города, платят %s сер.",
+  "caravan.ancientwarfare.escort": "Наняться",
+  "caravan.ancientwarfare.escort_taken": "Ты охраняешь караван. Держись рядом до ворот города.",
+  "caravan.ancientwarfare.escort_paid": "Караван дошёл! Ты получаешь %s сер. за охрану.",
+  "caravan.ancientwarfare.escort_gone": "Этот караван уже ушёл или нанял охрану."
 }

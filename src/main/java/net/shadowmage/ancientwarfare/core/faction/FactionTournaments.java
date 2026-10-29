@@ -48,11 +48,11 @@ public final class FactionTournaments {
    private static final class Duel {
       final UUID player;
       final String faction;
-      final CombatNpcEntity fighter;
+      final LivingEntity fighter;
       final FactionNpcEntity champion;
       final long started;
 
-      Duel(UUID player, String faction, CombatNpcEntity fighter, FactionNpcEntity champion, long started) {
+      Duel(UUID player, String faction, LivingEntity fighter, FactionNpcEntity champion, long started) {
          this.player = player;
          this.faction = faction;
          this.fighter = fighter;
@@ -131,7 +131,10 @@ public final class FactionTournaments {
          } else if (level.getGameTime() - duel.started > DUEL_TICKS) {
             end(level, duel, null);
          } else {
-            duel.fighter.setTarget(duel.champion);
+            if (duel.fighter instanceof net.minecraft.world.entity.Mob mob) {
+               mob.setTarget(duel.champion);
+            }
+
             duel.champion.setTarget(duel.fighter);
          }
       }
@@ -198,17 +201,21 @@ public final class FactionTournaments {
    }
 
    /** The bout is over: winner is the player's fighter, or null when he lost or it was a draw. */
-   private static void end(ServerLevel level, Duel duel, CombatNpcEntity winner) {
+   private static void end(ServerLevel level, Duel duel, LivingEntity winner) {
       DUELS.remove(duel.champion.getUUID());
       duel.champion.discard();
-      duel.fighter.setTarget(null);
+      if (duel.fighter instanceof net.minecraft.world.entity.Mob mob) {
+         mob.setTarget(null);
+      }
       Component faction = FactionNews.factionName(duel.faction);
       ServerPlayer player = level.getServer().getPlayerList().getPlayer(duel.player);
       FactionStandingData standings = FactionStandingData.get(level);
       boolean draw = winner == null && duel.fighter.isAlive() && level.getGameTime() - duel.started > DUEL_TICKS;
       if (winner != null) {
          standings.adjustStanding(duel.player, duel.faction, WIN_STANDING);
-         winner.onTournamentWin(WIN_EXPERIENCE);
+         if (winner instanceof CombatNpcEntity soldier) {
+            soldier.onTournamentWin(WIN_EXPERIENCE);
+         }
          if (player != null) {
             ItemStack prize = prize(level.getRandom(), duel.faction);
             Component prizeName = prize.getHoverName().copy().append(prize.getCount() > 1 ? " x" + prize.getCount() : "");
@@ -227,6 +234,54 @@ public final class FactionTournaments {
             player.sendSystemMessage(Component.translatable("tournament.ancientwarfare.lost", duel.fighter.getDisplayName(), faction).withStyle(ChatFormatting.RED));
          }
       }
+   }
+
+   /**
+    * At a town's tournament: the player steps into the lists himself, or sends the nearest of his
+    * soldiers, against the town's champion, by the herald.
+    */
+   static Component challenge(ServerPlayer player, String faction, FactionNpcEntity herald, boolean self) {
+      ServerLevel level = player.serverLevel();
+      for (Duel duel : DUELS.values()) {
+         if (duel.player.equals(player.getUUID())) {
+            return Component.translatable("tournament.ancientwarfare.busy");
+         }
+      }
+
+      LivingEntity fighter = self ? player : level.getEntitiesOfClass(
+            CombatNpcEntity.class, player.getBoundingBox().inflate(FIGHTER_RANGE),
+            npc -> npc.isAlive() && npc.getOwner().map(player.getUUID()::equals).orElse(false) && !npc.isRouting() && npc.getVehicle() == null
+         )
+         .stream()
+         .min((a, b) -> Double.compare(a.distanceToSqr(player), b.distanceToSqr(player)))
+         .orElse(null);
+      if (fighter == null) {
+         return Component.translatable("tournament.ancientwarfare.no_fighter");
+      }
+
+      FactionNpcEntity champion = AWCoreEntityTypes.FACTION_SOLDIER_ELITE_NPC.get().create(level);
+      if (champion == null) {
+         return Component.translatable("tournament.ancientwarfare.busy");
+      }
+
+      Vec3 away = herald.position().subtract(fighter.position()).multiply(1.0, 0.0, 1.0);
+      away = away.lengthSqr() < 0.01 ? new Vec3(1.0, 0.0, 0.0) : away.normalize();
+      int x = Mth.floor(fighter.getX() + away.x * CHAMPION_DISTANCE);
+      int z = Mth.floor(fighter.getZ() + away.z * CHAMPION_DISTANCE);
+      int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+      champion.moveTo(x + 0.5, y, z + 0.5, 0.0F, 0.0F);
+      champion.finalizeSpawn(level, level.getCurrentDifficultyAt(new BlockPos(x, y, z)), MobSpawnType.EVENT, null, null);
+      champion.setFactionName(faction);
+      champion.addTag(CHAMPION_TAG);
+      champion.setCustomName(Component.translatable("tournament.ancientwarfare.champion", FactionNews.factionName(faction)));
+      DUELS.put(champion.getUUID(), new Duel(player.getUUID(), faction, fighter, champion, level.getGameTime()));
+      level.addFreshEntity(champion);
+      if (fighter instanceof net.minecraft.world.entity.Mob mob) {
+         mob.setTarget(champion);
+      }
+
+      champion.setTarget(fighter);
+      return Component.translatable("tournament.ancientwarfare.begins", fighter.getDisplayName(), FactionNews.factionName(faction)).withStyle(ChatFormatting.GOLD);
    }
 
    /** A champion with no bout to fight, as after a restart, does not come back. */

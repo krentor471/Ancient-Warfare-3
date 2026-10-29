@@ -3350,5 +3350,21 @@
   "council.ancientwarfare.guild.member": "Good to see a guild brother. There's always a contract for you.",
   "council.ancientwarfare.guild.join": "Join the guild (%s silver)",
   "council.ancientwarfare.guild.joined": "Welcome to the guild! The town's craftsmen sell to you cheaper.",
-  "council.ancientwarfare.guild.contract": "Take a guild contract"
+  "council.ancientwarfare.guild.contract": "Take a guild contract",
+  "calendar.ancientwarfare.fair": "A fair in %s! Merchants gather and goods are cheaper (%s, %s).",
+  "calendar.ancientwarfare.tournament": "A tournament in %s today! The herald in the square awaits fighters (%s, %s).",
+  "calendar.ancientwarfare.feast": "%s holds a feast; all good guests are welcome at the table (%s, %s).",
+  "calendar.ancientwarfare.feast_guest": "You feast in %s: well fed and merry, you'll be remembered.",
+  "calendar.ancientwarfare.herald": "Herald",
+  "calendar.ancientwarfare.herald.call": "Hear ye! The tournament of %s is open! Who will face our champion?",
+  "calendar.ancientwarfare.herald.self": "Fight yourself",
+  "calendar.ancientwarfare.herald.soldier": "Send a soldier",
+  "town.ancientwarfare.festival.fair": "a fair",
+  "town.ancientwarfare.festival.tournament": "a tournament",
+  "town.ancientwarfare.festival.feast": "a feast",
+  "caravan.ancientwarfare.escort_offer": "A caravan of %s seeks guards to the next town, paying %s silver.",
+  "caravan.ancientwarfare.escort": "Sign on",
+  "caravan.ancientwarfare.escort_taken": "You guard the caravan. Stay close until the town gates.",
+  "caravan.ancientwarfare.escort_paid": "The caravan arrived! You are paid %s silver for the escort.",
+  "caravan.ancientwarfare.escort_gone": "That caravan is gone or already has guards."
 }

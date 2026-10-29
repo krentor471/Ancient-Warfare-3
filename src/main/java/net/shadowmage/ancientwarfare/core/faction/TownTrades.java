@@ -280,7 +280,7 @@ public final class TownTrades {
          return;
       }
 
-      if (CouncilHalls.act(player, npc, action)) {
+      if (CouncilHalls.act(player, npc, action) || TownCalendar.act(player, npc, action)) {
          return;
       }
 

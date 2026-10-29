@@ -126,6 +126,11 @@ public final class TownsfolkFavours {
          return;
       }
 
+      if (npc.getTags().contains(TownCalendar.HERALD_TAG)) {
+         TownCalendar.talk(player, npc);
+         return;
+      }
+
       if (!npc.getPersistentData().getString(CouncilHalls.COUNCIL_TAG).isEmpty()) {
          CouncilHalls.talk(player, npc);
          return;

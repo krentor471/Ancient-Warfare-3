@@ -258,13 +258,14 @@ public class DiplomacyScreen extends Screen {
       int y = this.top() + this.panelHeight() - 8 - 3 * 21;
       PlayerDiplomacy.Action[][] grid = {
          {PlayerDiplomacy.Action.PEACE, PlayerDiplomacy.Action.PACT, PlayerDiplomacy.Action.ALLIANCE},
-         {PlayerDiplomacy.Action.TRADE, PlayerDiplomacy.Action.WAR, PlayerDiplomacy.Action.TOURNAMENT},
+         {PlayerDiplomacy.Action.TRADE, PlayerDiplomacy.Action.WAR},
          {PlayerDiplomacy.Action.GIFT, PlayerDiplomacy.Action.SUPPLY, PlayerDiplomacy.Action.MEDIATE}
       };
       for (int row = 0; row < grid.length; row++) {
          for (int column = 0; column < grid[row].length; column++) {
             PlayerDiplomacy.Action action = grid[row][column];
-            this.addAction(entry, action, x + column * (width + 2), y + row * 21, grid[row].length == 1 ? width * 2 + 2 : width, applicable(entry, action));
+            int cell = grid[row].length == 2 ? (width * 3 + 2) / 2 : width;
+            this.addAction(entry, action, x + column * (cell + 2), y + row * 21, cell, applicable(entry, action));
          }
       }
    }

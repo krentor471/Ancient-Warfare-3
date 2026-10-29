@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -86,6 +87,7 @@ public final class FactionCaravans {
    private static final int STRING_PATIENCE = 30;
    /** A player this near when a cart is broken open is the robber. */
    private static final double ROBBER_RANGE = 16.0;
+   static final int ESCORT_PAY = 30;
    private static final Map<Integer, Caravan> ACTIVE = new HashMap<>();
    private static final Map<Integer, Long> LAST_CARAVAN = new HashMap<>();
    /** Set by the test command: the next caravan that can be ambushed is. */
@@ -176,6 +178,11 @@ public final class FactionCaravans {
          // Registered first: its NPCs are checked against the active caravans as they join the world.
          ACTIVE.put(route.id(), caravan);
          if (caravan.spawn(level, data, route)) {
+            // The caravan master looks for a sword arm along the road.
+            player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_offer", FactionNews.factionName(home.faction()), ESCORT_PAY)
+               .withStyle(ChatFormatting.GOLD)
+               .append(" ")
+               .append(FactionEnvoys.button("caravan.ancientwarfare.escort", "/awcaravan escort " + route.id(), ChatFormatting.GREEN)));
             return;
          }
 
@@ -257,6 +264,8 @@ public final class FactionCaravans {
       private int waits;
       private UUID trader;
       private final List<UUID> guards = new ArrayList<>();
+      /** The player hired to see the caravan through, if any. */
+      private UUID escort;
       private final List<UUID> bandits = new ArrayList<>();
       private final List<UUID> animals = new ArrayList<>();
       /** Carts of goods, each drawn by the animal at the same place in pullers. */
@@ -268,6 +277,16 @@ public final class FactionCaravans {
          this.faction = faction;
          this.index = index;
          this.direction = direction;
+      }
+
+      /** Safe at the gates: the escort, if still at hand, is paid. */
+      void payEscort(ServerLevel level, FactionNpcEntity trader) {
+         ServerPlayer escort = this.escort == null ? null : level.getServer().getPlayerList().getPlayer(this.escort);
+         if (escort != null && escort.distanceToSqr(trader) < 64.0 * 64.0) {
+            Coins.give(escort, ESCORT_PAY);
+            net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level).adjustStanding(escort.getUUID(), this.faction, 4);
+            escort.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_paid", ESCORT_PAY).withStyle(ChatFormatting.GREEN));
+         }
       }
 
       String tag() {
@@ -543,6 +562,7 @@ public final class FactionCaravans {
             next = true;
             // A caravan is done at the gates: walled towns keep theirs shut, and it would only stand stuck inside.
             if (this.index < 0 || this.index >= points.size() || inTown(data, points.get(this.index))) {
+               this.payEscort(level, traderNpc);
                return false;
             }
          } else if (++this.stuck >= STUCK_CHECKS && level.getNearestPlayer(traderNpc, HIDDEN_RANGE) == null) {
@@ -684,6 +704,18 @@ public final class FactionCaravans {
    public static void hurry(boolean ambush) {
       LAST_CARAVAN.clear();
       forceAmbush = ambush;
+   }
+
+   /** A player takes the caravan master's offer to guard it to the next town. */
+   public static void escort(ServerPlayer player, int routeId) {
+      Caravan caravan = ACTIVE.get(routeId);
+      if (caravan == null || caravan.escort != null) {
+         player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_gone").withStyle(ChatFormatting.GRAY));
+         return;
+      }
+
+      caravan.escort = player.getUUID();
+      player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_taken").withStyle(ChatFormatting.YELLOW));
    }
 
    public static int active() {
