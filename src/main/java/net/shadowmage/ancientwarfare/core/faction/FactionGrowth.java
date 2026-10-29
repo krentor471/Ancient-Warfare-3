@@ -604,7 +604,8 @@ public final class FactionGrowth {
             double angle = turn + Math.PI * 2.0 * i / SPOT_TRIES;
             int x = center.getX() + (int)Math.round(Math.cos(angle) * radius) - sizeX / 2;
             int z = center.getZ() + (int)Math.round(Math.sin(angle) * radius) - sizeZ / 2;
-            if (!loadedArea(level, x - BLEND - 1, z - BLEND - 1, x + sizeX + BLEND, z + sizeZ + BLEND) || crowdedByOthers(data, settlement, x, z, sizeX, sizeZ)) {
+            if (!loadedArea(level, x - BLEND - 1, z - BLEND - 1, x + sizeX + BLEND, z + sizeZ + BLEND) || crowdedByOthers(data, settlement, x, z, sizeX, sizeZ)
+               || onBuilding(level, settlement, x, z, sizeX, sizeZ)) {
                continue;
             }
 
@@ -625,8 +626,9 @@ public final class FactionGrowth {
    /** The middle ground level of a spot and a margin around it, or null where anything but open land, trees and paths is there or it is too steep. */
    private static Integer openGround(ServerLevel level, int x, int z, int sizeX, int sizeZ, int maxSlope) {
       List<Integer> heights = new java.util.ArrayList<>();
-      for (int dx = -SPOT_MARGIN; dx < sizeX + SPOT_MARGIN; dx += 2) {
-         for (int dz = -SPOT_MARGIN; dz < sizeZ + SPOT_MARGIN; dz += 2) {
+      // Every column, so a one-block wall or post between samples is not missed.
+      for (int dx = -SPOT_MARGIN; dx < sizeX + SPOT_MARGIN; dx++) {
+         for (int dz = -SPOT_MARGIN; dz < sizeZ + SPOT_MARGIN; dz++) {
             Integer y = groundUnderTrees(level, x + dx, z + dz);
             if (y == null || level.getBlockEntity(new BlockPos(x + dx, y, z + dz)) != null) {
                return null;
@@ -644,6 +646,23 @@ public final class FactionGrowth {
 
       heights.sort(Integer::compareTo);
       return heights.get(heights.size() - 1) - heights.get(0) > maxSlope ? null : heights.get(heights.size() / 2);
+   }
+
+   /** Whether the spot runs into one of the town's own halls or any placed structure. */
+   private static boolean onBuilding(ServerLevel level, FactionWorldData.Settlement settlement, int x, int z, int width, int depth) {
+      for (FactionWorldData.Hall hall : settlement.halls()) {
+         if (x + width + SPOT_MARGIN >= hall.min().getX() && x - SPOT_MARGIN <= hall.max().getX() && z + depth + SPOT_MARGIN >= hall.min().getZ() && z - SPOT_MARGIN <= hall.max().getZ()) {
+            return true;
+         }
+      }
+
+      for (net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerationData.Entry entry : net.shadowmage.ancientwarfare.core.structure.AwsWorldGenerationData.get(level).entries()) {
+         if (entry.intersects(x, z, x + width - 1, z + depth - 1, SPOT_MARGIN)) {
+            return true;
+         }
+      }
+
+      return false;
    }
 
    /** Whether the spot runs into another settlement. */
@@ -689,7 +708,9 @@ public final class FactionGrowth {
 
    /** The level of the natural ground at a column, under any tree standing on it; null where something built or water is there. */
    private static Integer groundUnderTrees(ServerLevel level, int x, int z) {
-      int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+      // From above the leaves, so a log counts as a tree only under its crown: log walls and beams of a house are not felled.
+      int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
+      boolean crown = false;
       for (int i = 0; i < TREE_HEIGHT; i++, y--) {
          BlockPos pos = new BlockPos(x, y, z);
          BlockState state = level.getBlockState(pos);
@@ -701,7 +722,9 @@ public final class FactionGrowth {
             return y;
          }
 
-         if (!state.is(BlockTags.LOGS) && !state.is(BlockTags.LEAVES) && !state.canBeReplaced() && !state.is(Blocks.BEE_NEST)) {
+         if (state.is(BlockTags.LEAVES)) {
+            crown = true;
+         } else if (state.is(BlockTags.LOGS) ? !crown : !state.canBeReplaced() && !state.is(Blocks.BEE_NEST)) {
             return null;
          }
       }

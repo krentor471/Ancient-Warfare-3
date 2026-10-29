@@ -121,7 +121,9 @@ public final class CouncilHalls extends SavedData {
                seat = level.getBlockState(chair);
             }
 
-            if (seat.getBlock() instanceof StairBlock) {
+            // Only a chair at the council table: a template's own staircase is no seat.
+            if (seat.is(Blocks.OAK_STAIRS) && seat.getValue(StairBlock.FACING) == facing && level.getBlockState(table).is(Blocks.DARK_OAK_FENCE)
+               && !level.getBlockState(chair.below()).isAir()) {
                chairs.add(chair);
             }
          }
