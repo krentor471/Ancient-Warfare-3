@@ -72,11 +72,52 @@ public final class FactionQuests {
       FESTIVAL,
       CLOTH,
       RELICS,
-      BUILDING
+      BUILDING,
+      SMITHY_COAL,
+      ORE,
+      STABLE_FEED,
+      SADDLERY,
+      TAVERN_ALE,
+      TAVERN_MEAT,
+      LIBRARY_INK,
+      CHRONICLE,
+      MAPS,
+      HERBS,
+      POTIONS,
+      BANDAGES,
+      CANDLES,
+      BELLS,
+      ALTAR,
+      WALLS,
+      GATE,
+      WATCHTOWER,
+      ARROWS_WATCH,
+      SHIELDS,
+      GRANARY,
+      SEEDS,
+      FERTILISER,
+      FISH,
+      NETS,
+      BOATS,
+      DYES,
+      CARPETS,
+      POTTERY,
+      GLASS,
+      JEWELS,
+      HONEY,
+      WEDDING
    }
 
    /** The kinds of quest that are only goods brought to the board, each with its wares. */
-   private static final java.util.Map<Type, Goods[]> WARES = java.util.Map.of(
+   private static final java.util.Map<Type, Goods[]> WARES = new java.util.EnumMap<>(Type.class);
+   /** The newer goods quests: the building word that makes them likelier, and what the town gains. */
+   private record Theme(String building, String effect, int amount) {
+   }
+
+   private static final java.util.Map<Type, Theme> THEMES = new java.util.EnumMap<>(Type.class);
+
+   static {
+      java.util.Map<Type, Goods[]> first = java.util.Map.of(
       Type.TOOLS, new Goods[]{new Goods("minecraft:iron_pickaxe", 2, 0), new Goods("minecraft:shears", 3, 0), new Goods("minecraft:iron_hoe", 3, 0), new Goods("minecraft:bucket", 4, 0), new Goods("minecraft:lantern", 6, 0), new Goods("minecraft:iron_axe", 2, 0)},
       Type.BOOKS, new Goods[]{new Goods("minecraft:book", 6, 0), new Goods("minecraft:paper", 32, 0), new Goods("minecraft:map", 2, 0), new Goods("minecraft:writable_book", 2, 0), new Goods("minecraft:ink_sac", 12, 0)},
       Type.ALCHEMY, new Goods[]{new Goods("minecraft:glowstone_dust", 12, 0), new Goods("minecraft:redstone", 24, 0), new Goods("minecraft:nether_wart", 8, 0), new Goods("minecraft:spider_eye", 8, 0), new Goods("minecraft:glass_bottle", 12, 0), new Goods("minecraft:sugar", 24, 0)},
@@ -84,7 +125,75 @@ public final class FactionQuests {
       Type.CLOTH, new Goods[]{new Goods("#minecraft:wool", 24, 0), new Goods("minecraft:string", 32, 0), new Goods("minecraft:leather_boots", 3, 0), new Goods("minecraft:leather_chestplate", 2, 0), new Goods("#minecraft:banners", 2, 0)},
       Type.RELICS, new Goods[]{new Goods("minecraft:gold_ingot", 6, 0), new Goods("minecraft:candle", 8, 0), new Goods("minecraft:emerald", 3, 0), new Goods("minecraft:amethyst_shard", 8, 0)},
       Type.BUILDING, new Goods[]{new Goods("minecraft:stone_bricks", 64, 0), new Goods("#minecraft:planks", 64, 0), new Goods("minecraft:glass", 24, 0), new Goods("minecraft:bricks", 48, 0), new Goods("#minecraft:logs", 48, 0)}
-   );
+      );
+      WARES.putAll(first);
+      WARES.put(Type.SMITHY_COAL, new Goods[]{new Goods("minecraft:coal", 32, 0), new Goods("minecraft:charcoal", 24, 0)});
+      THEMES.put(Type.SMITHY_COAL, new Theme("smith", "wealth", 10));
+      WARES.put(Type.ORE, new Goods[]{new Goods("minecraft:raw_iron", 16, 0), new Goods("minecraft:raw_copper", 24, 0), new Goods("minecraft:raw_gold", 6, 0)});
+      THEMES.put(Type.ORE, new Theme("mine", "wealth", 12));
+      WARES.put(Type.STABLE_FEED, new Goods[]{new Goods("minecraft:hay_block", 8, 0), new Goods("minecraft:carrot", 24, 0), new Goods("minecraft:apple", 16, 0)});
+      THEMES.put(Type.STABLE_FEED, new Theme("stable", "wealth", 8));
+      WARES.put(Type.SADDLERY, new Goods[]{new Goods("minecraft:saddle", 1, 0), new Goods("minecraft:lead", 4, 0), new Goods("minecraft:leather", 12, 0)});
+      THEMES.put(Type.SADDLERY, new Theme("stable", "wealth", 10));
+      WARES.put(Type.TAVERN_ALE, new Goods[]{new Goods("minecraft:wheat", 32, 0), new Goods("minecraft:sugar", 16, 0), new Goods("minecraft:honey_bottle", 4, 0)});
+      THEMES.put(Type.TAVERN_ALE, new Theme("tavern", "order", 6));
+      WARES.put(Type.TAVERN_MEAT, new Goods[]{new Goods("minecraft:cooked_porkchop", 12, 0), new Goods("minecraft:cooked_chicken", 12, 0), new Goods("minecraft:rabbit_stew", 3, 0)});
+      THEMES.put(Type.TAVERN_MEAT, new Theme("tavern", "order", 5));
+      WARES.put(Type.LIBRARY_INK, new Goods[]{new Goods("minecraft:ink_sac", 12, 0), new Goods("minecraft:feather", 16, 0), new Goods("minecraft:glow_ink_sac", 4, 0)});
+      THEMES.put(Type.LIBRARY_INK, new Theme("library", "order", 4));
+      WARES.put(Type.CHRONICLE, new Goods[]{new Goods("minecraft:writable_book", 3, 0), new Goods("minecraft:book", 8, 0), new Goods("minecraft:bookshelf", 2, 0)});
+      THEMES.put(Type.CHRONICLE, new Theme("library", "order", 6));
+      WARES.put(Type.MAPS, new Goods[]{new Goods("minecraft:map", 3, 0), new Goods("minecraft:compass", 2, 0), new Goods("minecraft:paper", 24, 0)});
+      THEMES.put(Type.MAPS, new Theme("library", "wealth", 8));
+      WARES.put(Type.HERBS, new Goods[]{new Goods("minecraft:dandelion", 16, 0), new Goods("minecraft:poppy", 16, 0), new Goods("minecraft:brown_mushroom", 12, 0), new Goods("minecraft:kelp", 24, 0)});
+      THEMES.put(Type.HERBS, new Theme("herb", "health", 6));
+      WARES.put(Type.POTIONS, new Goods[]{new Goods("minecraft:blaze_powder", 4, 0), new Goods("minecraft:magma_cream", 4, 0), new Goods("minecraft:ghast_tear", 1, 0), new Goods("minecraft:phantom_membrane", 3, 0)});
+      THEMES.put(Type.POTIONS, new Theme("alchem", "health", 8));
+      WARES.put(Type.BANDAGES, new Goods[]{new Goods("minecraft:white_wool", 16, 0), new Goods("minecraft:string", 24, 0), new Goods("minecraft:paper", 16, 0)});
+      THEMES.put(Type.BANDAGES, new Theme("", "health", 6));
+      WARES.put(Type.CANDLES, new Goods[]{new Goods("minecraft:candle", 12, 0), new Goods("minecraft:honeycomb", 8, 0)});
+      THEMES.put(Type.CANDLES, new Theme("temple", "order", 5));
+      WARES.put(Type.BELLS, new Goods[]{new Goods("minecraft:bell", 1, 0), new Goods("minecraft:copper_ingot", 24, 0), new Goods("minecraft:gold_ingot", 4, 0)});
+      THEMES.put(Type.BELLS, new Theme("temple", "order", 8));
+      WARES.put(Type.ALTAR, new Goods[]{new Goods("minecraft:quartz", 16, 0), new Goods("minecraft:amethyst_shard", 12, 0), new Goods("minecraft:polished_andesite", 32, 0)});
+      THEMES.put(Type.ALTAR, new Theme("shrine", "order", 6));
+      WARES.put(Type.WALLS, new Goods[]{new Goods("minecraft:cobblestone", 64, 0), new Goods("minecraft:stone_bricks", 48, 0), new Goods("minecraft:cobblestone_wall", 24, 0)});
+      THEMES.put(Type.WALLS, new Theme("wall", "garrison", 2));
+      WARES.put(Type.GATE, new Goods[]{new Goods("minecraft:iron_bars", 16, 0), new Goods("minecraft:oak_fence_gate", 4, 0), new Goods("minecraft:chain", 8, 0)});
+      THEMES.put(Type.GATE, new Theme("gate", "garrison", 2));
+      WARES.put(Type.WATCHTOWER, new Goods[]{new Goods("minecraft:torch", 32, 0), new Goods("minecraft:ladder", 16, 0), new Goods("minecraft:spruce_log", 24, 0)});
+      THEMES.put(Type.WATCHTOWER, new Theme("watch", "garrison", 1));
+      WARES.put(Type.ARROWS_WATCH, new Goods[]{new Goods("minecraft:arrow", 64, 0), new Goods("minecraft:crossbow", 2, 0)});
+      THEMES.put(Type.ARROWS_WATCH, new Theme("", "garrison", 2));
+      WARES.put(Type.SHIELDS, new Goods[]{new Goods("minecraft:shield", 4, 0), new Goods("minecraft:iron_helmet", 2, 0), new Goods("minecraft:chainmail_chestplate", 1, 0)});
+      THEMES.put(Type.SHIELDS, new Theme("", "garrison", 2));
+      WARES.put(Type.GRANARY, new Goods[]{new Goods("minecraft:wheat", 48, 0), new Goods("minecraft:hay_block", 6, 0), new Goods("minecraft:potato", 48, 0)});
+      THEMES.put(Type.GRANARY, new Theme("farm", "food", 40));
+      WARES.put(Type.SEEDS, new Goods[]{new Goods("minecraft:wheat_seeds", 32, 0), new Goods("minecraft:beetroot_seeds", 24, 0), new Goods("minecraft:melon_seeds", 8, 0), new Goods("minecraft:pumpkin_seeds", 8, 0)});
+      THEMES.put(Type.SEEDS, new Theme("farm", "food", 20));
+      WARES.put(Type.FERTILISER, new Goods[]{new Goods("minecraft:bone_meal", 32, 0), new Goods("minecraft:composter", 2, 0)});
+      THEMES.put(Type.FERTILISER, new Theme("farm", "food", 20));
+      WARES.put(Type.FISH, new Goods[]{new Goods("minecraft:cod", 24, 0), new Goods("minecraft:salmon", 16, 0), new Goods("minecraft:dried_kelp", 32, 0)});
+      THEMES.put(Type.FISH, new Theme("dock", "food", 30));
+      WARES.put(Type.NETS, new Goods[]{new Goods("minecraft:string", 32, 0), new Goods("minecraft:fishing_rod", 3, 0)});
+      THEMES.put(Type.NETS, new Theme("dock", "wealth", 8));
+      WARES.put(Type.BOATS, new Goods[]{new Goods("minecraft:oak_boat", 2, 0), new Goods("minecraft:spruce_boat", 2, 0), new Goods("#minecraft:planks", 64, 0)});
+      THEMES.put(Type.BOATS, new Theme("dock", "wealth", 10));
+      WARES.put(Type.DYES, new Goods[]{new Goods("minecraft:red_dye", 12, 0), new Goods("minecraft:blue_dye", 12, 0), new Goods("minecraft:yellow_dye", 12, 0), new Goods("minecraft:green_dye", 8, 0)});
+      THEMES.put(Type.DYES, new Theme("weav", "wealth", 8));
+      WARES.put(Type.CARPETS, new Goods[]{new Goods("#minecraft:wool_carpets", 16, 0), new Goods("#minecraft:beds", 3, 0)});
+      THEMES.put(Type.CARPETS, new Theme("weav", "order", 4));
+      WARES.put(Type.POTTERY, new Goods[]{new Goods("minecraft:flower_pot", 8, 0), new Goods("minecraft:clay_ball", 32, 0), new Goods("minecraft:brick", 32, 0)});
+      THEMES.put(Type.POTTERY, new Theme("", "wealth", 6));
+      WARES.put(Type.GLASS, new Goods[]{new Goods("minecraft:glass_pane", 32, 0), new Goods("minecraft:sand", 64, 0), new Goods("minecraft:glass_bottle", 16, 0)});
+      THEMES.put(Type.GLASS, new Theme("", "wealth", 8));
+      WARES.put(Type.JEWELS, new Goods[]{new Goods("minecraft:diamond", 1, 0), new Goods("minecraft:emerald", 4, 0), new Goods("minecraft:gold_nugget", 36, 0)});
+      THEMES.put(Type.JEWELS, new Theme("", "wealth", 15));
+      WARES.put(Type.HONEY, new Goods[]{new Goods("minecraft:honey_bottle", 6, 0), new Goods("minecraft:honeycomb", 8, 0), new Goods("minecraft:beehive", 1, 0)});
+      THEMES.put(Type.HONEY, new Theme("", "health", 4));
+      WARES.put(Type.WEDDING, new Goods[]{new Goods("minecraft:cake", 2, 0), new Goods("minecraft:poppy", 24, 0), new Goods("minecraft:gold_ingot", 2, 0)});
+      THEMES.put(Type.WEDDING, new Theme("", "order", 8));
+   }
 
    private static boolean wares(Type type) {
       return WARES.containsKey(type);
@@ -288,6 +397,12 @@ public final class FactionQuests {
          weights.add(3);
       }
 
+      for (java.util.Map.Entry<Type, Theme> theme : THEMES.entrySet()) {
+         String word = theme.getValue().building;
+         kinds.add(theme.getKey());
+         weights.add(!word.isEmpty() && built.stream().anyMatch(b -> b.contains(word)) ? 3 : 1);
+      }
+
       List<Quest> offers = new ArrayList<>();
       for (int index = 0; index < OFFERS && !kinds.isEmpty(); index++) {
          int total = weights.stream().mapToInt(Integer::intValue).sum();
@@ -356,7 +471,7 @@ public final class FactionQuests {
             int count = 8 + random.nextInt(7);
             return new Quest(id, town.id(), day, index, type, "", count, 6 + count, 3, 0);
          }
-         case TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> {
+         case TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING, SMITHY_COAL, ORE, STABLE_FEED, SADDLERY, TAVERN_ALE, TAVERN_MEAT, LIBRARY_INK, CHRONICLE, MAPS, HERBS, POTIONS, BANDAGES, CANDLES, BELLS, ALTAR, WALLS, GATE, WATCHTOWER, ARROWS_WATCH, SHIELDS, GRANARY, SEEDS, FERTILISER, FISH, NETS, BOATS, DYES, CARPETS, POTTERY, GLASS, JEWELS, HONEY, WEDDING -> {
             Goods[] wares = WARES.get(type);
             Goods goods = wares[random.nextInt(wares.length)];
             int reward = 8 + random.nextInt(8) + (type == Type.BUILDING ? 6 : 0) + (type == Type.RELICS ? 4 : 0);
@@ -440,7 +555,7 @@ public final class FactionQuests {
          case ARMS -> Component.translatable("quest.ancientwarfare.arms", quest.count, itemName(quest.target), townName);
          case MEDICINE -> Component.translatable("quest.ancientwarfare.medicine", quest.count, itemName(quest.target), townName);
          case HUNT -> Component.translatable("quest.ancientwarfare.hunt", quest.count, townName, HUNT_RANGE);
-         case TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> Component.translatable(
+         case TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING, SMITHY_COAL, ORE, STABLE_FEED, SADDLERY, TAVERN_ALE, TAVERN_MEAT, LIBRARY_INK, CHRONICLE, MAPS, HERBS, POTIONS, BANDAGES, CANDLES, BELLS, ALTAR, WALLS, GATE, WATCHTOWER, ARROWS_WATCH, SHIELDS, GRANARY, SEEDS, FERTILISER, FISH, NETS, BOATS, DYES, CARPETS, POTTERY, GLASS, JEWELS, HONEY, WEDDING -> Component.translatable(
             "quest.ancientwarfare." + quest.type.name().toLowerCase(java.util.Locale.ROOT), quest.count, itemName(quest.target), townName
          );
          case BOUNTY -> FactionDiplomacy.isOutlaw(quest.target)
@@ -468,7 +583,7 @@ public final class FactionQuests {
    private static Component progressLine(ServerLevel level, Quest quest) {
       long left = Math.max(0L, quest.expires - today(level));
       return switch (quest.type) {
-         case FOOD, MATERIALS, BOUNTY, ARMS, MEDICINE, HUNT, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> Component.translatable("quest.ancientwarfare.progress", quest.progress, quest.count, left);
+         case FOOD, MATERIALS, BOUNTY, ARMS, MEDICINE, HUNT, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING, SMITHY_COAL, ORE, STABLE_FEED, SADDLERY, TAVERN_ALE, TAVERN_MEAT, LIBRARY_INK, CHRONICLE, MAPS, HERBS, POTIONS, BANDAGES, CANDLES, BELLS, ALTAR, WALLS, GATE, WATCHTOWER, ARROWS_WATCH, SHIELDS, GRANARY, SEEDS, FERTILISER, FISH, NETS, BOATS, DYES, CARPETS, POTTERY, GLASS, JEWELS, HONEY, WEDDING -> Component.translatable("quest.ancientwarfare.progress", quest.progress, quest.count, left);
          case LETTER -> Component.translatable("quest.ancientwarfare.progress.letter", left);
       };
    }
@@ -511,7 +626,7 @@ public final class FactionQuests {
 
    private static boolean deliverableAt(Quest quest, FactionWorldData.Settlement town) {
       return switch (quest.type) {
-         case FOOD, MATERIALS, ARMS, MEDICINE, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> quest.town == town.id();
+         case FOOD, MATERIALS, ARMS, MEDICINE, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING, SMITHY_COAL, ORE, STABLE_FEED, SADDLERY, TAVERN_ALE, TAVERN_MEAT, LIBRARY_INK, CHRONICLE, MAPS, HERBS, POTIONS, BANDAGES, CANDLES, BELLS, ALTAR, WALLS, GATE, WATCHTOWER, ARROWS_WATCH, SHIELDS, GRANARY, SEEDS, FERTILISER, FISH, NETS, BOATS, DYES, CARPETS, POTTERY, GLASS, JEWELS, HONEY, WEDDING -> quest.town == town.id();
          case BOUNTY, HUNT -> quest.town == town.id() && quest.progress >= quest.count;
          case LETTER -> quest.destination == town.id();
       };
@@ -569,7 +684,7 @@ public final class FactionQuests {
       }
 
       switch (quest.type) {
-         case FOOD, MATERIALS, ARMS, MEDICINE, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING -> {
+         case FOOD, MATERIALS, ARMS, MEDICINE, TOOLS, BOOKS, ALCHEMY, FESTIVAL, CLOTH, RELICS, BUILDING, SMITHY_COAL, ORE, STABLE_FEED, SADDLERY, TAVERN_ALE, TAVERN_MEAT, LIBRARY_INK, CHRONICLE, MAPS, HERBS, POTIONS, BANDAGES, CANDLES, BELLS, ALTAR, WALLS, GATE, WATCHTOWER, ARROWS_WATCH, SHIELDS, GRANARY, SEEDS, FERTILISER, FISH, NETS, BOATS, DYES, CARPETS, POTTERY, GLASS, JEWELS, HONEY, WEDDING -> {
             int brought = takeItems(player, quest.target, quest.count - quest.progress);
             if (brought == 0) {
                player.sendSystemMessage(Component.translatable("quest.ancientwarfare.nothing", itemName(quest.target)).withStyle(ChatFormatting.RED));
@@ -659,6 +774,15 @@ public final class FactionQuests {
          } else if (quest.type == Type.BUILDING && !town.plan().isEmpty()) {
             // The materials hurry the next building on: the town pays half its cost less.
             town.wealth += 15;
+         } else if (THEMES.containsKey(quest.type)) {
+            Theme theme = THEMES.get(quest.type);
+            switch (theme.effect) {
+               case "order" -> town.order = Math.min(100, town.order + theme.amount);
+               case "health" -> town.health = Math.min(100, town.health + theme.amount);
+               case "garrison" -> town.garrison += theme.amount;
+               case "food" -> town.food = Math.max(0, town.food) + theme.amount;
+               default -> town.wealth += theme.amount;
+            }
          } else if (wares(quest.type)) {
             town.wealth += 10;
          }

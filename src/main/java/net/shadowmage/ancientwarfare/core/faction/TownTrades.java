@@ -106,6 +106,11 @@ public final class TownTrades {
       return FactionSimulation.settlementAt(FactionWorldData.get(level), npc.getFactionName(), npc.getX(), npc.getZ(), TOWN_RANGE);
    }
 
+   /** The townsperson's trade, picked the first time anyone asks; empty for children and beggars. */
+   public static String tradeOf(ServerLevel level, FactionNpcEntity npc) {
+      return grown(npc) && !npc.getPersistentData().getBoolean(HEAD) ? trade(level, npc).key : "";
+   }
+
    private static Trade trade(ServerLevel level, FactionNpcEntity npc) {
       CompoundTag data = npc.getPersistentData();
       String key = data.getString(TRADE);
