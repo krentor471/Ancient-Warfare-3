@@ -3019,5 +3019,8 @@
   "gui.ancientwarfare.world_map.buildings": "Buildings: %s",
   "gui.ancientwarfare.world_map.buildings_waiting": "Buildings: %s (%s still to put up)",
   "building.ancientwarfare.mine": "Mine",
-  "faction.ancientwarfare.prebuild": "The realms raise their towns and roads before your journey begins..."
+  "faction.ancientwarfare.prebuild": "The realms raise their towns and roads before your journey begins...",
+  "character.ancientwarfare.zealous": "Zealous",
+  "character.ancientwarfare.tolerant": "Tolerant",
+  "character.ancientwarfare.lustful": "Lustful"
 }

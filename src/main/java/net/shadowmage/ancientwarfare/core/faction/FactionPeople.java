@@ -51,7 +51,11 @@ public final class FactionPeople {
       SHY(1.0, 1.0, 1.0, 0.8, 1.0, 1.0, 1.0, 0.8, 1.0, false),
       TRUSTING(1.0, 0.9, 1.0, 1.1, 1.0, 1.0, 1.5, 1.2, 1.0, true),
       FORGIVING(0.9, 0.7, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, true),
-      VENGEFUL(1.2, 1.4, 1.1, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, false);
+      VENGEFUL(1.2, 1.4, 1.1, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, false),
+      // Traits of faith: the zealot hates other creeds, the tolerant shrugs, the lustful sins.
+      ZEALOUS(1.1, 1.1, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, true),
+      TOLERANT(0.9, 0.9, 1.0, 1.1, 1.0, 1.0, 1.0, 1.0, 1.0, true),
+      LUSTFUL(1.0, 1.0, 1.0, 1.0, 1.1, 1.0, 1.1, 1.5, 1.0, false);
 
       final double factionWar;
       final double playerWar;
@@ -101,7 +105,8 @@ public final class FactionPeople {
             case CRUEL -> two == KIND || two == FORGIVING || two == JUST;
             case HONEST -> two == DECEITFUL;
             case HEALTHY -> two == SICKLY || two == DRUNKARD || two == GLUTTONOUS;
-            case PIOUS -> two == CYNICAL;
+            case PIOUS -> two == CYNICAL || two == LUSTFUL;
+            case ZEALOUS -> two == TOLERANT || two == CYNICAL;
             case PARANOID -> two == TRUSTING || two == GREGARIOUS;
             case DRUNKARD -> two == TEMPERATE;
             case BRAVE -> two == CRAVEN;

@@ -341,7 +341,9 @@ public final class FactionFamilies extends SavedData {
          others.remove(faction);
          java.util.Collections.shuffle(others, new java.util.Random(random.nextLong()));
          for (String other : others) {
-            if (FactionDiplomacy.relation(level, faction, other).state() == RelationState.WAR) {
+            if (FactionDiplomacy.relation(level, faction, other).state() == RelationState.WAR
+               || random.nextDouble() >= FactionFaith.marriageFactor(level, faction, other, ruler.character())) {
+               // No match with an enemy, and seldom one across faiths.
                continue;
             }
 
