@@ -280,12 +280,20 @@ public final class TownTrades {
          return;
       }
 
+      if (CouncilHalls.act(player, npc, action)) {
+         return;
+      }
+
       Component speaker = npc.getDisplayName();
       RandomSource random = npc.getRandom();
+      boolean giver = npc.getPersistentData().getBoolean(HEAD) || !npc.getPersistentData().getString(CouncilHalls.COUNCIL_TAG).isEmpty();
       switch (action) {
          case "buy" -> {
             Trade trade = trade(level, npc);
-            if (!Coins.take(player, trade.sellPrice)) {
+            FactionWorldData.Settlement home = town(level, npc);
+            // Guild members buy at the brothers' price.
+            int price = home != null && CouncilHalls.member(player, home) ? Math.max(1, trade.sellPrice * 85 / 100) : trade.sellPrice;
+            if (!Coins.take(player, price)) {
                player.sendSystemMessage(Component.translatable("traveller.ancientwarfare.no_silver").withStyle(ChatFormatting.RED));
                return;
             }
@@ -336,7 +344,7 @@ public final class TownTrades {
             }
          }
          case "errand" -> {
-            if (!npc.getPersistentData().getBoolean(HEAD)) {
+            if (!giver) {
                return;
             }
 

@@ -126,6 +126,11 @@ public final class TownsfolkFavours {
          return;
       }
 
+      if (!npc.getPersistentData().getString(CouncilHalls.COUNCIL_TAG).isEmpty()) {
+         CouncilHalls.talk(player, npc);
+         return;
+      }
+
       Need need = need(npc);
       if (need != null && !held.isEmpty() && matches(held, need.item)) {
          deliver(player, npc, need);

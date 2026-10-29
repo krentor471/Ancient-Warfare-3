@@ -3333,5 +3333,22 @@
   "quest.ancientwarfare.honey": "Мёд для пасечника (%3$s). Принесите: %2$s, %1$s шт.",
   "quest.ancientwarfare.wedding": "Подарки к свадьбе (%3$s). Принесите: %2$s, %1$s шт.",
   "quest.ancientwarfare.item.wool_carpets": "Ковры",
-  "quest.ancientwarfare.item.beds": "Кровати"
+  "quest.ancientwarfare.item.beds": "Кровати",
+  "council.ancientwarfare.content": "Совет доволен, у города к владыке просьб нет.",
+  "council.ancientwarfare.demand.tax": "Подати душат город! Совет требует их снизить.",
+  "council.ancientwarfare.demand.wall": "Мы беззащитны. Совет требует поставить частокол.",
+  "council.ancientwarfare.demand.expel": "Чужаки занимают наши лавки. Совет требует их выгнать.",
+  "council.ancientwarfare.demand.feast": "Народ устал. Совет просит устроить праздник.",
+  "council.ancientwarfare.demand.road": "Дорога разбита, купцы не едут. Совет требует её починить.",
+  "council.ancientwarfare.demand.grain": "Амбары пусты. Совет требует хлеба для города.",
+  "council.ancientwarfare.meet": "Исполнить за свой счёт (%s сер.)",
+  "council.ancientwarfare.speak": "Уговорить подождать",
+  "council.ancientwarfare.met": "Совет благодарит тебя! Город этого не забудет.",
+  "council.ancientwarfare.persuaded": "Хорошо, совет подождёт.",
+  "council.ancientwarfare.unmoved": "Совет не станет ждать.",
+  "council.ancientwarfare.guild.hello": "Гильдия мастеров приветствует тебя. Вступишь в наше братство?",
+  "council.ancientwarfare.guild.member": "Рады видеть брата по гильдии. Для тебя всегда найдётся подряд.",
+  "council.ancientwarfare.guild.join": "Вступить в гильдию (%s сер.)",
+  "council.ancientwarfare.guild.joined": "Добро пожаловать в гильдию! Мастера этого города продают тебе дешевле.",
+  "council.ancientwarfare.guild.contract": "Взять подряд гильдии"
 }

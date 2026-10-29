@@ -79,7 +79,7 @@ public class TradeWorkGoal extends Goal {
 
    @Override
    public boolean canUse() {
-      if (!(this.npc.level() instanceof ServerLevel level) || !this.day() || this.npc.isBaby() || this.npc.getTarget() != null || this.npc.getLastHurtByMob() != null) {
+      if (!(this.npc.level() instanceof ServerLevel level) || !this.day() || this.npc.isBaby() || this.npc.isPassenger() || this.npc.getTarget() != null || this.npc.getLastHurtByMob() != null) {
          return false;
       }
 

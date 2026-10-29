@@ -3333,5 +3333,22 @@
   "quest.ancientwarfare.honey": "Honey for the beekeeper (%3$s). Bring: %2$s, %1$s pcs.",
   "quest.ancientwarfare.wedding": "Wedding gifts (%3$s). Bring: %2$s, %1$s pcs.",
   "quest.ancientwarfare.item.wool_carpets": "Carpets",
-  "quest.ancientwarfare.item.beds": "Beds"
+  "quest.ancientwarfare.item.beds": "Beds",
+  "council.ancientwarfare.content": "The council is content; the town asks nothing of its lord.",
+  "council.ancientwarfare.demand.tax": "The taxes are strangling the town! The council demands they be lowered.",
+  "council.ancientwarfare.demand.wall": "We are defenceless. The council demands a palisade.",
+  "council.ancientwarfare.demand.expel": "Foreigners take our stalls. The council demands they be driven out.",
+  "council.ancientwarfare.demand.feast": "The people are weary. The council asks for a feast.",
+  "council.ancientwarfare.demand.road": "The road is broken and merchants stay away. The council demands it be mended.",
+  "council.ancientwarfare.demand.grain": "The granaries are empty. The council demands bread for the town.",
+  "council.ancientwarfare.meet": "Meet it at your own cost (%s silver)",
+  "council.ancientwarfare.speak": "Talk them into waiting",
+  "council.ancientwarfare.met": "The council thanks you! The town won't forget.",
+  "council.ancientwarfare.persuaded": "Very well, the council will wait.",
+  "council.ancientwarfare.unmoved": "The council will not wait.",
+  "council.ancientwarfare.guild.hello": "The masters' guild greets you. Will you join our brotherhood?",
+  "council.ancientwarfare.guild.member": "Good to see a guild brother. There's always a contract for you.",
+  "council.ancientwarfare.guild.join": "Join the guild (%s silver)",
+  "council.ancientwarfare.guild.joined": "Welcome to the guild! The town's craftsmen sell to you cheaper.",
+  "council.ancientwarfare.guild.contract": "Take a guild contract"
 }
