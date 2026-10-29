@@ -71,7 +71,7 @@ public final class FactionWorldData extends SavedData {
    private boolean historyDone;
    private boolean prebuilt;
    /** How far from spawn the prebuild reaches; 0 for the whole world. */
-   private int prebuildRadius = 1000;
+   private int prebuildRadius = 0;
    /** The world's news, oldest first, as text components in JSON; see FactionNews. */
    private final List<ChronicleEntry> chronicle = new ArrayList<>();
    public static final int CHRONICLE_SIZE = 400;

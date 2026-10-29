@@ -20,7 +20,7 @@ public final class FactionPrebuild {
    private static final long MAX_TICKS = 20L * 60L * 8L;
    /** A wider prebuild, asked for by command, may run this long: two hours. */
    private static final long WIDE_MAX_TICKS = 20L * 60L * 120L;
-   private static int radius = RADIUS;
+   private static int radius = 0;
    private static final int CHECK_TICKS = 20;
 
    private static boolean active;
@@ -97,7 +97,7 @@ public final class FactionPrebuild {
 
       boolean roads = FactionRoads.unfinishedNear(level, data);
 
-      long limit = radius == RADIUS ? MAX_TICKS : WIDE_MAX_TICKS;
+      long limit = radius <= 0 ? Long.MAX_VALUE / 2 : radius == RADIUS ? MAX_TICKS : WIDE_MAX_TICKS;
       if (waiting == 0 && !roads || level.getGameTime() - started > limit) {
          finish(level, data);
          return;
@@ -109,7 +109,7 @@ public final class FactionPrebuild {
       }
 
       float done = total == 0 ? 1.0F : 1.0F - (float)waiting / total;
-      float time = (float)(level.getGameTime() - started) / limit;
+      float time = radius <= 0 ? 0.0F : (float)(level.getGameTime() - started) / limit;
       bar.setProgress(Math.max(0.0F, Math.min(1.0F, Math.max(done * 0.9F, time))));
       bar.setName(Component.translatable("faction.ancientwarfare.prebuild_count", total - waiting, total, FactionRoads.unfinishedCount(level, data)));
       for (ServerPlayer player : level.players()) {
@@ -121,8 +121,8 @@ public final class FactionPrebuild {
    private static void finish(ServerLevel level, FactionWorldData data) {
       active = false;
       data.setPrebuilt(true);
-      // A later wider prebuild is asked for again; the usual one is what a new world starts with.
-      data.setPrebuildRadius(RADIUS);
+      // A new world raises the whole map before play; a later prebuild is asked for by command.
+      data.setPrebuildRadius(0);
       if (bar != null) {
          bar.removeAllPlayers();
          bar = null;
