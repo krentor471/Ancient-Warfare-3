@@ -45,7 +45,8 @@ public final class FaithSpread extends SavedData {
    }
 
    private static boolean has(FactionWorldData.Settlement settlement, String word) {
-      return settlement.buildings().stream().anyMatch(building -> building.contains(word));
+      // Far from any player a town's plans stand for what it has raised: its priests are at work already.
+      return settlement.buildings().stream().anyMatch(building -> building.contains(word)) || settlement.plan().stream().anyMatch(building -> building.contains(word));
    }
 
    /** A preacher sets to work on a town; returns false when one already does or the town already holds that creed. */
@@ -84,8 +85,7 @@ public final class FaithSpread extends SavedData {
 
       for (FactionWorldData.Settlement town : towns) {
          // A grown village without a holy place of its own builds a shrine first.
-         if (town.population() >= SHRINE_POPULATION && !has(town, "shrine") && !has(town, "temple")
-            && !town.plan().contains(TownBuildings.Kind.SHRINE.key())) {
+         if (town.population() >= SHRINE_POPULATION && !has(town, "shrine") && !has(town, "temple")) {
             town.plan().add(0, TownBuildings.Kind.SHRINE.key());
          }
 
