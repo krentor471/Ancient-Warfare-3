@@ -107,6 +107,7 @@ public final class FactionSimulation {
       CouncilHalls.tick(level, data);
       CouncilHalls.tidy(level);
       TownCalendar.tick(level, data);
+      TownWatch.tick(level, data);
       FactionGrowth.tick(level, data);
       FactionRepairs.tick(level, data);
       FreeVillages.tick(level, data);
@@ -132,6 +133,7 @@ public final class FactionSimulation {
       FaithSpread.simulateDay(level, data);
       CouncilHalls.simulateDay(level, data);
       TownCalendar.simulateDay(level, data);
+      TownTroubles.simulateDay(level, data);
       Map<String, Integer> recruited = new HashMap<>();
       Map<String, Integer> settlements = new HashMap<>();
       data.settlements().forEach(settlement -> settlements.merge(settlement.faction(), 1, Integer::sum));

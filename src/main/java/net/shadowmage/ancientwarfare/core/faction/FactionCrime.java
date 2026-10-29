@@ -93,6 +93,7 @@ public final class FactionCrime {
          int loss = Math.max(MOST_THEFT_STANDING, THEFT_STANDING - taken / ITEMS_PER_STANDING);
          int standing = standings.adjustStanding(player.getUUID(), faction, loss);
          FactionChatter.cry(level, player, witness, "theft");
+         TownWatch.wanted(player, faction, 20 + taken);
          player.sendSystemMessage(Component.translatable("crime.ancientwarfare.theft_seen", FactionNews.factionName(faction), loss, standing).withStyle(ChatFormatting.RED));
       } else if (level.getRandom().nextDouble() < FOUND_OUT_CHANCE) {
          int standing = standings.adjustStanding(player.getUUID(), faction, FOUND_OUT_STANDING);

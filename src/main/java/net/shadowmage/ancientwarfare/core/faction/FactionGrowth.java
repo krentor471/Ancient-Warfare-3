@@ -529,6 +529,17 @@ public final class FactionGrowth {
    }
 
    /** For the debug command: the nearest settlement decides on a building if it has none waiting, and puts it up now. */
+   /** A house built in the town for a player who bought one: a manor-sized hall at the town's edge, or null. */
+   static FactionWorldData.Hall buildHome(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement) {
+      if (!piece(level, data, settlement, TownBuildings.Kind.MANOR, true)) {
+         return null;
+      }
+
+      settlement.buildings().add(TownBuildings.Kind.MANOR.key());
+      data.setDirty();
+      return settlement.halls().get(settlement.halls().size() - 1);
+   }
+
    public static void force(ServerLevel level, ServerPlayer player) {
       FactionWorldData data = FactionWorldData.get(level);
       FactionWorldData.Settlement nearest = null;

@@ -92,6 +92,7 @@ public final class TownCalendar {
 
    /** Players who know the town's realm hear of its fair, tournament or feast. */
    private static void news(ServerLevel level, FactionWorldData.Settlement town, String what) {
+      TownChronicle.write(level, town.id(), what);
       FactionStandingData standings = FactionStandingData.get(level);
       for (ServerPlayer player : level.players()) {
          if (standings.knownFactions(player.getUUID()).contains(town.faction()) && !standings.isHostile(player.getUUID(), town.faction())) {

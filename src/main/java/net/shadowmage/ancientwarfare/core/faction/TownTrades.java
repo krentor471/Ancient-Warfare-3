@@ -215,6 +215,11 @@ public final class TownTrades {
       player.sendSystemMessage(Component.literal("  ").append(Component.translatable("head.ancientwarfare.who", opinion).withStyle(mood)));
       FactionWorldData.Settlement home = town(player.serverLevel(), head);
       if (home != null) {
+         String homeId = "/awtownsfolk " + head.getId() + " ";
+         int[] prices = {TownHomes.HOUSE_PRICE, TownHomes.FURNISH_PRICE, TownHomes.SERVANT_PRICE};
+         TownHomes.offer(player, head, home, (act, key) -> button(
+            Component.translatable(key, act.equals("home_buy") ? prices[0] : act.equals("home_furnish") ? prices[1] : prices[2]), homeId + act, ChatFormatting.GREEN, Component.translatable(key + ".hint")
+         ));
          player.sendSystemMessage(Component.literal("  ").append(Component.translatable("head.ancientwarfare.faith", FactionFaith.name(FaithSpread.faith(player.serverLevel(), home))).withStyle(ChatFormatting.LIGHT_PURPLE)));
       }
       Errand errand = errand(head);
@@ -271,12 +276,35 @@ public final class TownTrades {
    /** A click on one of the deal buttons: "buy", "sell", or the head's "gift", "persuade", "errand", "deliver", "steal". */
    public static void act(ServerPlayer player, int npcId, String action) {
       ServerLevel level = player.serverLevel();
+      if (action.startsWith("court_")) {
+         TownWatch.act(player, action);
+         return;
+      }
+
       if (!(level.getEntity(npcId) instanceof FactionNpcEntity npc) || !npc.isAlive() || npc.distanceToSqr(player) > 64.0 || !grown(npc)) {
          return;
       }
 
       FactionStandingData standings = FactionStandingData.get(level);
       if (standings.isHostile(player.getUUID(), npc.getFactionName())) {
+         return;
+      }
+
+      if (action.equals("chronicle")) {
+         FactionWorldData.Settlement home = town(level, npc);
+         if (home != null) {
+            TownChronicle.read(player, home);
+         }
+
+         return;
+      }
+
+      if (action.startsWith("home_")) {
+         FactionWorldData.Settlement home = town(level, npc);
+         if (home != null && npc.getPersistentData().getBoolean(HEAD)) {
+            TownHomes.act(player, npc, home, action);
+         }
+
          return;
       }
 

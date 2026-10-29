@@ -70,6 +70,7 @@ public final class FaithSpread extends SavedData {
 
       this.preachers.remove(town.id());
       this.setDirty();
+      TownChronicle.write(level, town.id(), "faith", "#" + ((net.minecraft.network.chat.contents.TranslatableContents)FactionFaith.name(faith).getContents()).getKey());
       FactionNews.tell(level, Component.translatable("news.ancientwarfare.town_converted", FactionNews.named(town), FactionFaith.name(faith)).withStyle(ChatFormatting.LIGHT_PURPLE));
    }
 
