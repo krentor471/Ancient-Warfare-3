@@ -163,6 +163,7 @@ public final class TownsfolkFavours {
          FactionRumours.chat(player, npc);
       }
 
+      TownTrades.offer(player, npc);
       if (FactionStandingData.get(level).getStanding(player.getUUID(), npc.getFactionName()) >= HIRE_STANDING) {
          player.sendSystemMessage(
             Component.literal("  [")

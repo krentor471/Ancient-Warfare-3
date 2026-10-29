@@ -360,6 +360,12 @@ public final class ForgeFactionCommands {
                         );
                         return 1;
                      }))
+                     .then(Commands.argument("action", StringArgumentType.word()).executes(context -> {
+                        net.shadowmage.ancientwarfare.core.faction.TownTrades.act(
+                           context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "npc"), StringArgumentType.getString(context, "action")
+                        );
+                        return 1;
+                     }))
                )
          );
       // Run by clicking a mercenary captain's offer in chat.
