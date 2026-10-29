@@ -28,6 +28,7 @@ import net.shadowmage.ancientwarfare.core.tile.AdvancedSpawnerBlockEntity;
  * simulated garrison still has them.
  */
 public final class FactionSimulation {
+   private static final int FEW_PEOPLE = 6;
    public static final long DAY_TICKS = 24000L;
    private static final int GARRISON_CHECK_TICKS = 100;
    private static final int RESPAWN_TICKS = 600;
@@ -129,10 +130,21 @@ public final class FactionSimulation {
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          int capacity = capacity(settlement);
+         // More soldiers than a settlement can keep go back to their fields: a few each day.
+         int keep = FactionAI.isFort(settlement) ? Integer.MAX_VALUE : Math.max(2, settlement.population / 2);
+         if (settlement.garrison > keep) {
+            int home = Math.max(1, (settlement.garrison - keep) / 4);
+            settlement.garrison -= home;
+            settlement.population += home;
+         }
+
          // People multiply only with food in store, in health and in order.
          boolean thriving = settlement.food() >= settlement.population && settlement.health() > 40 && settlement.order() >= 20;
          if (thriving && settlement.population < capacity) {
             settlement.population = Math.min(capacity, settlement.population + Math.max(1, settlement.population / 20));
+         } else if (settlement.population < FEW_PEOPLE && settlement.food() > 0 && settlement.plague() == 0 && settlement.built()) {
+            // A place nearly emptied fills again slowly: kin and drifters come back to empty houses.
+            settlement.population++;
          }
 
          String faction = settlement.faction();
