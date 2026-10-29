@@ -72,6 +72,7 @@ public final class FactionSimulation {
    public static void tick(ServerLevel level) {
       FactionWorldData data = FactionWorldData.get(level);
       FactionHistory.runIfNeeded(level, data);
+      Perf.report();
       long clockDay = level.getGameTime() / DAY_TICKS;
       if (data.lastSimulatedDay() > clockDay + data.dayOffset()) {
          // Days simulated ahead of the clock (the history, the test command) count as already past.
@@ -83,42 +84,42 @@ public final class FactionSimulation {
          data.setLastSimulatedDay(day);
       } else if (day > data.lastSimulatedDay()) {
          data.setLastSimulatedDay(day);
-         simulateDay(level, data);
+         Perf.run("simulateDay", () -> simulateDay(level, data));
       }
 
-      FactionPrebuild.tick(level, data);
-      FactionExpansion.tick(level, data);
-      FactionArmies.tick(level, data);
-      FactionConquest.tick(level, data);
-      PlayerCountry.tick(level, data);
-      FactionSpies.tick(level, data);
-      FactionIntrigue.tick(level, data);
-      FactionIncidents.tick(level, data);
-      FactionFeasts.tick(level, data);
-      FactionPastimes.tick(level, data);
-      FactionTournaments.tick(level);
-      FactionCampaigns.tick(level, data);
-      FactionRoads.tick(level, data);
-      FactionCaravans.tick(level, data);
-      FactionTravellers.tick(level, data);
-      FactionRumours.tick(level, data);
-      FactionTownLife.tick(level, data);
-      TownEncounters.tick(level, data);
-      CouncilHalls.tick(level, data);
-      CouncilHalls.tidy(level);
-      TownCalendar.tick(level, data);
-      TownWatch.tick(level, data);
-      FactionGrowth.tick(level, data);
-      FactionRepairs.tick(level, data);
-      FreeVillages.tick(level, data);
-      FactionPorts.tick(level, data);
-      FactionQuests.tick(level, data);
-      FactionChatter.tick(level, data);
-      FactionMercenaries.tick(level, data);
-      FactionEnvoys.tick(level);
+      Perf.run("FactionPrebuild", () -> FactionPrebuild.tick(level, data));
+      Perf.run("FactionExpansion", () -> FactionExpansion.tick(level, data));
+      Perf.run("FactionArmies", () -> FactionArmies.tick(level, data));
+      Perf.run("FactionConquest", () -> FactionConquest.tick(level, data));
+      Perf.run("PlayerCountry", () -> PlayerCountry.tick(level, data));
+      Perf.run("FactionSpies", () -> FactionSpies.tick(level, data));
+      Perf.run("FactionIntrigue", () -> FactionIntrigue.tick(level, data));
+      Perf.run("FactionIncidents", () -> FactionIncidents.tick(level, data));
+      Perf.run("FactionFeasts", () -> FactionFeasts.tick(level, data));
+      Perf.run("FactionPastimes", () -> FactionPastimes.tick(level, data));
+      Perf.run("FactionTournaments", () -> FactionTournaments.tick(level));
+      Perf.run("FactionCampaigns", () -> FactionCampaigns.tick(level, data));
+      Perf.run("FactionRoads", () -> FactionRoads.tick(level, data));
+      Perf.run("FactionCaravans", () -> FactionCaravans.tick(level, data));
+      Perf.run("FactionTravellers", () -> FactionTravellers.tick(level, data));
+      Perf.run("FactionRumours", () -> FactionRumours.tick(level, data));
+      Perf.run("FactionTownLife", () -> FactionTownLife.tick(level, data));
+      Perf.run("TownEncounters", () -> TownEncounters.tick(level, data));
+      Perf.run("CouncilHalls", () -> CouncilHalls.tick(level, data));
+      Perf.run("CouncilHalls.tidy", () -> CouncilHalls.tidy(level));
+      Perf.run("TownCalendar", () -> TownCalendar.tick(level, data));
+      Perf.run("TownWatch", () -> TownWatch.tick(level, data));
+      Perf.run("FactionGrowth", () -> FactionGrowth.tick(level, data));
+      Perf.run("FactionRepairs", () -> FactionRepairs.tick(level, data));
+      Perf.run("FreeVillages", () -> FreeVillages.tick(level, data));
+      Perf.run("FactionPorts", () -> FactionPorts.tick(level, data));
+      Perf.run("FactionQuests", () -> FactionQuests.tick(level, data));
+      Perf.run("FactionChatter", () -> FactionChatter.tick(level, data));
+      Perf.run("FactionMercenaries", () -> FactionMercenaries.tick(level, data));
+      Perf.run("FactionEnvoys", () -> FactionEnvoys.tick(level));
 
       if (level.getGameTime() % GARRISON_CHECK_TICKS == 0L && !level.players().isEmpty()) {
-         maintainGarrisons(level, data);
+         Perf.run("garrisons", () -> maintainGarrisons(level, data));
       }
    }
 

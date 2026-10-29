@@ -412,8 +412,16 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
    }
 
    public void aiStep() {
-      super.aiStep();
-      this.updateMountedMovement();
+      if (this.level().isClientSide) {
+         super.aiStep();
+         this.updateMountedMovement();
+         return;
+      }
+
+      net.shadowmage.ancientwarfare.core.faction.Perf.run("npcs", () -> {
+         super.aiStep();
+         this.updateMountedMovement();
+      });
    }
 
    public double getMyRidingOffset() {

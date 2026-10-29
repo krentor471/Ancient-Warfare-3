@@ -89,14 +89,16 @@ public final class ForgeAwsWorldGenerationEvents {
    public static void onServerTick(ServerTickEvent event) {
       if (event.phase == Phase.END) {
          ServerLevel overworld = event.getServer().overworld();
-         LargeIslandWorldGenerator.tick(overworld);
+         net.shadowmage.ancientwarfare.core.faction.Perf.run("islandGen", () -> LargeIslandWorldGenerator.tick(overworld));
          if (!LargeIslandWorldGenerator.active(overworld)) {
-            AwtWorldGenerator.tick(overworld);
+            net.shadowmage.ancientwarfare.core.faction.Perf.run("townGen(AWT)", () -> AwtWorldGenerator.tick(overworld));
             if (AwtWorldGenerationData.get(overworld).active() == null) {
                if (cooldown > 0) {
                   cooldown--;
                } else {
-                  if (processPending(overworld)) {
+                  boolean[] done = new boolean[1];
+                  net.shadowmage.ancientwarfare.core.faction.Perf.run("structureGen(AWS)", () -> done[0] = processPending(overworld));
+                  if (done[0]) {
                      cooldown = AWStructureConfig.awsCandidateIntervalTicks() - 1;
                   }
                }

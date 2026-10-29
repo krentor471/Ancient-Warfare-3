@@ -221,14 +221,14 @@ public final class FactionExpansion {
    public static void tick(ServerLevel level, FactionWorldData data) {
       if (level.getGameTime() % BUILD_CHECK_TICKS != 0L) {
          if (level.getGameTime() % LAYOUT_CHECK_TICKS == 0L) {
-            buildNearest(level, data);
+            Perf.run("exp.buildNearest", () -> buildNearest(level, data));
          }
 
          return;
       }
 
-      foundCapitals(level, data);
-      moveOffWater(level, data);
+      Perf.run("exp.foundCapitals", () -> foundCapitals(level, data));
+      Perf.run("exp.moveOffWater", () -> moveOffWater(level, data));
       Iterator<FactionWorldData.PlannedSettlement> iterator = data.plannedSettlements().iterator();
 
       while (iterator.hasNext()) {
@@ -264,7 +264,9 @@ public final class FactionExpansion {
             continue;
          }
 
-         boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction(), AwsWorldGenerator.Site.FORT);
+         boolean[] result = new boolean[1];
+         Perf.run("exp.fort", () -> result[0] = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction(), AwsWorldGenerator.Site.FORT));
+         boolean built = result[0];
          if (built) {
             FactionNews.fortified(level, plan.faction(), plan.x(), plan.z());
          }
@@ -277,7 +279,7 @@ public final class FactionExpansion {
          return;
       }
 
-      buildNearest(level, data);
+      Perf.run("exp.buildNearest", () -> buildNearest(level, data));
    }
 
    /** True when any faction already plans a fort this close: two rivals meeting on a border pick the same midpoint. */

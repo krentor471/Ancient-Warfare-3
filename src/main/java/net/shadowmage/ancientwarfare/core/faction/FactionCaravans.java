@@ -166,6 +166,12 @@ public final class FactionCaravans {
             continue;
          }
 
+         // Only on land already loaded: making the world there on the spot stalls the server for seconds.
+         long at = points.get(start);
+         if (level.getChunkSource().getChunkNow(FactionRoads.unpackX(at) >> 4, FactionRoads.unpackZ(at) >> 4) == null) {
+            continue;
+         }
+
          // Head for whichever end is farther, so the caravan passes the player.
          int direction = start < points.size() / 2 ? 1 : -1;
          FactionWorldData.Settlement home = data.endpoint(route, direction < 0);
@@ -638,6 +644,10 @@ public final class FactionCaravans {
       private void hop(ServerLevel level, FactionNpcEntity npc, long point) {
          int x = FactionRoads.unpackX(point);
          int z = FactionRoads.unpackZ(point);
+         if (level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) {
+            return;
+         }
+
          npc.getNavigation().stop();
          double y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
          npc.moveTo(x + 0.5, y, z + 0.5);
