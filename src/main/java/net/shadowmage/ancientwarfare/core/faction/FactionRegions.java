@@ -91,7 +91,7 @@ public final class FactionRegions {
       FactionWorldData data = FactionWorldData.get(level);
       String faction = data.realmFaction(cell.key());
       if (faction == null) {
-         faction = pickOwner(level, cell.key(), cell.seedX(), cell.seedZ());
+         faction = pickOwner(level, data, cell.key(), cell.seedX(), cell.seedZ());
          data.setRealmFaction(cell.key(), faction);
       }
 
@@ -144,7 +144,27 @@ public final class FactionRegions {
       return biomeScores(level.getUncachedNoiseBiome(x >> 2, 64 >> 2, z >> 2)).getOrDefault(faction, 0) > 0;
    }
 
-   private static String pickOwner(ServerLevel level, long key, int seedX, int seedZ) {
+   /**
+    * Whether a faction may take this realm: one it holds nowhere yet, or one beside a realm it holds
+    * already, so that a country's lands lie together and are not scattered over the world.
+    */
+   private static boolean near(FactionWorldData data, String faction, long key) {
+      boolean holdsAny = false;
+      int x = ChunkPos.getX(key);
+      int z = ChunkPos.getZ(key);
+      for (Map.Entry<Long, String> realm : data.realmFactions().entrySet()) {
+         if (realm.getValue().equals(faction)) {
+            holdsAny = true;
+            if (Math.abs(ChunkPos.getX(realm.getKey()) - x) <= 1 && Math.abs(ChunkPos.getZ(realm.getKey()) - z) <= 1) {
+               return true;
+            }
+         }
+      }
+
+      return !holdsAny;
+   }
+
+   private static String pickOwner(ServerLevel level, FactionWorldData data, long key, int seedX, int seedZ) {
       RandomSource random = RandomSource.create(level.getSeed() ^ key * 6364136223846793005L ^ 0x0A3E_2B1DL);
       if (random.nextDouble() < WILD_CHANCE) {
          return "";
@@ -162,6 +182,8 @@ public final class FactionRegions {
 
          biomeScores(biome).forEach((faction, score) -> scores.merge(faction, score, Integer::sum));
       }
+
+      scores.keySet().removeIf(faction -> !near(data, faction, key));
 
       if (sea * 2 > SAMPLE_OFFSETS.length) {
          // Mostly open sea: nobody's country.

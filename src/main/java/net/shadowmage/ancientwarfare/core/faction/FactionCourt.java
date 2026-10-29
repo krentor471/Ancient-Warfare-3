@@ -185,7 +185,8 @@ public final class FactionCourt extends SavedData {
    /** Someone new at court: an heir in youth, the others grown. */
    private static Courtier newcomer(Courtier[] court, int ruler, RandomSource random, long day, Role role) {
       int age = role == Role.HEIR ? 14 + random.nextInt(14) : 25 + random.nextInt(30);
-      return new Courtier(freshName(court, ruler, random), random.nextInt(TRAITS.length), FactionPeople.newLook(random), FactionPeople.bornAt(day, age, random), FactionPeople.newCharacter(random));
+      int trait = random.nextInt(TRAITS.length);
+      return new Courtier(freshName(court, ruler, random), trait, FactionPeople.newLook(random), FactionPeople.bornAt(day, age, random), FactionPeople.newCharacter(random, TRAITS[trait]));
    }
 
    private static int freshName(Courtier[] court, int ruler, RandomSource random) {
@@ -825,7 +826,10 @@ public final class FactionCourt extends SavedData {
             int look = entry.contains("Look") ? entry.getInt("Look") : FactionPeople.oldLook(faction + i, entry.getInt("Name"));
             court[i] = new Courtier(
                entry.getInt("Name"), entry.getInt("Trait"), look, entry.contains("Born") ? entry.getLong("Born") : Long.MIN_VALUE,
-               entry.contains("Character") ? entry.getInt("Character") : FactionPeople.oldCharacter(look)
+               FactionPeople.consistent(
+                  entry.contains("Character") ? entry.getInt("Character") : FactionPeople.oldCharacter(look),
+                  TRAITS[Mth.clamp(entry.getInt("Trait"), 0, TRAITS.length - 1)]
+               )
             );
             CompoundTag favor = entry.getCompound("Favor");
             for (String player : favor.getAllKeys()) {

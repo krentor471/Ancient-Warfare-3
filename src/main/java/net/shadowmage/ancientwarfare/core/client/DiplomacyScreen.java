@@ -887,9 +887,6 @@ public class DiplomacyScreen extends Screen {
                if (!this.roomy()) {
                   // No room for the trade goods' own row: they are listed here.
                   tip.addAll(this.tradeGoodsTip(stores));
-                  if (stores.length == FactionDeals.KINDS + 2) {
-                     tip.add(armamentLine(stores));
-                  }
 
                   tip.addAll(entry.hosts());
                }
@@ -941,11 +938,6 @@ public class DiplomacyScreen extends Screen {
          graphics.drawString(this.font, trade, x + width / 2, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
       } else {
          graphics.drawString(this.font, Component.literal("◆ ").append(trade), x, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
-         if (stores.length == FactionDeals.KINDS + 2) {
-            y += 12;
-            graphics.drawString(this.font, Component.literal("◆ ").append(armamentLine(stores)), x, y, TEXT_COLOR);
-         }
-
          for (Component host : entry.hosts()) {
             y += 12;
             graphics.drawString(this.font, Component.literal("◆ ").append(host), x, y, TEXT_COLOR);
@@ -1191,13 +1183,6 @@ public class DiplomacyScreen extends Screen {
       new ItemStack(Items.OAK_LOG), new ItemStack(Items.COBBLESTONE), new ItemStack(Items.IRON_INGOT), new ItemStack(Items.WHEAT),
       new ItemStack(Items.LEATHER), new ItemStack(Items.WHITE_WOOL), new ItemStack(Items.COAL), new ItemStack(Items.COPPER_INGOT)
    };
-
-   /** How the faction's soldiers are armed, by its stores. */
-   private static Component armamentLine(int[] stores) {
-      int tier = net.shadowmage.ancientwarfare.core.faction.FactionArmament.tier(java.util.Arrays.copyOfRange(stores, 1, FactionDeals.KINDS + 1));
-      ChatFormatting color = tier == 2 ? ChatFormatting.GREEN : tier == 1 ? ChatFormatting.YELLOW : ChatFormatting.GRAY;
-      return Component.translatable("gui.ancientwarfare.diplomacy.armament", Component.translatable("gui.ancientwarfare.diplomacy.armament." + tier).withStyle(color));
-   }
 
    /** The trade goods' stores, one a line, the faction's own marked. */
    private List<Component> tradeGoodsTip(int[] stores) {

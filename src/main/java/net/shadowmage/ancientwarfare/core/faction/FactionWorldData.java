@@ -84,6 +84,11 @@ public final class FactionWorldData extends SavedData {
    }
 
    /** Faction a realm started with, or null when it was never decided. "" means a wild realm. */
+   /** Every realm decided so far: its grid cell and the faction it fell to. */
+   public Map<Long, String> realmFactions() {
+      return java.util.Collections.unmodifiableMap(this.realmFactions);
+   }
+
    public String realmFaction(long realm) {
       return this.realmFactions.get(realm);
    }
@@ -856,6 +861,8 @@ public final class FactionWorldData extends SavedData {
          int look = entry.contains("Look") ? entry.getInt("Look") : FactionPeople.oldLook(faction, name);
          long born = entry.contains("Born") ? entry.getLong("Born") : Long.MIN_VALUE;
          int character = entry.contains("Character") ? entry.getInt("Character") : FactionPeople.oldCharacter(look);
+         FactionRulers.Trait[] traits = FactionRulers.Trait.values();
+         character = FactionPeople.consistent(character, traits[Math.max(0, Math.min(traits.length - 1, entry.getInt("Trait")))]);
          data.rulers.put(faction, new Ruler(name, entry.getInt("Trait"), entry.getLong("Since"), look, born, entry.getBoolean("Ill"), character));
       }
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
@@ -1524,6 +1531,18 @@ public final class FactionWorldData extends SavedData {
 
       public boolean built() {
          return this.built;
+      }
+
+      /** A settlement still on paper moves its centre here, keeping its size. */
+      public void moveUnbuilt(int x, int z) {
+         if (this.built) {
+            return;
+         }
+
+         int halfX = (this.max.getX() - this.min.getX()) / 2;
+         int halfZ = (this.max.getZ() - this.min.getZ()) / 2;
+         this.min = new BlockPos(x - halfX, this.min.getY(), z - halfZ);
+         this.max = new BlockPos(x + halfX, this.max.getY(), z + halfZ);
       }
 
       /** The settlement now stands: its buildings and the area they cover. */

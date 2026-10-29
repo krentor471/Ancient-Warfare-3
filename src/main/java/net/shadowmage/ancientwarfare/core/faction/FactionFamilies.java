@@ -277,7 +277,14 @@ public final class FactionFamilies extends SavedData {
       }
 
       RandomSource random = level.getRandom();
-      FactionCourt.nameHeir(level, faction, next.name, random.nextInt(FactionRulers.Trait.values().length), next.look, next.born, next.character);
+      // The heir's disposition is one his character allows.
+      FactionRulers.Trait[] dispositions = FactionRulers.Trait.values();
+      int disposition = random.nextInt(dispositions.length);
+      for (int i = 0; i < dispositions.length && FactionPeople.consistent(next.character, dispositions[disposition]) != next.character; i++) {
+         disposition = (disposition + 1) % dispositions.length;
+      }
+
+      FactionCourt.nameHeir(level, faction, next.name, disposition, next.look, next.born, FactionPeople.consistent(next.character, dispositions[disposition]));
       if (next.born != day) {
          // A son born today is heir from his first breath; the birth is news enough.
          FactionNews.tell(

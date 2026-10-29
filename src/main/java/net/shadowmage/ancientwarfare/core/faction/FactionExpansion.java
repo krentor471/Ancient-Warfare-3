@@ -118,9 +118,8 @@ public final class FactionExpansion {
                FactionRegions.Province province = pickProvince(level, data, faction);
                if (province != null) {
                   data.setProvinceOwner(province.key(), faction);
-                  data.addUnbuiltSettlement(
-                     faction, FactionTowns.VILLAGE, province.seedX(), level.getSeaLevel(), province.seedZ(), province.key(), level.getGameTime(), 0, SETTLERS
-                  );
+                  int[] dry = dryPoint(level, province.seedX(), province.seedZ());
+                  data.addUnbuiltSettlement(faction, FactionTowns.VILLAGE, dry[0], level.getSeaLevel(), dry[1], province.key(), level.getGameTime(), 0, SETTLERS);
                   data.setTreasury(faction, data.treasury(faction) - cost);
                   FactionResources.spend(data, faction, FactionResources.VILLAGE_COST);
                   source.population -= SETTLERS;
@@ -229,6 +228,7 @@ public final class FactionExpansion {
       }
 
       foundCapitals(level, data);
+      moveOffWater(level, data);
       Iterator<FactionWorldData.PlannedSettlement> iterator = data.plannedSettlements().iterator();
 
       while (iterator.hasNext()) {
@@ -236,7 +236,8 @@ public final class FactionExpansion {
          if (!plan.fort()) {
             // A village planned before villages lived on paper.
             iterator.remove();
-            data.addUnbuiltSettlement(plan.faction(), FactionTowns.VILLAGE, plan.x(), level.getSeaLevel(), plan.z(), plan.province(), level.getGameTime(), 0, SETTLERS);
+            int[] dry = dryPoint(level, plan.x(), plan.z());
+            data.addUnbuiltSettlement(plan.faction(), FactionTowns.VILLAGE, dry[0], level.getSeaLevel(), dry[1], plan.province(), level.getGameTime(), 0, SETTLERS);
             continue;
          }
 
@@ -331,6 +332,72 @@ public final class FactionExpansion {
       return false;
    }
 
+   /** Settlements on paper already checked for standing on dry land this session. */
+   private static final Set<Integer> DRY_CHECKED = new HashSet<>();
+   private static final int DRY_CHECKS_PER_STEP = 3;
+   private static final int DRY_STEP = 48;
+   private static final int DRY_RINGS = 10;
+   private static final int DRY_FOOTPRINT = 24;
+
+   /** Settlements planned on paper over a lake or the sea (from before the land was looked at) move ashore. */
+   private static void moveOffWater(ServerLevel level, FactionWorldData data) {
+      int checks = 0;
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.built() || !DRY_CHECKED.add(settlement.id())) {
+            continue;
+         }
+
+         BlockPos center = settlement.center();
+         int[] dry = dryPoint(level, center.getX(), center.getZ());
+         if (dry[0] != center.getX() || dry[1] != center.getZ()) {
+            settlement.moveUnbuilt(dry[0], dry[1]);
+            data.setDirty();
+         }
+
+         if (++checks >= DRY_CHECKS_PER_STEP) {
+            return;
+         }
+      }
+   }
+
+   /** Whether the ground around a point, as the world generator will make it, is dry land above the sea. */
+   private static boolean dry(ServerLevel level, int x, int z) {
+      net.minecraft.world.level.chunk.ChunkGenerator generator = level.getChunkSource().getGenerator();
+      net.minecraft.world.level.levelgen.RandomState random = level.getChunkSource().randomState();
+      for (int dx = -DRY_FOOTPRINT; dx <= DRY_FOOTPRINT; dx += DRY_FOOTPRINT) {
+         for (int dz = -DRY_FOOTPRINT; dz <= DRY_FOOTPRINT; dz += DRY_FOOTPRINT) {
+            int surface = generator.getBaseHeight(x + dx, z + dz, net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG, level, random);
+            int floor = generator.getBaseHeight(x + dx, z + dz, net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR_WG, level, random);
+            if (surface > floor || surface <= level.getSeaLevel()) {
+               return false;
+            }
+         }
+      }
+
+      return !level.getUncachedNoiseBiome(x >> 2, level.getSeaLevel() >> 2, z >> 2).is(net.minecraft.tags.BiomeTags.IS_RIVER);
+   }
+
+   /** The nearest point to x, z with dry land under a village's whole footprint, looked for in rings; x, z itself if there is none near. */
+   static int[] dryPoint(ServerLevel level, int x, int z) {
+      if (dry(level, x, z)) {
+         return new int[]{x, z};
+      }
+
+      for (int ring = 1; ring <= DRY_RINGS; ring++) {
+         int points = ring * 8;
+         for (int i = 0; i < points; i++) {
+            double angle = Math.PI * 2.0 * i / points;
+            int px = x + (int)Math.round(Math.cos(angle) * ring * DRY_STEP);
+            int pz = z + (int)Math.round(Math.sin(angle) * ring * DRY_STEP);
+            if (dry(level, px, pz)) {
+               return new int[]{px, pz};
+            }
+         }
+      }
+
+      return new int[]{x, z};
+   }
+
    /** Every faction with land and no capital founds one on paper, near the middle of its country. */
    public static void foundCapitals(ServerLevel level, FactionWorldData data) {
       for (String faction : new TreeSet<>(data.provinceOwners().values())) {
@@ -340,9 +407,8 @@ public final class FactionExpansion {
 
          FactionRegions.Province middle = middleProvince(level, data, faction);
          if (middle != null) {
-            data.addUnbuiltSettlement(
-               faction, FactionTowns.CAPITAL, middle.seedX(), level.getSeaLevel(), middle.seedZ(), middle.key(), level.getGameTime(), CAPITAL_GARRISON, CAPITAL_POPULATION
-            );
+            int[] dry = dryPoint(level, middle.seedX(), middle.seedZ());
+            data.addUnbuiltSettlement(faction, FactionTowns.CAPITAL, dry[0], level.getSeaLevel(), dry[1], middle.key(), level.getGameTime(), CAPITAL_GARRISON, CAPITAL_POPULATION);
             AncientWarfareCore.LOG.info("Faction {} founds its capital near {}, {}", faction, middle.seedX(), middle.seedZ());
          }
       }
