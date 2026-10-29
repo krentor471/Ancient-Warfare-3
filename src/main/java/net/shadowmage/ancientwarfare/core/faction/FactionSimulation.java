@@ -86,6 +86,7 @@ public final class FactionSimulation {
          simulateDay(level, data);
       }
 
+      FactionPrebuild.tick(level, data);
       FactionExpansion.tick(level, data);
       FactionArmies.tick(level, data);
       FactionConquest.tick(level, data);

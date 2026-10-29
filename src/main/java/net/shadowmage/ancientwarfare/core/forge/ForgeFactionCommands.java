@@ -499,6 +499,10 @@ public final class ForgeFactionCommands {
                   net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(context.getSource().getLevel(), context.getSource().getPlayerOrException());
                   return 1;
                }))
+               .then(Commands.literal("prebuild").requires(source -> source.hasPermission(2)).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionWorldData.get(context.getSource().getLevel()).setPrebuilt(false);
+                  return 1;
+               }))
                .then(Commands.literal("rankup").requires(source -> source.hasPermission(2)).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.FactionPorts.force(context.getSource().getLevel(), context.getSource().getPlayerOrException(), false);
                   return 1;

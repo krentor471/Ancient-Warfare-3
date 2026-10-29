@@ -3018,5 +3018,6 @@
   "gui.ancientwarfare.world_map.wealth": "Казна %s сер., оборона %s",
   "gui.ancientwarfare.world_map.buildings": "Построек: %s",
   "gui.ancientwarfare.world_map.buildings_waiting": "Построек: %s (из них ещё строится %s)",
-  "building.ancientwarfare.mine": "Шахта"
+  "building.ancientwarfare.mine": "Шахта",
+  "faction.ancientwarfare.prebuild": "Державы возводят города и прокладывают дороги перед началом пути..."
 }

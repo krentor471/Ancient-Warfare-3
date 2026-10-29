@@ -69,6 +69,7 @@ public final class FactionWorldData extends SavedData {
    /** Settlements of new worlds stand this much further apart than at first. */
    public static final int NEW_REGION_SCALE = 130;
    private boolean historyDone;
+   private boolean prebuilt;
    /** The world's news, oldest first, as text components in JSON; see FactionNews. */
    private final List<ChronicleEntry> chronicle = new ArrayList<>();
    public static final int CHRONICLE_SIZE = 400;
@@ -212,6 +213,15 @@ public final class FactionWorldData extends SavedData {
 
    public void setDayOffset(long dayOffset) {
       this.dayOffset = dayOffset;
+      this.setDirty();
+   }
+
+   public boolean prebuilt() {
+      return this.prebuilt;
+   }
+
+   public void setPrebuilt(boolean prebuilt) {
+      this.prebuilt = prebuilt;
       this.setDirty();
    }
 
@@ -613,6 +623,7 @@ public final class FactionWorldData extends SavedData {
       tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
       tag.putLong("DayOffset", this.dayOffset);
       tag.putBoolean("HistoryDone", this.historyDone);
+      tag.putBoolean("Prebuilt", this.prebuilt);
       ListTag chronicleList = new ListTag();
 
       for (ChronicleEntry entry : this.chronicle) {
@@ -882,6 +893,8 @@ public final class FactionWorldData extends SavedData {
       ));
       data.dayOffset = tag.getLong("DayOffset");
       data.historyDone = tag.getBoolean("HistoryDone");
+      // Worlds from before the prebuild phase were already played in.
+      data.prebuilt = !tag.contains("Prebuilt") || tag.getBoolean("Prebuilt");
 
       for (Tag element : tag.getList("Chronicle", Tag.TAG_COMPOUND)) {
          CompoundTag line = (CompoundTag)element;

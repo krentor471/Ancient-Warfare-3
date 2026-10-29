@@ -90,6 +90,25 @@ public final class FactionRoads {
       return (int)point;
    }
 
+   /** True while a road with both ends built and inside the prebuild area is still unfinished. */
+   static boolean unfinishedNear(ServerLevel level, FactionWorldData data) {
+      for (FactionWorldData.Route route : data.routes()) {
+         if (route.blocked() || route.road() == FactionWorldData.RoadState.DONE || route.road() == FactionWorldData.RoadState.FAILED) {
+            continue;
+         }
+
+         FactionWorldData.Settlement from = data.endpoint(route, true);
+         FactionWorldData.Settlement to = data.endpoint(route, false);
+         if (from != null && to != null && from.built() && to.built()
+            && FactionPrebuild.covers(level, from.center().getX(), from.center().getZ())
+            && FactionPrebuild.covers(level, to.center().getX(), to.center().getZ())) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
    /** Lays one stretch of one unfinished road no player is near. */
    public static void tick(ServerLevel level, FactionWorldData data) {
       if (level.getGameTime() % TICK_INTERVAL != 0L) {
@@ -132,7 +151,7 @@ public final class FactionRoads {
 
          int startX = route.road() == FactionWorldData.RoadState.NONE ? from.center().getX() : route.cursorX;
          int startZ = route.road() == FactionWorldData.RoadState.NONE ? from.center().getZ() : route.cursorZ;
-         if (level.hasNearbyAlivePlayer(startX, level.getSeaLevel(), startZ, PLAYER_RANGE)) {
+         if (!FactionPrebuild.active() && level.hasNearbyAlivePlayer(startX, level.getSeaLevel(), startZ, PLAYER_RANGE)) {
             continue;
          }
 
@@ -154,7 +173,7 @@ public final class FactionRoads {
       }
 
       wanted.sort(java.util.Comparator.comparingDouble(route -> distances.get(route.id())));
-      List<FactionWorldData.Route> crews = wanted.subList(0, Math.min(ROAD_CREWS, wanted.size()));
+      List<FactionWorldData.Route> crews = wanted.subList(0, Math.min(FactionPrebuild.active() ? ROAD_CREWS * 3 : ROAD_CREWS, wanted.size()));
       java.util.Set<Integer> working = new java.util.HashSet<>();
       crews.forEach(route -> working.add(route.id()));
       WORK.entrySet().removeIf(entry -> {
@@ -166,7 +185,7 @@ public final class FactionRoads {
          return false;
       });
 
-      long deadline = System.nanoTime() + ROAD_BUDGET_NANOS;
+      long deadline = System.nanoTime() + (FactionPrebuild.active() ? ROAD_BUDGET_NANOS * 4 : ROAD_BUDGET_NANOS);
       for (FactionWorldData.Route route : crews) {
          FactionWorldData.Settlement from = data.endpoint(route, true);
          FactionWorldData.Settlement to = data.endpoint(route, false);

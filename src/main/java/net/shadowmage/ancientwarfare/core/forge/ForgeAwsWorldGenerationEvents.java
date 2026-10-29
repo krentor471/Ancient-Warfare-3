@@ -152,6 +152,7 @@ public final class ForgeAwsWorldGenerationEvents {
    public static void onServerStopped(ServerStoppedEvent event) {
       LargeIslandWorldGenerator.shutdown();
       LAST_PLAYER_CHUNKS.clear();
+      net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.reset();
       cooldown = 0;
    }
 

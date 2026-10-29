@@ -461,12 +461,12 @@ public final class FactionExpansion {
       }
 
       boolean distant = false;
-      if (target == null && far != null && level.getServer().getAverageTickTime() < FAR_BUILD_MAX_TICK_MS && level.getGameTime() >= nextFarWork) {
+      if (target == null && far != null && (FactionPrebuild.active() || level.getServer().getAverageTickTime() < FAR_BUILD_MAX_TICK_MS) && level.getGameTime() >= nextFarWork) {
          // Beyond reach of every player: while the server keeps up, the rest of the world is built
          // too, capitals first, slowly, so lands nobody visits still get their towns, mines and roads.
          target = far;
          distant = true;
-         nextFarWork = level.getGameTime() + FAR_STEP_TICKS;
+         nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 1L : FAR_STEP_TICKS);
       }
 
       if (target == null) {
@@ -512,7 +512,7 @@ public final class FactionExpansion {
             SITE_SEARCH.put(target.id(), checked + 1);
             AwtWorldGenerator.queueFactionTown(level, path, site[0], site[1], target.id());
             if (distant) {
-               nextFarWork = level.getGameTime() + FAR_LAYOUT_REST_TICKS;
+               nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 40L : FAR_LAYOUT_REST_TICKS);
             }
 
             AncientWarfareCore.LOG.info("Faction {} lays out its {} #{} at {}, {}", faction, target.kind(), target.id(), site[0], site[1]);
@@ -555,9 +555,17 @@ public final class FactionExpansion {
          return;
       }
 
-      data.removeSettlement(target);
-      boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(center.getX() >> 4, center.getZ() >> 4), faction, AwsWorldGenerator.Site.VILLAGE);
-      AncientWarfareCore.LOG.info("Faction {} {} a single building for village #{} near {}, {}", faction, built ? "built" : "could not build", target.id(), center.getX(), center.getZ());
+      // No room for a laid-out village: a hamlet is founded on dry land instead and grows house by
+      // house, clearing the woods around it, rather than standing forever as a single shack.
+      int[] dry = dryPoint(level, center.getX(), center.getZ());
+      int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, dry[0], dry[1]);
+      target.place("", new BlockPos(dry[0] - 4, y - 1, dry[1] - 4), new BlockPos(dry[0] + 4, y + 6, dry[1] + 4));
+      target.plan().clear();
+      for (TownBuildings.Kind kind : new TownBuildings.Kind[]{TownBuildings.Kind.WELL, TownBuildings.Kind.HOUSE, TownBuildings.Kind.HOUSE, TownBuildings.Kind.FAMILY_HOUSE}) {
+         target.plan().add(kind.key());
+      }
+      data.setDirty();
+      AncientWarfareCore.LOG.info("Faction {} founds hamlet #{} near {}, {}; it will grow", faction, target.id(), dry[0], dry[1]);
    }
 
    /** A generated town nobody founded (the test command) was finished: tell the world. */

@@ -42,6 +42,7 @@ public final class FactionGrowth {
    /** People each piece built before buildings had kinds made room for; see TownBuildings.room. */
    static final int ROOM_PER_PIECE = 4;
    private static final long TICK_INTERVAL = 100L;
+   private static final long PREBUILD_INTERVAL = 5L;
    private static final double NEAR = 256.0;
    private static final double TOO_CLOSE = 32.0;
    /** Spots for a new building are looked for in rings out from the middle of the settlement. */
@@ -160,12 +161,15 @@ public final class FactionGrowth {
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {
-      if (level.getGameTime() % TICK_INTERVAL != 0L || level.players().isEmpty()) {
+      boolean prebuild = FactionPrebuild.active();
+      if (level.getGameTime() % (prebuild ? PREBUILD_INTERVAL : TICK_INTERVAL) != 0L || level.players().isEmpty()) {
          return;
       }
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         if (builds(settlement) && nearestPlayer(level, settlement.center()) <= NEAR * NEAR && grow(level, data, settlement, false)) {
+         // While the world is raised before play, every town around spawn builds out its first plans.
+         boolean reach = prebuild ? FactionPrebuild.covers(level, settlement.center().getX(), settlement.center().getZ()) : nearestPlayer(level, settlement.center()) <= NEAR * NEAR;
+         if (builds(settlement) && reach && grow(level, data, settlement, false)) {
             return;
          }
       }
