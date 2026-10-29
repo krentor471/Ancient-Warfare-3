@@ -208,6 +208,10 @@ public final class TownTrades {
       String id = "/awtownsfolk " + head.getId() + " ";
       ChatFormatting mood = opinion >= 30 ? ChatFormatting.GREEN : opinion <= -30 ? ChatFormatting.RED : ChatFormatting.GRAY;
       player.sendSystemMessage(Component.literal("  ").append(Component.translatable("head.ancientwarfare.who", opinion).withStyle(mood)));
+      FactionWorldData.Settlement home = town(player.serverLevel(), head);
+      if (home != null) {
+         player.sendSystemMessage(Component.literal("  ").append(Component.translatable("head.ancientwarfare.faith", FactionFaith.name(FaithSpread.faith(player.serverLevel(), home))).withStyle(ChatFormatting.LIGHT_PURPLE)));
+      }
       Errand errand = errand(head);
       if (errand != null) {
          player.sendSystemMessage(Component.literal("  ").append(Component.translatable("head.ancientwarfare.errand." + errand.key, errand.count, item(errand.item), errand.reward).withStyle(ChatFormatting.GOLD)));
@@ -220,6 +224,8 @@ public final class TownTrades {
             .append(button(Component.translatable("head.ancientwarfare.persuade"), id + "persuade", ChatFormatting.AQUA, Component.translatable("head.ancientwarfare.persuade.hint")))
             .append("  ")
             .append(button(Component.translatable("head.ancientwarfare.errand"), id + (errand == null ? "errand" : "deliver"), ChatFormatting.GOLD, Component.translatable("head.ancientwarfare.errand.hint")))
+            .append("  ")
+            .append(button(Component.translatable("head.ancientwarfare.preach", FaithSpread.PREACHER_PRICE), id + "preach", ChatFormatting.LIGHT_PURPLE, Component.translatable("head.ancientwarfare.preach.hint")))
             .append("  ")
             .append(button(Component.translatable("head.ancientwarfare.steal"), id + "steal", ChatFormatting.RED, Component.translatable("head.ancientwarfare.steal.hint")))
       );
@@ -391,7 +397,39 @@ public final class TownTrades {
                player.sendSystemMessage(Component.translatable("head.ancientwarfare.steal.bad").withStyle(ChatFormatting.RED));
             }
          }
+         case "preach" -> {
+            MutableComponent choices = Component.literal("  ");
+            for (int faith = 0; faith < FactionFaith.KEYS.length; faith++) {
+               choices.append(button(FactionFaith.name(faith), "/awtownsfolk " + npc.getId() + " preach" + faith, ChatFormatting.LIGHT_PURPLE, Component.translatable("head.ancientwarfare.preach.hint"))).append("  ");
+            }
+
+            player.sendSystemMessage(choices);
+         }
          default -> {
+            if (action.startsWith("preach") && action.length() == 7 && npc.getPersistentData().getBoolean(HEAD)) {
+               int faith = Math.floorMod(action.charAt(6) - '0', FactionFaith.KEYS.length);
+               FactionWorldData.Settlement town = town(level, npc);
+               if (town == null || FaithSpread.faith(level, town) == faith) {
+                  FactionRumours.say(player, speaker, Component.translatable("head.ancientwarfare.preach.same"));
+                  return;
+               }
+
+               if (!Coins.take(player, FaithSpread.PREACHER_PRICE)) {
+                  player.sendSystemMessage(Component.translatable("traveller.ancientwarfare.no_silver").withStyle(ChatFormatting.RED));
+                  return;
+               }
+
+               if (!FaithSpread.sendPreacher(level, town, faith)) {
+                  Coins.give(player, FaithSpread.PREACHER_PRICE);
+                  FactionRumours.say(player, speaker, Component.translatable("head.ancientwarfare.preach.busy"));
+                  return;
+               }
+
+               // The realm's own priests take it ill.
+               changeOpinion(npc, player, -10);
+               standings.adjustStanding(player.getUUID(), npc.getFactionName(), -3);
+               player.sendSystemMessage(Component.translatable("head.ancientwarfare.preach.sent", FactionFaith.name(faith)).withStyle(ChatFormatting.LIGHT_PURPLE));
+            }
          }
       }
    }

@@ -3291,5 +3291,12 @@
   "head.ancientwarfare.steal.bad": "Тебя поймали за руку! Староста в ярости, страна это запомнит.",
   "head.ancientwarfare.steal.watchful": "Староста сегодня глаз не сводит с кошеля.",
   "diplomacy.ancientwarfare.faith.kin": "Вера: %s, общая с: %s (единоверцы ладят)",
-  "diplomacy.ancientwarfare.faith.alone": "Вера: %s, ни с кем из известных общей нет (иноверцы не доверяют)"
+  "diplomacy.ancientwarfare.faith.alone": "Вера: %s, ни с кем из известных общей нет (иноверцы не доверяют)",
+  "head.ancientwarfare.faith": "Вера деревни: %s",
+  "head.ancientwarfare.preach": "Проповедник (%s сер.)",
+  "head.ancientwarfare.preach.hint": "Послать проповедника обращать деревню в выбранную веру. Жрецам страны это не понравится",
+  "head.ancientwarfare.preach.same": "Мы и так этой веры.",
+  "head.ancientwarfare.preach.busy": "У нас уже проповедует чужак.",
+  "head.ancientwarfare.preach.sent": "Проповедник начал обращать деревню в веру: %s. Через несколько дней станет ясно, примут ли её.",
+  "news.ancientwarfare.town_converted": "%s приняло новую веру: %s"
 }

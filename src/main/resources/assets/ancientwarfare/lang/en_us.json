@@ -3291,5 +3291,12 @@
   "head.ancientwarfare.steal.bad": "Caught red-handed! The head is furious and the country will remember.",
   "head.ancientwarfare.steal.watchful": "The head keeps an eye on his purse today.",
   "diplomacy.ancientwarfare.faith.kin": "Faith: %s, shared with %s (they like each other)",
-  "diplomacy.ancientwarfare.faith.alone": "Faith: %s, shared with no realm you know (others distrust it)"
+  "diplomacy.ancientwarfare.faith.alone": "Faith: %s, shared with no realm you know (others distrust it)",
+  "head.ancientwarfare.faith": "Village faith: %s",
+  "head.ancientwarfare.preach": "Preacher (%s silver)",
+  "head.ancientwarfare.preach.hint": "Send a preacher to turn the village to a faith of your choice. The realm's priests won't like it",
+  "head.ancientwarfare.preach.same": "We already hold that faith.",
+  "head.ancientwarfare.preach.busy": "A stranger already preaches here.",
+  "head.ancientwarfare.preach.sent": "A preacher begins turning the village to %s. In a few days we'll see if it takes.",
+  "news.ancientwarfare.town_converted": "%s took up a new faith: %s"
 }
