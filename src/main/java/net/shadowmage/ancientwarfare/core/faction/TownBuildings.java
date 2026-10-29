@@ -67,6 +67,7 @@ public final class TownBuildings {
       MASON(Group.CRAFT, 26, 0, 1, "mason|quarry", "mason", FactionGrowth.Piece.HALL, 0, 0, 0, 0, 2, 0),
       TANNERY(Group.CRAFT, 22, 0, 1, "tanner", "tannery", FactionGrowth.Piece.HALL, 0, 0, 0, 0, 2, 0),
       WEAVER(Group.CRAFT, 22, 0, 1, "weav|shepherd|wool", "shepherd", FactionGrowth.Piece.HALL, 0, 0, 0, 0, 2, 0),
+      MINE(Group.CRAFT, 40, 0, 2, "", "", FactionGrowth.Piece.MINE, 0, 0, 0, 0, 2, 0),
       CARPENTER(Group.CRAFT, 24, 0, 1, "carpent|lumber|saw", "", FactionGrowth.Piece.HALL, 0, 0, 0, 0, 2, 0),
       WORKSHOP(Group.CRAFT, 30, 1, 1, "workshop", "", FactionGrowth.Piece.HALL, 0, 0, 0, 0, 3, 0),
       STALL(Group.TRADE, 8, 0, 6, "stall", "", FactionGrowth.Piece.STALL, 0, 0, 0, 0, 1, 0),
@@ -254,6 +255,7 @@ public final class TownBuildings {
          }
 
          settlement.wealth = Mth.clamp(settlement.wealth + income - settlement.garrison() / GARRISON_PAY, 0, MAX_WEALTH);
+         yieldGoods(data.stores(settlement.faction()), kinds);
          if (settlement.food >= 0) {
             settlement.food += food;
          }
@@ -277,6 +279,27 @@ public final class TownBuildings {
       }
 
       data.setDirty();
+   }
+
+   /** What the settlement's mines and workshops send to the faction's stores each day. */
+   private static void yieldGoods(int[] stores, List<Kind> kinds) {
+      for (Kind kind : kinds) {
+         switch (kind) {
+            case MINE -> {
+               stores[FactionResources.STONE] += 3;
+               stores[FactionResources.IRON] += 2;
+               stores[FactionResources.COAL] += 2;
+               stores[FactionResources.COPPER] += 1;
+            }
+            case MASON -> stores[FactionResources.STONE] += 2;
+            case CARPENTER -> stores[FactionResources.WOOD] += 2;
+            case TANNERY -> stores[FactionResources.LEATHER] += 1;
+            case WEAVER -> stores[FactionResources.WOOL] += 1;
+            case FIELD, LARGE_FARM, MILL, GRANARY -> stores[FactionResources.GRAIN] += 1;
+            default -> {
+            }
+         }
+      }
    }
 
    private static boolean peaceful(FactionWorldData data, FactionWorldData.Settlement settlement) {

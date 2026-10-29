@@ -344,7 +344,7 @@ public final class FactionTowns {
     * A mine head: a timber-framed shed over a ladder shaft down to a gallery whose walls show coal,
     * iron, copper and now and then gold.
     */
-   private static void digMine(ServerLevel level, BlockPos corner, RandomSource random) {
+   public static void digMine(ServerLevel level, BlockPos corner, RandomSource random) {
       int size = MINE_SIZE;
       int middle = size / 2;
       BlockState wall = Blocks.COBBLESTONE.defaultBlockState();

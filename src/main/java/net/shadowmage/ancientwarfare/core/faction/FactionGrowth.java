@@ -89,7 +89,9 @@ public final class FactionGrowth {
       WATCH_POST(3, 3, 8),
       GATEHOUSE(7, 3, 7),
       /** A plain hall fitted out for whatever trade it houses. */
-      HALL(9, 7, 6);
+      HALL(9, 7, 6),
+      /** A mine head over a shaft down to a gallery of ore; see FactionTowns.digMine. */
+      MINE(7, 7, 4);
 
       final int width;
       final int depth;
@@ -271,6 +273,10 @@ public final class FactionGrowth {
          case WATCH_POST -> watchPost(level, site, palette);
          case GATEHOUSE -> gatehouse(level, site);
          case HALL -> workHall(level, site, front, palette, kind, random);
+         case MINE -> {
+            net.shadowmage.ancientwarfare.core.structure.FactionTowns.digMine(level, site, random);
+            yield site.offset(piece.width / 2, 0, -1);
+         }
       };
       path(level, settlement, door.relative(front), center);
       settlement.extend(site, site.offset(piece.width - 1, piece.height, piece.depth - 1));
