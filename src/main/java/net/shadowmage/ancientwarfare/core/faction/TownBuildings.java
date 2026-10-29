@@ -93,6 +93,7 @@ public final class TownBuildings {
       ARCHERY(Group.DEFENCE, 26, 1, 1, "archer|range", "", FactionGrowth.Piece.HALL, 0, 0, 0, 0, 0, 2),
       STABLES(Group.DEFENCE, 30, 0, 1, "stable", "stable", FactionGrowth.Piece.HALL, 0, 0, 0, 0, 1, 1),
       ARMORY(Group.DEFENCE, 40, 2, 1, "armory|armoury|arsenal", "", FactionGrowth.Piece.HALL, 0, 0, 0, 1, 0, 2),
+      COURTHOUSE(Group.RULE, 45, 1, 1, "court|jail|prison|dungeon", "", FactionGrowth.Piece.HALL, 0, 0, 0, 3, 0, 1),
       TOWN_HALL(Group.RULE, 60, 1, 1, "town_hall|council|townhall", "", FactionGrowth.Piece.HALL, 0, 0, 0, 3, 2, 0);
 
       public final Group group;

@@ -3408,5 +3408,10 @@
   "watch.ancientwarfare.pay": "Заплатить %s сер.",
   "watch.ancientwarfare.serve": "Отсидеть",
   "watch.ancientwarfare.free": "Ты на свободе.",
-  "watch.ancientwarfare.serving": "Сидеть ещё %s сек."
+  "watch.ancientwarfare.serving": "Сидеть ещё %s сек.",
+  "building.ancientwarfare.courthouse": "Суд с темницей",
+  "watch.ancientwarfare.judge": "Судья",
+  "watch.ancientwarfare.judge_wanted": "Тебя ищет стража. Заплати штраф (%s серебра) сам, и дело закрыто.",
+  "watch.ancientwarfare.judge_law": "Закон един для всех. Не бери чужого, и мы не увидимся.",
+  "town.ancientwarfare.hall.courthouse": "%s: построили суд с темницей."
 }

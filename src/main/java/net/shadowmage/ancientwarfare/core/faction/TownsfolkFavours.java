@@ -130,6 +130,11 @@ public final class TownsfolkFavours {
          return;
       }
 
+      if (npc.getTags().contains(TownWatch.JUDGE_TAG)) {
+         TownWatch.judge(player, npc);
+         return;
+      }
+
       if (npc.getTags().contains(TownCalendar.HERALD_TAG)) {
          TownCalendar.talk(player, npc);
          return;

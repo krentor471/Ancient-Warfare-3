@@ -3408,5 +3408,10 @@
   "watch.ancientwarfare.pay": "Pay %s silver",
   "watch.ancientwarfare.serve": "Serve the time",
   "watch.ancientwarfare.free": "You are free.",
-  "watch.ancientwarfare.serving": "%s s left to serve."
+  "watch.ancientwarfare.serving": "%s s left to serve.",
+  "building.ancientwarfare.courthouse": "Courthouse and dungeon",
+  "watch.ancientwarfare.judge": "Judge",
+  "watch.ancientwarfare.judge_wanted": "The watch is after you. Pay your fine (%s silver) yourself and the case is closed.",
+  "watch.ancientwarfare.judge_law": "The law is the same for all. Take nothing that isn't yours and we shan't meet.",
+  "town.ancientwarfare.hall.courthouse": "%s has a new courthouse and dungeon."
 }

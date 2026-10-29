@@ -1109,6 +1109,7 @@ public final class FactionGrowth {
          case BARRACKS -> new Block[]{Blocks.CHEST, Blocks.RED_BED, Blocks.BARREL, Blocks.GRINDSTONE};
          case STABLES -> new Block[]{Blocks.HAY_BLOCK, Blocks.BARREL, Blocks.WATER_CAULDRON};
          case MARKET, GUILD, CARAVANSERAI, TOWN_HALL -> new Block[]{Blocks.BARREL, Blocks.CHEST, Blocks.LECTERN, Blocks.BARREL};
+         case COURTHOUSE -> new Block[]{Blocks.LECTERN, Blocks.IRON_BARS, Blocks.CHEST, Blocks.BOOKSHELF};
          case ARENA -> new Block[]{Blocks.TARGET, Blocks.HAY_BLOCK, Blocks.GRINDSTONE};
          default -> new Block[]{Blocks.BARREL, Blocks.CRAFTING_TABLE, Blocks.CHEST};
       };

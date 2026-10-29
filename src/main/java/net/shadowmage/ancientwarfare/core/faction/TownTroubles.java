@@ -32,6 +32,12 @@ public final class TownTroubles {
             continue;
          }
 
+         // Every town keeps a court and a dungeon: one without raises it before anything else.
+         String court = TownBuildings.Kind.COURTHOUSE.key();
+         if (FactionTownLife.isTown(town) && !town.buildings().contains(court) && !town.plan().contains(court)) {
+            town.plan().add(0, court);
+         }
+
          double fire = FIRE_CHANCE * (season == FactionSeasons.Season.SUMMER ? 2.0 : 1.0) / (town.buildings().stream().anyMatch(b -> b.contains("well")) ? 2.0 : 1.0);
          if (random.nextDouble() < fire) {
             String lost = burn(level, town, random);

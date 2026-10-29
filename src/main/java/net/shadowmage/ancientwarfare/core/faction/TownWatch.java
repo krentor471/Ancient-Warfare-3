@@ -29,6 +29,7 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
  */
 public final class TownWatch {
    public static final String WATCH_TAG = "AWWatch";
+   public static final String JUDGE_TAG = "AWJudge";
    private static final String WANTED = "AWWanted";
    private static final String JAIL = "AWJail";
    private static final int WATCHMEN = 2;
@@ -88,6 +89,10 @@ public final class TownWatch {
          }
       }
 
+      if (level.getGameTime() % 400L == 0L) {
+         keepJudges(level, data);
+      }
+
       // At dawn the watch goes home.
       if (!night(level)) {
          for (ServerPlayer player : level.players()) {
@@ -119,12 +124,33 @@ public final class TownWatch {
       level.addFreshEntity(man);
    }
 
-   /** The cell beside the town square: stone, bars and a roof; returns the floor inside. */
+   /** The town's courthouse, if it has one big enough for a cell. */
+   private static FactionWorldData.Hall courthouse(FactionWorldData.Settlement town) {
+      for (FactionWorldData.Hall hall : town.halls()) {
+         if (hall.kind().equals(TownBuildings.Kind.COURTHOUSE.key()) && hall.max().getX() - hall.min().getX() >= 6 && hall.max().getZ() - hall.min().getZ() >= 4) {
+            return hall;
+         }
+      }
+
+      return null;
+   }
+
+   /**
+    * A cell: stone, bars and a roof; returns the floor inside. In a courthouse the cells stand in its
+    * dungeon corner and a judge sits by them; without one the cell is put up beside the square.
+    */
    private static BlockPos cell(ServerLevel level, FactionWorldData.Settlement town) {
-      int x = town.center().getX() + 6;
-      int z = town.center().getZ() + 6;
-      int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-      BlockPos inside = new BlockPos(x, y, z);
+      FactionWorldData.Hall court = courthouse(town);
+      BlockPos inside;
+      if (court != null) {
+         inside = new BlockPos(court.min().getX() + 2, court.min().getY() + 1, court.min().getZ() + 2);
+         judgeAt(level, town, new BlockPos(court.min().getX() + 5, court.min().getY() + 1, court.min().getZ() + 2));
+      } else {
+         int x = town.center().getX() + 6;
+         int z = town.center().getZ() + 6;
+         inside = new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z);
+      }
+
       for (int dx = -1; dx <= 1; dx++) {
          for (int dz = -1; dz <= 1; dz++) {
             level.setBlockAndUpdate(inside.offset(dx, -1, dz), Blocks.STONE_BRICKS.defaultBlockState());
@@ -138,6 +164,55 @@ public final class TownWatch {
 
       level.setBlockAndUpdate(inside.above(2), Blocks.LANTERN.defaultBlockState().setValue(net.minecraft.world.level.block.LanternBlock.HANGING, true));
       return inside;
+   }
+
+   private static void judgeAt(ServerLevel level, FactionWorldData.Settlement town, BlockPos at) {
+      if (!level.getEntitiesOfClass(FactionNpcEntity.class, new AABB(at).inflate(8), npc -> npc.getTags().contains(JUDGE_TAG)).isEmpty()) {
+         return;
+      }
+
+      FactionNpcEntity judge = AWCoreEntityTypes.FACTION_CIVILIAN_MALE_NPC.get().create(level);
+      if (judge == null) {
+         return;
+      }
+
+      level.setBlockAndUpdate(at.east(), Blocks.LECTERN.defaultBlockState());
+      judge.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, -90.0F, 0.0F);
+      judge.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
+      judge.setFactionName(town.faction());
+      judge.addTag(JUDGE_TAG);
+      judge.setCustomName(Component.translatable("watch.ancientwarfare.judge"));
+      judge.setPersistenceRequired();
+      judge.restrictTo(at, 2);
+      level.addFreshEntity(judge);
+   }
+
+   /** Every town that has a courthouse keeps its judge there. */
+   private static void keepJudges(ServerLevel level, FactionWorldData data) {
+      for (ServerPlayer player : level.players()) {
+         FactionWorldData.Settlement town = FactionCrime.settlementAt(level, player.blockPosition());
+         FactionWorldData.Hall court = town == null ? null : courthouse(town);
+         if (court != null && level.isLoaded(court.min()) && player.blockPosition().closerThan(court.min(), 48)) {
+            judgeAt(level, town, new BlockPos(court.min().getX() + 5, court.min().getY() + 1, court.min().getZ() + 2));
+         }
+      }
+   }
+
+   /** The judge hears a prisoner's case again, or tells a free man the law. */
+   public static void judge(ServerPlayer player, FactionNpcEntity judge) {
+      CompoundTag jail = player.getPersistentData().getCompound(JAIL);
+      if (!jail.isEmpty()) {
+         court(player, jail.getInt("Fine"));
+         return;
+      }
+
+      int fine = player.getPersistentData().getCompound(WANTED).getInt(judge.getFactionName());
+      if (fine > 0) {
+         FactionRumours.say(player, judge.getDisplayName(), Component.translatable("watch.ancientwarfare.judge_wanted", fine));
+         player.sendSystemMessage(Component.literal("  ").append(button("watch.ancientwarfare.pay", "/awtownsfolk " + judge.getId() + " court_confess", ChatFormatting.GREEN, fine)));
+      } else {
+         FactionRumours.say(player, judge.getDisplayName(), Component.translatable("watch.ancientwarfare.judge_law"));
+      }
    }
 
    private static void arrest(ServerLevel level, ServerPlayer player, FactionWorldData.Settlement town, FactionNpcEntity man, int fine) {
@@ -204,6 +279,26 @@ public final class TownWatch {
 
    /** A click under the court's sentence. */
    public static void act(ServerPlayer player, String action) {
+      if (action.equals("court_confess")) {
+         // A wanted man who comes to the judge himself pays his fine and is wanted no more.
+         FactionWorldData.Settlement town = FactionCrime.settlementAt(player.serverLevel(), player.blockPosition());
+         CompoundTag wanted = player.getPersistentData().getCompound(WANTED);
+         if (town == null || wanted.getInt(town.faction()) <= 0) {
+            return;
+         }
+
+         if (!Coins.take(player, wanted.getInt(town.faction()))) {
+            player.sendSystemMessage(Component.translatable("traveller.ancientwarfare.no_silver").withStyle(ChatFormatting.RED));
+            return;
+         }
+
+         town.wealth += wanted.getInt(town.faction());
+         wanted.remove(town.faction());
+         player.getPersistentData().put(WANTED, wanted);
+         player.sendSystemMessage(Component.translatable("watch.ancientwarfare.free").withStyle(ChatFormatting.GREEN));
+         return;
+      }
+
       CompoundTag jail = player.getPersistentData().getCompound(JAIL);
       if (jail.isEmpty()) {
          return;
