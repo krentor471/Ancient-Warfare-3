@@ -85,7 +85,7 @@ public final class TownBuildings {
       TAVERN(Group.LEISURE, 30, 0, 1, "tavern|inn", "", FactionGrowth.Piece.HALL, 2, 0, 0, 1, 2, 0),
       BATHHOUSE(Group.LEISURE, 40, 2, 1, "bath", "", FactionGrowth.Piece.HALL, 0, 0, 3, 1, 1, 0),
       ARENA(Group.LEISURE, 70, 2, 1, "arena", "", FactionGrowth.Piece.HALL, 0, 0, 0, 2, 2, 1),
-      PALISADE(Group.DEFENCE, 12, 0, 8, "", "", FactionGrowth.Piece.PALISADE, 0, 0, 0, 1, 0, 1),
+      PALISADE(Group.DEFENCE, 40, 0, 1, "", "", FactionGrowth.Piece.PALISADE, 0, 0, 0, 1, 0, 1),
       WATCH_POST(Group.DEFENCE, 14, 0, 4, "watch|lookout", "", FactionGrowth.Piece.WATCH_POST, 0, 0, 0, 1, 0, 2),
       TOWER(Group.DEFENCE, 30, 2, 4, "tower", "", FactionGrowth.Piece.TOWER, 0, 0, 0, 1, 0, 3),
       GATEHOUSE(Group.DEFENCE, 40, 1, 2, "gate", "", FactionGrowth.Piece.GATEHOUSE, 0, 0, 0, 1, 0, 3),

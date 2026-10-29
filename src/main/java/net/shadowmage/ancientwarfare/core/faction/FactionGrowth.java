@@ -252,6 +252,10 @@ public final class FactionGrowth {
 
    /** A plain piece of the settlement's own making for this kind of building. */
    private static boolean piece(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, TownBuildings.Kind kind, boolean watched) {
+      if (kind == TownBuildings.Kind.PALISADE) {
+         return palisadeRing(level, settlement);
+      }
+
       Piece piece = kind.piece;
       RandomSource random = level.getRandom();
       BlockPos site = site(level, data, settlement, piece, random, watched);
@@ -540,6 +544,25 @@ public final class FactionGrowth {
       return settlement.halls().get(settlement.halls().size() - 1);
    }
 
+   private static final Map<Integer, Long> HOMELESS_DAY = new HashMap<>();
+
+   /** A townsperson found no bed tonight: the town builds a house before anything else, once a night. */
+   public static void homeless(ServerLevel level, net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity npc) {
+      FactionWorldData data = FactionWorldData.get(level);
+      FactionWorldData.Settlement town = FactionSimulation.settlementAt(data, npc.getFactionName(), npc.getX(), npc.getZ(), 24);
+      long day = level.getDayTime() / FactionSimulation.DAY_TICKS;
+      if (town == null || Long.valueOf(day).equals(HOMELESS_DAY.get(town.id()))) {
+         return;
+      }
+
+      HOMELESS_DAY.put(town.id(), day);
+      String house = TownBuildings.Kind.HOUSE.key();
+      if (town.plan().stream().limit(2).noneMatch(house::equals)) {
+         town.plan().add(0, house);
+         data.setDirty();
+      }
+   }
+
    public static void force(ServerLevel level, ServerPlayer player) {
       FactionWorldData data = FactionWorldData.get(level);
       FactionWorldData.Settlement nearest = null;
@@ -819,8 +842,13 @@ public final class FactionGrowth {
       Direction toHead = front == Direction.NORTH ? Direction.SOUTH : Direction.NORTH;
       BlockPos head = site.offset(bedX, 1, bedZ);
       BlockState bed = Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, toHead);
-      set(level, head, bed.setValue(BedBlock.PART, BedPart.HEAD));
-      set(level, head.relative(toHead.getOpposite()), bed.setValue(BedBlock.PART, BedPart.FOOT));
+      // Two beds side by side: a house is home to more than one.
+      for (int i = 0; i < 2; i++) {
+         BlockPos each = head.offset(left ? i : -i, 0, 0);
+         set(level, each, bed.setValue(BedBlock.PART, BedPart.HEAD));
+         set(level, each.relative(toHead.getOpposite()), bed.setValue(BedBlock.PART, BedPart.FOOT));
+      }
+
       set(level, site.offset(width - 1 - bedX, 1, bedZ), Blocks.BARREL.defaultBlockState());
       set(level, site.offset(width - 1 - bedX, 2, bedZ), Blocks.LANTERN.defaultBlockState());
       return door.below();
@@ -1002,6 +1030,68 @@ public final class FactionGrowth {
       set(level, site.offset(0, 3, 1), Blocks.TORCH.defaultBlockState());
       set(level, site.offset(length - 1, 3, 1), Blocks.TORCH.defaultBlockState());
       return site.offset(length / 2, 0, 1);
+   }
+
+   /**
+    * A palisade all around the village: sharpened logs three high a few blocks outside its edge,
+    * following the ground, broken where a road or path runs out and by a gate on each side. Built
+    * houses, water and steep drops are gone around, not through.
+    */
+   private static boolean palisadeRing(ServerLevel level, FactionWorldData.Settlement settlement) {
+      int margin = 4;
+      int minX = settlement.min().getX() - margin;
+      int minZ = settlement.min().getZ() - margin;
+      int maxX = settlement.max().getX() + margin;
+      int maxZ = settlement.max().getZ() + margin;
+      if (!loadedArea(level, minX, minZ, maxX, maxZ)) {
+         return false;
+      }
+
+      int midX = (minX + maxX) / 2;
+      int midZ = (minZ + maxZ) / 2;
+      List<BlockPos> ring = new java.util.ArrayList<>();
+      for (int x = minX; x <= maxX; x++) {
+         ring.add(new BlockPos(x, 0, minZ));
+         ring.add(new BlockPos(x, 0, maxZ));
+      }
+
+      for (int z = minZ + 1; z < maxZ; z++) {
+         ring.add(new BlockPos(minX, 0, z));
+         ring.add(new BlockPos(maxX, 0, z));
+      }
+
+      int placed = 0;
+      for (BlockPos at : ring) {
+         boolean gate = Math.abs(at.getX() - midX) <= 1 && (at.getZ() == minZ || at.getZ() == maxZ) || Math.abs(at.getZ() - midZ) <= 1 && (at.getX() == minX || at.getX() == maxX);
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, at.getX(), at.getZ()) - 1;
+         BlockPos ground = new BlockPos(at.getX(), y, at.getZ());
+         BlockState state = level.getBlockState(ground);
+         if (!level.getFluidState(ground).isEmpty() || state.is(Blocks.DIRT_PATH) || state.is(Blocks.GRAVEL)) {
+            continue;
+         }
+
+         if (gate) {
+            set(level, ground.above(4), Blocks.SPRUCE_LOG.defaultBlockState().setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS, at.getZ() == minZ || at.getZ() == maxZ ? Direction.Axis.X : Direction.Axis.Z));
+            continue;
+         }
+
+         if (!natural(state) && !state.is(BlockTags.LEAVES) && !state.is(BlockTags.LOGS)) {
+            // A house or yard stands here: the wall goes around it.
+            continue;
+         }
+
+         for (int dy = 1; dy <= 3; dy++) {
+            set(level, ground.above(dy), Blocks.SPRUCE_LOG.defaultBlockState());
+         }
+
+         set(level, ground.above(4), Blocks.SPRUCE_FENCE.defaultBlockState());
+         if (placed++ % 12 == 0) {
+            set(level, ground.above(4), Blocks.TORCH.defaultBlockState());
+         }
+      }
+
+      AncientWarfareCore.LOG.info("Settlement #{} of {} raises a palisade around {}..{}", settlement.id(), settlement.faction(), new BlockPos(minX, 0, minZ), new BlockPos(maxX, 0, maxZ));
+      return placed > 0;
    }
 
    /** A wooden watch post: four posts, a ladder, a railed platform with a lantern. */
