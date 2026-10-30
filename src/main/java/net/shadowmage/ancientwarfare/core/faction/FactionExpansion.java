@@ -88,6 +88,11 @@ public final class FactionExpansion {
    /** Capitals that found no site this session. */
    private static final Set<Integer> GIVEN_UP = new HashSet<>();
 
+   /** A settlement whose builders found no land for it and left it on paper. */
+   static boolean givenUp(int id) {
+      return GIVEN_UP.contains(id);
+   }
+
    private FactionExpansion() {
    }
 

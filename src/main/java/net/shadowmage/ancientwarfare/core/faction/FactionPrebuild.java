@@ -90,7 +90,8 @@ public final class FactionPrebuild {
          }
 
          total++;
-         if (!settlement.built() || settlement.plan().size() >= TownBuildings.MAX_WAITING) {
+         if (!settlement.built() && !FactionExpansion.givenUp(settlement.id())
+            || settlement.built() && settlement.plan().size() >= TownBuildings.MAX_WAITING && !FactionGrowth.PREBUILD_STUCK.contains(settlement.id())) {
             waiting++;
          }
       }

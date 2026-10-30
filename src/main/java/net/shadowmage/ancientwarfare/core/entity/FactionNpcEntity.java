@@ -418,6 +418,12 @@ public abstract class FactionNpcEntity extends NpcBaseEntity implements NpcFacti
          return;
       }
 
+      // While the world is raised before play, people in the land held loaded far from any player stand still:
+      // their thinking was most of the server's time, and nobody is there to see them.
+      if (net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.active() && this.level().getNearestPlayer(this, 96.0) == null) {
+         return;
+      }
+
       net.shadowmage.ancientwarfare.core.faction.Perf.run("npcs", () -> {
          super.aiStep();
          this.updateMountedMovement();

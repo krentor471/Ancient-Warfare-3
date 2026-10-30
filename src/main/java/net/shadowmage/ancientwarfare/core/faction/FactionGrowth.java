@@ -182,6 +182,8 @@ public final class FactionGrowth {
    /** The land of the town now growing during the prebuild, held loaded however far it is from any player. */
    private static final net.shadowmage.ancientwarfare.core.structure.IslandChunkWindow PREBUILD_LAND = new net.shadowmage.ancientwarfare.core.structure.IslandChunkWindow();
    private static int prebuildTown = -1;
+   /** Towns that found no room for their next building during the prebuild; it does not wait on them. */
+   static final java.util.Set<Integer> PREBUILD_STUCK = new java.util.HashSet<>();
 
    /**
     * While the world is raised before play, every town builds out its plans in turn. No player is
@@ -195,7 +197,7 @@ public final class FactionGrowth {
          double best = Double.MAX_VALUE;
          BlockPos spawn = level.getSharedSpawnPos();
          for (FactionWorldData.Settlement settlement : data.settlements()) {
-            if (builds(settlement) && settlement.plan().size() >= TownBuildings.MAX_WAITING && FactionPrebuild.covers(level, settlement.center().getX(), settlement.center().getZ())) {
+            if (builds(settlement) && !PREBUILD_STUCK.contains(settlement.id()) && settlement.plan().size() >= TownBuildings.MAX_WAITING && FactionPrebuild.covers(level, settlement.center().getX(), settlement.center().getZ())) {
                double distance = settlement.horizontalDistanceSquared(spawn.getX(), spawn.getZ());
                if (distance < best) {
                   best = distance;
@@ -206,7 +208,7 @@ public final class FactionGrowth {
 
          if (town == null) {
             for (FactionWorldData.Settlement settlement : data.settlements()) {
-               if (builds(settlement) && FactionPrebuild.covers(level, settlement.center().getX(), settlement.center().getZ())) {
+               if (builds(settlement) && !PREBUILD_STUCK.contains(settlement.id()) && FactionPrebuild.covers(level, settlement.center().getX(), settlement.center().getZ())) {
                   town = settlement;
                   break;
                }
@@ -238,8 +240,18 @@ public final class FactionGrowth {
          }
       }
 
-      if (!grow(level, data, town, false)) {
-         // No room or nothing to raise now: the next town gets its turn.
+      // Its land is loaded now: as much of its plan as fits in a few hundredths of a second goes up at once.
+      long deadline = System.nanoTime() + 60_000_000L;
+      while (builds(town) && System.nanoTime() < deadline) {
+         if (!grow(level, data, town, false)) {
+            // No room or nothing to raise now: the next town gets its turn, and the prebuild does not wait on this one.
+            PREBUILD_STUCK.add(town.id());
+            prebuildTown = -1;
+            return;
+         }
+      }
+
+      if (town.plan().size() < TownBuildings.MAX_WAITING) {
          prebuildTown = -1;
       }
    }
