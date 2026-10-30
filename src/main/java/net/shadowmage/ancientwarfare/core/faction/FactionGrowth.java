@@ -166,12 +166,81 @@ public final class FactionGrowth {
          return;
       }
 
+      if (prebuild) {
+         prebuildGrow(level, data);
+         return;
+      }
+
       for (FactionWorldData.Settlement settlement : data.settlements()) {
-         // While the world is raised before play, every town around spawn builds out its first plans.
          boolean reach = prebuild ? FactionPrebuild.covers(level, settlement.center().getX(), settlement.center().getZ()) : nearestPlayer(level, settlement.center()) <= NEAR * NEAR;
          if (builds(settlement) && reach && grow(level, data, settlement, false)) {
             return;
          }
+      }
+   }
+
+   /** The land of the town now growing during the prebuild, held loaded however far it is from any player. */
+   private static final net.shadowmage.ancientwarfare.core.structure.IslandChunkWindow PREBUILD_LAND = new net.shadowmage.ancientwarfare.core.structure.IslandChunkWindow();
+   private static int prebuildTown = -1;
+
+   /**
+    * While the world is raised before play, every town builds out its plans in turn. No player is
+    * near most of them, so each town's land is loaded in the background first and kept loaded while
+    * it grows; then the next.
+    */
+   private static void prebuildGrow(ServerLevel level, FactionWorldData data) {
+      FactionWorldData.Settlement town = prebuildTown < 0 ? null : data.settlement(prebuildTown);
+      if (town == null || !builds(town) || !FactionPrebuild.covers(level, town.center().getX(), town.center().getZ()) || town.plan().size() < TownBuildings.MAX_WAITING && level.getRandom().nextInt(8) == 0) {
+         town = null;
+         double best = Double.MAX_VALUE;
+         BlockPos spawn = level.getSharedSpawnPos();
+         for (FactionWorldData.Settlement settlement : data.settlements()) {
+            if (builds(settlement) && settlement.plan().size() >= TownBuildings.MAX_WAITING && FactionPrebuild.covers(level, settlement.center().getX(), settlement.center().getZ())) {
+               double distance = settlement.horizontalDistanceSquared(spawn.getX(), spawn.getZ());
+               if (distance < best) {
+                  best = distance;
+                  town = settlement;
+               }
+            }
+         }
+
+         if (town == null) {
+            for (FactionWorldData.Settlement settlement : data.settlements()) {
+               if (builds(settlement) && FactionPrebuild.covers(level, settlement.center().getX(), settlement.center().getZ())) {
+                  town = settlement;
+                  break;
+               }
+            }
+         }
+
+         if (town == null) {
+            PREBUILD_LAND.releaseAll();
+            prebuildTown = -1;
+            return;
+         }
+
+         PREBUILD_LAND.releaseAll();
+         prebuildTown = town.id();
+      }
+
+      int reach = 48;
+      List<net.minecraft.world.level.ChunkPos> chunks = new java.util.ArrayList<>();
+      for (int cx = (town.min().getX() - reach) >> 4; cx <= (town.max().getX() + reach) >> 4; cx++) {
+         for (int cz = (town.min().getZ() - reach) >> 4; cz <= (town.max().getZ() + reach) >> 4; cz++) {
+            chunks.add(new net.minecraft.world.level.ChunkPos(cx, cz));
+         }
+      }
+
+      PREBUILD_LAND.requestGroup(level, new BlockPos(town.id(), -29000, 0), chunks, chunks.size());
+      for (net.minecraft.world.level.ChunkPos chunk : chunks) {
+         if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) {
+            return;
+         }
+      }
+
+      if (!grow(level, data, town, false)) {
+         // No room or nothing to raise now: the next town gets its turn.
+         prebuildTown = -1;
       }
    }
 
