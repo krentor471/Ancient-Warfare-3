@@ -19,6 +19,7 @@ public class FactionCivilianFemaleNpcEntity extends FactionNpcEntity {
    protected void registerGoals() {
       this.addSharedGoals();
       this.goalSelector.addGoal(1, new PanicGoal(this, 1.25));
+      this.goalSelector.addGoal(4, new EatMealGoal(this));
       this.goalSelector.addGoal(5, new CivilianRoutineGoal(this));
       this.goalSelector.addGoal(5, new TradeWorkGoal(this));
    }

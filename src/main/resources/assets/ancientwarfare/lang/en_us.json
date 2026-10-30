@@ -3414,5 +3414,14 @@
   "watch.ancientwarfare.judge_wanted": "The watch is after you. Pay your fine (%s silver) yourself and the case is closed.",
   "watch.ancientwarfare.judge_law": "The law is the same for all. Take nothing that isn't yours and we shan't meet.",
   "town.ancientwarfare.hall.courthouse": "%s has a new courthouse and dungeon.",
-  "faction.ancientwarfare.prebuild_count": "The realms build the world: %s of %s settlements ready, %s roads left"
+  "faction.ancientwarfare.prebuild_count": "The realms build the world: %s of %s settlements ready, %s roads left",
+  "chronicle.ancientwarfare.camp": "%s razed a bandit camp by the roads.",
+  "camp.ancientwarfare.destroyed": "The bandit camp is razed! Bounty: %s silver, %s is grateful (+%s standing). The plunder chest is yours.",
+  "key.ancientwarfare.letters": "Letters and offers",
+  "gui.ancientwarfare.letters.title": "Letters",
+  "gui.ancientwarfare.letters.choice": "Decisions",
+  "gui.ancientwarfare.letters.caravan": "Caravans",
+  "gui.ancientwarfare.letters.empty": "No letters yet.",
+  "gui.ancientwarfare.letters.notice": "New letters: %s, press %s",
+  "town.ancientwarfare.builder": "Builder"
 }

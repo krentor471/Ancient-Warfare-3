@@ -3414,5 +3414,14 @@
   "watch.ancientwarfare.judge_wanted": "Тебя ищет стража. Заплати штраф (%s серебра) сам, и дело закрыто.",
   "watch.ancientwarfare.judge_law": "Закон един для всех. Не бери чужого, и мы не увидимся.",
   "town.ancientwarfare.hall.courthouse": "%s: построили суд с темницей.",
-  "faction.ancientwarfare.prebuild_count": "Державы строят мир: поселений готово %s из %s, дорог осталось %s"
+  "faction.ancientwarfare.prebuild_count": "Державы строят мир: поселений готово %s из %s, дорог осталось %s",
+  "chronicle.ancientwarfare.camp": "%s разорил разбойничий лагерь у дорог.",
+  "camp.ancientwarfare.destroyed": "Лагерь разбойников разорён! Награда: %s серебра, %s благодарит (+%s к репутации). Сундук с добычей ваш.",
+  "key.ancientwarfare.letters": "Письма и предложения",
+  "gui.ancientwarfare.letters.title": "Письма",
+  "gui.ancientwarfare.letters.choice": "Решения",
+  "gui.ancientwarfare.letters.caravan": "Караваны",
+  "gui.ancientwarfare.letters.empty": "Пока писем нет.",
+  "gui.ancientwarfare.letters.notice": "Новых писем: %s — нажми %s",
+  "town.ancientwarfare.builder": "Строитель"
 }

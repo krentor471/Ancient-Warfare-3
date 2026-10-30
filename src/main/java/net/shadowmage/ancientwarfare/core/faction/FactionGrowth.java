@@ -291,6 +291,9 @@ public final class FactionGrowth {
    }
 
    /** Puts up the settlement's next waiting building, if a fitting spot is found. */
+   /** The box of the building just put up, for the builders to raise it again. */
+   private static BlockPos[] lastBox;
+
    private static boolean grow(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, boolean watched) {
       TownBuildings.Kind kind = TownBuildings.Kind.byKey(settlement.plan().get(0));
       if (kind == null) {
@@ -300,6 +303,7 @@ public final class FactionGrowth {
 
       RandomSource random = level.getRandom();
       boolean built = false;
+      lastBox = null;
       List<String> own = kind.words.length == 0 ? List.of() : hallTemplates(settlement.faction(), kind);
       if (!own.isEmpty() && random.nextInt(3) > 0) {
          built = hall(level, data, settlement, kind, own, watched);
@@ -315,6 +319,10 @@ public final class FactionGrowth {
 
       if (!built) {
          return false;
+      }
+
+      if (!FactionPrebuild.active() && lastBox != null && kind != TownBuildings.Kind.PALISADE) {
+         BuildSites.stage(level, lastBox[0], lastBox[1]);
       }
 
       settlement.plan().remove(0);
@@ -369,6 +377,7 @@ public final class FactionGrowth {
       };
       path(level, settlement, door.relative(front), center);
       settlement.extend(site, site.offset(piece.width - 1, piece.height, piece.depth - 1));
+      lastBox = new BlockPos[]{site, site.offset(piece.width - 1, piece.height, piece.depth - 1)};
       if (piece == Piece.HALL) {
          settlement.halls().add(new FactionWorldData.Hall(kind.key(), site, site.offset(piece.width - 1, piece.height, piece.depth - 1)));
       }
@@ -491,6 +500,7 @@ public final class FactionGrowth {
          template.placeInWorld(level, origin, origin, settings, random, Block.UPDATE_CLIENTS);
          BlockPos top = corner.offset(turned.getX() - 1, turned.getY(), turned.getZ() - 1);
          settlement.extend(corner, top);
+         lastBox = new BlockPos[]{corner, top};
          settlement.halls().add(new FactionWorldData.Hall(kind.key(), corner, top));
          BlockPos side = new BlockPos(
             Math.max(corner.getX() - 1, Math.min(top.getX() + 1, center.getX())), ground, Math.max(corner.getZ() - 1, Math.min(top.getZ() + 1, center.getZ()))
@@ -587,6 +597,7 @@ public final class FactionGrowth {
 
          BlockPos top = new BlockPos(maxX, corner.getY() + template.sizeY() - 1, maxZ);
          settlement.extend(corner, top);
+         lastBox = new BlockPos[]{corner, top};
          settlement.halls().add(new FactionWorldData.Hall(kind.key(), corner, top));
          // A path from the hall's side that faces the town back to the middle.
          BlockPos side = new BlockPos(
@@ -735,6 +746,11 @@ public final class FactionGrowth {
          for (int dz = -SPOT_MARGIN; dz < sizeZ + SPOT_MARGIN; dz++) {
             Integer y = groundUnderTrees(level, x + dx, z + dz);
             if (y == null || level.getBlockEntity(new BlockPos(x + dx, y, z + dz)) != null) {
+               return null;
+            }
+
+            // Not across the town's roads and paths.
+            if (dx >= 0 && dz >= 0 && dx < sizeX && dz < sizeZ && level.getBlockState(new BlockPos(x + dx, y, z + dz)).is(Blocks.DIRT_PATH)) {
                return null;
             }
 

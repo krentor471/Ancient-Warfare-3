@@ -64,6 +64,7 @@ public class CivilianRoutineGoal extends Goal {
          || FactionTownLife.isFairgoer(this.npc)
          || FactionTownLife.isThief(this.npc)
          || FactionCaravans.caravanId(this.npc) != 0
+         || this.npc.getTags().contains("AWBuilder")
          || this.npc.getTarget() != null
          || this.npc.getLastHurtByMob() != null;
    }

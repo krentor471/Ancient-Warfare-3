@@ -43,6 +43,7 @@ public final class ForgeClientInputEvents {
    static final KeyMapping BATON_BARRAGE_RADIUS = batonKey("key.ancientwarfare.baton_barrage_radius", 89);
    private static final KeyMapping DIPLOMACY = batonKey("key.ancientwarfare.diplomacy", 75);
    private static final KeyMapping WORLD_MAP = batonKey("key.ancientwarfare.world_map", 77);
+   private static final KeyMapping LETTERS = batonKey("key.ancientwarfare.letters", 74);
 
    private ForgeClientInputEvents() {
    }
@@ -54,6 +55,10 @@ public final class ForgeClientInputEvents {
    @SubscribeEvent
    public static void onClientTick(ClientTickEvent event) {
       Minecraft minecraft = Minecraft.getInstance();
+      if (event.phase == Phase.END) {
+         net.shadowmage.ancientwarfare.core.client.LetterLog.flush();
+      }
+
       if (event.phase == Phase.START && minecraft.player != null && minecraft.screen == null) {
          boolean holdingBaton = isHoldingBaton(minecraft.player.getMainHandItem()) || isHoldingBaton(minecraft.player.getOffhandItem());
          boolean assign = Screen.hasControlDown();
@@ -66,6 +71,31 @@ public final class ForgeClientInputEvents {
                }
             }
          }
+      }
+   }
+
+   /** Offers with buttons and the caravans' news go to the letters page rather than the chat. */
+   @SubscribeEvent
+   public static void onChat(net.minecraftforge.client.event.ClientChatReceivedEvent event) {
+      if (event.isSystem() && !(event instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System system && system.isOverlay())) {
+         net.shadowmage.ancientwarfare.core.client.LetterLog.hold(event.getMessage());
+         event.setCanceled(true);
+      }
+   }
+
+   /** A note under the hotbar while letters wait unread. */
+   @SubscribeEvent
+   public static void onRenderOverlayPost(RenderGuiOverlayEvent.Post event) {
+      Minecraft minecraft = Minecraft.getInstance();
+      if (event.getOverlay().id().equals(VanillaGuiOverlay.HOTBAR.id()) && minecraft.screen == null && net.shadowmage.ancientwarfare.core.client.LetterLog.noticeShowing()) {
+         net.minecraft.network.chat.Component note = net.minecraft.network.chat.Component.translatable(
+            "gui.ancientwarfare.letters.notice", net.shadowmage.ancientwarfare.core.client.LetterLog.unread(), LETTERS.getTranslatedKeyMessage()
+         );
+         int width = minecraft.font.width(note);
+         int x = (event.getWindow().getGuiScaledWidth() - width) / 2;
+         int y = 6;
+         event.getGuiGraphics().fill(x - 4, y - 3, x + width + 4, y + 11, 0xC0302010);
+         event.getGuiGraphics().drawString(minecraft.font, note, x, y, 0xFFE8DCB8);
       }
    }
 
@@ -124,6 +154,15 @@ public final class ForgeClientInputEvents {
 
          while (WORLD_MAP.consumeClick()) {
             AWCoreNetwork.sendWorldMapOpen();
+         }
+
+         while (LETTERS.consumeClick()) {
+            net.shadowmage.ancientwarfare.core.client.LetterScreen.open(
+               net.shadowmage.ancientwarfare.core.client.LetterLog.letters().stream().anyMatch(letter -> !letter.read && letter.kind == net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CARAVAN)
+                  && net.shadowmage.ancientwarfare.core.client.LetterLog.letters().stream().noneMatch(letter -> !letter.read && letter.kind == net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CHOICE)
+                  ? net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CARAVAN
+                  : net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CHOICE
+            );
          }
 
          while (BATON_BARRAGE_RADIUS.consumeClick()) {
@@ -186,6 +225,7 @@ public final class ForgeClientInputEvents {
          event.register(ForgeClientInputEvents.COMMAND_VIEW);
          event.register(ForgeClientInputEvents.DIPLOMACY);
          event.register(ForgeClientInputEvents.WORLD_MAP);
+         event.register(ForgeClientInputEvents.LETTERS);
       }
    }
 }

@@ -109,6 +109,8 @@ public final class FactionSimulation {
       Perf.run("CouncilHalls.tidy", () -> CouncilHalls.tidy(level));
       Perf.run("TownCalendar", () -> TownCalendar.tick(level, data));
       Perf.run("TownWatch", () -> TownWatch.tick(level, data));
+      Perf.run("BanditCamps", () -> BanditCamps.tick(level, data));
+      Perf.run("BuildSites", () -> BuildSites.tick(level));
       Perf.run("FactionGrowth", () -> FactionGrowth.tick(level, data));
       Perf.run("FactionRepairs", () -> FactionRepairs.tick(level, data));
       Perf.run("FreeVillages", () -> FreeVillages.tick(level, data));
@@ -134,6 +136,7 @@ public final class FactionSimulation {
       FaithSpread.simulateDay(level, data);
       CouncilHalls.simulateDay(level, data);
       TownCalendar.simulateDay(level, data);
+      BanditCamps.simulateDay(level, data);
       TownTroubles.simulateDay(level, data);
       Map<String, Integer> recruited = new HashMap<>();
       Map<String, Integer> settlements = new HashMap<>();
