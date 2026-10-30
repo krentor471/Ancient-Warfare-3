@@ -225,7 +225,7 @@ public final class FactionExpansion {
     */
    public static void tick(ServerLevel level, FactionWorldData data) {
       if (level.getGameTime() % BUILD_CHECK_TICKS != 0L) {
-         if (level.getGameTime() % LAYOUT_CHECK_TICKS == 0L) {
+         if (level.getGameTime() % (FactionPrebuild.active() ? 2 : LAYOUT_CHECK_TICKS) == 0L) {
             Perf.run("exp.buildNearest", () -> buildNearest(level, data));
          }
 
@@ -519,7 +519,7 @@ public final class FactionExpansion {
             SITE_SEARCH.put(target.id(), checked + 1);
             AwtWorldGenerator.queueFactionTown(level, path, site[0], site[1], target.id());
             if (distant) {
-               nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 40L : FAR_LAYOUT_REST_TICKS);
+               nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 1L : FAR_LAYOUT_REST_TICKS);
             }
 
             AncientWarfareCore.LOG.info("Faction {} lays out its {} #{} at {}, {}", faction, target.kind(), target.id(), site[0], site[1]);

@@ -360,7 +360,28 @@ public final class AwtWorldGenerator {
    }
 
    public static void tick(ServerLevel level) {
-      NaturalGenerationContext.run(() -> tickInternal(level));
+      if (!net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.active()) {
+         NaturalGenerationContext.run(() -> tickInternal(level));
+         return;
+      }
+
+      // While the world is raised before play nobody is playing: the town goes up as fast as the
+      // land under it loads, several steps a tick, until a step waits on land or the time is spent.
+      long deadline = System.nanoTime() + 45_000_000L;
+      AwtWorldGenerationData data = AwtWorldGenerationData.get(level);
+      do {
+         AwtWorldGenerationData.TownTask task = data.active();
+         if (task == null) {
+            return;
+         }
+
+         Object phase = task.phase;
+         int progress = task.progress;
+         NaturalGenerationContext.run(() -> tickInternal(level));
+         if (data.active() == task && task.phase == phase && task.progress == progress) {
+            return;
+         }
+      } while (System.nanoTime() < deadline);
    }
 
    private static void tickInternal(ServerLevel level) {
