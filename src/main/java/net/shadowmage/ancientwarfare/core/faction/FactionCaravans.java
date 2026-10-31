@@ -46,7 +46,9 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
 public final class FactionCaravans {
    public static final String TAG_PREFIX = "aw_caravan_";
    private static final int TICK_INTERVAL = 10;
-   private static final int SPAWN_CHECK_TICKS = 200;
+   private static final int SPAWN_CHECK_TICKS = 1200;
+   /** Caravans met on the roads at once, besides those a player was hired to guard. */
+   private static final int MAX_ON_ROADS = 2;
    private static final double NOTICE_RANGE = 96.0;
    private static final double MIN_SPAWN_DISTANCE = 48.0;
    private static final double MAX_SPAWN_DISTANCE = 96.0;
@@ -134,7 +136,7 @@ public final class FactionCaravans {
          }
       }
 
-      if (now % SPAWN_CHECK_TICKS == 0L) {
+      if (now % SPAWN_CHECK_TICKS == 0L && ACTIVE.size() < MAX_ON_ROADS) {
          for (ServerPlayer player : level.players()) {
             trySpawn(level, data, player, now);
          }
@@ -184,11 +186,6 @@ public final class FactionCaravans {
          // Registered first: its NPCs are checked against the active caravans as they join the world.
          ACTIVE.put(route.id(), caravan);
          if (caravan.spawn(level, data, route)) {
-            // The caravan master looks for a sword arm along the road.
-            player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_offer", FactionNews.factionName(home.faction()), ESCORT_PAY)
-               .withStyle(ChatFormatting.GOLD)
-               .append(" ")
-               .append(FactionEnvoys.button("caravan.ancientwarfare.escort", "/awcaravan escort " + route.id(), ChatFormatting.GREEN)));
             return;
          }
 
@@ -726,6 +723,50 @@ public final class FactionCaravans {
 
       caravan.escort = player.getUUID();
       player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_taken").withStyle(ChatFormatting.YELLOW));
+   }
+
+   /** The merchants' guild of a town hires the player to guard a caravan leaving it now for the next town. */
+   public static void hire(ServerPlayer player, FactionWorldData.Settlement town) {
+      ServerLevel level = player.serverLevel();
+      FactionWorldData data = FactionWorldData.get(level);
+      for (FactionWorldData.Route route : data.routes()) {
+         if (route.road() != FactionWorldData.RoadState.DONE || route.blocked() || ACTIVE.containsKey(route.id()) || route.points().size() < 12) {
+            continue;
+         }
+
+         boolean first = data.endpoint(route, true) == town;
+         if (!first && data.endpoint(route, false) != town) {
+            continue;
+         }
+
+         List<Long> points = route.points();
+         int direction = first ? 1 : -1;
+         int start = first ? 4 : points.size() - 5;
+         long at = points.get(start);
+         if (level.getChunkSource().getChunkNow(FactionRoads.unpackX(at) >> 4, FactionRoads.unpackZ(at) >> 4) == null) {
+            continue;
+         }
+
+         FactionWorldData.Settlement goal = data.endpoint(route, !first);
+         if (goal == null) {
+            continue;
+         }
+
+         Caravan caravan = new Caravan(route.id(), town.faction(), start, direction);
+         ACTIVE.put(route.id(), caravan);
+         if (!caravan.spawn(level, data, route)) {
+            ACTIVE.remove(route.id());
+            caravan.discard(level);
+            continue;
+         }
+
+         LAST_CARAVAN.put(route.id(), level.getGameTime());
+         caravan.escort = player.getUUID();
+         player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.hired", FactionNews.named(goal), ESCORT_PAY, FactionRoads.unpackX(at), FactionRoads.unpackZ(at)).withStyle(ChatFormatting.YELLOW));
+         return;
+      }
+
+      player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.none_leaving").withStyle(ChatFormatting.GRAY));
    }
 
    public static int active() {

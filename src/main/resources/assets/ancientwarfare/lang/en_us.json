@@ -3423,5 +3423,10 @@
   "gui.ancientwarfare.letters.caravan": "Caravans",
   "gui.ancientwarfare.letters.empty": "No letters yet.",
   "gui.ancientwarfare.letters.notice": "New letters: %s, press %s",
-  "town.ancientwarfare.builder": "Builder"
+  "town.ancientwarfare.builder": "Builder",
+  "head.ancientwarfare.panel": "Village head: %s",
+  "head.ancientwarfare.title": "Village head",
+  "council.ancientwarfare.guild.caravan": "Guard a caravan (%s silver)",
+  "caravan.ancientwarfare.hired": "A caravan leaves for %s and pays %s silver for a guard. It waits by the road at %s %s.",
+  "caravan.ancientwarfare.none_leaving": "No caravan leaves from here now. Come back later."
 }

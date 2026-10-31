@@ -159,6 +159,8 @@ public final class TownTrades {
 
       npc.getPersistentData().putBoolean(HEAD, true);
       npc.setPersistenceRequired();
+      npc.setCustomName(Component.translatable("head.ancientwarfare.title"));
+      npc.setCustomNameVisible(true);
       return true;
    }
 
@@ -185,6 +187,33 @@ public final class TownTrades {
    }
 
    /** After the usual talk: the townsperson's trade and deals, or the head's business. */
+   /** The village head: everything the town offers, on a page of its own. False for anyone else. */
+   public static boolean headPanel(ServerPlayer player, FactionNpcEntity npc) {
+      ServerLevel level = player.serverLevel();
+      if (!grown(npc) || !isHead(level, npc)) {
+         return false;
+      }
+
+      // The first line tells the client to open the head's page with these lines instead of the chat.
+      player.sendSystemMessage(Component.translatable("head.ancientwarfare.panel", npc.getDisplayName()));
+      offerHead(player, npc);
+      offerTrade(player, npc);
+      return true;
+   }
+
+   private static void offerTrade(ServerPlayer player, FactionNpcEntity npc) {
+      Trade trade = trade(player.serverLevel(), npc);
+      String id = "/awtownsfolk " + npc.getId() + " ";
+      player.sendSystemMessage(
+         Component.literal("  ")
+            .append(Component.translatable("trade.ancientwarfare.who", Component.translatable("trade.ancientwarfare." + trade.key)).withStyle(ChatFormatting.GRAY))
+            .append("  ")
+            .append(button(Component.translatable("trade.ancientwarfare.buy", trade.sellCount, item(trade.sells), trade.sellPrice), id + "buy", ChatFormatting.GREEN, Component.translatable("trade.ancientwarfare.buy.hint")))
+            .append("  ")
+            .append(button(Component.translatable("trade.ancientwarfare.sell", trade.buyCount, item(trade.buys), trade.buyPrice), id + "sell", ChatFormatting.YELLOW, Component.translatable("trade.ancientwarfare.sell.hint")))
+      );
+   }
+
    public static void offer(ServerPlayer player, FactionNpcEntity npc) {
       ServerLevel level = player.serverLevel();
       if (!grown(npc)) {

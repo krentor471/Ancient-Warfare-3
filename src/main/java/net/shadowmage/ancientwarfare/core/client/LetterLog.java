@@ -10,13 +10,12 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 
 /**
  * Offers and choices the world puts to the player, kept out of the chat. A message with buttons to
- * press (an envoy's demand, a council's question, a trader's wares) and every word about caravans
- * is gathered with the lines that came with it into a letter, read and answered on the letters page.
+ * press that comes from an envoy, or comes unbidden (a request from the player's own town, a court,
+ * a rival), is gathered with the lines that came with it into a letter, read and answered on the letters page.
  */
 public final class LetterLog {
    public enum Kind {
-      CHOICE,
-      CARAVAN
+      CHOICE
    }
 
    public static final class Letter {
@@ -57,7 +56,21 @@ public final class LetterLog {
       BATCH.add(message);
    }
 
-   /** The tick's lines: a letter if any of them has a button or speaks of caravans, otherwise into the chat as usual. */
+   /** When the player last spoke to someone or pressed a button: what answers that goes to the chat. */
+   private static long promptedAt = Long.MIN_VALUE / 2;
+
+   public static void prompted() {
+      Minecraft minecraft = Minecraft.getInstance();
+      if (minecraft.level != null) {
+         promptedAt = minecraft.level.getGameTime();
+      }
+   }
+
+   /**
+    * The tick's lines. The village head's offers open on his own page; an envoy's word, or any offer
+    * that comes unbidden (from the player's own towns, a court, a rival), becomes a letter; whatever
+    * answers the player's own word or click stays in the chat.
+    */
    public static void flush() {
       if (BATCH.isEmpty()) {
          return;
@@ -66,23 +79,42 @@ public final class LetterLog {
       List<Component> lines = new ArrayList<>(BATCH);
       BATCH.clear();
       Minecraft minecraft = Minecraft.getInstance();
-      boolean caravan = lines.stream().anyMatch(LetterLog::caravan);
-      boolean choice = lines.stream().anyMatch(LetterLog::button);
-      if (!caravan && !choice || minecraft.level == null) {
+      if (minecraft.level == null) {
          lines.forEach(line -> minecraft.gui.getChat().addMessage(line));
          return;
       }
 
-      LETTERS.add(new Letter(caravan ? Kind.CARAVAN : Kind.CHOICE, lines, minecraft.level.getDayTime()));
+      Component panel = lines.stream().filter(line -> key(line).equals(PANEL)).findFirst().orElse(null);
+      if (panel != null) {
+         lines.remove(panel);
+         LetterScreen.openPanel(((TranslatableContents)panel.getContents()).getArgs().length > 0 && ((TranslatableContents)panel.getContents()).getArgs()[0] instanceof Component name ? name : panel, lines);
+         return;
+      }
+
+      boolean prompted = minecraft.level.getGameTime() - promptedAt < 40L;
+      boolean envoy = lines.stream().anyMatch(line -> mentions(line, "envoy."));
+      boolean choice = lines.stream().anyMatch(LetterLog::button);
+      if (!choice || prompted && !envoy) {
+         lines.forEach(line -> minecraft.gui.getChat().addMessage(line));
+         return;
+      }
+
+      LETTERS.add(new Letter(Kind.CHOICE, lines, minecraft.level.getDayTime()));
       while (LETTERS.size() > KEPT) {
          LETTERS.remove(0);
       }
 
       noticeUntil = minecraft.level.getGameTime() + 200L;
-      if (choice && !caravan && minecraft.screen == null && minecraft.hitResult instanceof net.minecraft.world.phys.EntityHitResult) {
-         // The player is talking to someone who waits on an answer: the page opens at once.
+      if (prompted && minecraft.screen == null) {
+         // An envoy the player is talking to: the letter opens at once.
          LetterScreen.open(Kind.CHOICE);
       }
+   }
+
+   private static final String PANEL = "head.ancientwarfare.panel";
+
+   private static String key(Component line) {
+      return line.getContents() instanceof TranslatableContents translatable ? translatable.getKey() : "";
    }
 
    private static boolean button(Component message) {
@@ -94,23 +126,19 @@ public final class LetterLog {
       }, Style.EMPTY).isPresent();
    }
 
-   private static boolean caravan(Component message) {
-      return mentions(message);
-   }
-
-   private static boolean mentions(Component message) {
+   private static boolean mentions(Component message, String prefix) {
       if (message.getContents() instanceof TranslatableContents translatable) {
-         if (translatable.getKey().contains("caravan")) {
+         if (translatable.getKey().startsWith(prefix)) {
             return true;
          }
 
          for (Object arg : translatable.getArgs()) {
-            if (arg instanceof Component inner && mentions(inner)) {
+            if (arg instanceof Component inner && mentions(inner, prefix)) {
                return true;
             }
          }
       }
 
-      return message.getSiblings().stream().anyMatch(LetterLog::mentions);
+      return message.getSiblings().stream().anyMatch(sibling -> mentions(sibling, prefix));
    }
 }

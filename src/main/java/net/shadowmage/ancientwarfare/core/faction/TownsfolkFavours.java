@@ -145,6 +145,11 @@ public final class TownsfolkFavours {
          return;
       }
 
+      if (held.isEmpty() && TownTrades.headPanel(player, npc)) {
+         hireButton(player, npc);
+         return;
+      }
+
       Need need = need(npc);
       if (need != null && !held.isEmpty() && matches(held, need.item)) {
          deliver(player, npc, need);
@@ -182,8 +187,11 @@ public final class TownsfolkFavours {
          FactionRumours.chat(player, npc);
       }
 
-      TownTrades.offer(player, npc);
-      if (FactionStandingData.get(level).getStanding(player.getUUID(), npc.getFactionName()) >= HIRE_STANDING) {
+   }
+
+   /** Townsfolk to hire, offered by the head. */
+   private static void hireButton(ServerPlayer player, FactionNpcEntity npc) {
+      if (FactionStandingData.get(player.serverLevel()).getStanding(player.getUUID(), npc.getFactionName()) >= HIRE_STANDING) {
          player.sendSystemMessage(
             Component.literal("  [")
                .append(Component.translatable("townsfolk.ancientwarfare.hire", HIRE_PRICE))
@@ -310,7 +318,11 @@ public final class TownsfolkFavours {
       }
 
       FactionRumours.say(player, npc.getDisplayName(), Component.translatable("townsfolk.ancientwarfare.hired"));
-      npc.discard();
+      // Hired through the head, one of the town's people goes; the head stays.
+      if (!npc.hasCustomName()) {
+         npc.discard();
+      }
+
       level.addFreshEntity(worker);
    }
 

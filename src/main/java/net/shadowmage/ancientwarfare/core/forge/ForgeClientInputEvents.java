@@ -74,7 +74,20 @@ public final class ForgeClientInputEvents {
       }
    }
 
-   /** Offers with buttons and the caravans' news go to the letters page rather than the chat. */
+   /** Speaking to someone or clicking in the chat: what answers it stays in the chat. */
+   @SubscribeEvent
+   public static void onInteract(net.minecraftforge.client.event.InputEvent.InteractionKeyMappingTriggered event) {
+      net.shadowmage.ancientwarfare.core.client.LetterLog.prompted();
+   }
+
+   @SubscribeEvent
+   public static void onScreenClick(net.minecraftforge.client.event.ScreenEvent.MouseButtonPressed.Pre event) {
+      if (event.getScreen() instanceof net.minecraft.client.gui.screens.ChatScreen) {
+         net.shadowmage.ancientwarfare.core.client.LetterLog.prompted();
+      }
+   }
+
+   /** Envoys' offers and offers that come unbidden go to the letters page; the village head opens his own. */
    @SubscribeEvent
    public static void onChat(net.minecraftforge.client.event.ClientChatReceivedEvent event) {
       if (event.isSystem() && !(event instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System system && system.isOverlay())) {
@@ -157,12 +170,7 @@ public final class ForgeClientInputEvents {
          }
 
          while (LETTERS.consumeClick()) {
-            net.shadowmage.ancientwarfare.core.client.LetterScreen.open(
-               net.shadowmage.ancientwarfare.core.client.LetterLog.letters().stream().anyMatch(letter -> !letter.read && letter.kind == net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CARAVAN)
-                  && net.shadowmage.ancientwarfare.core.client.LetterLog.letters().stream().noneMatch(letter -> !letter.read && letter.kind == net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CHOICE)
-                  ? net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CARAVAN
-                  : net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CHOICE
-            );
+            net.shadowmage.ancientwarfare.core.client.LetterScreen.open(net.shadowmage.ancientwarfare.core.client.LetterLog.Kind.CHOICE);
          }
 
          while (BATON_BARRAGE_RADIUS.consumeClick()) {

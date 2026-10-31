@@ -3423,5 +3423,10 @@
   "gui.ancientwarfare.letters.caravan": "Караваны",
   "gui.ancientwarfare.letters.empty": "Пока писем нет.",
   "gui.ancientwarfare.letters.notice": "Новых писем: %s — нажми %s",
-  "town.ancientwarfare.builder": "Строитель"
+  "town.ancientwarfare.builder": "Строитель",
+  "head.ancientwarfare.panel": "Староста: %s",
+  "head.ancientwarfare.title": "Староста",
+  "council.ancientwarfare.guild.caravan": "Охранять караван (%s сер.)",
+  "caravan.ancientwarfare.hired": "Караван уходит в %s, за охрану заплатят %s сер. Он ждёт у дороги, на %s %s.",
+  "caravan.ancientwarfare.none_leaving": "Сейчас ни один караван отсюда не уходит. Загляни позже."
 }
