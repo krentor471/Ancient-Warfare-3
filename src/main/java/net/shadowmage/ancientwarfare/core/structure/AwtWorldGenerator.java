@@ -1,8 +1,10 @@
 package net.shadowmage.ancientwarfare.core.structure;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,8 +30,12 @@ public final class AwtWorldGenerator {
    private static final int MAX_TOWN_RADIUS_CHUNKS = 11;
    private static final int SURVEY_POINTS_PER_TICK = 64;
    private static final int CLEAR_COLUMNS_PER_TICK = 192;
+   /** How far out from a town's square the land is sloped to its floor. */
+   private static final int BLEND_RADIUS = 10;
    private static final int ROAD_BLOCKS_PER_TICK = 384;
    private static final int MAX_SURFACE_RANGE = 18;
+   /** A survey refuses a site where more than one sample in this many is water. */
+   private static final int WATER_SHARE = 50;
    private static final int FACTION_SITE_RANGE = 15;
    private static final int FACTION_TOWN_SURVEY_RANGE = 28;
    private static final int SITE_ATTEMPTS = 12;
@@ -37,6 +43,10 @@ public final class AwtWorldGenerator {
    private static final int QUICK_SURVEY_GRID = 5;
    private static String cachedPlanKey = "";
    private static AwtTownPlacer.TownPlan cachedPlan;
+   /** For the cached plan of a town that follows the land: each building's footprint and ground level. */
+   private static final Map<AwtTownPlacer.PlannedTemplate, int[]> PADS = new HashMap<>();
+   /** How far around a building's levelled footprint the land is sloped to it. */
+   private static final int PAD_BLEND = 3;
    private static final Set<Long> FORCED_CHUNKS = new HashSet<>();
    /** Land under the faction town site being looked at, loaded ahead of the check. */
    private static final java.util.LinkedHashMap<Long, IslandChunkWindow> SITE_LOADS = new java.util.LinkedHashMap<>();
@@ -180,7 +190,8 @@ public final class AwtWorldGenerator {
                int sx = x - halfSize + halfSize * 2 * gx / 4;
                int sz = z - halfSize + halfSize * 2 * gz / 4;
                NaturalGenerationContext.markChunk(new ChunkPos(sx >> 4, sz >> 4));
-               int y = level.getChunk(sx >> 4, sz >> 4).getHeight(Types.MOTION_BLOCKING_NO_LEAVES, sx & 15, sz & 15);
+               // The height map gives the block above the top one: the water itself is one lower.
+               int y = level.getChunk(sx >> 4, sz >> 4).getHeight(Types.MOTION_BLOCKING_NO_LEAVES, sx & 15, sz & 15) - 1;
                if (!level.getFluidState(new BlockPos(sx, y, sz)).isEmpty()) {
                   AncientWarfareCore.LOG.debug("Faction town site {}, {}: water at {}, {}", x, z, sx, sz);
                   return false;
@@ -349,7 +360,28 @@ public final class AwtWorldGenerator {
    }
 
    public static void tick(ServerLevel level) {
-      NaturalGenerationContext.run(() -> tickInternal(level));
+      if (!net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.active()) {
+         NaturalGenerationContext.run(() -> tickInternal(level));
+         return;
+      }
+
+      // While the world is raised before play nobody is playing: the town goes up as fast as the
+      // land under it loads, several steps a tick, until a step waits on land or the time is spent.
+      long deadline = System.nanoTime() + 45_000_000L;
+      AwtWorldGenerationData data = AwtWorldGenerationData.get(level);
+      do {
+         AwtWorldGenerationData.TownTask task = data.active();
+         if (task == null) {
+            return;
+         }
+
+         Object phase = task.phase;
+         int progress = task.progress;
+         NaturalGenerationContext.run(() -> tickInternal(level));
+         if (data.active() == task && task.phase == phase && task.progress == progress) {
+            return;
+         }
+      } while (System.nanoTime() < deadline);
    }
 
    private static void tickInternal(ServerLevel level) {
@@ -398,9 +430,13 @@ public final class AwtWorldGenerator {
    }
 
    private static AwtTownPlacer.TownPlan plan(AwtWorldGenerationData.TownTask task) {
-      String key = task.path + "@" + task.x + "," + task.y + "," + task.z;
+      String key = task.path + "@" + task.x + "," + task.y + "," + task.z + (task.heights != null ? "~" : "");
       if (!key.equals(cachedPlanKey) || cachedPlan == null) {
          cachedPlan = AwtTownPlacer.plan(new BlockPos(task.x, task.y, task.z), task.path, Direction.NORTH);
+         if (task.heights != null) {
+            cachedPlan = followLand(task, cachedPlan);
+         }
+
          cachedPlanKey = key;
       }
 
@@ -425,10 +461,14 @@ public final class AwtWorldGenerator {
          task.minSurface = Math.min(task.minSurface, y);
          task.maxSurface = Math.max(task.maxSurface, y);
          task.surfaceSamples.add(y);
+         if (!level.getFluidState(new BlockPos(x, y, z)).isEmpty()) {
+            task.water++;
+         }
          task.progress = index + 1;
       }
 
       if (task.progress >= total) {
+         int[] heights = task.surfaceSamples.stream().mapToInt(Integer::intValue).toArray();
          task.surfaceSamples.sort(Integer::compareTo);
          int low = percentile(task.surfaceSamples, 0.1);
          int median = percentile(task.surfaceSamples, 0.5);
@@ -436,7 +476,11 @@ public final class AwtWorldGenerator {
          int representativeRange = high - low;
          // A faction must build its capital and villages somewhere in its own hilly land; their sites were checked already.
          int maxRange = FactionTowns.isGenerated(task.path) ? FACTION_TOWN_SURVEY_RANGE : MAX_SURFACE_RANGE;
-         if (representativeRange > maxRange) {
+         if (task.water * WATER_SHARE > total) {
+            // A lake or a river runs through the site: a town would stand in it.
+            task.phase = AwtWorldGenerationData.Phase.FAILED;
+            AncientWarfareCore.LOG.info("Rejected queued AWT town {} at {}, {} during survey: water under {} of {} samples", new Object[]{task.name, task.x, task.z, task.water, total});
+         } else if (representativeRange > maxRange) {
             task.phase = AwtWorldGenerationData.Phase.FAILED;
             AncientWarfareCore.LOG
                .info(
@@ -445,6 +489,7 @@ public final class AwtWorldGenerator {
                );
          } else {
             task.y = median + 1;
+            task.heights = heights;
             task.phase = AwtWorldGenerationData.Phase.CLEAR;
             AncientWarfareCore.LOG
                .info(
@@ -470,13 +515,14 @@ public final class AwtWorldGenerator {
    }
 
    private static void clear(ServerLevel level, AwtWorldGenerationData data, AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
-      int total = plan.totalSize() * plan.totalSize();
+      // The town's square is levelled, and a band around it is sloped down or up to that floor,
+      // so the town does not stand on a cliff-edged plateau above the land its new houses go on.
+      int side = plan.totalSize() + 2 * BLEND_RADIUS;
+      int total = side * side;
       int end = Math.min(total, task.progress + CLEAR_COLUMNS_PER_TICK);
-      int floorY = task.y - 1;
-
       for (int index = task.progress; index < end; index++) {
-         int lx = index % plan.totalSize();
-         int lz = index / plan.totalSize();
+         int lx = index % side - BLEND_RADIUS;
+         int lz = index / side - BLEND_RADIUS;
          int x = plan.min().getX() + lx;
          int z = plan.min().getZ() + lz;
          if (!ensureLoaded(level, task, Set.of(ChunkPos.asLong(x >> 4, z >> 4)))) {
@@ -484,11 +530,19 @@ public final class AwtWorldGenerator {
          }
 
          int oldY = surface(level, x, z);
-         int clearTopY = level.getHeight(Types.WORLD_SURFACE, x, z) - 1;
          BlockState terrain = terrainBelowFluid(level, x, oldY, z);
          BlockState top = !terrain.is(Blocks.SAND) && !terrain.is(Blocks.RED_SAND) ? Blocks.GRASS_BLOCK.defaultBlockState() : terrain;
          BlockState fill = !top.is(Blocks.SAND) && !top.is(Blocks.RED_SAND) ? Blocks.DIRT.defaultBlockState() : top;
+         // A town that follows the land is smoothed to the survey's gentle slopes; an older one is levelled flat.
+         int floorY = task.heights != null ? (int)Math.round(heightAt(task, plan, x, z)) : task.y - 1;
+         int distance = Math.max(Math.max(-lx, lx - plan.totalSize() + 1), Math.max(-lz, lz - plan.totalSize() + 1));
+         if (distance > 0) {
+            AwsWorldGenerator.blendColumn(level, x, z, distance, floorY, top, fill);
+            task.progress = index + 1;
+            continue;
+         }
 
+         int clearTopY = level.getHeight(Types.WORLD_SURFACE, x, z) - 1;
          for (int y = clearTopY; y > floorY; y--) {
             level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 18);
          }
@@ -519,7 +573,8 @@ public final class AwtWorldGenerator {
             break;
          }
 
-         level.setBlock(new BlockPos(pos.getX(), task.y - 1, pos.getZ()), Blocks.GRAVEL.defaultBlockState(), 2);
+         int roadY = task.heights != null ? (int)Math.round(heightAt(task, plan, pos.getX(), pos.getZ())) : task.y - 1;
+         level.setBlock(new BlockPos(pos.getX(), roadY, pos.getZ()), Blocks.GRAVEL.defaultBlockState(), 2);
          task.progress = index + 1;
       }
 
@@ -529,6 +584,101 @@ public final class AwtWorldGenerator {
       }
 
       data.setDirty();
+   }
+
+   /**
+    * The plan raised or lowered building by building onto the land under it, so the town climbs its
+    * hills instead of standing on one platform.
+    */
+   private static AwtTownPlacer.TownPlan followLand(AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan) {
+      PADS.clear();
+      List<AwtTownPlacer.PlannedTemplate> walls = onLand(task, plan, plan.walls());
+      List<AwtTownPlacer.PlannedTemplate> buildings = onLand(task, plan, plan.buildings());
+      Set<Long> occupied = new HashSet<>();
+      for (AwtTownPlacer.PlannedTemplate placement : concat(walls, buildings)) {
+         occupied.addAll(AwsTemplatePlacer.occupiedBlocks(placement.min(), placement.templatePath(), placement.facing()));
+      }
+
+      return new AwtTownPlacer.TownPlan(plan.path(), plan.name(), plan.origin(), plan.min(), plan.totalSize(), plan.roads(), walls, buildings, Set.copyOf(occupied));
+   }
+
+   private static List<AwtTownPlacer.PlannedTemplate> onLand(
+      AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan, List<AwtTownPlacer.PlannedTemplate> placements
+   ) {
+      List<AwtTownPlacer.PlannedTemplate> moved = new ArrayList<>();
+      for (AwtTownPlacer.PlannedTemplate placement : placements) {
+         // The whole box the template is placed in, open air included, since placing it clears that air.
+         int[] size = AwsTemplatePlacer.footprint(placement.templatePath(), placement.facing());
+         int minX = placement.min().getX();
+         int minZ = placement.min().getZ();
+         int maxX = minX + size[0] - 1;
+         int maxZ = minZ + size[1] - 1;
+
+         double sum = heightAt(task, plan, minX, minZ) + heightAt(task, plan, maxX, minZ) + heightAt(task, plan, minX, maxZ) + heightAt(task, plan, maxX, maxZ)
+            + heightAt(task, plan, (minX + maxX) / 2, (minZ + maxZ) / 2);
+         int ground = (int)Math.round(sum / 5.0);
+         AwtTownPlacer.PlannedTemplate onLand = new AwtTownPlacer.PlannedTemplate(placement.templatePath(), placement.min().above(ground - (task.y - 1)), placement.facing());
+         PADS.put(onLand, new int[]{minX, minZ, maxX, maxZ, ground});
+         moved.add(onLand);
+      }
+
+      return moved;
+   }
+
+   /** The land's height at a spot in the town, from the survey grid between its samples. */
+   private static double heightAt(AwtWorldGenerationData.TownTask task, AwtTownPlacer.TownPlan plan, int x, int z) {
+      int side = (int)Math.round(Math.sqrt(task.heights.length));
+      int size = plan.totalSize();
+      int lx = Math.max(0, Math.min(size - 1, x - plan.min().getX()));
+      int lz = Math.max(0, Math.min(size - 1, z - plan.min().getZ()));
+      int ix = Math.max(0, Math.min(side - 2, lx / 8));
+      int iz = Math.max(0, Math.min(side - 2, lz / 8));
+      double tx = between(lx, ix, size);
+      double tz = between(lz, iz, size);
+      double north = task.heights[iz * side + ix] * (1.0 - tx) + task.heights[iz * side + ix + 1] * tx;
+      double south = task.heights[(iz + 1) * side + ix] * (1.0 - tx) + task.heights[(iz + 1) * side + ix + 1] * tx;
+      return north * (1.0 - tz) + south * tz;
+   }
+
+   private static double between(int local, int index, int size) {
+      int from = Math.min(size - 1, index * 8);
+      int to = Math.min(size - 1, (index + 1) * 8);
+      return to <= from ? 0.0 : Math.max(0.0, Math.min(1.0, (double)(local - from) / (double)(to - from)));
+   }
+
+   /** A building's footprint brought to its ground level, the land around sloped to meet it; other buildings' blocks are left alone. */
+   private static void levelPad(ServerLevel level, AwtTownPlacer.TownPlan plan, int[] pad) {
+      int ground = pad[4];
+      BlockState terrain = terrainBelowFluid(level, (pad[0] + pad[2]) / 2, surface(level, (pad[0] + pad[2]) / 2, (pad[1] + pad[3]) / 2), (pad[1] + pad[3]) / 2);
+      BlockState top = !terrain.is(Blocks.SAND) && !terrain.is(Blocks.RED_SAND) ? Blocks.GRASS_BLOCK.defaultBlockState() : terrain;
+      BlockState fill = !top.is(Blocks.SAND) && !top.is(Blocks.RED_SAND) ? Blocks.DIRT.defaultBlockState() : top;
+      for (int x = pad[0]; x <= pad[2]; x++) {
+         for (int z = pad[1]; z <= pad[3]; z++) {
+            int old = surface(level, x, z);
+            for (int y = old; y > ground; y--) {
+               BlockPos pos = new BlockPos(x, y, z);
+               if (!plan.occupiedBlocks().contains(pos.asLong())) {
+                  level.setBlock(pos, Blocks.AIR.defaultBlockState(), 18);
+               }
+            }
+
+            for (int y = Math.min(old + 1, ground); y <= ground; y++) {
+               BlockPos pos = new BlockPos(x, y, z);
+               if (!plan.occupiedBlocks().contains(pos.asLong())) {
+                  level.setBlock(pos, y == ground ? top : fill, 2);
+               }
+            }
+         }
+      }
+
+      for (int x = pad[0] - PAD_BLEND; x <= pad[2] + PAD_BLEND; x++) {
+         for (int z = pad[1] - PAD_BLEND; z <= pad[3] + PAD_BLEND; z++) {
+            int distance = Math.max(Math.max(pad[0] - x, x - pad[2]), Math.max(pad[1] - z, z - pad[3]));
+            if (distance > 0) {
+               AwsWorldGenerator.blendColumn(level, x, z, distance, ground, top, fill);
+            }
+         }
+      }
    }
 
    private static void supportFoundationColumn(ServerLevel level, int x, int startY, int z) {
@@ -555,8 +705,22 @@ public final class AwtWorldGenerator {
    ) {
       if (task.progress < placements.size()) {
          AwtTownPlacer.PlannedTemplate old = placements.get(task.progress);
-         if (!ensureLoaded(level, task, AwsTemplatePlacer.requiredChunks(old.min(), old.templatePath(), old.facing()))) {
+         int[] pad = PADS.get(old);
+         Set<Long> chunks = new HashSet<>(AwsTemplatePlacer.requiredChunks(old.min(), old.templatePath(), old.facing()));
+         if (pad != null) {
+            for (int x = pad[0] - PAD_BLEND; x <= pad[2] + PAD_BLEND + 15; x += 16) {
+               for (int z = pad[1] - PAD_BLEND; z <= pad[3] + PAD_BLEND + 15; z += 16) {
+                  chunks.add(ChunkPos.asLong(Math.min(x, pad[2] + PAD_BLEND) >> 4, Math.min(z, pad[3] + PAD_BLEND) >> 4));
+               }
+            }
+         }
+
+         if (!ensureLoaded(level, task, chunks)) {
             return;
+         }
+
+         if (pad != null) {
+            levelPad(level, plan, pad);
          }
 
          AwtTownPlacer.placePlannedTemplate(level, old, plan.occupiedBlocks());
@@ -689,12 +853,13 @@ public final class AwtWorldGenerator {
          if (founded != null && !founded.built()) {
             // A settlement that lived on paper now stands; its people and garrison are the simulated ones.
             founded.place(task.path, min, max);
+            founded.setFloor(task.heights != null ? FactionWorldData.FOLLOWS_GROUND : task.y - 1);
             data.setDirty();
-            FactionTowns.plantFields(level, plan, task.y - 1, faction, FactionTowns.CAPITAL.equals(kind));
+            FactionTowns.plantFields(level, plan, faction, FactionTowns.CAPITAL.equals(kind));
             return;
          }
 
-         data.addSettlement(
+         FactionWorldData.Settlement settlement = data.addSettlement(
                faction,
                kind,
                task.path,
@@ -705,8 +870,9 @@ public final class AwtWorldGenerator {
                soldiers,
                FactionSimulation.startingPopulation(soldiers, civilians)
             );
+         settlement.setFloor(task.heights != null ? FactionWorldData.FOLLOWS_GROUND : task.y - 1);
          if (generated) {
-            FactionTowns.plantFields(level, plan, task.y - 1, faction, FactionTowns.CAPITAL.equals(kind));
+            FactionTowns.plantFields(level, plan, faction, FactionTowns.CAPITAL.equals(kind));
             FactionExpansion.townBuilt(level, faction, kind, task.x, task.z);
          }
       }

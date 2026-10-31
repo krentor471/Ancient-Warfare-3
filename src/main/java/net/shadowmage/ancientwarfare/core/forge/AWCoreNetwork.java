@@ -1145,7 +1145,7 @@ public final class AWCoreNetwork {
          for (int i = 0; i < markerCount; i++) {
             markers.add(
                new WorldMap.Marker(
-                  buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64), buffer.readVarIntArray(8)
+                  buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64), buffer.readVarIntArray(32)
                )
             );
          }
@@ -1200,8 +1200,8 @@ public final class AWCoreNetwork {
             buffer.writeVarInt(entry.trait());
             buffer.writeVarIntArray(entry.stores());
             buffer.writeVarIntArray(entry.court());
-            buffer.writeVarInt(Math.min(4, entry.goals().size()));
-            entry.goals().stream().limit(4).forEach(buffer::writeComponent);
+            buffer.writeVarInt(Math.min(5, entry.goals().size()));
+            entry.goals().stream().limit(5).forEach(buffer::writeComponent);
             buffer.writeInt(entry.pending());
             writeNames(buffer, entry.ties());
             buffer.writeVarIntArray(entry.tieData());
@@ -1246,7 +1246,7 @@ public final class AWCoreNetwork {
       }
 
       private static List<net.minecraft.network.chat.Component> readGoals(FriendlyByteBuf buffer) {
-         return readLines(buffer, 4);
+         return readLines(buffer, 5);
       }
 
       private static List<net.minecraft.network.chat.Component> readLines(FriendlyByteBuf buffer, int max) {

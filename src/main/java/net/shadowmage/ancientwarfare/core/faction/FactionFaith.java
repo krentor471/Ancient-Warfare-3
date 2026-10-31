@@ -229,6 +229,12 @@ public final class FactionFaith extends SavedData {
                FactionDiplomacy.adjustOpinion(level, other, faction, 1);
             }
 
+            if (faction.compareTo(other) < 0 && faith(level, faction) != faith(level, other)) {
+               // Another creed: an old grievance, sharpened by a zealous ruler and dulled by a tolerant one.
+               otherCreed(level, data, faction, other, random);
+               otherCreed(level, data, other, faction, random);
+            }
+
             if (!faction.equals(other) && holdsAsInfidel(level, data, other, faith(level, faction)) && random.nextDouble() < 0.5) {
                FactionDiplomacy.adjustOpinion(level, faction, other, -1);
             }
@@ -256,6 +262,42 @@ public final class FactionFaith extends SavedData {
    }
 
    // ---------------------------------------------------------------- feasts
+
+   /** Opinion of a realm of another faith slides, by how the ruler holds to their own and lives by it. */
+   private static void otherCreed(ServerLevel level, FactionWorldData data, String faction, String other, RandomSource random) {
+      int mine = FactionRulers.ruler(data, faction, random).character();
+      int theirs = FactionRulers.ruler(data, other, random).character();
+      double chance = 0.15;
+      if (FactionPeople.has(mine, FactionPeople.Character.ZEALOUS)) {
+         chance = 0.45;
+      } else if (FactionPeople.has(mine, FactionPeople.Character.PIOUS)) {
+         chance = 0.25;
+      } else if (FactionPeople.has(mine, FactionPeople.Character.TOLERANT) || FactionPeople.has(mine, FactionPeople.Character.CYNICAL)) {
+         chance = 0.03;
+      }
+
+      // An infidel who lives in sin is the more despised.
+      if (FactionPeople.has(theirs, FactionPeople.Character.LUSTFUL) || FactionPeople.has(theirs, FactionPeople.Character.GLUTTONOUS) || FactionPeople.has(theirs, FactionPeople.Character.CRUEL)) {
+         chance += 0.05;
+      }
+
+      if (random.nextDouble() < chance && FactionDiplomacy.relation(level, faction, other).opinion() > -60) {
+         FactionDiplomacy.adjustOpinion(level, faction, other, -1);
+      }
+   }
+
+   /** How much a marriage across faiths is resisted: 1 for the same creed, less the further apart. */
+   static double marriageFactor(ServerLevel level, String faction, String other, int character) {
+      if (faith(level, faction) == faith(level, other)) {
+         return 1.0;
+      }
+
+      if (FactionPeople.has(character, FactionPeople.Character.ZEALOUS)) {
+         return 0.0;
+      }
+
+      return FactionPeople.has(character, FactionPeople.Character.TOLERANT) ? 0.8 : 0.4;
+   }
 
    private void feast(ServerLevel level, FactionWorldData data, int faith, Set<String> factions) {
       List<String> faithful = new ArrayList<>();
@@ -486,6 +528,7 @@ public final class FactionFaith extends SavedData {
          if (heresy.answer == 1) {
             // Persecuted until half the realm holds to it: a war of faith.
             FactionCourt.Role role = FactionPeople.has(FactionRulers.ruler(data, heresy.faction, random).character(), FactionPeople.Character.PIOUS)
+                  && FactionCourt.adult(level, heresy.faction, FactionCourt.Role.HEIR)
                ? FactionCourt.Role.HEIR
                : FactionCourt.Role.PRIEST;
             if (!FactionRebellions.religiousWar(level, data, heresy.faction, role, heresy.towns, heresy.faith)) {

@@ -24,9 +24,14 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
 /**
  * People a player meets on the roads besides caravans: pilgrims behind a priest, a lone peddler
  * with goods to sell, a messenger in a hurry, and refugees fleeing a town struck by war, hunger or
- * plague. They walk the road from one end toward the other and, stopped and spoken to, say who
- * they are and pass on the news of the land (see FactionRumours). Like caravans, they live only
- * while a player is near and are not saved.
+ * plague; a patrol of soldiers keeping the road, a shepherd driving his flock, a hunter, a knight
+ * errant looking for a fair fight, a tax collector under guard and a wedding procession. They walk
+ * the road from one end toward the other and, stopped and spoken to, say who they are and pass on
+ * the news of the land (see FactionRumours). Some offer more: the knight a duel, the hunter his
+ * hides and meat, refugees a new home in a player's village. Some are worth robbing: a messenger's
+ * letter tells the plans of his country, a tax collector carries silver, a flock can be driven
+ * off; the country does not forget it. Like caravans, they live only while a player is near and
+ * are not saved.
  */
 public final class FactionTravellers {
    public static final String TAG_PREFIX = "aw_traveller_";
@@ -50,8 +55,31 @@ public final class FactionTravellers {
       PILGRIMS,
       PEDDLER,
       MESSENGER,
-      REFUGEES;
+      REFUGEES,
+      PATROL,
+      SHEPHERD,
+      HUNTER,
+      KNIGHT,
+      TAX_COLLECTOR,
+      PROCESSION;
    }
+
+   /** How often each peaceful kind takes the road, in the order of Kind from PILGRIMS; refugees come by their own chance. */
+   private static final double[] KIND_WEIGHTS = {3, 3, 2.5, 0, 3, 2.5, 1.5, 1.2, 1.5, 1.2};
+   private static final int DUEL_REWARD = 20;
+   private static final int DUEL_LOSS = 10;
+   private static final int DUEL_STANDING = 4;
+   /** A duel ends when either side is down to this share of its health; nobody dies of honour. */
+   private static final float DUEL_YIELD = 0.35F;
+   private static final double DUEL_RANGE = 24.0;
+   private static final int TAX_SILVER = 30;
+   private static final int ROB_STANDING = -15;
+   private static final int LETTER_STANDING = -6;
+   private static final int HERD_STANDING = -4;
+   private static final int REFUGE_STANDING = 4;
+   private static final int HIDES_PRICE = 3;
+   private static final int MEAT_PRICE = 2;
+   private static final double OFFER_RANGE = 6.0;
 
    private static final Map<Integer, Group> ACTIVE = new HashMap<>();
    private static final Map<Integer, Long> LAST_ON_ROUTE = new HashMap<>();
@@ -101,7 +129,191 @@ public final class FactionTravellers {
       Component where = goal == null || goal.name().isEmpty() ? Component.translatable("traveller.ancientwarfare.next_town") : FactionNews.named(goal);
       Component intro = Component.translatable("traveller.ancientwarfare." + group.kind.name().toLowerCase(java.util.Locale.ROOT), where, FactionNews.factionName(group.faction));
       FactionRumours.say(player, npc.getDisplayName(), intro);
-      FactionRumours.chat(player, npc);
+      switch (group.kind) {
+         case KNIGHT -> offer(player, group, "duel");
+         case HUNTER -> {
+            offer(player, group, "hides");
+            offer(player, group, "meat");
+         }
+         case REFUGEES -> {
+            if (ownVillage(data, player) != null) {
+               offer(player, group, "refuge");
+            }
+         }
+         default -> FactionRumours.chat(player, npc);
+      }
+   }
+
+   private static void offer(ServerPlayer player, Group group, String action) {
+      player.sendSystemMessage(
+         Component.literal("  [")
+            .append(Component.translatable("traveller.ancientwarfare.offer." + action, HIDES_PRICE, MEAT_PRICE))
+            .append("]")
+            .withStyle(
+               style -> style.withColor(net.minecraft.ChatFormatting.GREEN)
+                  .withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND, "/awroad " + group.id + " " + action))
+            )
+      );
+   }
+
+   /** The hall of the player's village nearest to him, if he has one. */
+   private static BlockPos ownVillage(FactionWorldData data, ServerPlayer player) {
+      BlockPos best = null;
+      double bestDistance = Double.MAX_VALUE;
+      for (Map.Entry<BlockPos, UUID> village : data.villages().entrySet()) {
+         double distance = village.getKey().distSqr(player.blockPosition());
+         if (player.getUUID().equals(village.getValue()) && distance < bestDistance) {
+            best = village.getKey();
+            bestDistance = distance;
+         }
+      }
+
+      return best;
+   }
+
+   /** The player clicked one of a traveller's offers in chat. */
+   public static void act(ServerPlayer player, int groupId, String action) {
+      Group group = ACTIVE.get(groupId);
+      ServerLevel level = player.serverLevel();
+      Entity entity = group == null || group.leader == null ? null : level.getEntity(group.leader);
+      if (!(entity instanceof FactionNpcEntity lead) || !lead.isAlive() || lead.distanceToSqr(player) > OFFER_RANGE * OFFER_RANGE * 4) {
+         player.sendSystemMessage(Component.translatable("traveller.ancientwarfare.gone"));
+         return;
+      }
+
+      Component speaker = lead.getDisplayName();
+      switch (action) {
+         case "duel" -> {
+            if (group.kind == Kind.KNIGHT && group.duelist == null) {
+               group.duelist = player.getUUID();
+               FactionRumours.say(player, speaker, Component.translatable("traveller.ancientwarfare.duel.begin"));
+            }
+         }
+         case "hides", "meat" -> {
+            if (group.kind != Kind.HUNTER) {
+               return;
+            }
+
+            boolean hides = action.equals("hides");
+            if (!Coins.take(player, hides ? HIDES_PRICE : MEAT_PRICE)) {
+               player.sendSystemMessage(Component.translatable("traveller.ancientwarfare.no_silver"));
+               return;
+            }
+
+            net.minecraft.world.item.ItemStack goods = hides
+               ? new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LEATHER, 4)
+               : new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COOKED_BEEF, 6);
+            if (!player.getInventory().add(goods)) {
+               player.drop(goods, false);
+            }
+
+            FactionRumours.say(player, speaker, Component.translatable("traveller.ancientwarfare.sold"));
+         }
+         case "refuge" -> {
+            FactionWorldData data = FactionWorldData.get(level);
+            BlockPos hall = ownVillage(data, player);
+            if (group.kind != Kind.REFUGEES || hall == null) {
+               return;
+            }
+
+            // They take the player's word and go to his village: from now on they work for him.
+            List<UUID> people = new ArrayList<>(group.followers);
+            people.add(group.leader);
+            int settled = 0;
+            for (UUID id : people) {
+               if (level.getEntity(id) instanceof FactionNpcEntity person && person.isAlive()) {
+                  net.shadowmage.ancientwarfare.core.entity.WorkerNpcEntity worker = AWCoreEntityTypes.WORKER_NPC.get().create(level);
+                  if (worker != null) {
+                     worker.moveTo(person.getX(), person.getY(), person.getZ(), person.getYRot(), 0.0F);
+                     worker.finalizeSpawn(level, level.getCurrentDifficultyAt(person.blockPosition()), MobSpawnType.EVENT, null, null);
+                     worker.setOwner(player.getUUID());
+                     worker.setPersistenceRequired();
+                     level.addFreshEntity(worker);
+                     settled++;
+                  }
+
+                  person.discard();
+               }
+            }
+
+            ACTIVE.remove(group.id);
+            net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level).adjustStanding(player.getUUID(), group.faction, REFUGE_STANDING);
+            player.sendSystemMessage(Component.translatable("traveller.ancientwarfare.refuge.taken", settled, hall.getX(), hall.getZ()).withStyle(net.minecraft.ChatFormatting.GREEN));
+         }
+         default -> {
+         }
+      }
+   }
+
+   /**
+    * A blow in a knight's duel. The blow that would bring either side below its yielding point ends
+    * the duel instead of landing; returns true when the blow is to be cancelled.
+    */
+   public static boolean onDamage(net.minecraft.world.entity.LivingEntity victim, Entity attacker, float amount) {
+      for (Group group : ACTIVE.values()) {
+         if (group.duelist == null || !(victim.level() instanceof ServerLevel level)) {
+            continue;
+         }
+
+         Entity knight = level.getEntity(group.leader);
+         ServerPlayer player = level.getServer().getPlayerList().getPlayer(group.duelist);
+         if (!(knight instanceof FactionNpcEntity lead) || player == null) {
+            continue;
+         }
+
+         boolean knightHit = victim == lead && attacker == player;
+         boolean playerHit = victim == player && attacker == lead;
+         if ((knightHit || playerHit) && victim.getHealth() - amount <= victim.getMaxHealth() * DUEL_YIELD) {
+            group.endDuel(level, lead, player, knightHit);
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   /** A player killed one of a group on the road: robbing the tax, reading the letter, taking from the flock. */
+   public static void onKilled(ServerLevel level, Entity dead, ServerPlayer player) {
+      Group group = ACTIVE.get(travellerId(dead));
+      if (group == null) {
+         return;
+      }
+
+      var standings = net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level);
+      boolean leader = dead.getUUID().equals(group.leader);
+      if (group.kind == Kind.TAX_COLLECTOR && leader) {
+         for (net.minecraft.world.item.ItemStack coins : Coins.silver(TAX_SILVER)) {
+            dead.spawnAtLocation(coins);
+         }
+
+         standings.adjustStanding(player.getUUID(), group.faction, ROB_STANDING);
+         FactionNews.tell(level, Component.translatable("news.ancientwarfare.tax_robbed", FactionNews.factionName(group.faction)));
+      } else if (group.kind == Kind.MESSENGER && leader) {
+         standings.adjustStanding(player.getUUID(), group.faction, LETTER_STANDING);
+         player.sendSystemMessage(letter(level, group.faction).withStyle(net.minecraft.ChatFormatting.YELLOW));
+      } else if (group.kind == Kind.SHEPHERD && !leader) {
+         standings.adjustStanding(player.getUUID(), group.faction, HERD_STANDING);
+      }
+   }
+
+   /** What a messenger's letter tells of his country's plans: its armies and marches, or nothing of note. */
+   private static net.minecraft.network.chat.MutableComponent letter(ServerLevel level, String faction) {
+      FactionWorldData data = FactionWorldData.get(level);
+      for (FactionWorldData.Army army : data.armies()) {
+         FactionWorldData.Settlement target = data.settlement(army.targetSettlement());
+         if (army.faction().equals(faction) && target != null) {
+            return Component.translatable("traveller.ancientwarfare.letter.army", army.size(), FactionNews.named(target));
+         }
+      }
+
+      for (FactionWorldData.Campaign campaign : data.campaigns()) {
+         FactionWorldData.Settlement target = data.settlement(campaign.targetSettlement());
+         if (campaign.faction().equals(faction) && target != null) {
+            return Component.translatable("traveller.ancientwarfare.letter.army", campaign.size(), FactionNews.named(target));
+         }
+      }
+
+      return Component.translatable("traveller.ancientwarfare.letter.nothing", FactionNews.factionName(faction));
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {
@@ -128,11 +340,29 @@ public final class FactionTravellers {
       }
    }
 
+   /** For operators: sends travellers of a kind down a road near the player; false when no road will do. */
+   public static boolean spawnNear(ServerLevel level, ServerPlayer player, String kindName) {
+      Kind kind;
+      try {
+         kind = Kind.valueOf(kindName.toUpperCase(java.util.Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+         return false;
+      }
+
+      int before = ACTIVE.size();
+      trySpawn(level, FactionWorldData.get(level), player, level.getGameTime(), kind);
+      return ACTIVE.size() > before;
+   }
+
    private static void trySpawn(ServerLevel level, FactionWorldData data, ServerPlayer player, long now) {
+      trySpawn(level, data, player, now, null);
+   }
+
+   private static void trySpawn(ServerLevel level, FactionWorldData data, ServerPlayer player, long now, Kind forced) {
       List<FactionWorldData.Route> routes = new ArrayList<>(data.routes());
       java.util.Collections.shuffle(routes, new java.util.Random(level.getRandom().nextLong()));
       for (FactionWorldData.Route route : routes) {
-         if (route.road() != FactionWorldData.RoadState.DONE || now - LAST_ON_ROUTE.getOrDefault(route.id(), Long.MIN_VALUE / 2) < ROUTE_COOLDOWN) {
+         if (route.road() != FactionWorldData.RoadState.DONE || forced == null && now - LAST_ON_ROUTE.getOrDefault(route.id(), Long.MIN_VALUE / 2) < ROUTE_COOLDOWN) {
             continue;
          }
 
@@ -142,7 +372,7 @@ public final class FactionTravellers {
          for (int i = 0; i < points.size(); i++) {
             double distance = distance(player, points.get(i));
             near |= distance < NOTICE_RANGE;
-            if (start < 0 && distance >= MIN_SPAWN_DISTANCE && distance <= MAX_SPAWN_DISTANCE && i > 2 && i < points.size() - 3) {
+            if (start < 0 && distance >= MIN_SPAWN_DISTANCE && distance <= MAX_SPAWN_DISTANCE && i > 2 && i < points.size() - 3 && !FactionCaravans.inTown(data, points.get(i))) {
                start = i;
             }
          }
@@ -162,15 +392,16 @@ public final class FactionTravellers {
          Kind kind;
          String faction = from.faction();
          boolean struck = from.famine() > 0 || from.plague() > 0 || !from.capturedFrom().isEmpty();
-         if (struck && random.nextDouble() < REFUGEE_CHANCE) {
+         if (forced != null) {
+            kind = forced;
+         } else if (struck && random.nextDouble() < REFUGEE_CHANCE) {
             kind = Kind.REFUGEES;
             // Those who fled a captured town are of the people who lost it.
             faction = from.capturedFrom().isEmpty() ? faction : from.capturedFrom();
          } else if (FactionDiplomacy.isOutlaw(faction)) {
             continue;
          } else {
-            double roll = random.nextDouble();
-            kind = roll < 0.35 ? Kind.PILGRIMS : roll < 0.7 ? Kind.PEDDLER : Kind.MESSENGER;
+            kind = pick(random);
          }
 
          LAST_ON_ROUTE.put(route.id(), now);
@@ -185,6 +416,23 @@ public final class FactionTravellers {
          ACTIVE.remove(group.id);
          group.discard(level);
       }
+   }
+
+   private static Kind pick(RandomSource random) {
+      double total = 0.0;
+      for (double weight : KIND_WEIGHTS) {
+         total += weight;
+      }
+
+      double roll = random.nextDouble() * total;
+      for (Kind kind : Kind.values()) {
+         roll -= KIND_WEIGHTS[kind.ordinal()];
+         if (roll < 0.0) {
+            return kind;
+         }
+      }
+
+      return Kind.PILGRIMS;
    }
 
    private static double distance(Entity entity, long point) {
@@ -207,6 +455,8 @@ public final class FactionTravellers {
       private int stuck;
       private UUID leader;
       private final List<UUID> followers = new ArrayList<>();
+      /** The player a knight is fighting, while the duel lasts. */
+      private UUID duelist;
 
       Group(int id, Kind kind, String faction, int routeId, int index, int direction) {
          this.id = id;
@@ -238,10 +488,13 @@ public final class FactionTravellers {
          int z = FactionRoads.unpackZ(point);
          RandomSource random = level.getRandom();
          EntityType<? extends FactionNpcEntity> leaderType = switch (this.kind) {
-            case PILGRIMS -> AWCoreEntityTypes.FACTION_PRIEST_NPC.get();
+            case PILGRIMS, PROCESSION -> AWCoreEntityTypes.FACTION_PRIEST_NPC.get();
             case PEDDLER -> AWCoreEntityTypes.FACTION_TRADER_NPC.get();
-            case MESSENGER -> AWCoreEntityTypes.FACTION_SOLDIER_NPC.get();
-            case REFUGEES -> civilian(random);
+            case MESSENGER, PATROL -> AWCoreEntityTypes.FACTION_SOLDIER_NPC.get();
+            case HUNTER -> AWCoreEntityTypes.FACTION_ARCHER_NPC.get();
+            case KNIGHT -> AWCoreEntityTypes.FACTION_SOLDIER_ELITE_NPC.get();
+            case TAX_COLLECTOR -> AWCoreEntityTypes.FACTION_CIVILIAN_MALE_NPC.get();
+            case REFUGEES, SHEPHERD -> civilian(random);
          };
          FactionNpcEntity first = this.create(level, leaderType, x, z, this.kind == Kind.MESSENGER ? MESSENGER_SPEED : WALK_SPEED);
          if (first == null) {
@@ -252,10 +505,30 @@ public final class FactionTravellers {
          int followers = switch (this.kind) {
             case PILGRIMS -> 2 + random.nextInt(3);
             case REFUGEES -> 2 + random.nextInt(4);
+            case PATROL -> 2 + random.nextInt(2);
+            case SHEPHERD -> 3 + random.nextInt(4);
+            case TAX_COLLECTOR -> 2;
+            case PROCESSION -> 4 + random.nextInt(3);
             default -> 0;
          };
          for (int i = 0; i < followers; i++) {
-            FactionNpcEntity follower = this.create(level, civilian(random), x - this.direction * (2 + i), z + (i % 2 == 0 ? 1 : -1), WALK_SPEED);
+            int fx = x - this.direction * (2 + i);
+            int fz = z + (i % 2 == 0 ? 1 : -1);
+            if (this.kind == Kind.SHEPHERD) {
+               net.minecraft.world.entity.Mob beast = this.createBeast(level, random.nextInt(3) == 0 ? EntityType.COW : EntityType.SHEEP, fx, fz);
+               if (beast != null) {
+                  this.followers.add(beast.getUUID());
+               }
+
+               continue;
+            }
+
+            EntityType<? extends FactionNpcEntity> type = switch (this.kind) {
+               case PATROL -> random.nextInt(3) == 0 ? AWCoreEntityTypes.FACTION_ARCHER_NPC.get() : AWCoreEntityTypes.FACTION_SOLDIER_NPC.get();
+               case TAX_COLLECTOR -> AWCoreEntityTypes.FACTION_SOLDIER_NPC.get();
+               default -> civilian(random);
+            };
+            FactionNpcEntity follower = this.create(level, type, fx, fz, WALK_SPEED);
             if (follower != null) {
                if (this.kind == Kind.REFUGEES) {
                   // Worn out from the road.
@@ -271,6 +544,25 @@ public final class FactionTravellers {
 
       private static EntityType<? extends FactionNpcEntity> civilian(RandomSource random) {
          return random.nextBoolean() ? AWCoreEntityTypes.FACTION_CIVILIAN_MALE_NPC.get() : AWCoreEntityTypes.FACTION_CIVILIAN_FEMALE_NPC.get();
+      }
+
+      /** A beast of a shepherd's flock: it walks behind him and is gone with him. */
+      private net.minecraft.world.entity.Mob createBeast(ServerLevel level, EntityType<? extends net.minecraft.world.entity.Mob> type, int x, int z) {
+         if (!level.hasChunk(x >> 4, z >> 4)) {
+            return null;
+         }
+
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         net.minecraft.world.entity.Mob beast = type.create(level);
+         if (beast == null) {
+            return null;
+         }
+
+         beast.moveTo(x + 0.5, y, z + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+         beast.addTag(TAG_PREFIX + this.id);
+         beast.finalizeSpawn(level, level.getCurrentDifficultyAt(new BlockPos(x, y, z)), MobSpawnType.EVENT, null, null);
+         level.addFreshEntity(beast);
+         return beast;
       }
 
       private FactionNpcEntity create(ServerLevel level, EntityType<? extends FactionNpcEntity> type, int x, int z, double speed) {
@@ -334,6 +626,11 @@ public final class FactionTravellers {
             this.stuck = 0;
          }
 
+         if (this.duelist != null) {
+            this.duel(level, lead);
+            return true;
+         }
+
          boolean talking = level.getNearestPlayer(lead, 3.0) != null;
          if (talking) {
             // A player stopped them: they stand and talk.
@@ -347,7 +644,7 @@ public final class FactionTravellers {
          }
 
          for (UUID id : this.followers) {
-            if (level.getEntity(id) instanceof FactionNpcEntity follower && follower.isAlive() && follower.getTarget() == null) {
+            if (level.getEntity(id) instanceof net.minecraft.world.entity.Mob follower && follower.isAlive() && follower.getTarget() == null && !follower.isLeashed()) {
                double gap = follower.distanceToSqr(lead);
                if (gap > 400.0 && level.getNearestPlayer(follower, HIDDEN_RANGE) == null) {
                   follower.moveTo(lead.getX(), lead.getY(), lead.getZ());
@@ -373,6 +670,35 @@ public final class FactionTravellers {
          return false;
       }
 
+      /** One look at a knight's duel: it ends when either side has had enough, or the player walks off. */
+      private void duel(ServerLevel level, FactionNpcEntity knight) {
+         ServerPlayer player = level.getServer().getPlayerList().getPlayer(this.duelist);
+         if (player == null || !player.isAlive() || player.distanceToSqr(knight) > DUEL_RANGE * DUEL_RANGE) {
+            knight.setTarget(null);
+            this.duelist = null;
+            return;
+         }
+
+         if (knight.getTarget() != player) {
+            knight.setTarget(player);
+         }
+      }
+
+      /** The duel is over: the knight yields and pays, or the player does. */
+      private void endDuel(ServerLevel level, FactionNpcEntity knight, ServerPlayer player, boolean playerWon) {
+         knight.setTarget(null);
+         this.duelist = null;
+         if (playerWon) {
+            knight.setHealth(knight.getMaxHealth());
+            Coins.give(player, DUEL_REWARD);
+            net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level).adjustStanding(player.getUUID(), this.faction, DUEL_STANDING);
+            FactionRumours.say(player, knight.getDisplayName(), Component.translatable("traveller.ancientwarfare.duel.won", DUEL_REWARD));
+         } else {
+            Coins.take(player, Math.min(DUEL_LOSS, Coins.purse(player)));
+            FactionRumours.say(player, knight.getDisplayName(), Component.translatable("traveller.ancientwarfare.duel.lost", DUEL_LOSS));
+         }
+      }
+
       void discard(ServerLevel level) {
          List<UUID> all = new ArrayList<>(this.followers);
          if (this.leader != null) {
@@ -381,7 +707,11 @@ public final class FactionTravellers {
 
          for (UUID id : all) {
             Entity entity = level.getEntity(id);
-            if (entity != null) {
+            if (entity instanceof net.minecraft.world.entity.Mob beast && beast.isLeashed() && beast.getLeashHolder() instanceof ServerPlayer thief) {
+               // A beast a player led away is his now, and the shepherd's country knows who took it.
+               beast.removeTag(TAG_PREFIX + this.id);
+               net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level).adjustStanding(thief.getUUID(), this.faction, HERD_STANDING);
+            } else if (entity != null) {
                entity.discard();
             }
          }

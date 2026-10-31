@@ -185,7 +185,7 @@ public final class FactionTrade {
    }
 
    /** A building of a town another settlement already speaks for: the town trades once, under its oldest settlement. */
-   private static boolean partOfOlder(FactionWorldData data, FactionWorldData.Settlement settlement) {
+   static boolean partOfOlder(FactionWorldData data, FactionWorldData.Settlement settlement) {
       for (FactionWorldData.Settlement other : data.settlements()) {
          if (other.id() < settlement.id()
             && trades(other)

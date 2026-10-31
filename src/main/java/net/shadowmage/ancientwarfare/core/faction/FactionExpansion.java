@@ -88,6 +88,11 @@ public final class FactionExpansion {
    /** Capitals that found no site this session. */
    private static final Set<Integer> GIVEN_UP = new HashSet<>();
 
+   /** A settlement whose builders found no land for it and left it on paper. */
+   static boolean givenUp(int id) {
+      return GIVEN_UP.contains(id);
+   }
+
    private FactionExpansion() {
    }
 
@@ -118,9 +123,8 @@ public final class FactionExpansion {
                FactionRegions.Province province = pickProvince(level, data, faction);
                if (province != null) {
                   data.setProvinceOwner(province.key(), faction);
-                  data.addUnbuiltSettlement(
-                     faction, FactionTowns.VILLAGE, province.seedX(), level.getSeaLevel(), province.seedZ(), province.key(), level.getGameTime(), 0, SETTLERS
-                  );
+                  int[] dry = dryPoint(level, province.seedX(), province.seedZ());
+                  data.addUnbuiltSettlement(faction, FactionTowns.VILLAGE, dry[0], level.getSeaLevel(), dry[1], province.key(), level.getGameTime(), 0, SETTLERS);
                   data.setTreasury(faction, data.treasury(faction) - cost);
                   FactionResources.spend(data, faction, FactionResources.VILLAGE_COST);
                   source.population -= SETTLERS;
@@ -221,14 +225,15 @@ public final class FactionExpansion {
     */
    public static void tick(ServerLevel level, FactionWorldData data) {
       if (level.getGameTime() % BUILD_CHECK_TICKS != 0L) {
-         if (level.getGameTime() % LAYOUT_CHECK_TICKS == 0L) {
-            buildNearest(level, data);
+         if (level.getGameTime() % (FactionPrebuild.active() ? 2 : LAYOUT_CHECK_TICKS) == 0L) {
+            Perf.run("exp.buildNearest", () -> buildNearest(level, data));
          }
 
          return;
       }
 
-      foundCapitals(level, data);
+      Perf.run("exp.foundCapitals", () -> foundCapitals(level, data));
+      Perf.run("exp.moveOffWater", () -> moveOffWater(level, data));
       Iterator<FactionWorldData.PlannedSettlement> iterator = data.plannedSettlements().iterator();
 
       while (iterator.hasNext()) {
@@ -236,7 +241,8 @@ public final class FactionExpansion {
          if (!plan.fort()) {
             // A village planned before villages lived on paper.
             iterator.remove();
-            data.addUnbuiltSettlement(plan.faction(), FactionTowns.VILLAGE, plan.x(), level.getSeaLevel(), plan.z(), plan.province(), level.getGameTime(), 0, SETTLERS);
+            int[] dry = dryPoint(level, plan.x(), plan.z());
+            data.addUnbuiltSettlement(plan.faction(), FactionTowns.VILLAGE, dry[0], level.getSeaLevel(), dry[1], plan.province(), level.getGameTime(), 0, SETTLERS);
             continue;
          }
 
@@ -263,7 +269,9 @@ public final class FactionExpansion {
             continue;
          }
 
-         boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction(), AwsWorldGenerator.Site.FORT);
+         boolean[] result = new boolean[1];
+         Perf.run("exp.fort", () -> result[0] = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(plan.x() >> 4, plan.z() >> 4), plan.faction(), AwsWorldGenerator.Site.FORT));
+         boolean built = result[0];
          if (built) {
             FactionNews.fortified(level, plan.faction(), plan.x(), plan.z());
          }
@@ -276,7 +284,7 @@ public final class FactionExpansion {
          return;
       }
 
-      buildNearest(level, data);
+      Perf.run("exp.buildNearest", () -> buildNearest(level, data));
    }
 
    /** True when any faction already plans a fort this close: two rivals meeting on a border pick the same midpoint. */
@@ -331,6 +339,72 @@ public final class FactionExpansion {
       return false;
    }
 
+   /** Settlements on paper already checked for standing on dry land this session. */
+   private static final Set<Integer> DRY_CHECKED = new HashSet<>();
+   private static final int DRY_CHECKS_PER_STEP = 3;
+   private static final int DRY_STEP = 48;
+   private static final int DRY_RINGS = 10;
+   private static final int DRY_FOOTPRINT = 24;
+
+   /** Settlements planned on paper over a lake or the sea (from before the land was looked at) move ashore. */
+   private static void moveOffWater(ServerLevel level, FactionWorldData data) {
+      int checks = 0;
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (settlement.built() || !DRY_CHECKED.add(settlement.id())) {
+            continue;
+         }
+
+         BlockPos center = settlement.center();
+         int[] dry = dryPoint(level, center.getX(), center.getZ());
+         if (dry[0] != center.getX() || dry[1] != center.getZ()) {
+            settlement.moveUnbuilt(dry[0], dry[1]);
+            data.setDirty();
+         }
+
+         if (++checks >= DRY_CHECKS_PER_STEP) {
+            return;
+         }
+      }
+   }
+
+   /** Whether the ground around a point, as the world generator will make it, is dry land above the sea. */
+   private static boolean dry(ServerLevel level, int x, int z) {
+      net.minecraft.world.level.chunk.ChunkGenerator generator = level.getChunkSource().getGenerator();
+      net.minecraft.world.level.levelgen.RandomState random = level.getChunkSource().randomState();
+      for (int dx = -DRY_FOOTPRINT; dx <= DRY_FOOTPRINT; dx += DRY_FOOTPRINT) {
+         for (int dz = -DRY_FOOTPRINT; dz <= DRY_FOOTPRINT; dz += DRY_FOOTPRINT) {
+            int surface = generator.getBaseHeight(x + dx, z + dz, net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG, level, random);
+            int floor = generator.getBaseHeight(x + dx, z + dz, net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR_WG, level, random);
+            if (surface > floor || surface <= level.getSeaLevel()) {
+               return false;
+            }
+         }
+      }
+
+      return !level.getUncachedNoiseBiome(x >> 2, level.getSeaLevel() >> 2, z >> 2).is(net.minecraft.tags.BiomeTags.IS_RIVER);
+   }
+
+   /** The nearest point to x, z with dry land under a village's whole footprint, looked for in rings; x, z itself if there is none near. */
+   static int[] dryPoint(ServerLevel level, int x, int z) {
+      if (dry(level, x, z)) {
+         return new int[]{x, z};
+      }
+
+      for (int ring = 1; ring <= DRY_RINGS; ring++) {
+         int points = ring * 8;
+         for (int i = 0; i < points; i++) {
+            double angle = Math.PI * 2.0 * i / points;
+            int px = x + (int)Math.round(Math.cos(angle) * ring * DRY_STEP);
+            int pz = z + (int)Math.round(Math.sin(angle) * ring * DRY_STEP);
+            if (dry(level, px, pz)) {
+               return new int[]{px, pz};
+            }
+         }
+      }
+
+      return new int[]{x, z};
+   }
+
    /** Every faction with land and no capital founds one on paper, near the middle of its country. */
    public static void foundCapitals(ServerLevel level, FactionWorldData data) {
       for (String faction : new TreeSet<>(data.provinceOwners().values())) {
@@ -340,9 +414,8 @@ public final class FactionExpansion {
 
          FactionRegions.Province middle = middleProvince(level, data, faction);
          if (middle != null) {
-            data.addUnbuiltSettlement(
-               faction, FactionTowns.CAPITAL, middle.seedX(), level.getSeaLevel(), middle.seedZ(), middle.key(), level.getGameTime(), CAPITAL_GARRISON, CAPITAL_POPULATION
-            );
+            int[] dry = dryPoint(level, middle.seedX(), middle.seedZ());
+            data.addUnbuiltSettlement(faction, FactionTowns.CAPITAL, dry[0], level.getSeaLevel(), dry[1], middle.key(), level.getGameTime(), CAPITAL_GARRISON, CAPITAL_POPULATION);
             AncientWarfareCore.LOG.info("Faction {} founds its capital near {}, {}", faction, middle.seedX(), middle.seedZ());
          }
       }
@@ -395,12 +468,12 @@ public final class FactionExpansion {
       }
 
       boolean distant = false;
-      if (target == null && far != null && level.getServer().getAverageTickTime() < FAR_BUILD_MAX_TICK_MS && level.getGameTime() >= nextFarWork) {
+      if (target == null && far != null && (FactionPrebuild.active() || level.getServer().getAverageTickTime() < FAR_BUILD_MAX_TICK_MS) && level.getGameTime() >= nextFarWork) {
          // Beyond reach of every player: while the server keeps up, the rest of the world is built
          // too, capitals first, slowly, so lands nobody visits still get their towns, mines and roads.
          target = far;
          distant = true;
-         nextFarWork = level.getGameTime() + FAR_STEP_TICKS;
+         nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 1L : FAR_STEP_TICKS);
       }
 
       if (target == null) {
@@ -446,7 +519,7 @@ public final class FactionExpansion {
             SITE_SEARCH.put(target.id(), checked + 1);
             AwtWorldGenerator.queueFactionTown(level, path, site[0], site[1], target.id());
             if (distant) {
-               nextFarWork = level.getGameTime() + FAR_LAYOUT_REST_TICKS;
+               nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 1L : FAR_LAYOUT_REST_TICKS);
             }
 
             AncientWarfareCore.LOG.info("Faction {} lays out its {} #{} at {}, {}", faction, target.kind(), target.id(), site[0], site[1]);
@@ -482,9 +555,24 @@ public final class FactionExpansion {
          return;
       }
 
-      data.removeSettlement(target);
-      boolean built = AwsWorldGenerator.generateSettlementAt(level, new ChunkPos(center.getX() >> 4, center.getZ() >> 4), faction, AwsWorldGenerator.Site.VILLAGE);
-      AncientWarfareCore.LOG.info("Faction {} {} a single building for village #{} near {}, {}", faction, built ? "built" : "could not build", target.id(), center.getX(), center.getZ());
+      if (!fortLandLoaded(level, center.getX(), center.getZ())) {
+         // As for a fort: the land is generated off the main thread first, or far from every player
+         // the building's land was generated on the spot and stalled the server for seconds.
+         SITE_SEARCH.put(target.id(), checked);
+         return;
+      }
+
+      // No room for a laid-out village: a hamlet is founded on dry land instead and grows house by
+      // house, clearing the woods around it, rather than standing forever as a single shack.
+      int[] dry = dryPoint(level, center.getX(), center.getZ());
+      int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, dry[0], dry[1]);
+      target.place("", new BlockPos(dry[0] - 4, y - 1, dry[1] - 4), new BlockPos(dry[0] + 4, y + 6, dry[1] + 4));
+      target.plan().clear();
+      for (TownBuildings.Kind kind : new TownBuildings.Kind[]{TownBuildings.Kind.WELL, TownBuildings.Kind.HOUSE, TownBuildings.Kind.HOUSE, TownBuildings.Kind.FAMILY_HOUSE}) {
+         target.plan().add(kind.key());
+      }
+      data.setDirty();
+      AncientWarfareCore.LOG.info("Faction {} founds hamlet #{} near {}, {}; it will grow", faction, target.id(), dry[0], dry[1]);
    }
 
    /** A generated town nobody founded (the test command) was finished: tell the world. */

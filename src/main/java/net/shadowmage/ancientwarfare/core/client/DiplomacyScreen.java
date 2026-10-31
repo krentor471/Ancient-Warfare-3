@@ -35,8 +35,8 @@ import net.shadowmage.ancientwarfare.core.research.PlayerResearch;
  * overview with what the player can do, its court and what it wants, and a deal with its ruler.
  */
 public class DiplomacyScreen extends Screen {
-   private static final int MAX_WIDTH = 560;
-   private static final int MAX_HEIGHT = 340;
+   private static final int MAX_WIDTH = 640;
+   private static final int MAX_HEIGHT = 380;
    /** Below this height the header is a single line, without the large portrait. */
    private static final int ROOMY_HEIGHT = 300;
    private static final int DEAL_ROW = 17;
@@ -242,6 +242,14 @@ public class DiplomacyScreen extends Screen {
          }
          default -> this.initOverview(entry);
       }
+
+      // Every button in the window's own wood and gold rather than the stone grey of the menus.
+      for (net.minecraft.client.gui.components.events.GuiEventListener child : new ArrayList<>(this.children())) {
+         if (child instanceof Button button && !(child instanceof ParchmentButton)) {
+            this.removeWidget(button);
+            this.addRenderableWidget(ParchmentButton.restyle(button));
+         }
+      }
    }
 
    private void initOverview(PlayerDiplomacy.Entry entry) {
@@ -250,13 +258,14 @@ public class DiplomacyScreen extends Screen {
       int y = this.top() + this.panelHeight() - 8 - 3 * 21;
       PlayerDiplomacy.Action[][] grid = {
          {PlayerDiplomacy.Action.PEACE, PlayerDiplomacy.Action.PACT, PlayerDiplomacy.Action.ALLIANCE},
-         {PlayerDiplomacy.Action.TRADE, PlayerDiplomacy.Action.WAR, PlayerDiplomacy.Action.TOURNAMENT},
+         {PlayerDiplomacy.Action.TRADE, PlayerDiplomacy.Action.WAR},
          {PlayerDiplomacy.Action.GIFT, PlayerDiplomacy.Action.SUPPLY, PlayerDiplomacy.Action.MEDIATE}
       };
       for (int row = 0; row < grid.length; row++) {
          for (int column = 0; column < grid[row].length; column++) {
             PlayerDiplomacy.Action action = grid[row][column];
-            this.addAction(entry, action, x + column * (width + 2), y + row * 21, grid[row].length == 1 ? width * 2 + 2 : width, applicable(entry, action));
+            int cell = grid[row].length == 2 ? (width * 3 + 2) / 2 : width;
+            this.addAction(entry, action, x + column * (cell + 2), y + row * 21, cell, applicable(entry, action));
          }
       }
    }
@@ -793,6 +802,14 @@ public class DiplomacyScreen extends Screen {
       }
 
       int textX = x + portrait + 6;
+      // A banner in the realm's colours behind its name, fading into the page, as a flag in a grand atlas.
+      for (int i = 0; i < 120 && textX + i < right; i++) {
+         int alpha = Math.max(0, 0x90 - i * 0x90 / 120);
+         graphics.fill(textX - 2 + i, y, textX - 1 + i, y + 14, alpha << 24 | color & 0xFFFFFF);
+      }
+
+      graphics.fill(x - 1, y, x + portrait + 1, y + 1, GOLD_COLOR);
+      graphics.fill(x - 1, y + portrait + 1, x + portrait + 1, y + portrait + 2, GOLD_COLOR);
       graphics.pose().pushPose();
       graphics.pose().translate(textX, y + 1, 0.0F);
       graphics.pose().scale(1.5F, 1.5F, 1.0F);
@@ -887,9 +904,6 @@ public class DiplomacyScreen extends Screen {
                if (!this.roomy()) {
                   // No room for the trade goods' own row: they are listed here.
                   tip.addAll(this.tradeGoodsTip(stores));
-                  if (stores.length == FactionDeals.KINDS + 2) {
-                     tip.add(armamentLine(stores));
-                  }
 
                   tip.addAll(entry.hosts());
                }
@@ -941,11 +955,6 @@ public class DiplomacyScreen extends Screen {
          graphics.drawString(this.font, trade, x + width / 2, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
       } else {
          graphics.drawString(this.font, Component.literal("◆ ").append(trade), x, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
-         if (stores.length == FactionDeals.KINDS + 2) {
-            y += 12;
-            graphics.drawString(this.font, Component.literal("◆ ").append(armamentLine(stores)), x, y, TEXT_COLOR);
-         }
-
          for (Component host : entry.hosts()) {
             y += 12;
             graphics.drawString(this.font, Component.literal("◆ ").append(host), x, y, TEXT_COLOR);
@@ -1191,13 +1200,6 @@ public class DiplomacyScreen extends Screen {
       new ItemStack(Items.OAK_LOG), new ItemStack(Items.COBBLESTONE), new ItemStack(Items.IRON_INGOT), new ItemStack(Items.WHEAT),
       new ItemStack(Items.LEATHER), new ItemStack(Items.WHITE_WOOL), new ItemStack(Items.COAL), new ItemStack(Items.COPPER_INGOT)
    };
-
-   /** How the faction's soldiers are armed, by its stores. */
-   private static Component armamentLine(int[] stores) {
-      int tier = net.shadowmage.ancientwarfare.core.faction.FactionArmament.tier(java.util.Arrays.copyOfRange(stores, 1, FactionDeals.KINDS + 1));
-      ChatFormatting color = tier == 2 ? ChatFormatting.GREEN : tier == 1 ? ChatFormatting.YELLOW : ChatFormatting.GRAY;
-      return Component.translatable("gui.ancientwarfare.diplomacy.armament", Component.translatable("gui.ancientwarfare.diplomacy.armament." + tier).withStyle(color));
-   }
 
    /** The trade goods' stores, one a line, the faction's own marked. */
    private List<Component> tradeGoodsTip(int[] stores) {

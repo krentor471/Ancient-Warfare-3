@@ -116,6 +116,17 @@ public final class FactionTownLife {
       FESTIVAL;
    }
 
+   /** A town holds a festival for some other cause: a fair, a feast, a tournament. */
+   static void holdFestival(ServerLevel level, int settlement, String reason) {
+      FESTIVALS.put(settlement, new Festival(level.getGameTime() + FESTIVAL_TICKS, reason, ""));
+   }
+
+   /** The cause of the festival a town holds now, or null. */
+   static String festivalReason(ServerLevel level, int settlement) {
+      Festival festival = FESTIVALS.get(settlement);
+      return festival != null && festival.ends > level.getGameTime() ? festival.reason : null;
+   }
+
    /** A town of the winner holds a festival for a victory. */
    public static void celebrateVictory(ServerLevel level, FactionWorldData data, String winner, String loser) {
       FactionWorldData.Settlement capital = null;
@@ -254,7 +265,7 @@ public final class FactionTownLife {
          Festival festival = FESTIVALS.get(settlement.id());
          Component why = festival != null && "victory".equals(festival.reason)
             ? Component.translatable("town.ancientwarfare.festival.victory", FactionNews.factionName(festival.reasonArg))
-            : Component.translatable("town.ancientwarfare.festival.harvest");
+            : Component.translatable("town.ancientwarfare.festival." + (festival == null ? "harvest" : festival.reason));
          player.sendSystemMessage(
             Component.translatable("town.ancientwarfare.festival", name, why, Math.round((1.0 - FESTIVAL_PRICES) * 100)).withStyle(ChatFormatting.GOLD)
          );

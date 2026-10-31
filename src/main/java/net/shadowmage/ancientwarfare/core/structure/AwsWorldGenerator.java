@@ -301,7 +301,7 @@ public final class AwsWorldGenerator {
             // A neutral tavern by a faction's road is that faction's post.
             String owner = info.faction().isEmpty() && (site == Site.TRADE_POST || site == Site.TAVERN) && requiredFaction != null ? requiredFaction : info.faction();
             if (!owner.isEmpty()) {
-               FactionWorldData.get(level)
+               FactionWorldData.Settlement settlement = FactionWorldData.get(level)
                   .addSettlement(
                      owner,
                      site.kind(),
@@ -313,6 +313,9 @@ public final class AwsWorldGenerator {
                      site.garrison(info.soldiers()),
                      site == Site.SETTLEMENT || site == Site.VILLAGE ? FactionSimulation.startingPopulation(info.soldiers(), info.civilians()) : FactionSimulation.startingPopulation(0, 0)
                   );
+               if (template.ground()) {
+                  settlement.setFloor(origin.getY() - 1);
+               }
             }
 
             AncientWarfareCore.LOG
@@ -487,7 +490,7 @@ public final class AwsWorldGenerator {
          && (!template.island() || OceanGenerationPolicy.islandDepthAcceptable((long)suitableDepthSamples, (long)waterSamples));
    }
 
-   private static void levelTerrain(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, int maxX, int maxZ, int targetY) {
+   public static void levelTerrain(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, int maxX, int maxZ, int targetY) {
       BlockState top = level.getBlockState(new BlockPos(min.getX(), targetY, min.getZ()));
       if (top.isAir() || !top.getFluidState().isEmpty()) {
          top = Blocks.GRASS_BLOCK.defaultBlockState();
@@ -549,34 +552,45 @@ public final class AwsWorldGenerator {
                continue;
             }
 
-            int surface = surfaceY(level, x, z);
-            BlockPos surfacePos = new BlockPos(x, surface, z);
-            if (!level.getFluidState(surfacePos).isEmpty() || level.getBlockEntity(surfacePos) != null) {
-               continue;
+            blendColumn(level, x, z, distance, targetY, top, fill);
+         }
+      }
+   }
+
+   /** One column beside a levelled floor: brought within one block per block of distance of it. */
+   public static void blendColumn(ServerLevel level, int x, int z, int distance, int targetY, BlockState top, BlockState fill) {
+      int surface = surfaceY(level, x, z);
+      BlockPos surfacePos = new BlockPos(x, surface, z);
+      if (!level.getFluidState(surfacePos).isEmpty() || level.getBlockEntity(surfacePos) != null) {
+         return;
+      }
+
+      int lowest = targetY - distance;
+      int highest = targetY + distance;
+      BlockState old = level.getBlockState(surfacePos);
+      if (old.is(Blocks.GRAVEL) || old.is(Blocks.DIRT_PATH)) {
+         // A road keeps its surface as it is sloped.
+         top = old;
+      }
+
+      if (surface < lowest && plainGround(old)) {
+         for (int y = surface + 1; y < lowest; y++) {
+            level.setBlock(new BlockPos(x, y, z), fill, 2);
+         }
+
+         level.setBlock(new BlockPos(x, lowest, z), top, 2);
+      } else if (surface > highest && plainGround(old)) {
+         for (int y = surface; y > highest; y--) {
+            BlockPos pos = new BlockPos(x, y, z);
+            if (!plainGround(level.getBlockState(pos))) {
+               break;
             }
 
-            int lowest = targetY - distance;
-            int highest = targetY + distance;
-            if (surface < lowest) {
-               for (int y = surface + 1; y < lowest; y++) {
-                  level.setBlock(new BlockPos(x, y, z), fill, 2);
-               }
+            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 18);
+         }
 
-               level.setBlock(new BlockPos(x, lowest, z), top, 2);
-            } else if (surface > highest && plainGround(level.getBlockState(surfacePos))) {
-               for (int y = surface; y > highest; y--) {
-                  BlockPos pos = new BlockPos(x, y, z);
-                  if (!plainGround(level.getBlockState(pos))) {
-                     break;
-                  }
-
-                  level.setBlock(pos, Blocks.AIR.defaultBlockState(), 18);
-               }
-
-               if (plainGround(level.getBlockState(new BlockPos(x, highest, z)))) {
-                  level.setBlock(new BlockPos(x, highest, z), top, 2);
-               }
-            }
+         if (plainGround(level.getBlockState(new BlockPos(x, highest, z)))) {
+            level.setBlock(new BlockPos(x, highest, z), top, 2);
          }
       }
    }
@@ -587,9 +601,8 @@ public final class AwsWorldGenerator {
          || state.is(net.minecraft.tags.BlockTags.SAND)
          || state.is(net.minecraft.tags.BlockTags.TERRACOTTA)
          || state.is(Blocks.GRAVEL)
-         || state.is(Blocks.SNOW_BLOCK)
-         || state.is(Blocks.SANDSTONE)
-         || state.is(Blocks.RED_SANDSTONE);
+         || state.is(Blocks.DIRT_PATH)
+         || state.is(Blocks.SNOW_BLOCK);
    }
 
    private static boolean aquaticCellsSafe(ServerLevel level, AwsWorldGenTemplateRegistry.Template template, BlockPos min, Direction facing) {

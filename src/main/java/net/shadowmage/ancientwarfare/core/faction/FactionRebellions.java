@@ -393,7 +393,8 @@ public final class FactionRebellions extends SavedData {
 
    /** Who at court would raise his banner: an ambitious heir or marshal, the heir first. */
    private static FactionCourt.Role pretender(ServerLevel level, String faction) {
-      if (FactionPeople.has(FactionCourt.character(level, faction, FactionCourt.Role.HEIR), FactionPeople.Character.AMBITIOUS)) {
+      if (FactionCourt.adult(level, faction, FactionCourt.Role.HEIR)
+         && FactionPeople.has(FactionCourt.character(level, faction, FactionCourt.Role.HEIR), FactionPeople.Character.AMBITIOUS)) {
          return FactionCourt.Role.HEIR;
       }
 

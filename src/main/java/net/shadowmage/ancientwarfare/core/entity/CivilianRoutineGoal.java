@@ -30,6 +30,13 @@ public class CivilianRoutineGoal extends Goal {
    private final FactionNpcEntity npc;
    private BlockPos bed;
    private boolean searchedTonight;
+   private int searches;
+   private final java.util.Set<BlockPos> unreachable = new java.util.HashSet<>();
+   private int stuckTicks;
+   private double lastDistance;
+   /** Beds already chosen tonight, so a household spreads over the beds rather than all making for one. */
+   private static final java.util.Map<BlockPos, java.util.UUID> CLAIMED = new java.util.HashMap<>();
+   private static final int MAX_SEARCHES = 4;
    private BlockPos spot;
    private int rethink;
 
@@ -57,6 +64,7 @@ public class CivilianRoutineGoal extends Goal {
          || FactionTownLife.isFairgoer(this.npc)
          || FactionTownLife.isThief(this.npc)
          || FactionCaravans.caravanId(this.npc) != 0
+         || this.npc.getTags().contains("AWBuilder")
          || this.npc.getTarget() != null
          || this.npc.getLastHurtByMob() != null;
    }
@@ -86,6 +94,9 @@ public class CivilianRoutineGoal extends Goal {
       this.wake();
       this.spot = null;
       this.searchedTonight = false;
+      this.searches = 0;
+      this.unreachable.clear();
+      this.release();
    }
 
    @Override
@@ -113,22 +124,40 @@ public class CivilianRoutineGoal extends Goal {
       }
    }
 
+   private void release() {
+      if (this.bed != null) {
+         CLAIMED.remove(this.bed, this.npc.getUUID());
+      }
+
+      this.bed = null;
+   }
+
    private void toBed() {
       if (this.npc.isSleeping()) {
          return;
       }
 
       if (this.bed == null || !freeBed(this.npc.level().getBlockState(this.bed))) {
-         this.bed = null;
-         if (!this.searchedTonight) {
+         this.release();
+         if (!this.searchedTonight || this.searches < MAX_SEARCHES) {
             this.searchedTonight = true;
+            this.searches++;
             this.bed = this.findBed();
+            if (this.bed != null) {
+               CLAIMED.put(this.bed, this.npc.getUUID());
+               this.stuckTicks = 0;
+               this.lastDistance = Double.MAX_VALUE;
+            }
          }
       }
 
       if (this.bed == null) {
-         // Nowhere to sleep: stay put rather than roam the dark.
-         this.npc.getNavigation().stop();
+         // Nowhere to sleep: wait out the night by the square rather than crowd a doorway, and the town builds another house.
+         if (this.searches >= MAX_SEARCHES && this.npc.level() instanceof ServerLevel level) {
+            net.shadowmage.ancientwarfare.core.faction.FactionGrowth.homeless(level, this.npc);
+         }
+
+         this.toSquare();
          return;
       }
 
@@ -136,7 +165,20 @@ public class CivilianRoutineGoal extends Goal {
       if (distance < 4.0) {
          this.npc.getNavigation().stop();
          this.npc.startSleeping(this.bed);
-      } else if (this.npc.getNavigation().isDone()) {
+         return;
+      }
+
+      // No nearer for a while: the way in is blocked or the bed out of reach; another bed is sought.
+      if (distance < this.lastDistance - 0.5) {
+         this.lastDistance = distance;
+         this.stuckTicks = 0;
+      } else if ((this.stuckTicks += RETHINK_TICKS / 2) > RETHINK_TICKS * 4) {
+         this.unreachable.add(this.bed);
+         this.release();
+         return;
+      }
+
+      if (this.npc.getNavigation().isDone()) {
          this.npc.getNavigation().moveTo(this.bed.getX() + 0.5, this.bed.getY(), this.bed.getZ() + 0.5, 0.8);
       }
    }
@@ -193,7 +235,8 @@ public class CivilianRoutineGoal extends Goal {
 
                BlockState state = this.npc.level().getBlockState(pos);
                double distance = dx * dx + dz * dz + dy * dy * 4;
-               if (distance < bestDistance && freeBed(state)) {
+               java.util.UUID claimant = CLAIMED.get(pos);
+               if (distance < bestDistance && freeBed(state) && !this.unreachable.contains(pos) && (claimant == null || claimant.equals(this.npc.getUUID()) || !(this.npc.level() instanceof ServerLevel level) || level.getEntity(claimant) == null)) {
                   best = pos.immutable();
                   bestDistance = distance;
                }

@@ -62,6 +62,7 @@ public class FactionTradeMenu extends AbstractContainerMenu {
          } else {
             FactionTradeListRegistry.TradeResult result = FactionTradeListRegistry.performTradeWithResult(this.trades, index, player);
             if (result == FactionTradeListRegistry.TradeResult.SUCCESS) {
+               net.shadowmage.ancientwarfare.core.faction.TownMarkets.traded(serverPlayer.serverLevel(), player.getX(), player.getZ(), this.trades.get(index));
                FactionStandingData.get(serverPlayer.serverLevel())
                   .adjustStanding(player.getUUID(), this.faction, FactionRegistry.get(this.faction).tradeStandingChange());
             }

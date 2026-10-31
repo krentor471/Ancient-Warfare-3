@@ -50,7 +50,11 @@ public final class FactionChatter {
       Map.entry("trader", 5),
       Map.entry("priest", 4),
       Map.entry("bard", 4),
-      Map.entry("idle", 12),
+      Map.entry("idle", 100),
+      Map.entry("dear", 6),
+      Map.entry("cheap", 4),
+      Map.entry("theft", 4),
+      Map.entry("bed", 3),
       Map.entry("morning", 4),
       Map.entry("evening", 4),
       Map.entry("night", 5),
@@ -281,6 +285,28 @@ public final class FactionChatter {
             topics.add(new Topic("grown", null, 1));
          }
 
+         // Talk of the market: the dearest good in town, or the cheapest.
+         TownMarkets markets = TownMarkets.get(level);
+         int dearest = 0;
+         int cheapest = 0;
+         for (int kind = 1; kind < FactionResources.KINDS; kind++) {
+            if (markets.price(town.id(), kind) > markets.price(town.id(), dearest)) {
+               dearest = kind;
+            }
+
+            if (markets.price(town.id(), kind) < markets.price(town.id(), cheapest)) {
+               cheapest = kind;
+            }
+         }
+
+         if (markets.price(town.id(), dearest) >= TownMarkets.DEAR) {
+            topics.add(new Topic("dear", TownMarkets.goodName(dearest), 3));
+         }
+
+         if (markets.price(town.id(), cheapest) <= TownMarkets.CHEAP) {
+            topics.add(new Topic("cheap", TownMarkets.goodName(cheapest), 2));
+         }
+
          List<FactionQuests.Quest> quests = data.allQuests().get(player.getUUID());
          if (quests != null && quests.stream().anyMatch(quest -> !quest.done && quest.town == town.id())) {
             topics.add(new Topic("helper", null, 3));
@@ -401,6 +427,14 @@ public final class FactionChatter {
       if (FactionArmies.armyId(victim) == 0 && !FactionTownLife.isThief(victim)) {
          shout(level, player, victim, "attack", victim);
       }
+   }
+
+   /** A townsperson who saw what the player did cries out, whoever else is near. */
+   static void cry(ServerLevel level, Player player, FactionNpcEntity witness, String category) {
+      long now = level.getGameTime();
+      SHOUTS.put(player.getUUID() + "/" + category, now + SHOUT_REST);
+      say(level, witness, line(category, level.getRandom(), null), now);
+      witness.getLookControl().setLookAt(player, 30.0F, 30.0F);
    }
 
    /** A player helped the town: someone there says thanks. */

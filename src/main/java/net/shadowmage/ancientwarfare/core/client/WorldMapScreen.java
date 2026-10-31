@@ -47,7 +47,8 @@ public class WorldMapScreen extends Screen {
    /** Map kinds shown in the legend of signs, in order. */
    private static final WorldMap.Kind[] LEGEND_KINDS = {
       WorldMap.Kind.CAPITAL, WorldMap.Kind.VILLAGE, WorldMap.Kind.FORT, WorldMap.Kind.FARM, WorldMap.Kind.MINE, WorldMap.Kind.TEMPLE,
-      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY, WorldMap.Kind.FLEET, WorldMap.Kind.SHRINE
+      WorldMap.Kind.TAVERN, WorldMap.Kind.TRADE_POST, WorldMap.Kind.GUARD_POST, WorldMap.Kind.OUTLAW, WorldMap.Kind.ARMY, WorldMap.Kind.FLEET, WorldMap.Kind.SHRINE,
+      WorldMap.Kind.FREE_VILLAGE
    };
    /** Lengths the scale bar may show, in blocks. */
    private static final int[] SCALE_STEPS = {50, 100, 250, 500, 1000, 2000, 5000};
@@ -109,17 +110,9 @@ public class WorldMapScreen extends Screen {
          this.scale = Double.isNaN(savedX) ? Math.min(this.mapWidth(), this.mapHeight()) / (double)(WorldMap.SIZE * WorldMap.STEP) : savedScale;
       }
 
-      this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.world_map.center_player"), button -> this.centerOnPlayer()).bounds(MARGIN, 2, 90, 18).build()
-      );
-      this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.chronicle.button"), button -> AWCoreNetwork.sendChronicleOpen())
-            .bounds(MARGIN + 94, 2, 70, 18)
-            .build()
-      );
-      this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.world_map.key"), button -> showKey = !showKey).bounds(MARGIN + 168, 2, 80, 18).build()
-      );
+      this.addRenderableWidget(new ParchmentButton(MARGIN, 5, 90, 14, Component.translatable("gui.ancientwarfare.world_map.center_player"), button -> this.centerOnPlayer()));
+      this.addRenderableWidget(new ParchmentButton(MARGIN + 94, 5, 70, 14, Component.translatable("gui.ancientwarfare.chronicle.button"), button -> AWCoreNetwork.sendChronicleOpen()));
+      this.addRenderableWidget(new ParchmentButton(MARGIN + 168, 5, 80, 14, Component.translatable("gui.ancientwarfare.world_map.key"), button -> showKey = !showKey, () -> showKey));
    }
 
    private void centerOnPlayer() {
@@ -364,8 +357,13 @@ public class WorldMapScreen extends Screen {
       int top = MARGIN;
       int right = left + this.mapWidth();
       int bottom = top + this.mapHeight();
-      graphics.fill(left - 2, top - 2, right + 2, bottom + 2, 0xFF2A2018);
-      graphics.fill(left - 1, top - 1, right + 1, bottom + 1, 0xFF8A7650);
+      // A wooden board like the diplomacy window's, holding the header, the map and the legend.
+      graphics.fill(MARGIN - 12, 0, this.width - MARGIN + 12, this.height, 0xFF0B0907);
+      graphics.fill(MARGIN - 11, 1, this.width - MARGIN + 11, this.height - 1, 0xFF8A6A2E);
+      graphics.fill(MARGIN - 10, 2, this.width - MARGIN + 10, this.height - 2, 0xFF2A2018);
+      graphics.fill(left - 3, top - 3, right + 3, bottom + 3, 0xFF0B0907);
+      graphics.fill(left - 2, top - 2, right + 2, bottom + 2, 0xFF8A6A2E);
+      graphics.fill(left - 1, top - 1, right + 1, bottom + 1, 0xFF4A3B26);
       graphics.enableScissor(left, top, right, bottom);
       graphics.fill(left, top, right, bottom, this.data.terrain().length == 0 ? 0xFF000000 : SEA_COLOR);
       double size = WorldMap.SIZE * WorldMap.STEP * this.scale;
@@ -400,11 +398,11 @@ public class WorldMapScreen extends Screen {
       if (minecraft.player != null) {
          int px = (int)Math.round(this.screenX(minecraft.player.getX()));
          int pz = (int)Math.round(this.screenY(minecraft.player.getZ()));
-         // A dot with a short line the way the player faces.
-         double yaw = Math.toRadians(minecraft.player.getYRot());
-         this.line(graphics, px, pz, px - Math.sin(yaw) * 9, pz + Math.cos(yaw) * 9, 0xFF000000, 2);
-         graphics.fill(px - 3, pz - 3, px + 4, pz + 4, 0xFF000000);
-         graphics.fill(px - 2, pz - 2, px + 3, pz + 3, 0xFFFFFFFF);
+         // An arrowhead the way the player faces, white on a black rim, above the signs and names.
+         graphics.pose().pushPose();
+         graphics.pose().translate(0.0F, 0.0F, 150.0F);
+         this.drawPlayerArrow(graphics, px, pz, Math.toRadians(minecraft.player.getYRot()));
+         graphics.pose().popPose();
       }
 
       this.renderScaleBar(graphics, right - SCALE_BAR_WIDTH - 8, bottom - 14);
@@ -419,11 +417,11 @@ public class WorldMapScreen extends Screen {
       graphics.disableScissor();
       // The title follows the buttons; the hint takes the rest of the line when it fits.
       int titleX = Math.max(this.width / 2 - this.font.width(this.title) / 2, BUTTONS_END + 8);
-      graphics.drawString(this.font, this.title, titleX, 8, -1);
+      graphics.drawString(this.font, this.title, titleX, 8, 0xFFE8C15A);
       Component hint = Component.translatable("gui.ancientwarfare.world_map.hint");
       int hintX = this.width - MARGIN - this.font.width(hint);
       if (hintX > titleX + this.font.width(this.title) + 12) {
-         graphics.drawString(this.font, hint, hintX, 8, 0xFFA0A0A0);
+         graphics.drawString(this.font, hint, hintX, 8, 0xFFA89F8E);
       }
       this.renderLegend(graphics, left, bottom + 4);
       if (mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom) {
@@ -451,6 +449,14 @@ public class WorldMapScreen extends Screen {
       }
 
       lines.add(Component.translatable("gui.ancientwarfare.world_map.mood", life[WorldMap.LIFE_ORDER], life[WorldMap.LIFE_LOYALTY]));
+      if (life.length > WorldMap.LIFE_WAITING) {
+         lines.add(Component.translatable("gui.ancientwarfare.world_map.wealth", life[WorldMap.LIFE_WEALTH], life[WorldMap.LIFE_DEFENCE]));
+         lines.add(
+            life[WorldMap.LIFE_WAITING] > 0
+               ? Component.translatable("gui.ancientwarfare.world_map.buildings_waiting", life[WorldMap.LIFE_BUILDINGS], life[WorldMap.LIFE_WAITING])
+               : Component.translatable("gui.ancientwarfare.world_map.buildings", life[WorldMap.LIFE_BUILDINGS])
+         );
+      }
       if ((flags & WorldMap.FLAG_HUNGRY) != 0) {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.hungry").withStyle(net.minecraft.ChatFormatting.RED));
       }
@@ -466,6 +472,40 @@ public class WorldMapScreen extends Screen {
       if ((flags & WorldMap.FLAG_TAKEN) != 0 && life[WorldMap.LIFE_LOYALTY] < 40) {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.unrest").withStyle(net.minecraft.ChatFormatting.YELLOW));
       }
+
+      addPrices(lines, life);
+   }
+
+   /** What is dear and what is cheap at the town's market. */
+   private static void addPrices(List<Component> lines, int[] life) {
+      int kinds = net.shadowmage.ancientwarfare.core.faction.FactionResources.KINDS;
+      if (life.length < WorldMap.LIFE_PRICES + kinds) {
+         return;
+      }
+
+      net.minecraft.network.chat.MutableComponent dear = Component.empty();
+      net.minecraft.network.chat.MutableComponent cheap = Component.empty();
+      boolean anyDear = false;
+      boolean anyCheap = false;
+      for (int kind = 0; kind < kinds; kind++) {
+         double price = life[WorldMap.LIFE_PRICES + kind] / 100.0;
+         Component name = net.shadowmage.ancientwarfare.core.faction.TownMarkets.goodName(kind);
+         if (price >= net.shadowmage.ancientwarfare.core.faction.TownMarkets.DEAR) {
+            dear.append(anyDear ? ", " : "").append(name);
+            anyDear = true;
+         } else if (price <= net.shadowmage.ancientwarfare.core.faction.TownMarkets.CHEAP) {
+            cheap.append(anyCheap ? ", " : "").append(name);
+            anyCheap = true;
+         }
+      }
+
+      if (anyDear) {
+         lines.add(Component.translatable("market.ancientwarfare.dear", dear).withStyle(net.minecraft.ChatFormatting.RED));
+      }
+
+      if (anyCheap) {
+         lines.add(Component.translatable("market.ancientwarfare.cheap", cheap).withStyle(net.minecraft.ChatFormatting.GREEN));
+      }
    }
 
    private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY, WorldMap.Marker hovered) {
@@ -477,7 +517,12 @@ public class WorldMapScreen extends Screen {
             lines.add(FactionNames.component(hovered.name()).withStyle(net.minecraft.ChatFormatting.GOLD));
          }
 
-         lines.add(Component.translatable("gui.ancientwarfare.world_map.kind." + hovered.kind().name().toLowerCase(java.util.Locale.ROOT)));
+         boolean ranked = hovered.life().length > WorldMap.LIFE_RANK && hovered.life()[WorldMap.LIFE_RANK] >= 0;
+         if (!ranked) {
+            // A ranked town says what it is by its rank below; the bare sign would only contradict it.
+            lines.add(Component.translatable("gui.ancientwarfare.world_map.kind." + hovered.kind().name().toLowerCase(java.util.Locale.ROOT)));
+         }
+
          String faction = this.data.factions().get(hovered.faction());
          if (!faction.isEmpty()) {
             lines.add(WorldMap.ownerName(faction));
@@ -513,7 +558,42 @@ public class WorldMapScreen extends Screen {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.click_to_teleport"));
       }
 
-      graphics.renderComponentTooltip(this.font, lines, mouseX, mouseY);
+      this.drawCard(graphics, lines, mouseX, mouseY);
+   }
+
+   /** The tooltip as a card of the map's own wood and gold, kept on screen. */
+   private void drawCard(GuiGraphics graphics, List<Component> lines, int mouseX, int mouseY) {
+      int width = 0;
+      for (Component line : lines) {
+         width = Math.max(width, this.font.width(line));
+      }
+
+      int height = lines.size() * 10 + 6;
+      int x = mouseX + 12;
+      int y = mouseY - 6;
+      if (x + width + 8 > this.width - 4) {
+         x = mouseX - width - 16;
+      }
+
+      y = Math.max(4, Math.min(y, this.height - height - 4));
+      graphics.pose().pushPose();
+      graphics.pose().translate(0.0F, 0.0F, 400.0F);
+      graphics.fill(x - 2, y - 2, x + width + 8, y + height + 2, 0xFF0B0907);
+      graphics.fill(x - 1, y - 1, x + width + 7, y + height + 1, 0xFF8A6A2E);
+      graphics.fill(x, y, x + width + 6, y + height, 0xF5221C16);
+      int lineY = y + 4;
+      for (int i = 0; i < lines.size(); i++) {
+         Component line = lines.get(i);
+         int color = line.getStyle().getColor() == null ? (i == 0 ? 0xFFE8C15A : 0xFFF2E8D5) : 0xFFFFFFFF;
+         graphics.drawString(this.font, line, x + 3, lineY, color, false);
+         if (i == 0 && lines.size() > 1) {
+            graphics.fill(x + 3, lineY + 9, x + width + 3, lineY + 10, 0xFF4A3B26);
+         }
+
+         lineY += 10;
+      }
+
+      graphics.pose().popPose();
    }
 
    private void renderLegend(GuiGraphics graphics, int x, int y) {
@@ -533,7 +613,7 @@ public class WorldMapScreen extends Screen {
          }
 
          graphics.fill(cursor, y + 1, cursor + 8, y + 9, factionColor(faction));
-         graphics.drawString(this.font, name, cursor + 11, y + 1, -1);
+         graphics.drawString(this.font, name, cursor + 11, y + 1, 0xFFF2E8D5);
          cursor += width;
       }
 
@@ -623,6 +703,12 @@ public class WorldMapScreen extends Screen {
             graphics.fill(x - 4, y - 4, x + 5, y + 5, outline);
             graphics.fill(x - 3, y - 3, x + 4, y + 4, 0xFF40A0FF);
          }
+         case FREE_VILLAGE -> {
+            // A plain village square in green, belonging to nobody.
+            graphics.fill(x - 3, y - 3, x + 4, y + 4, outline);
+            graphics.fill(x - 2, y - 2, x + 3, y + 3, 0xFF60D060);
+            graphics.fill(x, y, x + 1, y + 1, 0xFFFFFFFF);
+         }
          case OUTLAW -> {
             graphics.fill(x - 3, y - 3, x + 4, y + 4, outline);
             graphics.fill(x - 2, y - 2, x + 3, y + 3, 0xFFD02020);
@@ -635,6 +721,52 @@ public class WorldMapScreen extends Screen {
    }
 
    /** A line drawn as small squares of the given width; roads are short segments, so this stays cheap. */
+   /** A broad arrowhead with a notched tail, pointing along the yaw, drawn a pixel at a time. */
+   private void drawPlayerArrow(GuiGraphics graphics, int x, int y, double yaw) {
+      double forwardX = -Math.sin(yaw);
+      double forwardY = Math.cos(yaw);
+      // The tip, the two barbs and the notch, in the arrow's own frame (ahead, aside).
+      double[][] shape = {{11.0, 0.0}, {-8.0, 8.0}, {-3.0, 0.0}, {-8.0, -8.0}};
+      double[][] rim = new double[4][];
+      double[][] body = new double[4][];
+      for (int i = 0; i < 4; i++) {
+         rim[i] = place(x, y, forwardX, forwardY, shape[i][0] * 1.25 + 0.5, shape[i][1] * 1.25);
+         body[i] = place(x, y, forwardX, forwardY, shape[i][0], shape[i][1]);
+      }
+
+      for (int dy = -15; dy <= 15; dy++) {
+         for (int dx = -15; dx <= 15; dx++) {
+            double cx = x + dx + 0.5;
+            double cy = y + dy + 0.5;
+            if (inside(body, cx, cy)) {
+               graphics.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, 0xFFFFFFFF);
+            } else if (inside(rim, cx, cy)) {
+               graphics.fill(x + dx, y + dy, x + dx + 1, y + dy + 1, 0xFF000000);
+            }
+         }
+      }
+
+      graphics.fill(x - 1, y - 1, x + 1, y + 1, 0xFFD02020);
+   }
+
+   private static double[] place(int x, int y, double forwardX, double forwardY, double ahead, double aside) {
+      return new double[]{x + forwardX * ahead - forwardY * aside, y + forwardY * ahead + forwardX * aside};
+   }
+
+   /** Whether a point lies inside a polygon, by counting the edges a ray from it crosses. */
+   private static boolean inside(double[][] polygon, double x, double y) {
+      boolean in = false;
+      for (int i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+         double[] a = polygon[i];
+         double[] b = polygon[j];
+         if ((a[1] > y) != (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) {
+            in = !in;
+         }
+      }
+
+      return in;
+   }
+
    private void line(GuiGraphics graphics, double x0, double y0, double x1, double y1, int color, int width) {
       int steps = (int)Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
 
@@ -697,12 +829,22 @@ public class WorldMapScreen extends Screen {
          }
       }
 
-      int length = Math.max(1, (int)Math.round(blocks * this.scale));
-      graphics.fill(x - 3, y - 11, x + length + 3, y + 6, 0x90000000);
-      graphics.fill(x, y, x + length, y + 3, 0xFFFFFFFF);
-      graphics.fill(x, y - 2, x + 1, y + 3, 0xFFFFFFFF);
-      graphics.fill(x + length - 1, y - 2, x + length, y + 3, 0xFFFFFFFF);
-      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.world_map.scale", blocks), x, y - 10, 0xFFFFFFFF);
+      int length = Math.max(4, (int)Math.round(blocks * this.scale));
+      Component label = Component.translatable("gui.ancientwarfare.world_map.scale", blocks);
+      int boxRight = x + Math.max(length, this.font.width(label));
+      x = Math.min(x, x + length - (boxRight - x));
+      // A card with a gold rim, and a bar of alternating dark and light quarters, as on old maps.
+      graphics.fill(x - 4, y - 13, x + Math.max(length, this.font.width(label)) + 4, y + 7, 0xFF8A6A2E);
+      graphics.fill(x - 3, y - 12, x + Math.max(length, this.font.width(label)) + 3, y + 6, 0xEE221C16);
+      for (int i = 0; i < 4; i++) {
+         int from = x + length * i / 4;
+         int to = x + length * (i + 1) / 4;
+         graphics.fill(from, y, to, y + 4, i % 2 == 0 ? 0xFFF2E8D5 : 0xFF3A2E1E);
+      }
+
+      graphics.fill(x, y - 1, x + length, y, 0xFFE8C15A);
+      graphics.fill(x, y + 4, x + length, y + 5, 0xFFE8C15A);
+      graphics.drawString(this.font, label, x, y - 10, 0xFFF2E8D5, false);
    }
 
    private WorldMap.Marker markerAt(double mouseX, double mouseY) {
@@ -750,27 +892,28 @@ public class WorldMapScreen extends Screen {
          names.add(Component.translatable("gui.ancientwarfare.world_map.kind." + kind.name().toLowerCase(java.util.Locale.ROOT)));
       }
 
-      int lineHeight = 10;
+      int lineHeight = 13;
       int rows = Math.max(1, (bottom - top - 6) / lineHeight);
       int columns = (names.size() + rows - 1) / rows;
       rows = (names.size() + columns - 1) / columns;
       int columnWidth = 0;
       for (Component name : names) {
-         columnWidth = Math.max(columnWidth, 13 + this.font.width(name) + 8);
+         columnWidth = Math.max(columnWidth, 17 + this.font.width(name) + 8);
       }
 
-      graphics.fill(x, top, x + columnWidth * columns + 2, top + rows * lineHeight + 6, 0xEE181410);
+      graphics.fill(x - 1, top - 1, x + columnWidth * columns + 3, top + rows * lineHeight + 7, 0xFF8A6A2E);
+      graphics.fill(x, top, x + columnWidth * columns + 2, top + rows * lineHeight + 6, 0xF0221C16);
       for (int i = 0; i < names.size(); i++) {
          int cx = x + 4 + (i / rows) * columnWidth;
          int cy = top + 4 + (i % rows) * lineHeight;
          if (entries.get(i) instanceof Integer color) {
-            graphics.fill(cx, cy, cx + 9, cy + 8, 0xFF000000);
-            graphics.fill(cx + 1, cy + 1, cx + 8, cy + 7, color);
+            graphics.fill(cx + 1, cy, cx + 12, cy + 10, 0xFF000000);
+            graphics.fill(cx + 2, cy + 1, cx + 11, cy + 9, color);
          } else if (entries.get(i) instanceof WorldMap.Kind kind) {
-            this.drawIcon(graphics, kind, cx + 4, cy + 4, 0xFFB0B0B0, 0xFF000000);
+            this.drawIcon(graphics, kind, cx + 6, cy + 5, 0xFFD8D8D8, 0xFF000000);
          }
 
-         graphics.drawString(this.font, names.get(i), cx + 13, cy, 0xFFE0E0E0);
+         graphics.drawString(this.font, names.get(i), cx + 17, cy + 1, 0xFFE0E0E0);
       }
    }
 

@@ -97,6 +97,8 @@ public final class FactionFamilies extends SavedData {
       String ruler = "";
       Person wife;
       final List<Person> children = new ArrayList<>();
+      /** The ruler's brothers and sisters, when he took the throne from their father. */
+      final List<Person> kin = new ArrayList<>();
    }
 
    /** A player's wife and the faction she came from. */
@@ -132,6 +134,14 @@ public final class FactionFamilies extends SavedData {
       FactionWorldData.Ruler ruler = FactionRulers.ruler(FactionWorldData.get(level), faction, level.getRandom());
       Family family = this.families.computeIfAbsent(faction, ignored -> new Family());
       if (!family.ruler.equals(key(ruler))) {
+         // A son who inherits keeps his brothers and sisters about him; anyone else comes to the throne alone.
+         Person self = family.children.stream().filter(child -> !child.female && child.name == ruler.name() && child.born == ruler.born()).findFirst().orElse(null);
+         family.kin.clear();
+         if (self != null) {
+            family.children.remove(self);
+            family.kin.addAll(family.children);
+         }
+
          family.ruler = key(ruler);
          family.wife = null;
          family.children.clear();
@@ -191,24 +201,31 @@ public final class FactionFamilies extends SavedData {
             );
          }
 
+         boolean[] heirLost = new boolean[1];
          family.children.removeIf(child -> {
             int childAge = child.age(day);
             if (random.nextDouble() < (childAge < 5 ? CHILD_DEATH : FactionPeople.oldAgeDeath(childAge))) {
+               heirLost[0] |= FactionCourt.isHeir(level, faction, child.name, child.born);
                FactionNews.tell(level, Component.translatable("news.ancientwarfare.child_died", FactionNews.factionName(faction), child.name(), childAge));
                return true;
             }
 
             return false;
          });
-         // The eldest son of age is named heir.
-         family.children.stream()
-            .filter(child -> !child.female && child.age(day) >= MARRY_AGE)
-            .min(Comparator.comparingLong(child -> child.born))
-            .ifPresent(son -> {
-               family.children.remove(son);
-               FactionCourt.nameHeir(level, faction, son.name, random.nextInt(FactionRulers.Trait.values().length), son.look, son.born, son.character);
-               FactionNews.tell(level, Component.translatable("news.ancientwarfare.son_heir", FactionNews.factionName(faction), son.name(), FactionRulers.name(ruler.name())));
-            });
+         family.kin.removeIf(sibling -> {
+            int siblingAge = sibling.age(day);
+            if (random.nextDouble() < FactionPeople.oldAgeDeath(siblingAge)) {
+               heirLost[0] |= FactionCourt.isHeir(level, faction, sibling.name, sibling.born);
+               FactionNews.tell(
+                  level,
+                  Component.translatable(sibling.female ? "news.ancientwarfare.sister_died" : "news.ancientwarfare.brother_died", FactionNews.factionName(faction), sibling.name(), FactionRulers.name(ruler.name()), siblingAge)
+               );
+               return true;
+            }
+
+            return false;
+         });
+         families.chooseHeir(level, faction, family, ruler, day, heirLost[0]);
       }
 
       families.brides.entrySet().removeIf(entry -> {
@@ -237,6 +254,44 @@ public final class FactionFamilies extends SavedData {
       });
       families.growChildren(level, day);
       families.setDirty();
+   }
+
+   /**
+    * The ruler's eldest son is his heir, however young; with no son, his eldest brother. Only a ruler
+    * with neither names someone from court, and a dead heir is followed by the next in line.
+    */
+   private void chooseHeir(ServerLevel level, String faction, Family family, FactionWorldData.Ruler ruler, long day, boolean heirLost) {
+      Comparator<Person> eldest = Comparator.comparingLong(person -> person.born);
+      Person son = family.children.stream().filter(child -> !child.female).min(eldest).orElse(null);
+      Person next = son != null ? son : family.kin.stream().filter(sibling -> !sibling.female).min(eldest).orElse(null);
+      if (next == null) {
+         if (heirLost) {
+            FactionCourt.replace(level, faction, FactionCourt.Role.HEIR, day);
+         }
+
+         return;
+      }
+
+      if (FactionCourt.isHeir(level, faction, next.name, next.born)) {
+         return;
+      }
+
+      RandomSource random = level.getRandom();
+      // The heir's disposition is one his character allows.
+      FactionRulers.Trait[] dispositions = FactionRulers.Trait.values();
+      int disposition = random.nextInt(dispositions.length);
+      for (int i = 0; i < dispositions.length && FactionPeople.consistent(next.character, dispositions[disposition]) != next.character; i++) {
+         disposition = (disposition + 1) % dispositions.length;
+      }
+
+      FactionCourt.nameHeir(level, faction, next.name, disposition, next.look, next.born, FactionPeople.consistent(next.character, dispositions[disposition]));
+      if (next.born != day) {
+         // A son born today is heir from his first breath; the birth is news enough.
+         FactionNews.tell(
+            level,
+            Component.translatable(next == son ? "news.ancientwarfare.son_heir" : "news.ancientwarfare.brother_heir", FactionNews.factionName(faction), next.name(), FactionRulers.name(ruler.name()))
+         );
+      }
    }
 
    /** The player's children grow up: a son of age comes to serve at his father's side. */
@@ -286,7 +341,9 @@ public final class FactionFamilies extends SavedData {
          others.remove(faction);
          java.util.Collections.shuffle(others, new java.util.Random(random.nextLong()));
          for (String other : others) {
-            if (FactionDiplomacy.relation(level, faction, other).state() == RelationState.WAR) {
+            if (FactionDiplomacy.relation(level, faction, other).state() == RelationState.WAR
+               || random.nextDouble() >= FactionFaith.marriageFactor(level, faction, other, ruler.character())) {
+               // No match with an enemy, and seldom one across faiths.
                continue;
             }
 
@@ -496,7 +553,8 @@ public final class FactionFamilies extends SavedData {
       }
 
       for (Person child : family.children) {
-         tips.add(Component.translatable(child.female ? "family.ancientwarfare.tip.daughter" : "family.ancientwarfare.tip.son", child.name(), child.age(day)));
+         String kind = child.female ? "daughter" : FactionCourt.isHeir(level, faction, child.name, child.born) ? "son_heir" : "son";
+         tips.add(Component.translatable("family.ancientwarfare.tip." + kind, child.name(), child.age(day)));
       }
 
       return tips;
@@ -542,6 +600,10 @@ public final class FactionFamilies extends SavedData {
             family.children.add(Person.load((CompoundTag)child));
          }
 
+         for (Tag sibling : entry.getList("Kin", Tag.TAG_COMPOUND)) {
+            family.kin.add(Person.load((CompoundTag)sibling));
+         }
+
          data.families.put(faction, family);
       }
 
@@ -583,6 +645,9 @@ public final class FactionFamilies extends SavedData {
          ListTag children = new ListTag();
          family.children.forEach(child -> children.add(child.save()));
          entry.put("Children", children);
+         ListTag kin = new ListTag();
+         family.kin.forEach(sibling -> kin.add(sibling.save()));
+         entry.put("Kin", kin);
          families.put(faction, entry);
       });
       tag.put("Families", families);
