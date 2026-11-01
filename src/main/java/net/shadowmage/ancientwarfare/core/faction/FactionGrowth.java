@@ -311,6 +311,12 @@ public final class FactionGrowth {
          return false;
       }
 
+      int[] materials = FactionResources.buildCost(kind);
+      if (!FactionPrebuild.active() && !FactionResources.has(data, settlement.faction(), materials)) {
+         // No timber or stone in the realm's stores: the building waits for the next delivery.
+         return false;
+      }
+
       RandomSource random = level.getRandom();
       boolean built = false;
       lastBox = null;
@@ -333,6 +339,10 @@ public final class FactionGrowth {
 
       if (!FactionPrebuild.active() && lastBox != null && kind != TownBuildings.Kind.PALISADE && kind != TownBuildings.Kind.STONE_WALL) {
          BuildSites.stage(level, lastBox[0], lastBox[1]);
+      }
+
+      if (!FactionPrebuild.active()) {
+         FactionResources.spend(data, settlement.faction(), materials);
       }
 
       settlement.plan().remove(0);

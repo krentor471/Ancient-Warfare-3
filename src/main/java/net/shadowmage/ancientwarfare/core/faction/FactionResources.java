@@ -59,6 +59,13 @@ public final class FactionResources {
          }
       }
 
+      // A realm with no grain in its stores cannot send any to its towns: they eat into their own.
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (data.stores(settlement.faction())[GRAIN] < 20 && settlement.food > 0) {
+            settlement.food = Math.max(0, settlement.food - settlement.population() / 5);
+         }
+      }
+
       for (String faction : factions) {
          int[] store = data.stores(faction);
          for (int kind = TRADE_GOODS; kind < KINDS; kind++) {
@@ -96,8 +103,41 @@ public final class FactionResources {
          mines + hills + people / 40,
          mines + hills
       };
+      // The town's own workplaces add to what its people bring in.
+      for (String building : settlement.buildings()) {
+         switch (building) {
+            case "field", "large_farm", "garden" -> made[GRAIN] += building.equals("large_farm") ? 3 : 1;
+            case "mill", "granary" -> made[GRAIN] += 2;
+            case "animal_pen", "butcher" -> {
+               made[LEATHER]++;
+               made[WOOL]++;
+            }
+            case "tannery" -> made[LEATHER] += 2;
+            case "weaver" -> made[WOOL] += 2;
+            case "carpenter" -> made[WOOD] += 3;
+            case "mason" -> made[STONE] += 3;
+            case "mine" -> {
+               made[STONE] += 2;
+               made[IRON] += 2;
+               made[COAL] += 2;
+               made[COPPER]++;
+            }
+            case "smithy" -> made[IRON]++;
+            default -> {
+            }
+         }
+      }
+
       made[specialty(settlement.faction())] *= 2;
       return made;
+   }
+
+   /** Wood and stone a building of this kind takes: stone walls take a quarry's worth. */
+   static int[] buildCost(TownBuildings.Kind kind) {
+      int[] cost = new int[KINDS];
+      cost[WOOD] = kind.cost / 2;
+      cost[STONE] = kind == TownBuildings.Kind.STONE_WALL ? 300 : kind.cost / 3;
+      return cost;
    }
 
    public static boolean has(FactionWorldData data, String faction, int[] cost) {
