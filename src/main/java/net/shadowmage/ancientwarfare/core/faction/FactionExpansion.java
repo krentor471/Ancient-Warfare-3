@@ -68,7 +68,7 @@ public final class FactionExpansion {
    /** Sites checked per layout check; most are ruled out from the noise, the rest load the land under them. */
    private static final int SITE_CHECKS_PER_TICK = 6;
    /** Open land kept between a new town and any other settlement, so they stand apart. */
-   private static final int SETTLEMENT_CLEARANCE = 200;
+   private static final int SETTLEMENT_CLEARANCE = 320;
    private static final int LONE_BUILDING_CLEARANCE = 48;
    /** How far each settlement's site search got, by settlement; not saved, so a restart searches again from the centre. */
    private static final Map<Integer, Integer> SITE_SEARCH = new HashMap<>();

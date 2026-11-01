@@ -49,6 +49,9 @@ public final class BanditCamps extends SavedData {
 
    private final List<Camp> camps = new ArrayList<>();
    private int nextId = 1;
+   /** Lairs that already have their tent. */
+   private final java.util.Set<Integer> tented = new java.util.HashSet<>();
+   private static final int SMALL_LAIR = 10;
 
    static final class Camp {
       final int id;
@@ -117,6 +120,7 @@ public final class BanditCamps extends SavedData {
       }
 
       BanditCamps camps = get(level);
+      camps.pitchLairTents(level, data);
       for (Camp camp : new ArrayList<>(camps.camps)) {
          if (!level.hasNearbyAlivePlayer(camp.x, level.getSeaLevel(), camp.z, SHOW_RANGE) || level.getChunkSource().getChunkNow(camp.x >> 4, camp.z >> 4) == null) {
             continue;
@@ -138,6 +142,38 @@ public final class BanditCamps extends SavedData {
             camps.camps.remove(camp);
             camps.setDirty();
          }
+      }
+   }
+
+   /** Small outlaw lairs (a lone robber's hide) get a tent and a fire beside them when a player first comes near. */
+   private void pitchLairTents(ServerLevel level, FactionWorldData data) {
+      for (FactionWorldData.Settlement lair : data.settlements()) {
+         if (!OUTLAW.equals(lair.faction()) || this.tented.contains(lair.id()) || lair.min() == null) {
+            continue;
+         }
+
+         BlockPos min = lair.min();
+         BlockPos max = lair.max();
+         if (max.getX() - min.getX() > SMALL_LAIR || max.getZ() - min.getZ() > SMALL_LAIR) {
+            continue;
+         }
+
+         int x = max.getX() + 3;
+         int z = (min.getZ() + max.getZ()) / 2;
+         if (!level.hasNearbyAlivePlayer(x, min.getY(), z, SHOW_RANGE) || level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) {
+            continue;
+         }
+
+         BlockPos base = new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z);
+         if (level.getFluidState(base.below()).isEmpty()) {
+            tent(level, base, Blocks.BROWN_WOOL.defaultBlockState());
+            BlockPos fire = base.offset(0, 0, 4);
+            fire = new BlockPos(fire.getX(), level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, fire.getX(), fire.getZ()), fire.getZ());
+            level.setBlockAndUpdate(fire, Blocks.CAMPFIRE.defaultBlockState());
+         }
+
+         this.tented.add(lair.id());
+         this.setDirty();
       }
    }
 
@@ -271,6 +307,10 @@ public final class BanditCamps extends SavedData {
    private static BanditCamps load(CompoundTag tag) {
       BanditCamps camps = new BanditCamps();
       camps.nextId = Math.max(1, tag.getInt("NextId"));
+      for (int id : tag.getIntArray("Tented")) {
+         camps.tented.add(id);
+      }
+
       for (Tag raw : tag.getList("Camps", Tag.TAG_COMPOUND)) {
          CompoundTag value = (CompoundTag)raw;
          Camp camp = new Camp(value.getInt("Id"), value.getInt("X"), value.getInt("Z"), value.getInt("Men"));
@@ -285,6 +325,7 @@ public final class BanditCamps extends SavedData {
    @Override
    public CompoundTag save(CompoundTag tag) {
       tag.putInt("NextId", this.nextId);
+      tag.putIntArray("Tented", this.tented.stream().mapToInt(Integer::intValue).toArray());
       ListTag list = new ListTag();
       for (Camp camp : this.camps) {
          CompoundTag value = new CompoundTag();

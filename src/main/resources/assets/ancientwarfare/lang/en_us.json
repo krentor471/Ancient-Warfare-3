@@ -3430,5 +3430,7 @@
   "caravan.ancientwarfare.hired": "A caravan leaves for %s and pays %s silver for a guard. It waits by the road at %s %s.",
   "caravan.ancientwarfare.none_leaving": "No caravan leaves from here now. Come back later.",
   "building.ancientwarfare.apiary": "Apiary",
-  "building.ancientwarfare.herb_hut": "Herb-wife's hut"
+  "building.ancientwarfare.herb_hut": "Herb-wife's hut",
+  "road.ancientwarfare.sign.to": "Road to",
+  "road.ancientwarfare.sign.distance": "%s blocks"
 }

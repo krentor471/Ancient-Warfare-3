@@ -34,7 +34,9 @@ public final class AwsWorldGenerator {
    /** How far around a levelled site the land is sloped toward its floor. */
    private static final int BLEND_RADIUS = 8;
    /** Open land kept between a new faction building (natural, a fort, a lone village) and any settlement. */
-   private static final int SETTLEMENT_SPACING = 150;
+   private static final int SETTLEMENT_SPACING = 250;
+   /** Past this from the centre, land on a continent world is an isle (the coast fades out from about 4200). */
+   private static final int ISLE_DISTANCE = 6100;
    private static boolean generating;
 
    private AwsWorldGenerator() {
@@ -52,6 +54,16 @@ public final class AwsWorldGenerator {
    }
 
    /** Builds one of faction's templates near chunk, for a settlement the faction founded. */
+   /** Land far out past the continent's coast, on the "AW3: continent" world type: one of the pirate isles. */
+   private static boolean offshoreIsle(ServerLevel level, int x, int z) {
+      if (!(level.getChunkSource().getGenerator() instanceof net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator noise)
+         || !noise.generatorSettings().unwrapKey().map(key -> key.location().getPath().equals("continent")).orElse(false)) {
+         return false;
+      }
+
+      return (long)x * x + (long)z * z > (long)ISLE_DISTANCE * ISLE_DISTANCE;
+   }
+
    /** Whether a settlement already stands within SETTLEMENT_SPACING blocks of the chunk. */
    private static boolean crowded(ServerLevel level, ChunkPos chunk) {
       int x = chunk.getMiddleBlockX();
@@ -205,6 +217,16 @@ public final class AwsWorldGenerator {
                            && (requiredFaction == null || requiredFaction.equals(TemplateFactions.ofTemplate(templatex.path())))
                            && site.accepts(templatex.path())) {
                            candidates.add(templatex);
+                        }
+                     }
+
+                     if (site == Site.SETTLEMENT && !waterSite && offshoreIsle(level, x, z)) {
+                        // The isles off the continent belong to pirates: their dens, whatever the climate.
+                        candidates.clear();
+                        for (AwsWorldGenTemplateRegistry.Template templatex : AwsWorldGenTemplateRegistry.templates()) {
+                           if (!templatex.requiresPhasedPlacement() && !templatex.aquatic() && "pirate".equals(TemplateFactions.ofTemplate(templatex.path()))) {
+                              candidates.add(templatex);
+                           }
                         }
                      }
 

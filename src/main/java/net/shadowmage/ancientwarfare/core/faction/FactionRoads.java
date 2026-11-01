@@ -74,6 +74,8 @@ public final class FactionRoads {
    private static final int POST_OFFSET_STEP = 14;
    /** Sites tried for a post: both sides of the road, at two distances. */
    private static final int POST_ATTEMPTS = 4;
+   /** How many road points out of town the signposts stand. */
+   private static final int SIGN_POINT = 6;
 
    private FactionRoads() {
    }
@@ -258,6 +260,7 @@ public final class FactionRoads {
             route.road = FactionWorldData.RoadState.DONE;
             route.points.add(pack(route.cursorX, route.cursorZ));
             AncientWarfareCore.LOG.info("Road #{} between settlements #{} and #{} finished, {} steps", route.id(), route.a(), route.b(), route.steps);
+            signposts(level, route, from, to);
             return;
          }
 
@@ -394,6 +397,53 @@ public final class FactionRoads {
       }
 
       return best;
+   }
+
+   /** At each end of a finished road, a signpost by the way: where it leads and how far. */
+   private static void signposts(ServerLevel level, FactionWorldData.Route route, FactionWorldData.Settlement from, FactionWorldData.Settlement to) {
+      List<Long> points = route.points();
+      if (points.size() < SIGN_POINT * 2 + 2) {
+         return;
+      }
+
+      int length = points.size() * POINT_SPACING;
+      signpost(level, points.get(SIGN_POINT), points.get(SIGN_POINT + 1), to, length);
+      signpost(level, points.get(points.size() - 1 - SIGN_POINT), points.get(points.size() - 2 - SIGN_POINT), from, length);
+   }
+
+   private static void signpost(ServerLevel level, long at, long ahead, FactionWorldData.Settlement goal, int length) {
+      int x = unpackX(at);
+      int z = unpackZ(at);
+      double dx = unpackX(ahead) - x;
+      double dz = unpackZ(ahead) - z;
+      double norm = Math.max(1.0, Math.sqrt(dx * dx + dz * dz));
+      // Three blocks to the right of the way, facing back onto the road.
+      int sx = x + (int)Math.round(-dz / norm * 3);
+      int sz = z + (int)Math.round(dx / norm * 3);
+      if (level.getChunkSource().getChunkNow(sx >> 4, sz >> 4) == null) {
+         return;
+      }
+
+      BlockPos ground = new BlockPos(sx, ground(level, sx, sz), sz);
+      BlockPos post = ground.above();
+      if (!level.getBlockState(ground).isSolidRender(level, ground) || !level.getBlockState(post).canBeReplaced() || !level.getBlockState(post.above()).canBeReplaced()) {
+         return;
+      }
+
+      float yaw = (float)Math.toDegrees(Math.atan2(x - sx, -(z - sz)));
+      level.setBlock(post, Blocks.SPRUCE_FENCE.defaultBlockState(), Block.UPDATE_ALL);
+      BlockPos board = post.above();
+      level.setBlock(board, Blocks.SPRUCE_SIGN.defaultBlockState().setValue(net.minecraft.world.level.block.StandingSignBlock.ROTATION, net.minecraft.world.level.block.state.properties.RotationSegment.convertToSegment(yaw)), Block.UPDATE_ALL);
+      if (level.getBlockEntity(board) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign) {
+         net.minecraft.world.level.block.entity.SignText text = new net.minecraft.world.level.block.entity.SignText()
+            .setMessage(0, net.minecraft.network.chat.Component.translatable("road.ancientwarfare.sign.to"))
+            .setMessage(1, FactionNews.named(goal))
+            .setMessage(2, net.minecraft.network.chat.Component.translatable("road.ancientwarfare.sign.distance", length));
+         sign.setText(text, true);
+         sign.setText(text, false);
+         sign.setChanged();
+         level.sendBlockUpdated(board, sign.getBlockState(), sign.getBlockState(), Block.UPDATE_ALL);
+      }
    }
 
    /** Paves the line between two steps, three wide. Returns false when the road has crossed too much water. */

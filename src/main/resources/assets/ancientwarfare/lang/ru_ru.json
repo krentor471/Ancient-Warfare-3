@@ -3430,5 +3430,7 @@
   "caravan.ancientwarfare.hired": "Караван уходит в %s, за охрану заплатят %s сер. Он ждёт у дороги, на %s %s.",
   "caravan.ancientwarfare.none_leaving": "Сейчас ни один караван отсюда не уходит. Загляни позже.",
   "building.ancientwarfare.apiary": "Пасека",
-  "building.ancientwarfare.herb_hut": "Хижина травницы"
+  "building.ancientwarfare.herb_hut": "Хижина травницы",
+  "road.ancientwarfare.sign.to": "Дорога в",
+  "road.ancientwarfare.sign.distance": "%s блоков"
 }
