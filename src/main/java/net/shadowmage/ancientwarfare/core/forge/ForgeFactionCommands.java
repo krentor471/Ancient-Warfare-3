@@ -1065,6 +1065,11 @@ public final class ForgeFactionCommands {
          return 0;
       }
 
+      if (offer.startsWith("answer") && offer.length() == 7) {
+         net.shadowmage.ancientwarfare.core.faction.FactionTaverns.answer(player, barman, offer.charAt(6) - '0');
+         return 1;
+      }
+
       for (net.shadowmage.ancientwarfare.core.faction.FactionTaverns.Offer candidate : net.shadowmage.ancientwarfare.core.faction.FactionTaverns.Offer.values()) {
          if (candidate.name().equalsIgnoreCase(offer)) {
             net.shadowmage.ancientwarfare.core.faction.FactionTaverns.serve(player, barman, candidate);

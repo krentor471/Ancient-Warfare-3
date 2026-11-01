@@ -53,7 +53,10 @@ public final class FactionTaverns {
       ROOM(4),
       ROUND(6),
       DICE(3),
-      ARM(2);
+      ARM(2),
+      DRINK(2),
+      KNIVES(2),
+      RIDDLE(1);
 
       final int price;
 
@@ -252,6 +255,9 @@ public final class FactionTaverns {
          }
          case DICE -> dice(player, barman, speaker);
          case ARM -> armWrestle(player, barman, speaker);
+         case DRINK -> drinkingMatch(player, barman, speaker);
+         case KNIVES -> knives(player, barman, speaker);
+         case RIDDLE -> riddle(player, barman, speaker);
          case ROUND -> {
             barman.getPersistentData().putLong(ROUND_DAY_TAG, day + 1);
             int standing = FactionStandingData.get(level).adjustStanding(player.getUUID(), barman.getFactionName(), ROUND_STANDING);
@@ -312,5 +318,78 @@ public final class FactionTaverns {
       FactionRumours.say(
          player, speaker, Component.translatable("tavern.ancientwarfare.arm." + (won ? "won" : "lost") + "." + barman.getRandom().nextInt(2), Offer.ARM.price * 2)
       );
+   }
+
+   private static final int RIDDLES = 8;
+   private static final String RIDDLE_TAG = "AWRiddle";
+
+   /** Mug for mug with the house's hardest drinker: a full belly holds out longer; both end up reeling. */
+   private static void drinkingMatch(ServerPlayer player, FactionNpcEntity barman, Component speaker) {
+      double chance = 0.35 + player.getFoodData().getFoodLevel() / 20.0 * 0.3 + (player.hasEffect(MobEffects.CONFUSION) ? -0.25 : 0.0);
+      boolean won = barman.getRandom().nextDouble() < chance;
+      int mugs = 3 + barman.getRandom().nextInt(6);
+      player.serverLevel().playSound(null, barman.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.NEUTRAL, 1.0F, 0.8F);
+      player.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.CONFUSION, won ? 200 : 500, 0));
+      if (won) {
+         Coins.give(player, Offer.DRINK.price * 2);
+      } else {
+         player.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 400, 0));
+      }
+
+      FactionRumours.say(player, speaker, Component.translatable("tavern.ancientwarfare.drink." + (won ? "won" : "lost"), mugs, Offer.DRINK.price * 2));
+   }
+
+   /** Three knives each at the board on the wall; luck steadies the hand. */
+   private static void knives(ServerPlayer player, FactionNpcEntity barman, Component speaker) {
+      net.minecraft.util.RandomSource random = barman.getRandom();
+      int bonus = player.hasEffect(MobEffects.LUCK) ? 2 : 0;
+      int mine = 0;
+      int theirs = 0;
+      for (int i = 0; i < 3; i++) {
+         mine += Math.min(10, random.nextInt(11) + bonus);
+         theirs += random.nextInt(11);
+      }
+
+      player.serverLevel().playSound(null, barman.blockPosition(), SoundEvents.TRIDENT_HIT, SoundSource.NEUTRAL, 0.7F, 1.4F);
+      String result = mine > theirs ? "won" : mine == theirs ? "tie" : "lost";
+      if (mine > theirs) {
+         Coins.give(player, Offer.KNIVES.price * (mine >= 27 ? 4 : 2));
+      } else if (mine == theirs) {
+         Coins.give(player, Offer.KNIVES.price);
+      }
+
+      FactionRumours.say(player, speaker, Component.translatable("tavern.ancientwarfare.knives." + result, mine, theirs));
+   }
+
+   /** The barman asks a riddle; the answer is picked from three in chat. */
+   private static void riddle(ServerPlayer player, FactionNpcEntity barman, Component speaker) {
+      int which = barman.getRandom().nextInt(RIDDLES);
+      int shift = barman.getRandom().nextInt(3);
+      player.getPersistentData().putInt(RIDDLE_TAG, which * 3 + shift);
+      FactionRumours.say(player, speaker, Component.translatable("tavern.ancientwarfare.riddle." + which));
+      for (int slot = 0; slot < 3; slot++) {
+         int answer = (slot + shift) % 3;
+         player.sendSystemMessage(Component.literal("  [")
+            .append(Component.translatable("tavern.ancientwarfare.riddle." + which + ".a" + answer))
+            .append("]")
+            .withStyle(style -> style.withColor(ChatFormatting.AQUA)
+               .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/awtavern " + barman.getId() + " answer" + answer))));
+      }
+   }
+
+   /** Answer 0 of each riddle is the right one. */
+   public static void answer(ServerPlayer player, int barmanId, int answer) {
+      if (!(player.serverLevel().getEntity(barmanId) instanceof FactionNpcEntity barman) || !isBarman(barman) || !player.getPersistentData().contains(RIDDLE_TAG)) {
+         return;
+      }
+
+      player.getPersistentData().remove(RIDDLE_TAG);
+      Component speaker = barman.getDisplayName();
+      if (answer == 0) {
+         Coins.give(player, 4);
+         FactionRumours.say(player, speaker, Component.translatable("tavern.ancientwarfare.riddle.right", 4));
+      } else {
+         FactionRumours.say(player, speaker, Component.translatable("tavern.ancientwarfare.riddle.wrong"));
+      }
    }
 }
