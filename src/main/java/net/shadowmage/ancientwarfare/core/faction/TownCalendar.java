@@ -90,6 +90,50 @@ public final class TownCalendar {
          .anyMatch(other -> !other.equals(faction) && FactionDiplomacy.relation(level, faction, other).state() == RelationState.WAR);
    }
 
+   /**
+    * What a festival looks and sounds like from the square: music and notes over the crowd, flags
+    * of coloured dust, and once the sun is down fireworks over the roofs.
+    */
+   private static void celebrate(ServerLevel level, FactionWorldData.Settlement town, String reason) {
+      RandomSource random = level.getRandom();
+      BlockPos center = town.center();
+      int ground = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.getX(), center.getZ());
+      for (int i = 0; i < 6; i++) {
+         double x = center.getX() + random.nextInt(17) - 8 + 0.5;
+         double z = center.getZ() + random.nextInt(17) - 8 + 0.5;
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int)Math.floor(x), (int)Math.floor(z));
+         level.sendParticles(net.minecraft.core.particles.ParticleTypes.NOTE, x, y + 2.2, z, 1, random.nextDouble(), 0.0, 0.0, 1.0);
+         level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, x, y + 1.0, z, 4, 0.6, 0.6, 0.6, 0.0);
+      }
+
+      net.minecraft.sounds.SoundEvent[] tunes = "tournament".equals(reason)
+         ? new net.minecraft.sounds.SoundEvent[]{net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BELL.value(), net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASEDRUM.value()}
+         : new net.minecraft.sounds.SoundEvent[]{net.minecraft.sounds.SoundEvents.NOTE_BLOCK_FLUTE.value(), net.minecraft.sounds.SoundEvents.NOTE_BLOCK_GUITAR.value(), net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BANJO.value()};
+      for (int beat = 0; beat < 3; beat++) {
+         float pitch = (float)Math.pow(2.0, (random.nextInt(13) - 12) / 12.0);
+         level.playSound(null, center.getX() + 0.5, ground + 1.0, center.getZ() + 0.5, tunes[random.nextInt(tunes.length)], net.minecraft.sounds.SoundSource.RECORDS, 1.2F, pitch);
+      }
+
+      long time = level.getDayTime() % 24000L;
+      if (time > 12500L && time < 18000L && random.nextInt(2) == 0) {
+         net.minecraft.world.item.ItemStack rocket = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FIREWORK_ROCKET);
+         net.minecraft.nbt.CompoundTag explosion = new net.minecraft.nbt.CompoundTag();
+         explosion.putByte("Type", (byte)random.nextInt(5));
+         int[] palette = {0xE0342C, 0xF2C14E, 0x3C78D8, 0x5BB55B, 0xFFFFFF, 0xC04CD0};
+         explosion.putIntArray("Colors", new int[]{palette[random.nextInt(palette.length)], palette[random.nextInt(palette.length)]});
+         explosion.putBoolean("Trail", random.nextBoolean());
+         net.minecraft.nbt.ListTag explosions = new net.minecraft.nbt.ListTag();
+         explosions.add(explosion);
+         net.minecraft.nbt.CompoundTag fireworks = new net.minecraft.nbt.CompoundTag();
+         fireworks.put("Explosions", explosions);
+         fireworks.putByte("Flight", (byte)(1 + random.nextInt(2)));
+         rocket.getOrCreateTag().put("Fireworks", fireworks);
+         double x = center.getX() + random.nextInt(21) - 10 + 0.5;
+         double z = center.getZ() + random.nextInt(21) - 10 + 0.5;
+         level.addFreshEntity(new net.minecraft.world.entity.projectile.FireworkRocketEntity(level, x, ground + 1.0, z, rocket));
+      }
+   }
+
    /** Players who know the town's realm hear of its fair, tournament or feast. */
    private static void news(ServerLevel level, FactionWorldData.Settlement town, String what) {
       TownChronicle.write(level, town.id(), what);
@@ -120,6 +164,7 @@ public final class TownCalendar {
             continue;
          }
 
+         celebrate(level, town, reason);
          if ("tournament".equals(reason)) {
             herald(level, town);
          } else if ("feast".equals(reason)) {
