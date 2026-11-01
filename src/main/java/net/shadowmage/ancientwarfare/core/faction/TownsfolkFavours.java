@@ -187,6 +187,8 @@ public final class TownsfolkFavours {
          FactionRumours.chat(player, npc);
       }
 
+      // A craftsman also offers his wares, in the chat with the rest of what he said.
+      TownTrades.offer(player, npc);
    }
 
    /** Townsfolk to hire, offered by the head. */
