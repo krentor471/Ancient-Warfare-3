@@ -23,7 +23,7 @@ import net.shadowmage.ancientwarfare.core.faction.TownTrades;
  */
 public class TradeWorkGoal extends Goal {
    private static final long EVENING = 11500L;
-   private static final int REACH = 14;
+   private static final int REACH = 28;
    private static final int HEIGHT = 4;
    private static final int WORK_TICKS = 600;
    private static final int REST_TICKS = 400;
@@ -38,6 +38,8 @@ public class TradeWorkGoal extends Goal {
    private int left;
    private int rest;
    private int swing;
+   /** What the townsperson held before taking up the tool of the trade. */
+   private net.minecraft.world.item.ItemStack held = net.minecraft.world.item.ItemStack.EMPTY;
 
    public TradeWorkGoal(FactionNpcEntity npc) {
       this.npc = npc;
@@ -108,7 +110,7 @@ public class TradeWorkGoal extends Goal {
 
    private BlockPos find(ServerLevel level, String trade) {
       Predicate<BlockState> wanted = switch (this.work) {
-         case FARM -> state -> state.getBlock() instanceof CropBlock crop && crop.isMaxAge(state);
+         case FARM -> state -> state.getBlock() instanceof CropBlock;
          case WOOD -> state -> state.is(BlockTags.LOGS);
          case MINE -> state -> state.is(Blocks.STONE) || state.is(BlockTags.IRON_ORES) || state.is(BlockTags.COAL_ORES);
          case BENCH -> bench(trade);
@@ -167,6 +169,13 @@ public class TradeWorkGoal extends Goal {
    public void start() {
       this.left = WORK_TICKS;
       this.swing = 0;
+      this.held = this.npc.getMainHandItem().copy();
+      this.npc.setItemInHand(InteractionHand.MAIN_HAND, new net.minecraft.world.item.ItemStack(switch (this.work) {
+         case FARM -> net.minecraft.world.item.Items.IRON_HOE;
+         case WOOD -> net.minecraft.world.item.Items.IRON_AXE;
+         case MINE -> net.minecraft.world.item.Items.IRON_PICKAXE;
+         case BENCH -> net.minecraft.world.item.Items.STONE_AXE;
+      }));
       this.npc.getNavigation().moveTo(this.target.getX() + 0.5, this.target.getY(), this.target.getZ() + 0.5, 0.6);
    }
 
@@ -177,9 +186,15 @@ public class TradeWorkGoal extends Goal {
 
    @Override
    public void stop() {
+      if (this.target != null && this.npc.level() instanceof ServerLevel level) {
+         level.destroyBlockProgress(this.npc.getId(), this.target, -1);
+      }
+
       this.target = null;
       this.rest = REST_TICKS;
       this.npc.getNavigation().stop();
+      this.npc.setItemInHand(InteractionHand.MAIN_HAND, this.held);
+      this.held = net.minecraft.world.item.ItemStack.EMPTY;
    }
 
    @Override
@@ -210,7 +225,31 @@ public class TradeWorkGoal extends Goal {
       }
 
       this.npc.swing(InteractionHand.MAIN_HAND);
-      if (this.swing < 90 || !(this.npc.level() instanceof ServerLevel level)) {
+      if (!(this.npc.level() instanceof ServerLevel level)) {
+         return;
+      }
+
+      // Each blow shows: chips and cracks on the log or the rock, sparks at the anvil, earth turned in the field.
+      BlockState struck = level.getBlockState(this.target);
+      if (this.work == Work.WOOD || this.work == Work.MINE) {
+         level.destroyBlockProgress(this.npc.getId(), this.target, Math.min(9, this.swing / 10));
+         level.playSound(null, this.target, struck.getSoundType().getHitSound(), net.minecraft.sounds.SoundSource.BLOCKS, 0.7F, 0.9F);
+      } else if (this.work == Work.FARM) {
+         level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, this.target.getX() + 0.5, this.target.getY() + 0.5, this.target.getZ() + 0.5, 3, 0.3, 0.2, 0.3, 0.0);
+      } else {
+         level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, this.target.getX() + 0.5, this.target.getY() + 1.0, this.target.getZ() + 0.5, 4, 0.2, 0.1, 0.2, 0.05);
+         level.playSound(null, this.target, struck.getSoundType().getHitSound(), net.minecraft.sounds.SoundSource.BLOCKS, 0.5F, 1.2F);
+      }
+
+      if (this.swing < 90) {
+         return;
+      }
+
+      if (this.work == Work.MINE) {
+         // The stone is cut and carted off to the town; the rock face stays for the next day.
+         level.destroyBlockProgress(this.npc.getId(), this.target, -1);
+         level.levelEvent(2001, this.target, Block.getId(struck));
+         this.swing = 0;
          return;
       }
 
@@ -221,6 +260,9 @@ public class TradeWorkGoal extends Goal {
                // Reaped and sown again; the harvest goes to the town's stores, not the ground.
                level.levelEvent(2001, this.target, Block.getId(state));
                level.setBlock(this.target, crop.getStateForAge(0), Block.UPDATE_ALL);
+            } else if (state.getBlock() instanceof CropBlock crop) {
+               // Not ripe yet: weeded and watered, it grows a little.
+               level.setBlock(this.target, crop.getStateForAge(Math.min(crop.getMaxAge(), crop.getAge(state) + 1)), Block.UPDATE_ALL);
             }
 
             this.target = null;
@@ -235,6 +277,7 @@ public class TradeWorkGoal extends Goal {
                }
 
                level.setBlock(this.target, sapling.defaultBlockState(), Block.UPDATE_ALL);
+               level.destroyBlockProgress(this.npc.getId(), this.target, -1);
             }
 
             this.target = null;

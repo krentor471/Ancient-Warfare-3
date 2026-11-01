@@ -248,23 +248,81 @@ public final class TownMarkets extends SavedData {
       for (FactionTradeListRegistry.FactionTradeEntry trade : trades) {
          int bought = kindOf(trade.outputs());
          int sold = kindOf(trade.inputs());
-         double factor = (bought < 0 ? 1.0 : markets.price(town.id(), bought)) / (sold < 0 ? 1.0 : markets.price(town.id(), sold));
-         if (Math.abs(factor - 1.0) < 0.05) {
+         // Each town also has its own dear and cheap wares, so no two markets ask the same.
+         double factor = (bought < 0 ? local(town, trade.outputs()) : markets.price(town.id(), bought)) / (sold < 0 ? local(town, trade.inputs()) : markets.price(town.id(), sold));
+         if (Math.abs(factor - 1.0) < 0.03) {
             priced.add(trade);
             continue;
          }
 
-         priced.add(new FactionTradeListRegistry.FactionTradeEntry(trade.inputs().stream().map(stack -> {
+         priced.add(new FactionTradeListRegistry.FactionTradeEntry(scale(trade.inputs(), factor), scale(trade.outputs(), 1.0 / factor)));
+      }
+
+      return priced;
+   }
+
+   /** A town's own leaning on a ware it has no stock count of: from 0.8 to 1.25, fixed for the town. */
+   private static double local(FactionWorldData.Settlement town, List<ItemStack> stacks) {
+      for (ItemStack stack : stacks) {
+         if (!stack.isEmpty() && !(stack.getItem() instanceof net.shadowmage.ancientwarfare.core.item.CoinItem)) {
+            long hash = town.id() * 2654435761L ^ BuiltInRegistries.ITEM.getKey(stack.getItem()).hashCode() * 40503L;
+            return 0.8 + (Math.floorMod(hash, 1000L) / 1000.0) * 0.45;
+         }
+      }
+
+      return 1.0;
+   }
+
+   /**
+    * Coins at a new price, paid out in copper, silver and gold so a small change still shows; other
+    * goods only where the count is large enough to change. The coins come to at most two stacks.
+    */
+   private static List<ItemStack> scale(List<ItemStack> stacks, double factor) {
+      int copper = 0;
+      List<ItemStack> goods = new ArrayList<>();
+      for (ItemStack stack : stacks) {
+         if (stack.getItem() instanceof net.shadowmage.ancientwarfare.core.item.CoinItem) {
+            copper += worth(net.shadowmage.ancientwarfare.core.item.CoinItem.getMetal(stack)) * stack.getCount();
+         } else {
+            goods.add(stack);
+         }
+      }
+
+      if (copper == 0) {
+         return stacks.stream().map(stack -> {
             ItemStack copy = stack.copy();
-            if (copy.getMaxStackSize() > 1) {
+            if (copy.getMaxStackSize() > 1 && factor > 1.0) {
                copy.setCount(Mth.clamp((int)Math.round(copy.getCount() * factor), 1, copy.getMaxStackSize()));
             }
 
             return copy;
-         }).toList(), trade.outputs()));
+         }).toList();
       }
 
-      return priced;
+      int price = Math.max(1, (int)Math.round(copper * factor));
+      List<ItemStack> out = new ArrayList<>(goods);
+      int room = Math.max(1, 2 - goods.size());
+      for (net.shadowmage.ancientwarfare.core.common.npc.CoinMetal metal : new net.shadowmage.ancientwarfare.core.common.npc.CoinMetal[]{
+         net.shadowmage.ancientwarfare.core.common.npc.CoinMetal.GOLD, net.shadowmage.ancientwarfare.core.common.npc.CoinMetal.SILVER, net.shadowmage.ancientwarfare.core.common.npc.CoinMetal.COPPER
+      }) {
+         int count = price / worth(metal);
+         if (count > 0 && room > 0) {
+            // The last stack takes whatever is left, rounded to its coin.
+            if (room == 1 && metal != net.shadowmage.ancientwarfare.core.common.npc.CoinMetal.COPPER) {
+               count = Math.max(1, (int)Math.round((double)price / worth(metal)));
+            }
+
+            out.add(net.shadowmage.ancientwarfare.core.item.CoinItem.create(metal, Math.min(64, count)));
+            price -= count * worth(metal);
+            room--;
+         }
+      }
+
+      return out;
+   }
+
+   private static int worth(net.shadowmage.ancientwarfare.core.common.npc.CoinMetal metal) {
+      return metal == net.shadowmage.ancientwarfare.core.common.npc.CoinMetal.GOLD ? 100 : metal == net.shadowmage.ancientwarfare.core.common.npc.CoinMetal.SILVER ? 10 : 1;
    }
 
    /** A trade done at a town's market: its goods leave or join the town's stocks. */

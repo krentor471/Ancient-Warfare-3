@@ -51,7 +51,7 @@ public final class FactionRoads {
    /** The land each road under way holds loaded, by route. */
    private static final Map<Integer, IslandChunkWindow> WORK = new HashMap<>();
    /** Highest fill or cut that evens out one road cell. */
-   private static final int MAX_RAMP = 6;
+   private static final int MAX_RAMP = 10;
    /** Longest bridge, in blocks of water crossed. */
    private static final int MAX_WATER_RUN = 48;
    /** Failed roads are tried again once a session, and then every this many days. */
@@ -62,12 +62,12 @@ public final class FactionRoads {
    private static final int OBSTACLE_MARGIN = 3;
    private static final int VILLAGE_RADIUS = 32;
    /** Steering choices either side of straight at the target, in steps of 22.5 degrees. */
-   private static final int TURNS = 3;
+   private static final int TURNS = 5;
    private static final double TURN_ANGLE = Math.PI / 8.0;
    /** Road points are recorded every two steps. */
    private static final int POINT_SPACING = STEP * 2;
    /** Road length between posts; they come in turn, so each kind stands every three times this. */
-   private static final int POST_SPACING = 900;
+   private static final int POST_SPACING = 1500;
    /** Posts keep this far from either end of the road. */
    private static final int POST_END_GAP = 80;
    private static final int POST_OFFSET = 22;
@@ -372,7 +372,8 @@ public final class FactionRoads {
          int y = ground(level, nx, nz);
          BlockState state = level.getBlockState(new BlockPos(nx, y, nz));
          int climb = Math.abs(y - here);
-         double cost = turn * turn * 0.4 + (climb <= 1 ? climb : climb * climb * 3.0);
+         // A step the road cannot ramp in a few blocks (a cliff) is all but ruled out: it goes round.
+         double cost = turn * turn * 0.4 + (climb <= 1 ? climb : climb * climb * 3.0) + (climb > 3 ? 400.0 : 0.0);
          if (state.getFluidState().is(FluidTags.LAVA)) {
             continue;
          }
@@ -499,7 +500,8 @@ public final class FactionRoads {
       for (int up = 1; up <= 3; up++) {
          BlockPos above = pos.above(up);
          BlockState over = level.getBlockState(above);
-         if (!over.isAir() && over.getFluidState().isEmpty() && (over.canBeReplaced() || up <= 2 && over.is(BlockTags.LEAVES))) {
+         // Three blocks of headroom: leaves and the branches overhead are cut, the trunk is left.
+         if (!over.isAir() && over.getFluidState().isEmpty() && (over.canBeReplaced() || over.is(BlockTags.LEAVES) || up >= 2 && over.is(BlockTags.LOGS) && !level.getBlockState(above.below()).is(BlockTags.LOGS))) {
             level.setBlock(above, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
          }
       }

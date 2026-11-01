@@ -38,6 +38,12 @@ public final class TownTroubles {
             town.plan().add(0, court);
          }
 
+         // And a merchants' guild, where caravans hire their guards.
+         String guild = TownBuildings.Kind.GUILD.key();
+         if (FactionTownLife.isTown(town) && !town.buildings().contains(guild) && !town.plan().contains(guild)) {
+            town.plan().add(Math.min(1, town.plan().size()), guild);
+         }
+
          double fire = FIRE_CHANCE * (season == FactionSeasons.Season.SUMMER ? 2.0 : 1.0) / (town.buildings().stream().anyMatch(b -> b.contains("well")) ? 2.0 : 1.0);
          if (random.nextDouble() < fire) {
             String lost = burn(level, town, random);

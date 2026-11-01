@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.HopperBlockEntity;
@@ -28,7 +29,9 @@ public final class FactionTrade {
    private static final int BASE_ROUTE_RANGE = 1200;
    /** Settlements this close are parts of one town and do not trade over a road. */
    private static final int MIN_ROUTE = 96;
-   private static final int LINKS = 3;
+   private static final int LINKS = 2;
+   /** Two roads out of a town closer than this in direction would run side by side. */
+   private static final double SAME_WAY_DEGREES = 50.0;
    private static final int INCOME_DIVISOR = 20;
    private static final int ROBBERY_RANGE = 320;
    private static final double ROBBERY_CHANCE = 0.3;
@@ -102,10 +105,35 @@ public final class FactionTrade {
 
          partners.sort(Comparator.comparingDouble(other -> settlement.horizontalDistanceSquared(other.center().getX(), other.center().getZ())));
 
-         for (FactionWorldData.Settlement partner : partners.subList(0, Math.min(LINKS, partners.size()))) {
-            if (data.route(settlement.id(), partner.id()) == null) {
-               data.addRoute(settlement.id(), partner.id());
+         // Roads already leaving this town, by the way they head: a new one must strike out another way.
+         List<Double> headings = new ArrayList<>();
+         for (FactionWorldData.Route route : data.routes()) {
+            if (route.village() == null && (route.a() == settlement.id() || route.b() == settlement.id())) {
+               FactionWorldData.Settlement other = data.settlement(route.a() == settlement.id() ? route.b() : route.a());
+               if (other != null) {
+                  headings.add(Math.atan2(other.center().getZ() - settlement.center().getZ(), other.center().getX() - settlement.center().getX()));
+               }
             }
+         }
+
+         int added = 0;
+         for (FactionWorldData.Settlement partner : partners) {
+            if (headings.size() >= LINKS || added >= LINKS) {
+               break;
+            }
+
+            if (data.route(settlement.id(), partner.id()) != null) {
+               continue;
+            }
+
+            double heading = Math.atan2(partner.center().getZ() - settlement.center().getZ(), partner.center().getX() - settlement.center().getX());
+            if (headings.stream().anyMatch(other -> Math.abs(Mth.wrapDegrees(Math.toDegrees(other - heading))) < SAME_WAY_DEGREES)) {
+               continue;
+            }
+
+            data.addRoute(settlement.id(), partner.id());
+            headings.add(heading);
+            added++;
          }
       }
 

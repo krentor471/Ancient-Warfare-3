@@ -36,7 +36,7 @@ public class EatMealGoal extends Goal {
       }
 
       long meal = this.mealTime();
-      if (meal >= 0L && meal != this.lastMeal && this.npc.getRandom().nextInt(400) == 0) {
+      if (meal >= 0L && meal != this.lastMeal && this.npc.getRandom().nextInt(150) == 0) {
          this.lastMeal = meal;
          return true;
       }
@@ -68,8 +68,13 @@ public class EatMealGoal extends Goal {
    public void tick() {
       this.left--;
       this.npc.getNavigation().stop();
-      if (this.left % 16 == 0) {
+      if (this.left % 8 == 0 && this.npc.level() instanceof ServerLevel level) {
+         // Crumbs and the sound of chewing, sent from the server so everyone near sees the meal.
          this.npc.swing(InteractionHand.MAIN_HAND);
+         net.minecraft.world.phys.Vec3 mouth = this.npc.getEyePosition().add(this.npc.getLookAngle().scale(0.3)).subtract(0.0, 0.15, 0.0);
+         level.sendParticles(new net.minecraft.core.particles.ItemParticleOption(net.minecraft.core.particles.ParticleTypes.ITEM, this.npc.getMainHandItem().isEmpty() ? new ItemStack(Items.BREAD) : this.npc.getMainHandItem()),
+            mouth.x, mouth.y, mouth.z, 5, 0.08, 0.05, 0.08, 0.03);
+         level.playSound(null, this.npc.blockPosition(), net.minecraft.sounds.SoundEvents.GENERIC_EAT, net.minecraft.sounds.SoundSource.NEUTRAL, 0.5F, 0.9F + this.npc.getRandom().nextFloat() * 0.2F);
       }
 
       // A meal lasts longer than one bite: the eating starts again until the time is up.
