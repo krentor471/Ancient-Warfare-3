@@ -3483,5 +3483,8 @@
   "gui.ancientwarfare.bar.health": "Health",
   "gui.ancientwarfare.bar.order": "Order",
   "gui.ancientwarfare.bar.loyalty": "Loyalty",
-  "gui.ancientwarfare.world_map.days": "%s days"
+  "gui.ancientwarfare.world_map.days": "%s days",
+  "gui.ancientwarfare.deal.goods_held": "You carry: %s",
+  "gui.ancientwarfare.deal.goods_mine": "You give (on table / have)",
+  "gui.ancientwarfare.deal.goods_theirs": "They give (on table / in stores)"
 }

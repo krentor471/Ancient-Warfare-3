@@ -3483,5 +3483,8 @@
   "gui.ancientwarfare.bar.health": "Здоровье",
   "gui.ancientwarfare.bar.order": "Порядок",
   "gui.ancientwarfare.bar.loyalty": "Верность",
-  "gui.ancientwarfare.world_map.days": "%s дн."
+  "gui.ancientwarfare.world_map.days": "%s дн.",
+  "gui.ancientwarfare.deal.goods_held": "У тебя с собой: %s",
+  "gui.ancientwarfare.deal.goods_mine": "Ты даёшь (на столе / есть)",
+  "gui.ancientwarfare.deal.goods_theirs": "Они дают (на столе / в запасах)"
 }
