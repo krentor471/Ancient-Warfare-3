@@ -239,6 +239,14 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.CountryOpenPacket::decode)
          .consumerMainThread(AWCoreNetwork.CountryOpenPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.SeasonPacket.class, 97, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder((packet, buffer) -> buffer.writeVarInt(packet.season()))
+         .decoder(buffer -> new AWCoreNetwork.SeasonPacket(buffer.readVarInt()))
+         .consumerMainThread((packet, supplier) -> {
+            supplier.get().enqueueWork(() -> net.shadowmage.ancientwarfare.core.client.SeasonColors.set(packet.season()));
+            supplier.get().setPacketHandled(true);
+         })
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.ResearchKnownPacket.class, 50, NetworkDirection.PLAY_TO_CLIENT)
          .encoder(AWCoreNetwork.ResearchKnownPacket::encode)
          .decoder(AWCoreNetwork.ResearchKnownPacket::decode)
@@ -1788,6 +1796,13 @@ public final class AWCoreNetwork {
          });
          context.setPacketHandled(true);
       }
+   }
+
+   public static record SeasonPacket(int season) {
+   }
+
+   public static void sendSeason(net.minecraft.server.level.ServerLevel level, int season) {
+      CHANNEL.send(PacketDistributor.DIMENSION.with(level::dimension), new AWCoreNetwork.SeasonPacket(season));
    }
 
    public static record DraftingPreviewPacket(int containerId, int templateIndex, int requestId, int chunkIndex, int chunkCount, DraftingPreviewData data) {

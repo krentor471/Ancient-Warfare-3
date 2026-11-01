@@ -49,6 +49,13 @@ public final class ForgeFactionEvents {
    }
 
    @SubscribeEvent
+   public static void cropGrow(net.minecraftforge.event.level.BlockEvent.CropGrowEvent.Pre event) {
+      if (net.shadowmage.ancientwarfare.core.faction.SeasonWeather.frozen(event.getLevel(), event.getPos())) {
+         event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+      }
+   }
+
+   @SubscribeEvent
    public static void onServerTick(ServerTickEvent event) {
       if (event.phase == Phase.END) {
          FactionSimulation.tick(event.getServer().overworld());
