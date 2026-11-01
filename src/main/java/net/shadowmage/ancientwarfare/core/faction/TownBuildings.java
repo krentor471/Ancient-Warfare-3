@@ -88,6 +88,7 @@ public final class TownBuildings {
       BATHHOUSE(Group.LEISURE, 40, 2, 1, "bath", "", FactionGrowth.Piece.HALL, 0, 0, 3, 1, 1, 0),
       ARENA(Group.LEISURE, 70, 2, 1, "arena", "", FactionGrowth.Piece.HALL, 0, 0, 0, 2, 2, 1),
       PALISADE(Group.DEFENCE, 40, 0, 1, "", "", FactionGrowth.Piece.PALISADE, 0, 0, 0, 1, 0, 1),
+      STONE_WALL(Group.DEFENCE, 90, 2, 1, "", "", FactionGrowth.Piece.PALISADE, 0, 0, 0, 2, 0, 4),
       WATCH_POST(Group.DEFENCE, 14, 0, 4, "watch|lookout", "", FactionGrowth.Piece.WATCH_POST, 0, 0, 0, 1, 0, 2),
       TOWER(Group.DEFENCE, 30, 2, 4, "tower", "", FactionGrowth.Piece.TOWER, 0, 0, 0, 1, 0, 3),
       GATEHOUSE(Group.DEFENCE, 40, 1, 2, "gate", "", FactionGrowth.Piece.GATEHOUSE, 0, 0, 0, 1, 0, 3),
@@ -325,7 +326,7 @@ public final class TownBuildings {
       double total = 0.0;
       double[] weights = new double[Kind.values().length];
       for (Kind kind : Kind.values()) {
-         if (kind.rank > rank || count(kinds, kind) >= kind.most) {
+         if (kind.rank > rank || count(kinds, kind) >= kind.most || kind == Kind.STONE_WALL && count(kinds, Kind.PALISADE) == 0) {
             continue;
          }
 

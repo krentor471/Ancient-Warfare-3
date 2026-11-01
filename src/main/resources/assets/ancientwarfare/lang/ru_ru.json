@@ -3432,5 +3432,6 @@
   "building.ancientwarfare.apiary": "Пасека",
   "building.ancientwarfare.herb_hut": "Хижина травницы",
   "road.ancientwarfare.sign.to": "Дорога в",
-  "road.ancientwarfare.sign.distance": "%s блоков"
+  "road.ancientwarfare.sign.distance": "%s блоков",
+  "building.ancientwarfare.stone_wall": "Каменные стены"
 }

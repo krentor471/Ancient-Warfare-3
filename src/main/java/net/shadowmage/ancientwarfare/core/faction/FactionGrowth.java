@@ -331,7 +331,7 @@ public final class FactionGrowth {
          return false;
       }
 
-      if (!FactionPrebuild.active() && lastBox != null && kind != TownBuildings.Kind.PALISADE) {
+      if (!FactionPrebuild.active() && lastBox != null && kind != TownBuildings.Kind.PALISADE && kind != TownBuildings.Kind.STONE_WALL) {
          BuildSites.stage(level, lastBox[0], lastBox[1]);
       }
 
@@ -353,6 +353,10 @@ public final class FactionGrowth {
    private static boolean piece(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, TownBuildings.Kind kind, boolean watched) {
       if (kind == TownBuildings.Kind.PALISADE) {
          return palisadeRing(level, settlement);
+      }
+
+      if (kind == TownBuildings.Kind.STONE_WALL) {
+         return stoneWalls(level, settlement);
       }
 
       Piece piece = kind.piece;
@@ -1336,6 +1340,94 @@ public final class FactionGrowth {
 
       AncientWarfareCore.LOG.info("Settlement #{} of {} raises a palisade around {}..{}", settlement.id(), settlement.faction(), new BlockPos(minX, 0, minZ), new BlockPos(maxX, 0, maxZ));
       return placed > 0;
+   }
+
+   /**
+    * A grown city rebuilds its own palisade in stone: every spruce-log stake of the ring becomes a
+    * stone-brick wall with battlements, and a squat tower rises at each corner. Only the logs the
+    * palisade itself set are replaced, so walls that came with a template stay as they are.
+    */
+   private static boolean stoneWalls(ServerLevel level, FactionWorldData.Settlement settlement) {
+      int margin = 4;
+      int minX = settlement.min().getX() - margin;
+      int minZ = settlement.min().getZ() - margin;
+      int maxX = settlement.max().getX() + margin;
+      int maxZ = settlement.max().getZ() + margin;
+      if (!loadedArea(level, minX - 3, minZ - 3, maxX + 3, maxZ + 3)) {
+         return false;
+      }
+
+      int replaced = 0;
+      for (int x = minX; x <= maxX; x++) {
+         for (int z = minZ; z <= maxZ; z++) {
+            if (x != minX && x != maxX && z != minZ && z != maxZ) {
+               continue;
+            }
+
+            int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+            BlockPos head = new BlockPos(x, top, z);
+            BlockState capping = level.getBlockState(head);
+            if (!capping.is(Blocks.SPRUCE_FENCE) && !capping.is(Blocks.TORCH) && !capping.is(Blocks.SPRUCE_LOG)) {
+               continue;
+            }
+
+            int y = top;
+            while (y > top - 6 && (level.getBlockState(new BlockPos(x, y, z)).is(Blocks.SPRUCE_LOG) || y == top)) {
+               y--;
+            }
+
+            if (y == top - 1 && !capping.is(Blocks.SPRUCE_LOG)) {
+               continue;
+            }
+
+            boolean gate = capping.is(Blocks.SPRUCE_LOG) && level.getBlockState(head.below()).isAir();
+            if (gate) {
+               set(level, head, Blocks.STONE_BRICKS.defaultBlockState());
+               continue;
+            }
+
+            for (int at = y + 1; at <= y + 4; at++) {
+               set(level, new BlockPos(x, at, z), Blocks.STONE_BRICKS.defaultBlockState());
+            }
+
+            boolean merlon = (x + z) % 2 == 0;
+            set(level, new BlockPos(x, y + 5, z), merlon ? Blocks.STONE_BRICK_WALL.defaultBlockState() : Blocks.AIR.defaultBlockState());
+            if (replaced++ % 14 == 0) {
+               set(level, new BlockPos(x, y + 5, z), Blocks.LANTERN.defaultBlockState());
+            }
+         }
+      }
+
+      if (replaced == 0) {
+         return false;
+      }
+
+      int[][] corners = {{minX, minZ}, {maxX, minZ}, {minX, maxZ}, {maxX, maxZ}};
+      for (int[] corner : corners) {
+         int ground = level.getHeight(Heightmap.Types.OCEAN_FLOOR, corner[0], corner[1]) - 1;
+         for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+               boolean rim = Math.abs(dx) == 2 || Math.abs(dz) == 2;
+               BlockPos base = new BlockPos(corner[0] + dx, ground, corner[1] + dz);
+               BlockState under = level.getBlockState(base);
+               if (!natural(under) && !under.is(Blocks.STONE_BRICKS) && !under.is(Blocks.SPRUCE_LOG)) {
+                  continue;
+               }
+
+               for (int dy = 1; dy <= 7; dy++) {
+                  BlockState block = rim ? (dy == 1 ? Blocks.COBBLESTONE : Blocks.STONE_BRICKS).defaultBlockState() : dy == 6 ? Blocks.SPRUCE_PLANKS.defaultBlockState() : Blocks.AIR.defaultBlockState();
+                  set(level, base.above(dy), block);
+               }
+
+               set(level, base.above(8), rim && (dx + dz) % 2 == 0 ? Blocks.STONE_BRICK_WALL.defaultBlockState() : Blocks.AIR.defaultBlockState());
+            }
+         }
+
+         set(level, new BlockPos(corner[0], ground + 7, corner[1]), Blocks.LANTERN.defaultBlockState());
+      }
+
+      AncientWarfareCore.LOG.info("Settlement #{} of {} rebuilds its palisade in stone ({} stakes)", settlement.id(), settlement.faction(), replaced);
+      return true;
    }
 
    /** A wooden watch post: four posts, a ladder, a railed platform with a lantern. */

@@ -3432,5 +3432,6 @@
   "building.ancientwarfare.apiary": "Apiary",
   "building.ancientwarfare.herb_hut": "Herb-wife's hut",
   "road.ancientwarfare.sign.to": "Road to",
-  "road.ancientwarfare.sign.distance": "%s blocks"
+  "road.ancientwarfare.sign.distance": "%s blocks",
+  "building.ancientwarfare.stone_wall": "Stone walls"
 }
