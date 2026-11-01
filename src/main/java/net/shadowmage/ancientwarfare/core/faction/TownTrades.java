@@ -2,6 +2,7 @@ package net.shadowmage.ancientwarfare.core.faction;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -104,6 +105,39 @@ public final class TownTrades {
 
    private static FactionWorldData.Settlement town(ServerLevel level, FactionNpcEntity npc) {
       return FactionSimulation.settlementAt(FactionWorldData.get(level), npc.getFactionName(), npc.getX(), npc.getZ(), TOWN_RANGE);
+   }
+
+   /** The buildings each trade works at, by kind. */
+   private static final Map<String, List<String>> WORKPLACES = Map.ofEntries(
+      Map.entry("miller", List.of("mill")),
+      Map.entry("beekeeper", List.of("apiary")),
+      Map.entry("herbalist", List.of("herb_hut")),
+      Map.entry("shepherd", List.of("animal_pen")),
+      Map.entry("woodcutter", List.of("carpenter")),
+      Map.entry("carpenter", List.of("carpenter")),
+      Map.entry("charcoal_burner", List.of("carpenter")),
+      Map.entry("miner", List.of("mine")),
+      Map.entry("mason", List.of("mason", "mine")),
+      Map.entry("farmer", List.of("field", "large_farm", "garden"))
+   );
+
+   /** A spot at the building of the townsperson's trade in their town (the mill, the hives, the sawmill), or null. */
+   public static net.minecraft.core.BlockPos workplace(ServerLevel level, FactionNpcEntity npc, String trade) {
+      List<String> kinds = WORKPLACES.get(trade);
+      FactionWorldData.Settlement town = kinds == null ? null : town(level, npc);
+      if (town == null) {
+         return null;
+      }
+
+      List<FactionWorldData.Hall> halls = town.halls().stream().filter(hall -> kinds.contains(hall.kind())).toList();
+      if (halls.isEmpty()) {
+         return null;
+      }
+
+      FactionWorldData.Hall hall = halls.get(npc.getRandom().nextInt(halls.size()));
+      int x = hall.min().getX() + npc.getRandom().nextInt(Math.max(1, hall.max().getX() - hall.min().getX() + 1));
+      int z = hall.min().getZ() + npc.getRandom().nextInt(Math.max(1, hall.max().getZ() - hall.min().getZ() + 1));
+      return new net.minecraft.core.BlockPos(x, level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1, z);
    }
 
    /** The townsperson's trade, picked the first time anyone asks; empty for children and beggars. */

@@ -527,9 +527,14 @@ public final class ForgeFactionCommands {
                   return 1;
                }))
                .then(Commands.literal("grow").requires(source -> source.hasPermission(2)).executes(context -> {
-                  net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(context.getSource().getLevel(), context.getSource().getPlayerOrException());
+                  net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(context.getSource().getLevel(), context.getSource().getPlayerOrException(), null);
                   return 1;
-               }))
+               }).then(Commands.argument("kind", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(
+                     context.getSource().getLevel(), context.getSource().getPlayerOrException(), com.mojang.brigadier.arguments.StringArgumentType.getString(context, "kind")
+                  );
+                  return 1;
+               })))
                .then(Commands.literal("encounter").requires(source -> source.hasPermission(2)).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.TownEncounters.force(context.getSource().getPlayerOrException(), "");
                   return 1;

@@ -48,8 +48,9 @@ public class TradeWorkGoal extends Goal {
 
    private static Work workOf(String trade) {
       return switch (trade) {
-         case "farmer", "miller", "herbalist", "beekeeper", "shepherd" -> Work.FARM;
+         case "farmer", "herbalist", "shepherd" -> Work.FARM;
          case "woodcutter", "carpenter", "charcoal_burner" -> Work.WOOD;
+         case "beekeeper", "miller" -> Work.BENCH;
          case "miner", "mason" -> Work.MINE;
          case "" -> null;
          default -> Work.BENCH;
@@ -71,6 +72,8 @@ public class TradeWorkGoal extends Goal {
          case "baker" -> state -> state.is(Blocks.FURNACE) || state.is(Blocks.SMOKER) || state.is(Blocks.COMPOSTER);
          case "potter", "glassblower", "candlemaker" -> state -> state.is(Blocks.FURNACE) || state.is(Blocks.CRAFTING_TABLE);
          case "stablemaster" -> state -> state.is(Blocks.HAY_BLOCK);
+         case "beekeeper" -> state -> state.is(Blocks.BEEHIVE) || state.is(Blocks.BEE_NEST);
+         case "miller" -> state -> state.is(Blocks.GRINDSTONE) || state.is(Blocks.HAY_BLOCK);
          default -> state -> state.is(Blocks.CRAFTING_TABLE) || state.is(Blocks.BARREL);
       };
    }
@@ -100,7 +103,9 @@ public class TradeWorkGoal extends Goal {
          return false;
       }
 
-      this.target = this.find(level, trade);
+      // Most of the day at the trade's own building, when the town has one: the mill, the hives, the sawmill.
+      BlockPos place = this.npc.getRandom().nextInt(3) > 0 ? TownTrades.workplace(level, this.npc, trade) : null;
+      this.target = place != null ? this.near(level, place, trade) : this.find(level, trade);
       if (this.target == null) {
          this.rest = REST_TICKS;
       }
@@ -108,20 +113,35 @@ public class TradeWorkGoal extends Goal {
       return this.target != null;
    }
 
+   /** What there is to work on at the trade's building: a crop, a log, rock, a bench; else the spot itself. */
+   private BlockPos near(ServerLevel level, BlockPos place, String trade) {
+      BlockPos found = this.find(level, trade, place, 6);
+      if (found != null) {
+         return found;
+      }
+
+      // Nothing to strike there: the townsperson works at the building with the bench routine.
+      this.work = Work.BENCH;
+      return place;
+   }
+
    private BlockPos find(ServerLevel level, String trade) {
+      return this.find(level, trade, this.npc.blockPosition(), REACH);
+   }
+
+   private BlockPos find(ServerLevel level, String trade, BlockPos home, int reach) {
       Predicate<BlockState> wanted = switch (this.work) {
          case FARM -> state -> state.getBlock() instanceof CropBlock;
          case WOOD -> state -> state.is(BlockTags.LOGS);
          case MINE -> state -> state.is(Blocks.STONE) || state.is(BlockTags.IRON_ORES) || state.is(BlockTags.COAL_ORES);
          case BENCH -> bench(trade);
       };
-      BlockPos home = this.npc.blockPosition();
       BlockPos best = null;
       double bestDistance = Double.MAX_VALUE;
       BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
       // A sparse sweep: every other column, so a search stays cheap in a crowded town.
-      for (int dx = -REACH; dx <= REACH; dx += this.work == Work.BENCH ? 1 : 2) {
-         for (int dz = -REACH; dz <= REACH; dz += this.work == Work.BENCH ? 1 : 2) {
+      for (int dx = -reach; dx <= reach; dx += this.work == Work.BENCH ? 1 : 2) {
+         for (int dz = -reach; dz <= reach; dz += this.work == Work.BENCH ? 1 : 2) {
             for (int dy = -HEIGHT; dy <= HEIGHT; dy++) {
                pos.set(home.getX() + dx, home.getY() + dy, home.getZ() + dz);
                if (!level.isLoaded(pos)) {

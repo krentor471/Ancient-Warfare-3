@@ -92,10 +92,20 @@ public final class FactionGrowth {
       /** A plain hall fitted out for whatever trade it houses. */
       HALL(9, 7, 6),
       /** A mine head over a shaft down to a gallery of ore; see FactionTowns.digMine. */
-      MINE(7, 7, 4);
+      MINE(7, 7, 4),
+      /** A stone tower mill with sails of wool on its face. */
+      WINDMILL(5, 5, 11),
+      /** Hives in a fenced flower garden, with the beekeeper's bench. */
+      APIARY(7, 7, 3),
+      /** The herb-wife's hut: a small cabin with drying herbs and a flower bed. */
+      HERB_HUT(5, 5, 5),
+      /** An open shed over a saw bench, logs stacked about it. */
+      SAWMILL(7, 5, 5);
 
       final int width;
       final int depth;
+      /** Whether the town keeps it as a hall: a place its tradesfolk go to work. */
+      boolean workplace;
       final int height;
 
       Piece(int width, int depth, int height) {
@@ -374,11 +384,15 @@ public final class FactionGrowth {
             net.shadowmage.ancientwarfare.core.structure.FactionTowns.digMine(level, site, random);
             yield site.offset(piece.width / 2, 0, -1);
          }
+         case WINDMILL -> windmill(level, site, palette);
+         case APIARY -> apiary(level, site, palette, random);
+         case HERB_HUT -> herbHut(level, site, palette, random);
+         case SAWMILL -> sawmill(level, site, palette);
       };
       path(level, settlement, door.relative(front), center);
       settlement.extend(site, site.offset(piece.width - 1, piece.height, piece.depth - 1));
       lastBox = new BlockPos[]{site, site.offset(piece.width - 1, piece.height, piece.depth - 1)};
-      if (piece == Piece.HALL) {
+      if (piece == Piece.HALL || piece.workplace) {
          settlement.halls().add(new FactionWorldData.Hall(kind.key(), site, site.offset(piece.width - 1, piece.height, piece.depth - 1)));
       }
 
@@ -624,6 +638,12 @@ public final class FactionGrowth {
       return true;
    }
 
+   static {
+      for (Piece piece : new Piece[]{Piece.PEN, Piece.MINE, Piece.WINDMILL, Piece.APIARY, Piece.HERB_HUT, Piece.SAWMILL, Piece.FIELD}) {
+         piece.workplace = true;
+      }
+   }
+
    /** For the debug command: the nearest settlement decides on a building if it has none waiting, and puts it up now. */
    /** A house built in the town for a player who bought one: a manor-sized hall at the town's edge, or null. */
    static FactionWorldData.Hall buildHome(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement) {
@@ -655,7 +675,7 @@ public final class FactionGrowth {
       }
    }
 
-   public static void force(ServerLevel level, ServerPlayer player) {
+   public static void force(ServerLevel level, ServerPlayer player, String kind) {
       FactionWorldData data = FactionWorldData.get(level);
       FactionWorldData.Settlement nearest = null;
       for (FactionWorldData.Settlement settlement : data.settlements()) {
@@ -670,6 +690,10 @@ public final class FactionGrowth {
       if (nearest == null) {
          player.sendSystemMessage(Component.literal("No settlement").withStyle(ChatFormatting.RED));
          return;
+      }
+
+      if (kind != null && TownBuildings.Kind.byKey(kind) != null) {
+         nearest.plan().add(0, kind);
       }
 
       if (nearest.plan().isEmpty()) {
@@ -1061,6 +1085,129 @@ public final class FactionGrowth {
    }
 
    /** A fenced pen with a trough, a gate and a few beasts. */
+   private static BlockPos windmill(ServerLevel level, BlockPos site, Palette palette) {
+      for (int y = 1; y <= 8; y++) {
+         for (int dx = 0; dx < 5; dx++) {
+            for (int dz = 0; dz < 5; dz++) {
+               boolean edge = dx == 0 || dz == 0 || dx == 4 || dz == 4;
+               boolean corner = (dx == 0 || dx == 4) && (dz == 0 || dz == 4);
+               if (y == 1 && !edge) {
+                  set(level, site.offset(dx, 0, dz), palette.floor);
+               }
+
+               if (edge && !corner) {
+                  set(level, site.offset(dx, y, dz), y % 4 == 0 ? palette.frame : Blocks.COBBLESTONE.defaultBlockState());
+               } else if (corner && y <= 7) {
+                  set(level, site.offset(dx, y, dz), palette.frame);
+               }
+            }
+         }
+      }
+
+      for (int dx = 0; dx < 5; dx++) {
+         for (int dz = 0; dz < 5; dz++) {
+            int ring = Math.min(Math.min(dx, 4 - dx), Math.min(dz, 4 - dz));
+            set(level, site.offset(dx, 9 + ring, dz), palette.roof);
+         }
+      }
+
+      // The door, a grindstone for the grain and sacks inside.
+      set(level, site.offset(2, 1, 0), Blocks.AIR.defaultBlockState());
+      set(level, site.offset(2, 2, 0), Blocks.AIR.defaultBlockState());
+      set(level, site.offset(2, 1, 2), Blocks.GRINDSTONE.defaultBlockState());
+      set(level, site.offset(1, 1, 3), Blocks.HAY_BLOCK.defaultBlockState());
+      set(level, site.offset(3, 1, 3), Blocks.BARREL.defaultBlockState());
+      // Sails: a cross of wool on the front face, on a log hub.
+      BlockPos hub = site.offset(2, 7, -1);
+      set(level, hub, Blocks.OAK_LOG.defaultBlockState().setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS, Direction.Axis.Z));
+      for (int arm = 1; arm <= 4; arm++) {
+         set(level, hub.offset(0, arm, 0), Blocks.WHITE_WOOL.defaultBlockState());
+         set(level, hub.offset(0, -arm, 0), arm < 4 ? Blocks.WHITE_WOOL.defaultBlockState() : Blocks.AIR.defaultBlockState());
+         set(level, hub.offset(arm, 0, 0), Blocks.WHITE_WOOL.defaultBlockState());
+         set(level, hub.offset(-arm, 0, 0), Blocks.WHITE_WOOL.defaultBlockState());
+      }
+
+      return site.offset(2, 0, 0);
+   }
+
+   private static BlockPos apiary(ServerLevel level, BlockPos site, Palette palette, RandomSource random) {
+      int size = Piece.APIARY.width;
+      Block[] flowers = {Blocks.DANDELION, Blocks.POPPY, Blocks.CORNFLOWER, Blocks.OXEYE_DAISY, Blocks.ALLIUM, Blocks.AZURE_BLUET};
+      for (int dx = 0; dx < size; dx++) {
+         for (int dz = 0; dz < size; dz++) {
+            BlockPos pos = site.offset(dx, 0, dz);
+            set(level, pos, Blocks.GRASS_BLOCK.defaultBlockState());
+            if (dx == 0 || dz == 0 || dx == size - 1 || dz == size - 1) {
+               set(level, pos.above(), dx == size / 2 && dz == 0 ? Blocks.OAK_FENCE_GATE.defaultBlockState() : palette.fence);
+            } else if (dx % 2 == 1 && dz % 2 == 1 && dz > 1) {
+               set(level, pos.above(), Blocks.BEEHIVE.defaultBlockState().setValue(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL, random.nextInt(6)));
+            } else if (random.nextInt(3) > 0) {
+               set(level, pos.above(), flowers[random.nextInt(flowers.length)].defaultBlockState());
+            }
+         }
+      }
+
+      set(level, site.offset(1, 1, 1), Blocks.CRAFTING_TABLE.defaultBlockState());
+      set(level, site.offset(size - 2, 1, 1), Blocks.BARREL.defaultBlockState());
+      return site.offset(size / 2, 0, 0);
+   }
+
+   private static BlockPos herbHut(ServerLevel level, BlockPos site, Palette palette, RandomSource random) {
+      for (int dx = 0; dx < 5; dx++) {
+         for (int dz = 0; dz < 4; dz++) {
+            set(level, site.offset(dx, 0, dz), palette.floor);
+            for (int y = 1; y <= 3; y++) {
+               boolean edge = dx == 0 || dz == 0 || dx == 4 || dz == 3;
+               set(level, site.offset(dx, y, dz), edge ? (y == 2 && dx == 2 ? Blocks.GLASS_PANE.defaultBlockState() : palette.wall) : Blocks.AIR.defaultBlockState());
+            }
+
+            set(level, site.offset(dx, 4, dz), palette.roof);
+         }
+      }
+
+      set(level, site.offset(2, 1, 0), Blocks.AIR.defaultBlockState());
+      set(level, site.offset(2, 2, 0), Blocks.AIR.defaultBlockState());
+      set(level, site.offset(1, 1, 2), Blocks.BREWING_STAND.defaultBlockState());
+      set(level, site.offset(3, 1, 2), Blocks.CAULDRON.defaultBlockState());
+      set(level, site.offset(1, 3, 1), Blocks.HAY_BLOCK.defaultBlockState());
+      // A bed of herbs before the door.
+      Block[] herbs = {Blocks.FERN, Blocks.SWEET_BERRY_BUSH, Blocks.LILY_OF_THE_VALLEY, Blocks.BLUE_ORCHID, Blocks.BROWN_MUSHROOM};
+      for (int dx = 0; dx < 5; dx++) {
+         BlockPos bed = site.offset(dx, 0, 4);
+         set(level, bed, Blocks.PODZOL.defaultBlockState());
+         if (dx != 2) {
+            set(level, bed.above(), herbs[random.nextInt(herbs.length)].defaultBlockState());
+         }
+      }
+
+      return site.offset(2, 0, 0);
+   }
+
+   private static BlockPos sawmill(ServerLevel level, BlockPos site, Palette palette) {
+      for (int dx = 0; dx < 7; dx++) {
+         for (int dz = 0; dz < 5; dz++) {
+            set(level, site.offset(dx, 0, dz), palette.floor);
+            boolean post = (dx == 0 || dx == 6) && (dz == 0 || dz == 4);
+            for (int y = 1; y <= 3; y++) {
+               set(level, site.offset(dx, y, dz), post ? palette.frame : Blocks.AIR.defaultBlockState());
+            }
+
+            set(level, site.offset(dx, 4, dz), palette.roof);
+         }
+      }
+
+      // The saw bench in the middle, stacks of logs and planks at the sides.
+      set(level, site.offset(3, 1, 2), Blocks.STONECUTTER.defaultBlockState());
+      set(level, site.offset(2, 1, 2), Blocks.CRAFTING_TABLE.defaultBlockState());
+      for (int dz = 1; dz <= 3; dz++) {
+         set(level, site.offset(1, 1, dz), Blocks.OAK_LOG.defaultBlockState().setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS, Direction.Axis.X));
+         set(level, site.offset(5, 1, dz), Blocks.OAK_PLANKS.defaultBlockState());
+      }
+
+      set(level, site.offset(1, 2, 2), Blocks.OAK_LOG.defaultBlockState().setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS, Direction.Axis.X));
+      return site.offset(3, 0, 0);
+   }
+
    private static BlockPos pen(ServerLevel level, BlockPos site, Palette palette, RandomSource random) {
       int size = Piece.PEN.width;
       for (int dx = 0; dx < size; dx++) {

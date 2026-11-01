@@ -3428,5 +3428,7 @@
   "head.ancientwarfare.title": "Village head",
   "council.ancientwarfare.guild.caravan": "Guard a caravan (%s silver)",
   "caravan.ancientwarfare.hired": "A caravan leaves for %s and pays %s silver for a guard. It waits by the road at %s %s.",
-  "caravan.ancientwarfare.none_leaving": "No caravan leaves from here now. Come back later."
+  "caravan.ancientwarfare.none_leaving": "No caravan leaves from here now. Come back later.",
+  "building.ancientwarfare.apiary": "Apiary",
+  "building.ancientwarfare.herb_hut": "Herb-wife's hut"
 }

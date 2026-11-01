@@ -3428,5 +3428,7 @@
   "head.ancientwarfare.title": "Староста",
   "council.ancientwarfare.guild.caravan": "Охранять караван (%s сер.)",
   "caravan.ancientwarfare.hired": "Караван уходит в %s, за охрану заплатят %s сер. Он ждёт у дороги, на %s %s.",
-  "caravan.ancientwarfare.none_leaving": "Сейчас ни один караван отсюда не уходит. Загляни позже."
+  "caravan.ancientwarfare.none_leaving": "Сейчас ни один караван отсюда не уходит. Загляни позже.",
+  "building.ancientwarfare.apiary": "Пасека",
+  "building.ancientwarfare.herb_hut": "Хижина травницы"
 }
