@@ -3478,5 +3478,10 @@
   "tavern.ancientwarfare.riddle.7": "У кого есть город без домов, реки без воды и леса без деревьев?",
   "tavern.ancientwarfare.riddle.7.a0": "У карты",
   "tavern.ancientwarfare.riddle.7.a1": "У короля",
-  "tavern.ancientwarfare.riddle.7.a2": "У барда"
+  "tavern.ancientwarfare.riddle.7.a2": "У барда",
+  "gui.ancientwarfare.bar.food": "Еда",
+  "gui.ancientwarfare.bar.health": "Здоровье",
+  "gui.ancientwarfare.bar.order": "Порядок",
+  "gui.ancientwarfare.bar.loyalty": "Верность",
+  "gui.ancientwarfare.world_map.days": "%s дн."
 }

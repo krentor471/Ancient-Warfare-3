@@ -431,6 +431,17 @@ public class WorldMapScreen extends Screen {
       super.render(graphics, mouseX, mouseY, partialTick);
    }
 
+   /** A meter of ten cells, green when full, gold half way, red when low, with its label and value. */
+   static Component bar(String what, int value, Component after) {
+      int v = Math.max(0, Math.min(100, value));
+      int filled = (v + 5) / 10;
+      net.minecraft.ChatFormatting colour = v >= 60 ? net.minecraft.ChatFormatting.GREEN : v >= 30 ? net.minecraft.ChatFormatting.GOLD : net.minecraft.ChatFormatting.RED;
+      return Component.translatable("gui.ancientwarfare.bar." + what).append(" ")
+         .append(Component.literal("\u2588".repeat(filled)).withStyle(colour))
+         .append(Component.literal("\u2588".repeat(10 - filled)).withStyle(net.minecraft.ChatFormatting.DARK_GRAY))
+         .append(" ").append(after.copy().withStyle(net.minecraft.ChatFormatting.GRAY));
+   }
+
    /** How the settlement lives: its people, stores, health, order and loyalty, and any trouble. */
    private static void addLife(List<Component> lines, int[] life) {
       if (life.length <= WorldMap.LIFE_FLAGS) {
@@ -445,10 +456,12 @@ public class WorldMapScreen extends Screen {
 
       lines.add(Component.translatable("gui.ancientwarfare.world_map.people", life[WorldMap.LIFE_PEOPLE], life[WorldMap.LIFE_GARRISON]));
       if (life[WorldMap.LIFE_FOOD_DAYS] >= 0) {
-         lines.add(Component.translatable("gui.ancientwarfare.world_map.stores", life[WorldMap.LIFE_FOOD_DAYS], life[WorldMap.LIFE_HEALTH]));
+         lines.add(bar("food", Math.min(100, life[WorldMap.LIFE_FOOD_DAYS] * 100 / 30), Component.translatable("gui.ancientwarfare.world_map.days", life[WorldMap.LIFE_FOOD_DAYS])));
+         lines.add(bar("health", life[WorldMap.LIFE_HEALTH], Component.literal(life[WorldMap.LIFE_HEALTH] + "%")));
       }
 
-      lines.add(Component.translatable("gui.ancientwarfare.world_map.mood", life[WorldMap.LIFE_ORDER], life[WorldMap.LIFE_LOYALTY]));
+      lines.add(bar("order", life[WorldMap.LIFE_ORDER], Component.literal(life[WorldMap.LIFE_ORDER] + "%")));
+      lines.add(bar("loyalty", life[WorldMap.LIFE_LOYALTY], Component.literal(life[WorldMap.LIFE_LOYALTY] + "%")));
       if (life.length > WorldMap.LIFE_WAITING) {
          lines.add(Component.translatable("gui.ancientwarfare.world_map.wealth", life[WorldMap.LIFE_WEALTH], life[WorldMap.LIFE_DEFENCE]));
          lines.add(

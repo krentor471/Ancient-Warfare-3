@@ -3478,5 +3478,10 @@
   "tavern.ancientwarfare.riddle.7": "What has towns without houses, rivers without water, forests without trees?",
   "tavern.ancientwarfare.riddle.7.a0": "A map",
   "tavern.ancientwarfare.riddle.7.a1": "A king",
-  "tavern.ancientwarfare.riddle.7.a2": "A bard"
+  "tavern.ancientwarfare.riddle.7.a2": "A bard",
+  "gui.ancientwarfare.bar.food": "Food",
+  "gui.ancientwarfare.bar.health": "Health",
+  "gui.ancientwarfare.bar.order": "Order",
+  "gui.ancientwarfare.bar.loyalty": "Loyalty",
+  "gui.ancientwarfare.world_map.days": "%s days"
 }
