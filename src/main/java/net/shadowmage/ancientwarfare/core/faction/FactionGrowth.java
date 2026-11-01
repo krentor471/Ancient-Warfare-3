@@ -1510,7 +1510,8 @@ public final class FactionGrowth {
    private static void path(ServerLevel level, FactionWorldData.Settlement settlement, BlockPos from, BlockPos center) {
       int x = from.getX();
       int z = from.getZ();
-      for (int i = 0; i < PATH_STEPS && !settlement.contains(x, z, 0); i++) {
+      // Out to the nearest path or street: the town's own box is no stop, since the new building stands in it.
+      for (int i = 0; i < PATH_STEPS && Math.abs(center.getX() - x) + Math.abs(center.getZ() - z) > 4; i++) {
          BlockPos column = new BlockPos(x, 64, z);
          if (!level.isLoaded(column)) {
             return;
@@ -1518,6 +1519,11 @@ public final class FactionGrowth {
 
          BlockPos ground = new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1, z);
          BlockState state = level.getBlockState(ground);
+         if (i > 2 && (state.is(Blocks.DIRT_PATH) || state.is(Blocks.GRAVEL) || state.is(BlockTags.STONE_BRICKS) || state.is(Blocks.COBBLESTONE))) {
+            // Met a street: the path joins it here.
+            return;
+         }
+
          if (state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT) || state.is(Blocks.PODZOL)) {
             set(level, ground, Blocks.DIRT_PATH.defaultBlockState());
             BlockState above = level.getBlockState(ground.above());
