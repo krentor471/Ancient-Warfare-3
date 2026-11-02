@@ -31,11 +31,11 @@ public class CountryNameScreen extends Screen {
       this.addRenderableWidget(this.name);
       this.setInitialFocus(this.name);
       this.found = this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.country.found"), button -> this.found()).bounds(left, top + 42, WIDTH / 2 - 2, 20).build()
+         AwUi.button(Component.translatable("gui.ancientwarfare.country.found"), button -> this.found()).bounds(left, top + 42, WIDTH / 2 - 2, 20).build()
       );
       this.found.active = false;
       this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.cancel"), button -> this.onClose()).bounds(left + WIDTH / 2 + 2, top + 42, WIDTH / 2 - 2, 20).build()
+         AwUi.button(Component.translatable("gui.cancel"), button -> this.onClose()).bounds(left + WIDTH / 2 + 2, top + 42, WIDTH / 2 - 2, 20).build()
       );
    }
 

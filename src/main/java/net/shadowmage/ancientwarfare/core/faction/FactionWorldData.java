@@ -55,6 +55,10 @@ public final class FactionWorldData extends SavedData {
    /** The b end of a route to a player's village, and that village's id as an endpoint. */
    public static final int PLAYER_VILLAGE = -1;
    public static final String PLAYER_VILLAGE_KIND = "playervillage";
+   /** A settlement whose ground level was never recorded. */
+   public static final int NO_FLOOR = Integer.MIN_VALUE;
+   /** A settlement built along the land rather than on one level; its new buildings follow the land too. */
+   public static final int FOLLOWS_GROUND = Integer.MIN_VALUE + 1;
    private static final int VILLAGE_HALF_SIZE = 24;
    /** What a player's village counts as in trade income; its villagers are not counted. */
    private static final int PLAYER_VILLAGE_POPULATION = 20;
@@ -65,6 +69,9 @@ public final class FactionWorldData extends SavedData {
    /** Settlements of new worlds stand this much further apart than at first. */
    public static final int NEW_REGION_SCALE = 130;
    private boolean historyDone;
+   private boolean prebuilt;
+   /** How far from spawn the prebuild reaches; 0 for the whole world. */
+   private int prebuildRadius = 0;
    /** The world's news, oldest first, as text components in JSON; see FactionNews. */
    private final List<ChronicleEntry> chronicle = new ArrayList<>();
    public static final int CHRONICLE_SIZE = 400;
@@ -80,6 +87,11 @@ public final class FactionWorldData extends SavedData {
    }
 
    /** Faction a realm started with, or null when it was never decided. "" means a wild realm. */
+   /** Every realm decided so far: its grid cell and the faction it fell to. */
+   public Map<Long, String> realmFactions() {
+      return java.util.Collections.unmodifiableMap(this.realmFactions);
+   }
+
    public String realmFaction(long realm) {
       return this.realmFactions.get(realm);
    }
@@ -203,6 +215,24 @@ public final class FactionWorldData extends SavedData {
 
    public void setDayOffset(long dayOffset) {
       this.dayOffset = dayOffset;
+      this.setDirty();
+   }
+
+   public boolean prebuilt() {
+      return this.prebuilt;
+   }
+
+   public int prebuildRadius() {
+      return this.prebuildRadius;
+   }
+
+   public void setPrebuildRadius(int radius) {
+      this.prebuildRadius = radius;
+      this.setDirty();
+   }
+
+   public void setPrebuilt(boolean prebuilt) {
+      this.prebuilt = prebuilt;
       this.setDirty();
    }
 
@@ -521,10 +551,30 @@ public final class FactionWorldData extends SavedData {
          entry.putInt("Famine", settlement.famine);
          entry.putInt("Growth", settlement.growth);
          entry.putInt("Grown", settlement.grown);
+         entry.putInt("Wealth", settlement.wealth);
+         entry.put("Buildings", strings(settlement.buildings));
+         entry.put("Plan", strings(settlement.plan));
+         if (settlement.floor != NO_FLOOR) {
+            entry.putInt("Floor", settlement.floor);
+         }
          entry.putInt("Plague", settlement.plague);
          if (settlement.board != null) {
             entry.putLong("Board", settlement.board.asLong());
          }
+
+         if (!settlement.halls.isEmpty()) {
+            ListTag halls = new ListTag();
+            for (Hall hall : settlement.halls) {
+               CompoundTag value = new CompoundTag();
+               value.putString("Kind", hall.kind());
+               value.putLong("Min", hall.min().asLong());
+               value.putLong("Max", hall.max().asLong());
+               halls.add(value);
+            }
+
+            entry.put("Halls", halls);
+         }
+
          list.add(entry);
       }
 
@@ -584,6 +634,8 @@ public final class FactionWorldData extends SavedData {
       tag.putLong("LastSimulatedDay", this.lastSimulatedDay);
       tag.putLong("DayOffset", this.dayOffset);
       tag.putBoolean("HistoryDone", this.historyDone);
+      tag.putBoolean("Prebuilt", this.prebuilt);
+      tag.putInt("PrebuildRadius", this.prebuildRadius);
       ListTag chronicleList = new ListTag();
 
       for (ChronicleEntry entry : this.chronicle) {
@@ -764,7 +816,20 @@ public final class FactionWorldData extends SavedData {
             settlement.plague = entry.getInt("Plague");
             settlement.growth = entry.getInt("Growth");
             settlement.grown = entry.getInt("Grown");
+            settlement.wealth = entry.getInt("Wealth");
+            for (net.minecraft.nbt.Tag raw : entry.getList("Buildings", Tag.TAG_STRING)) {
+               settlement.buildings.add(raw.getAsString());
+            }
+
+            for (net.minecraft.nbt.Tag raw : entry.getList("Plan", Tag.TAG_STRING)) {
+               settlement.plan.add(raw.getAsString());
+            }
+            settlement.floor = entry.contains("Floor") ? entry.getInt("Floor") : NO_FLOOR;
             settlement.board = entry.contains("Board") ? BlockPos.of(entry.getLong("Board")) : null;
+            for (net.minecraft.nbt.Tag raw : entry.getList("Halls", 10)) {
+               CompoundTag value = (CompoundTag)raw;
+               settlement.halls.add(new Hall(value.getString("Kind"), BlockPos.of(value.getLong("Min")), BlockPos.of(value.getLong("Max"))));
+            }
          } else if (!settlement.capturedFrom.isEmpty()) {
             settlement.loyalty = 50;
          }
@@ -830,6 +895,8 @@ public final class FactionWorldData extends SavedData {
          int look = entry.contains("Look") ? entry.getInt("Look") : FactionPeople.oldLook(faction, name);
          long born = entry.contains("Born") ? entry.getLong("Born") : Long.MIN_VALUE;
          int character = entry.contains("Character") ? entry.getInt("Character") : FactionPeople.oldCharacter(look);
+         FactionRulers.Trait[] traits = FactionRulers.Trait.values();
+         character = FactionPeople.consistent(character, traits[Math.max(0, Math.min(traits.length - 1, entry.getInt("Trait")))]);
          data.rulers.put(faction, new Ruler(name, entry.getInt("Trait"), entry.getLong("Since"), look, born, entry.getBoolean("Ill"), character));
       }
       data.lastSimulatedDay = tag.contains("LastSimulatedDay") ? tag.getLong("LastSimulatedDay") : -1L;
@@ -838,6 +905,11 @@ public final class FactionWorldData extends SavedData {
       ));
       data.dayOffset = tag.getLong("DayOffset");
       data.historyDone = tag.getBoolean("HistoryDone");
+      // Worlds from before the prebuild phase were already played in.
+      data.prebuilt = !tag.contains("Prebuilt") || tag.getBoolean("Prebuilt");
+      if (tag.contains("PrebuildRadius")) {
+         data.prebuildRadius = tag.getInt("PrebuildRadius");
+      }
 
       for (Tag element : tag.getList("Chronicle", Tag.TAG_COMPOUND)) {
          CompoundTag line = (CompoundTag)element;
@@ -1445,8 +1517,18 @@ public final class FactionWorldData extends SavedData {
       int growth;
       /** Buildings the town has put up by itself. */
       int grown;
+      /** The level of the ground the town was built on, or NO_FLOOR while unknown; see FactionGrowth. */
+      int floor = NO_FLOOR;
       /** Where the town's quest board stands, once one was put up; see FactionQuests. */
       BlockPos board;
+      /** The tavern, smithy, stables and guild halls the town has put up as it grew; see FactionGrowth. */
+      final List<Hall> halls = new ArrayList<>();
+      /** Silver in the settlement's own purse; see TownBuildings. */
+      int wealth;
+      /** The kinds of the buildings it has put up as it grew, in order; see TownBuildings.Kind. */
+      final List<String> buildings = new ArrayList<>();
+      /** Buildings decided on and paid for, waiting to be put up. */
+      final List<String> plan = new ArrayList<>();
 
       Settlement(int id, String faction, String kind, String template, BlockPos min, BlockPos max, long province, long founded) {
          this.id = id;
@@ -1496,6 +1578,18 @@ public final class FactionWorldData extends SavedData {
          return this.built;
       }
 
+      /** A settlement still on paper moves its centre here, keeping its size. */
+      public void moveUnbuilt(int x, int z) {
+         if (this.built) {
+            return;
+         }
+
+         int halfX = (this.max.getX() - this.min.getX()) / 2;
+         int halfZ = (this.max.getZ() - this.min.getZ()) / 2;
+         this.min = new BlockPos(x - halfX, this.min.getY(), z - halfZ);
+         this.max = new BlockPos(x + halfX, this.max.getY(), z + halfZ);
+      }
+
       /** The settlement now stands: its buildings and the area they cover. */
       public void place(String template, BlockPos min, BlockPos max) {
          this.template = template;
@@ -1522,6 +1616,30 @@ public final class FactionWorldData extends SavedData {
 
       public int grown() {
          return this.grown;
+      }
+
+      public int floor() {
+         return this.floor;
+      }
+
+      public void setFloor(int floor) {
+         this.floor = floor;
+      }
+
+      public int wealth() {
+         return this.wealth;
+      }
+
+      public List<String> buildings() {
+         return this.buildings;
+      }
+
+      public List<String> plan() {
+         return this.plan;
+      }
+
+      public List<Hall> halls() {
+         return this.halls;
       }
 
       public long province() {
@@ -1590,5 +1708,18 @@ public final class FactionWorldData extends SavedData {
       public boolean contains(double x, double z, int margin) {
          return x >= this.min.getX() - margin && x <= this.max.getX() + 1 + margin && z >= this.min.getZ() - margin && z <= this.max.getZ() + 1 + margin;
       }
+   }
+
+   /** A hall a town put up as it grew: what it is and the box it stands in. */
+   public record Hall(String kind, BlockPos min, BlockPos max) {
+   }
+
+   private static ListTag strings(List<String> values) {
+      ListTag list = new ListTag();
+      for (String value : values) {
+         list.add(net.minecraft.nbt.StringTag.valueOf(value));
+      }
+
+      return list;
    }
 }

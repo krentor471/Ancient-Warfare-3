@@ -48,11 +48,54 @@ public final class ForgeFactionEvents {
    private ForgeFactionEvents() {
    }
 
+   /** Hardcore: a dead player whose son lives plays on as the son; the game puts him back in survival a tick after the respawn. */
+   private static final java.util.Set<java.util.UUID> HEIRS = new java.util.HashSet<>();
+
+   @SubscribeEvent
+   public static void respawn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent event) {
+      if (event.isEndConquered() || !(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) || !player.server.isHardcore()) {
+         return;
+      }
+
+      net.minecraft.network.chat.Component heir = net.shadowmage.ancientwarfare.core.faction.FactionFamilies.inherit(player.serverLevel(), player);
+      if (heir == null) {
+         player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("dynasty.ancientwarfare.ended").withStyle(net.minecraft.ChatFormatting.DARK_RED));
+         return;
+      }
+
+      HEIRS.add(player.getUUID());
+      player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("dynasty.ancientwarfare.heir", heir).withStyle(net.minecraft.ChatFormatting.GOLD));
+   }
+
+   @SubscribeEvent
+   public static void heirs(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+      if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || HEIRS.isEmpty()) {
+         return;
+      }
+
+      for (java.util.UUID id : java.util.List.copyOf(HEIRS)) {
+         net.minecraft.server.level.ServerPlayer player = event.getServer().getPlayerList().getPlayer(id);
+         if (player != null && player.isSpectator()) {
+            player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+            HEIRS.remove(id);
+         } else if (player == null) {
+            HEIRS.remove(id);
+         }
+      }
+   }
+
+   @SubscribeEvent
+   public static void cropGrow(net.minecraftforge.event.level.BlockEvent.CropGrowEvent.Pre event) {
+      if (net.shadowmage.ancientwarfare.core.faction.SeasonWeather.frozen(event.getLevel(), event.getPos())) {
+         event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+      }
+   }
+
    @SubscribeEvent
    public static void onServerTick(ServerTickEvent event) {
       if (event.phase == Phase.END) {
          FactionSimulation.tick(event.getServer().overworld());
-         net.shadowmage.ancientwarfare.core.faction.PlayerFleet.tick(event.getServer());
+         net.shadowmage.ancientwarfare.core.faction.Perf.run("fleet", () -> net.shadowmage.ancientwarfare.core.faction.PlayerFleet.tick(event.getServer()));
          if (event.getServer().getTickCount() % 20 == 0) {
             net.shadowmage.ancientwarfare.core.construction.ConstructionJobs.sync(event.getServer());
          }
@@ -73,10 +116,45 @@ public final class ForgeFactionEvents {
    }
 
    /** Townsfolk cry out when a player breaks their things. */
+   /** What a blast knocks out of a town is remembered, to be mended once the fighting stops. */
+   @SubscribeEvent
+   public static void onBlastInTown(net.minecraftforge.event.level.ExplosionEvent.Detonate event) {
+      if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level) {
+         net.shadowmage.ancientwarfare.core.faction.FactionRepairs.record(
+            level, net.minecraft.core.BlockPos.containing(event.getExplosion().getPosition()), event.getAffectedBlocks()
+         );
+      }
+   }
+
    @SubscribeEvent
    public static void onBreakInTown(net.minecraftforge.event.level.BlockEvent.BreakEvent event) {
       if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level && !event.getPlayer().isCreative()) {
          net.shadowmage.ancientwarfare.core.faction.FactionChatter.onBreak(level, event.getPlayer(), event.getPos());
+      }
+   }
+
+   /** A chest opened in a faction's settlement: what is taken from it may be missed. */
+   @SubscribeEvent
+   public static void onOpenInTown(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+      if (event.getHand() == net.minecraft.world.InteractionHand.MAIN_HAND && event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+         net.shadowmage.ancientwarfare.core.faction.FactionCrime.onOpen(player, event.getPos());
+      }
+   }
+
+   @SubscribeEvent
+   public static void onCloseInTown(net.minecraftforge.event.entity.player.PlayerContainerEvent.Close event) {
+      if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+         net.shadowmage.ancientwarfare.core.faction.FactionCrime.onClose(player);
+      }
+   }
+
+   /** The beds in a faction's settlement are its people's. */
+   @SubscribeEvent
+   public static void onSleepInTown(net.minecraftforge.event.entity.player.PlayerSleepInBedEvent event) {
+      if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+         && event.getOptionalPos().isPresent()
+         && net.shadowmage.ancientwarfare.core.faction.FactionCrime.refusesBed(player, event.getOptionalPos().get())) {
+         event.setResult(net.minecraft.world.entity.player.Player.BedSleepingProblem.OTHER_PROBLEM);
       }
    }
 
@@ -94,7 +172,8 @@ public final class ForgeFactionEvents {
    @SubscribeEvent
    public static void onTournamentDamage(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
       if (!event.getEntity().level().isClientSide
-         && FactionTournaments.onDamage(event.getEntity(), event.getSource().getEntity(), event.getAmount())) {
+         && (FactionTournaments.onDamage(event.getEntity(), event.getSource().getEntity(), event.getAmount())
+            || net.shadowmage.ancientwarfare.core.faction.FactionTravellers.onDamage(event.getEntity(), event.getSource().getEntity(), event.getAmount()))) {
          event.setCanceled(true);
       }
    }
@@ -154,6 +233,28 @@ public final class ForgeFactionEvents {
       }
    }
 
+   /** A beast of a shepherd's flock a player kills is taken from its country. */
+   @SubscribeEvent
+   public static void onFlockDeath(LivingDeathEvent event) {
+      if (event.getEntity() instanceof net.minecraft.world.entity.animal.Animal beast
+         && beast.level() instanceof ServerLevel serverLevel
+         && event.getSource().getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+         && net.shadowmage.ancientwarfare.core.faction.FactionTravellers.isTraveller(beast)) {
+         net.shadowmage.ancientwarfare.core.faction.FactionTravellers.onKilled(serverLevel, beast, player);
+      }
+   }
+
+   /** Monsters a player kills count toward the hunts the towns have asked for. */
+   @SubscribeEvent
+   public static void onMonsterDeath(LivingDeathEvent event) {
+      if (event.getEntity() instanceof net.minecraft.world.entity.monster.Enemy
+         && !(event.getEntity() instanceof FactionNpcEntity)
+         && event.getEntity().level() instanceof ServerLevel serverLevel
+         && event.getSource().getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+         net.shadowmage.ancientwarfare.core.faction.FactionQuests.onMonsterKilled(serverLevel, event.getEntity(), player);
+      }
+   }
+
    @SubscribeEvent
    public static void onFactionNpcDeath(LivingDeathEvent event) {
       if (event.getEntity() instanceof FactionNpcEntity npc && npc.level() instanceof ServerLevel serverLevel) {
@@ -164,6 +265,11 @@ public final class ForgeFactionEvents {
          }
          if (event.getSource().getEntity() instanceof Player player) {
             FactionCaravans.onNpcKilled(serverLevel, npc, player);
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+               net.shadowmage.ancientwarfare.core.faction.FactionTravellers.onKilled(serverLevel, npc, serverPlayer);
+               net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.onKill(serverLevel, serverPlayer, npc);
+            }
+
             net.shadowmage.ancientwarfare.core.faction.FactionTownLife.onNpcKilled(serverLevel, npc, player);
             net.shadowmage.ancientwarfare.core.faction.FactionQuests.onNpcKilled(serverLevel, npc, player);
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {

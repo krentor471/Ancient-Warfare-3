@@ -37,7 +37,7 @@ public class ConquestScreen extends Screen {
       for (int i = 0; i < choices.length; i++) {
          FactionConquest.Choice choice = choices[i];
          this.addRenderableWidget(
-            Button.builder(Component.translatable("gui.ancientwarfare.conquest." + key(choice)), ignored -> {
+            AwUi.button(Component.translatable("gui.ancientwarfare.conquest." + key(choice)), ignored -> {
                AWCoreNetwork.sendConquestChoice(this.offer.settlement(), choice);
                this.onClose();
             }).bounds(left + 10, top + i * ROW_HEIGHT, BUTTON_WIDTH, 20).build()
@@ -45,7 +45,7 @@ public class ConquestScreen extends Screen {
       }
 
       this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.conquest.later"), ignored -> this.onClose())
+         AwUi.button(Component.translatable("gui.ancientwarfare.conquest.later"), ignored -> this.onClose())
             .bounds(left + (PANEL_WIDTH - BUTTON_WIDTH) / 2, this.top() + PANEL_HEIGHT - 26, BUTTON_WIDTH, 20)
             .build()
       );

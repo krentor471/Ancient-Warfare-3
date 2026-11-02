@@ -51,7 +51,7 @@ public final class FactionRoads {
    /** The land each road under way holds loaded, by route. */
    private static final Map<Integer, IslandChunkWindow> WORK = new HashMap<>();
    /** Highest fill or cut that evens out one road cell. */
-   private static final int MAX_RAMP = 6;
+   private static final int MAX_RAMP = 10;
    /** Longest bridge, in blocks of water crossed. */
    private static final int MAX_WATER_RUN = 48;
    /** Failed roads are tried again once a session, and then every this many days. */
@@ -62,18 +62,20 @@ public final class FactionRoads {
    private static final int OBSTACLE_MARGIN = 3;
    private static final int VILLAGE_RADIUS = 32;
    /** Steering choices either side of straight at the target, in steps of 22.5 degrees. */
-   private static final int TURNS = 3;
+   private static final int TURNS = 5;
    private static final double TURN_ANGLE = Math.PI / 8.0;
    /** Road points are recorded every two steps. */
    private static final int POINT_SPACING = STEP * 2;
-   /** Road length between posts; half the posts are taverns, so a tavern every twice this. */
-   private static final int POST_SPACING = 360;
+   /** Road length between posts; they come in turn, so each kind stands every three times this. */
+   private static final int POST_SPACING = 1500;
    /** Posts keep this far from either end of the road. */
    private static final int POST_END_GAP = 80;
    private static final int POST_OFFSET = 22;
    private static final int POST_OFFSET_STEP = 14;
    /** Sites tried for a post: both sides of the road, at two distances. */
    private static final int POST_ATTEMPTS = 4;
+   /** How many road points out of town the signposts stand. */
+   private static final int SIGN_POINT = 6;
 
    private FactionRoads() {
    }
@@ -88,6 +90,31 @@ public final class FactionRoads {
 
    public static int unpackZ(long point) {
       return (int)point;
+   }
+
+   /** True while a road with both ends built and inside the prebuild area is still unfinished. */
+   static boolean unfinishedNear(ServerLevel level, FactionWorldData data) {
+      return unfinishedCount(level, data) > 0;
+   }
+
+   /** Roads within the prebuild still to lay. */
+   static int unfinishedCount(ServerLevel level, FactionWorldData data) {
+      int count = 0;
+      for (FactionWorldData.Route route : data.routes()) {
+         if (route.blocked() || route.road() == FactionWorldData.RoadState.DONE || route.road() == FactionWorldData.RoadState.FAILED) {
+            continue;
+         }
+
+         FactionWorldData.Settlement from = data.endpoint(route, true);
+         FactionWorldData.Settlement to = data.endpoint(route, false);
+         if (from != null && to != null && from.built() && to.built()
+            && FactionPrebuild.covers(level, from.center().getX(), from.center().getZ())
+            && FactionPrebuild.covers(level, to.center().getX(), to.center().getZ())) {
+            count++;
+         }
+      }
+
+      return count;
    }
 
    /** Lays one stretch of one unfinished road no player is near. */
@@ -132,7 +159,7 @@ public final class FactionRoads {
 
          int startX = route.road() == FactionWorldData.RoadState.NONE ? from.center().getX() : route.cursorX;
          int startZ = route.road() == FactionWorldData.RoadState.NONE ? from.center().getZ() : route.cursorZ;
-         if (level.hasNearbyAlivePlayer(startX, level.getSeaLevel(), startZ, PLAYER_RANGE)) {
+         if (!FactionPrebuild.active() && level.hasNearbyAlivePlayer(startX, level.getSeaLevel(), startZ, PLAYER_RANGE)) {
             continue;
          }
 
@@ -154,7 +181,7 @@ public final class FactionRoads {
       }
 
       wanted.sort(java.util.Comparator.comparingDouble(route -> distances.get(route.id())));
-      List<FactionWorldData.Route> crews = wanted.subList(0, Math.min(ROAD_CREWS, wanted.size()));
+      List<FactionWorldData.Route> crews = wanted.subList(0, Math.min(FactionPrebuild.active() ? ROAD_CREWS * 3 : ROAD_CREWS, wanted.size()));
       java.util.Set<Integer> working = new java.util.HashSet<>();
       crews.forEach(route -> working.add(route.id()));
       WORK.entrySet().removeIf(entry -> {
@@ -166,7 +193,7 @@ public final class FactionRoads {
          return false;
       });
 
-      long deadline = System.nanoTime() + ROAD_BUDGET_NANOS;
+      long deadline = System.nanoTime() + (FactionPrebuild.active() ? ROAD_BUDGET_NANOS * 4 : ROAD_BUDGET_NANOS);
       for (FactionWorldData.Route route : crews) {
          FactionWorldData.Settlement from = data.endpoint(route, true);
          FactionWorldData.Settlement to = data.endpoint(route, false);
@@ -233,6 +260,7 @@ public final class FactionRoads {
             route.road = FactionWorldData.RoadState.DONE;
             route.points.add(pack(route.cursorX, route.cursorZ));
             AncientWarfareCore.LOG.info("Road #{} between settlements #{} and #{} finished, {} steps", route.id(), route.a(), route.b(), route.steps);
+            signposts(level, route, from, to);
             return;
          }
 
@@ -305,23 +333,18 @@ public final class FactionRoads {
       }
 
       String faction = a.horizontalDistanceSquared(x, z) <= b.horizontalDistanceSquared(x, z) ? a.faction() : b.faction();
-      // In turn: a tavern, a guard post, a tavern, a trading post.
-      AwsWorldGenerator.Site wanted = switch (route.postsBuilt % 4) {
-         case 1, 3 -> AwsWorldGenerator.Site.TAVERN;
+      // In turn: a trading post, a guard post, a tavern.
+      AwsWorldGenerator.Site wanted = switch (route.postsBuilt % 3) {
+         case 1 -> AwsWorldGenerator.Site.TRADE_POST;
          case 2 -> AwsWorldGenerator.Site.GUARD_POST;
-         default -> AwsWorldGenerator.Site.TRADE_POST;
+         default -> AwsWorldGenerator.Site.TAVERN;
       };
       AwsWorldGenerator.Site site = wanted;
       boolean built = false;
 
-      // Either side of the road, near and a little further off, before settling for a guard post or nothing.
-      for (int attempt = 0; attempt < POST_ATTEMPTS * 2 && !built; attempt++) {
-         site = attempt < POST_ATTEMPTS ? wanted : AwsWorldGenerator.Site.GUARD_POST;
-         if (attempt >= POST_ATTEMPTS && wanted == AwsWorldGenerator.Site.GUARD_POST) {
-            break;
-         }
-
-         int tried = attempt % POST_ATTEMPTS;
+      // Either side of the road, near and a little further off; where none fits, the road goes without.
+      for (int attempt = 0; attempt < POST_ATTEMPTS && !built; attempt++) {
+         int tried = attempt;
          int along = side * (tried % 2 == 0 ? 1 : -1);
          int offset = POST_OFFSET + tried / 2 * POST_OFFSET_STEP;
          int siteX = x + (int)Math.round(-dz / length * offset * along);
@@ -352,7 +375,8 @@ public final class FactionRoads {
          int y = ground(level, nx, nz);
          BlockState state = level.getBlockState(new BlockPos(nx, y, nz));
          int climb = Math.abs(y - here);
-         double cost = turn * turn * 0.4 + (climb <= 1 ? climb : climb * climb * 3.0);
+         // A step the road cannot ramp in a few blocks (a cliff) is all but ruled out: it goes round.
+         double cost = turn * turn * 0.4 + (climb <= 1 ? climb : climb * climb * 3.0) + (climb > 3 ? 400.0 : 0.0);
          if (state.getFluidState().is(FluidTags.LAVA)) {
             continue;
          }
@@ -373,6 +397,53 @@ public final class FactionRoads {
       }
 
       return best;
+   }
+
+   /** At each end of a finished road, a signpost by the way: where it leads and how far. */
+   private static void signposts(ServerLevel level, FactionWorldData.Route route, FactionWorldData.Settlement from, FactionWorldData.Settlement to) {
+      List<Long> points = route.points();
+      if (points.size() < SIGN_POINT * 2 + 2) {
+         return;
+      }
+
+      int length = points.size() * POINT_SPACING;
+      signpost(level, points.get(SIGN_POINT), points.get(SIGN_POINT + 1), to, length);
+      signpost(level, points.get(points.size() - 1 - SIGN_POINT), points.get(points.size() - 2 - SIGN_POINT), from, length);
+   }
+
+   private static void signpost(ServerLevel level, long at, long ahead, FactionWorldData.Settlement goal, int length) {
+      int x = unpackX(at);
+      int z = unpackZ(at);
+      double dx = unpackX(ahead) - x;
+      double dz = unpackZ(ahead) - z;
+      double norm = Math.max(1.0, Math.sqrt(dx * dx + dz * dz));
+      // Three blocks to the right of the way, facing back onto the road.
+      int sx = x + (int)Math.round(-dz / norm * 3);
+      int sz = z + (int)Math.round(dx / norm * 3);
+      if (level.getChunkSource().getChunkNow(sx >> 4, sz >> 4) == null) {
+         return;
+      }
+
+      BlockPos ground = new BlockPos(sx, ground(level, sx, sz), sz);
+      BlockPos post = ground.above();
+      if (!level.getBlockState(ground).isSolidRender(level, ground) || !level.getBlockState(post).canBeReplaced() || !level.getBlockState(post.above()).canBeReplaced()) {
+         return;
+      }
+
+      float yaw = (float)Math.toDegrees(Math.atan2(x - sx, -(z - sz)));
+      level.setBlock(post, Blocks.SPRUCE_FENCE.defaultBlockState(), Block.UPDATE_ALL);
+      BlockPos board = post.above();
+      level.setBlock(board, Blocks.SPRUCE_SIGN.defaultBlockState().setValue(net.minecraft.world.level.block.StandingSignBlock.ROTATION, net.minecraft.world.level.block.state.properties.RotationSegment.convertToSegment(yaw)), Block.UPDATE_ALL);
+      if (level.getBlockEntity(board) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign) {
+         net.minecraft.world.level.block.entity.SignText text = new net.minecraft.world.level.block.entity.SignText()
+            .setMessage(0, net.minecraft.network.chat.Component.translatable("road.ancientwarfare.sign.to"))
+            .setMessage(1, FactionNews.named(goal))
+            .setMessage(2, net.minecraft.network.chat.Component.translatable("road.ancientwarfare.sign.distance", length));
+         sign.setText(text, true);
+         sign.setText(text, false);
+         sign.setChanged();
+         level.sendBlockUpdated(board, sign.getBlockState(), sign.getBlockState(), Block.UPDATE_ALL);
+      }
    }
 
    /** Paves the line between two steps, three wide. Returns false when the road has crossed too much water. */
@@ -479,7 +550,8 @@ public final class FactionRoads {
       for (int up = 1; up <= 3; up++) {
          BlockPos above = pos.above(up);
          BlockState over = level.getBlockState(above);
-         if (!over.isAir() && over.getFluidState().isEmpty() && (over.canBeReplaced() || up <= 2 && over.is(BlockTags.LEAVES))) {
+         // Three blocks of headroom: leaves and the branches overhead are cut, the trunk is left.
+         if (!over.isAir() && over.getFluidState().isEmpty() && (over.canBeReplaced() || over.is(BlockTags.LEAVES) || up >= 2 && over.is(BlockTags.LOGS) && !level.getBlockState(above.below()).is(BlockTags.LOGS))) {
             level.setBlock(above, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
          }
       }

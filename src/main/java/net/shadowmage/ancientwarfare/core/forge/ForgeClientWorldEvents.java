@@ -83,6 +83,7 @@ public final class ForgeClientWorldEvents {
    public static void clientTick(ClientTickEvent event) {
       if (event.phase == Phase.END) {
          BardMusicPlaybackManager.clientTick();
+         net.shadowmage.ancientwarfare.core.client.SeasonColors.tick();
          handleVehicleInput();
       }
    }

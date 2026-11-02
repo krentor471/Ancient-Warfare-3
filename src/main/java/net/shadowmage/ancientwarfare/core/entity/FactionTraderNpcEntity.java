@@ -19,6 +19,8 @@ import net.shadowmage.ancientwarfare.core.common.platform.AWCorePlatform;
 import net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy;
 import net.shadowmage.ancientwarfare.core.menu.FactionTradeMenu;
 import net.shadowmage.ancientwarfare.core.faction.FactionRulers;
+import net.shadowmage.ancientwarfare.core.faction.FactionWorldData;
+import net.shadowmage.ancientwarfare.core.faction.TownMarkets;
 import net.minecraft.server.level.ServerLevel;
 
 public class FactionTraderNpcEntity extends FactionNpcEntity {
@@ -63,12 +65,40 @@ public class FactionTraderNpcEntity extends FactionNpcEntity {
       }
 
       if (!this.level().isClientSide) {
-         List<FactionTradeListRegistry.FactionTradeEntry> trades = FactionRulers.price(
-            (ServerLevel)this.level(),
-            this.getFactionName(),
-            this.getAvailableTrades(),
-            net.shadowmage.ancientwarfare.core.faction.FactionTownLife.priceFactor((ServerLevel)this.level(), this.getFactionName(), this.getX(), this.getZ())
+         ServerLevel server = (ServerLevel)this.level();
+         List<FactionTradeListRegistry.FactionTradeEntry> trades = TownMarkets.price(
+            server,
+            this.getX(),
+            this.getZ(),
+            FactionRulers.price(
+               server,
+               this.getFactionName(),
+               this.getAvailableTrades(),
+               net.shadowmage.ancientwarfare.core.faction.FactionTownLife.priceFactor(server, this.getFactionName(), this.getX(), this.getZ())
+                  * net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.heroPrices(player, this.getFactionName())
+            )
          );
+         // The trader says what is dear and what is cheap in his town today.
+         FactionWorldData.Settlement town = TownMarkets.townAt(server, this.getX(), this.getZ());
+         Component prices = town == null ? null : TownMarkets.prices(server, town);
+         if (net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.isHero(player, this.getFactionName())) {
+            player.sendSystemMessage(
+               Component.translatable(
+                     "chatter.ancientwarfare.say",
+                     this.getDisplayName().copy().withStyle(net.minecraft.ChatFormatting.GOLD),
+                     Component.translatable("townsfolk.ancientwarfare.hero.trader", player.getName())
+                  )
+                  .withStyle(net.minecraft.ChatFormatting.GRAY)
+            );
+         }
+
+         if (prices != null) {
+            player.sendSystemMessage(
+               Component.translatable("chatter.ancientwarfare.say", this.getDisplayName().copy().withStyle(net.minecraft.ChatFormatting.GOLD), prices)
+                  .withStyle(net.minecraft.ChatFormatting.GRAY)
+            );
+         }
+
          AWCorePlatform.openMenu(
             player,
             new SimpleMenuProvider(

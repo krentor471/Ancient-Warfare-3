@@ -77,6 +77,8 @@ public final class FactionArmies {
    private static final int MIN_RAID = 3;
    private static final double RAID_SHARE = 0.4;
    private static final int SPAWN_DISTANCE = 40;
+   /** How far outside a besieged town's edge its besiegers camp. */
+   private static final int CAMP_MARGIN = 20;
    private static final int MARCH_STEP = 20;
    private static final double ACTIVE_RANGE = 128.0;
    private static final int TICK_INTERVAL = 20;
@@ -597,10 +599,11 @@ public final class FactionArmies {
       int spread = Math.max(4, Math.min(settlement.max().getX() - settlement.min().getX(), settlement.max().getZ() - settlement.min().getZ()) / 4);
       int mustered = 0;
 
-      for (int attempt = 0; attempt < MUSTER_PER_CALL * 3 && mustered < Math.min(missing, MUSTER_PER_CALL); attempt++) {
+      // Only open ground will do (see FactionSimulation.spawnSoldier), so a walled town takes more tries.
+      for (int attempt = 0; attempt < MUSTER_PER_CALL * 12 && mustered < Math.min(missing, MUSTER_PER_CALL); attempt++) {
          int x = center.getX() + random.nextInt(2 * spread + 1) - spread;
          int z = center.getZ() + random.nextInt(2 * spread + 1) - spread;
-         if (FactionSimulation.spawnSoldier(level, settlement.faction(), x, z) != null) {
+         if (FactionSimulation.spawnDefender(level, settlement.faction(), x, z) != null) {
             mustered++;
          }
       }
@@ -680,6 +683,7 @@ public final class FactionArmies {
    public static void onTownHallPlaced(ServerLevel level, BlockPos pos, UUID owner) {
       FactionWorldData data = FactionWorldData.get(level);
       data.setVillage(pos, owner);
+      FreeVillages.onTownHallPlaced(level, pos);
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          if (!settlement.contains(pos.getX(), pos.getZ(), 0)) {
@@ -721,11 +725,19 @@ public final class FactionArmies {
          ? random.nextDouble() * Math.PI * 2.0
          : Math.atan2(home.center().getZ() - target.getZ(), home.center().getX() - target.getX());
       List<FactionNpcEntity> spawned = new ArrayList<>();
+      // The camp stands outside the place it besieges: a capital is far wider than a village.
+      FactionWorldData.Settlement besieged = army.isRaid() ? null : settlementById(data, army.targetSettlement());
+      double distance = SPAWN_DISTANCE;
+      if (besieged != null) {
+         double halfX = (besieged.max().getX() - besieged.min().getX()) / 2.0;
+         double halfZ = (besieged.max().getZ() - besieged.min().getZ()) / 2.0;
+         distance = Math.max(distance, Math.sqrt(halfX * halfX + halfZ * halfZ) + CAMP_MARGIN);
+      }
 
       for (int attempt = 0; attempt < 7 && spawned.isEmpty(); attempt++) {
          double turn = (attempt + 1) / 2 * (attempt % 2 == 0 ? 1 : -1) * Math.PI / 6.0;
-         int cx = target.getX() + (int)Math.round(Math.cos(angle + turn) * SPAWN_DISTANCE);
-         int cz = target.getZ() + (int)Math.round(Math.sin(angle + turn) * SPAWN_DISTANCE);
+         int cx = target.getX() + (int)Math.round(Math.cos(angle + turn) * distance);
+         int cz = target.getZ() + (int)Math.round(Math.sin(angle + turn) * distance);
          if (!level.hasChunkAt(new BlockPos(cx, target.getY(), cz))) {
             continue;
          }

@@ -30,6 +30,8 @@ public final class FactionLife {
    /** Rations a working person brings in a day, before the kind of place counts. */
    private static final double YIELD = 1.6;
    private static final int STORE_DAYS = 8;
+   /** The share of a farmer's yield a soldier in garrison brings in. */
+   private static final double GARRISON_WORK = 0.4;
    private static final double FAMINE_YIELD = 0.35;
    private static final double PLAGUE_YIELD = 0.7;
    private static final double FAMINE_CHANCE = 0.02;
@@ -38,6 +40,10 @@ public final class FactionLife {
    private static final double SICKLY_PLAGUE_CHANCE = 0.01;
    private static final double PLAGUE_SPREAD = 0.06;
    private static final int PLAGUE_RANGE = 700;
+   private static final int SMALLEST_FOR_PLAGUE = 12;
+   private static final int SPARED_DAYS = 40;
+   /** Days left that a settlement which has come through a plague is spared another; not saved. */
+   private static final Map<Integer, Integer> SPARED = new HashMap<>();
    /** A garrison of one soldier to this many people keeps full order. */
    private static final int PEOPLE_PER_GUARD = 6;
    private static final double REVOLT_CHANCE = 0.35;
@@ -138,7 +144,8 @@ public final class FactionLife {
          yield *= 0.8;
       }
 
-      settlement.food += (int)Math.round(settlement.population * yield) - mouths;
+      // Soldiers in garrison work the fields too in quiet times, if not as hard as the people.
+      settlement.food += (int)Math.round((settlement.population + settlement.garrison * GARRISON_WORK) * yield) - mouths;
    }
 
    private static double kindYield(FactionWorldData.Settlement settlement) {
@@ -226,8 +233,10 @@ public final class FactionLife {
 
       int shortfall = -settlement.food;
       settlement.food = 0;
-      settlement.population = Math.max(1, settlement.population - Math.max(1, shortfall / 4));
-      settlement.garrison = Math.max(0, settlement.garrison - shortfall / 8);
+      // Where the soldiers outnumber the people, it is the soldiers who desert first.
+      boolean overmanned = settlement.garrison > settlement.population;
+      settlement.population = Math.max(1, settlement.population - Math.max(overmanned ? 0 : 1, shortfall / (overmanned ? 8 : 4)));
+      settlement.garrison = Math.max(0, settlement.garrison - Math.max(overmanned ? 1 : 0, shortfall / (overmanned ? 3 : 8)));
       settlement.health = Math.max(0, settlement.health - 8);
       if (HUNGRY.add(settlement.id()) && !FactionDiplomacy.isOutlaw(settlement.faction())) {
          FactionNews.tell(level, Component.translatable("news.ancientwarfare.hunger", FactionNews.factionName(settlement.faction()), FactionNews.named(settlement)));
@@ -257,6 +266,17 @@ public final class FactionLife {
    /** Disease breaks out where people are many or weak, kills, and spreads to the neighbours. */
    private static void disease(ServerLevel level, List<FactionWorldData.Settlement> settlements, FactionWorldData.Settlement settlement, RandomSource random) {
       if (settlement.plague <= 0) {
+         // Survivors of a plague are spared the next for a while; a hamlet of a few souls has none to catch.
+         Integer spared = SPARED.get(settlement.id());
+         if (spared != null && spared > 0) {
+            SPARED.put(settlement.id(), spared - 1);
+            return;
+         }
+
+         if (settlement.population < SMALLEST_FOR_PLAGUE) {
+            return;
+         }
+
          double chance = PLAGUE_CHANCE + (settlement.health < 50 ? SICKLY_PLAGUE_CHANCE : 0.0) + (settlement.population > 60 ? PLAGUE_CHANCE : 0.0);
          if (random.nextDouble() < chance) {
             startPlague(level, settlement, random, true);
@@ -273,6 +293,8 @@ public final class FactionLife {
       for (FactionWorldData.Settlement other : settlements) {
          if (other != settlement
             && other.plague <= 0
+            && SPARED.getOrDefault(other.id(), 0) <= 0
+            && other.population >= SMALLEST_FOR_PLAGUE
             && other.horizontalDistanceSquared(center.getX(), center.getZ()) < (double)PLAGUE_RANGE * PLAGUE_RANGE
             && random.nextDouble() < PLAGUE_SPREAD) {
             // The neighbours sicken quietly; the outbreak was news enough.
@@ -281,6 +303,9 @@ public final class FactionLife {
       }
 
       settlement.plague--;
+      if (settlement.plague <= 0) {
+         SPARED.put(settlement.id(), SPARED_DAYS);
+      }
    }
 
    public static void startPlague(ServerLevel level, FactionWorldData.Settlement settlement, RandomSource random, boolean news) {

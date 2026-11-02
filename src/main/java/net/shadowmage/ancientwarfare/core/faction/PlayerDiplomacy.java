@@ -315,7 +315,7 @@ public final class PlayerDiplomacy {
                FactionRulers.person(data, faction, player.getRandom()),
                FactionFamilies.view(player.serverLevel(), faction),
                FactionFamilies.tips(player.serverLevel(), faction),
-               hosts(player.serverLevel(), faction)
+               withFaith(player, faction, hosts(player.serverLevel(), faction))
             )
          );
       }
@@ -356,6 +356,26 @@ public final class PlayerDiplomacy {
          lines.add(intrigue);
       }
 
+      return lines;
+   }
+
+   /** The faction's creed and who shares it come first in the overview, as kin and rivals in faith sway opinion. */
+   private static List<Component> withFaith(ServerPlayer player, String faction, List<Component> goals) {
+      net.minecraft.server.level.ServerLevel level = player.serverLevel();
+      int faith = FactionFaith.faith(level, faction);
+      net.minecraft.network.chat.MutableComponent kin = Component.empty();
+      int count = 0;
+      for (String other : new TreeSet<>(FactionStandingData.get(level).knownFactions(player.getUUID()))) {
+         if (!other.equals(faction) && !FactionDiplomacy.isOutlaw(other) && FactionFaith.faith(level, other) == faith) {
+            kin.append(count++ > 0 ? ", " : "").append(FactionNews.factionName(other));
+         }
+      }
+
+      List<Component> lines = new ArrayList<>();
+      lines.add(count == 0
+         ? Component.translatable("diplomacy.ancientwarfare.faith.alone", FactionFaith.name(faith)).withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE)
+         : Component.translatable("diplomacy.ancientwarfare.faith.kin", FactionFaith.name(faith), kin).withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
+      lines.addAll(goals);
       return lines;
    }
 

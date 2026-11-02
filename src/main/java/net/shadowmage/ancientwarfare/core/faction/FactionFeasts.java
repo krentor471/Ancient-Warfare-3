@@ -105,7 +105,7 @@ public final class FactionFeasts extends SavedData {
             if (mine == theirs) {
                // Two of a kind get on, save two who both want more than they have.
                score += mine == FactionPeople.Character.AMBITIOUS || mine == FactionPeople.Character.PARANOID ? -1 : 1;
-            } else if (mine.opposite() == theirs) {
+            } else if (mine.clashes(theirs)) {
                score -= 1;
             }
          }

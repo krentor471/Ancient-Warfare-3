@@ -50,7 +50,11 @@ public final class FactionChatter {
       Map.entry("trader", 5),
       Map.entry("priest", 4),
       Map.entry("bard", 4),
-      Map.entry("idle", 12),
+      Map.entry("idle", 100),
+      Map.entry("dear", 6),
+      Map.entry("cheap", 4),
+      Map.entry("theft", 4),
+      Map.entry("bed", 3),
       Map.entry("morning", 4),
       Map.entry("evening", 4),
       Map.entry("night", 5),
@@ -74,7 +78,17 @@ public final class FactionChatter {
       Map.entry("helper", 3),
       Map.entry("break", 4),
       Map.entry("attack", 4),
-      Map.entry("thanks", 2)
+      Map.entry("thanks", 2),
+      Map.entry("work", 8),
+      Map.entry("faith.same", 4),
+      Map.entry("faith.other", 4),
+      Map.entry("faith.none", 3),
+      Map.entry("neighbour", 6),
+      Map.entry("walls", 3),
+      Map.entry("palisade", 3),
+      Map.entry("tavern", 4),
+      Map.entry("caravan", 3),
+      Map.entry("bandits", 3)
    );
    /** When each player next hears someone, and when each speaker may speak again; not saved. */
    private static final Map<UUID, Long> NEXT_FOR_PLAYER = new HashMap<>();
@@ -281,6 +295,71 @@ public final class FactionChatter {
             topics.add(new Topic("grown", null, 1));
          }
 
+         // Talk of the market: the dearest good in town, or the cheapest.
+         TownMarkets markets = TownMarkets.get(level);
+         int dearest = 0;
+         int cheapest = 0;
+         for (int kind = 1; kind < FactionResources.KINDS; kind++) {
+            if (markets.price(town.id(), kind) > markets.price(town.id(), dearest)) {
+               dearest = kind;
+            }
+
+            if (markets.price(town.id(), kind) < markets.price(town.id(), cheapest)) {
+               cheapest = kind;
+            }
+         }
+
+         if (markets.price(town.id(), dearest) >= TownMarkets.DEAR) {
+            topics.add(new Topic("dear", TownMarkets.goodName(dearest), 3));
+         }
+
+         if (markets.price(town.id(), cheapest) <= TownMarkets.CHEAP) {
+            topics.add(new Topic("cheap", TownMarkets.goodName(cheapest), 2));
+         }
+
+         // Talk of their own work, their faith beside the player's, the town and its neighbours.
+         if (civilian(npc)) {
+            String trade = TownTrades.tradeOf(level, npc);
+            if (trade != null && !trade.isEmpty()) {
+               topics.add(new Topic("work", Component.translatable("trade.ancientwarfare." + trade), 3));
+            }
+         }
+
+         int theirFaith = FaithSpread.faith(level, town);
+         int mine = Prayers.faith(player);
+         topics.add(new Topic(mine < 0 ? "faith.none" : mine == theirFaith ? "faith.same" : "faith.other", FactionFaith.name(theirFaith), 1));
+         if (town.buildings().contains("stone_wall")) {
+            topics.add(new Topic("walls", null, 1));
+         } else if (town.buildings().contains("palisade")) {
+            topics.add(new Topic("palisade", null, 1));
+         }
+
+         if (town.buildings().contains("tavern") && time >= 11000L && time < 16000L) {
+            topics.add(new Topic("tavern", null, 3));
+         }
+
+         if (town.buildings().contains("guild") || town.buildings().contains("caravanserai")) {
+            topics.add(new Topic("caravan", null, 1));
+         }
+
+         FactionWorldData.Settlement neighbour = null;
+         double best = Double.MAX_VALUE;
+         for (FactionWorldData.Settlement other : data.settlements()) {
+            double d = other.horizontalDistanceSquared(town.center().getX(), town.center().getZ());
+            if (other != town && d < best && !other.name().isEmpty()) {
+               best = d;
+               neighbour = other;
+            }
+         }
+
+         if (neighbour != null) {
+            topics.add(new Topic("neighbour", neighbour.nameComponent(), 2));
+         }
+
+         if (BanditCamps.standing(level).stream().anyMatch(camp -> town.horizontalDistanceSquared(camp[0], camp[1]) < 600.0 * 600.0)) {
+            topics.add(new Topic("bandits", null, 2));
+         }
+
          List<FactionQuests.Quest> quests = data.allQuests().get(player.getUUID());
          if (quests != null && quests.stream().anyMatch(quest -> !quest.done && quest.town == town.id())) {
             topics.add(new Topic("helper", null, 3));
@@ -401,6 +480,14 @@ public final class FactionChatter {
       if (FactionArmies.armyId(victim) == 0 && !FactionTownLife.isThief(victim)) {
          shout(level, player, victim, "attack", victim);
       }
+   }
+
+   /** A townsperson who saw what the player did cries out, whoever else is near. */
+   static void cry(ServerLevel level, Player player, FactionNpcEntity witness, String category) {
+      long now = level.getGameTime();
+      SHOUTS.put(player.getUUID() + "/" + category, now + SHOUT_REST);
+      say(level, witness, line(category, level.getRandom(), null), now);
+      witness.getLookControl().setLookAt(player, 30.0F, 30.0F);
    }
 
    /** A player helped the town: someone there says thanks. */

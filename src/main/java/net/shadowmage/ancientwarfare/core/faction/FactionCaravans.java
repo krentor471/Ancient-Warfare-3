@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -45,7 +46,9 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
 public final class FactionCaravans {
    public static final String TAG_PREFIX = "aw_caravan_";
    private static final int TICK_INTERVAL = 10;
-   private static final int SPAWN_CHECK_TICKS = 200;
+   private static final int SPAWN_CHECK_TICKS = 1200;
+   /** Caravans met on the roads at once, besides those a player was hired to guard. */
+   private static final int MAX_ON_ROADS = 2;
    private static final double NOTICE_RANGE = 96.0;
    private static final double MIN_SPAWN_DISTANCE = 48.0;
    private static final double MAX_SPAWN_DISTANCE = 96.0;
@@ -58,6 +61,8 @@ public final class FactionCaravans {
    /** Points ahead of the caravan where bandits wait. */
    private static final int AMBUSH_AHEAD = 8;
    private static final double CARAVAN_SPEED = 0.25;
+   /** A caravan neither starts nor walks on this close to a settlement's edge. */
+   private static final int TOWN_MARGIN = 4;
    /** Roads laid over rough ground keep a few drops; a fall this high does no harm. */
    private static final int CARAVAN_DROP = 3;
    /** Advance checks without reaching the next road point before the caravan counts as stuck. */
@@ -84,6 +89,7 @@ public final class FactionCaravans {
    private static final int STRING_PATIENCE = 30;
    /** A player this near when a cart is broken open is the robber. */
    private static final double ROBBER_RANGE = 16.0;
+   static final int ESCORT_PAY = 30;
    private static final Map<Integer, Caravan> ACTIVE = new HashMap<>();
    private static final Map<Integer, Long> LAST_CARAVAN = new HashMap<>();
    /** Set by the test command: the next caravan that can be ambushed is. */
@@ -130,7 +136,7 @@ public final class FactionCaravans {
          }
       }
 
-      if (now % SPAWN_CHECK_TICKS == 0L) {
+      if (now % SPAWN_CHECK_TICKS == 0L && ACTIVE.size() < MAX_ON_ROADS) {
          for (ServerPlayer player : level.players()) {
             trySpawn(level, data, player, now);
          }
@@ -153,12 +159,18 @@ public final class FactionCaravans {
          for (int i = 0; i < points.size(); i++) {
             double distance = distance(player, points.get(i));
             near |= distance < NOTICE_RANGE;
-            if (start < 0 && distance >= MIN_SPAWN_DISTANCE && distance <= MAX_SPAWN_DISTANCE && i > 2 && i < points.size() - 3) {
+            if (start < 0 && distance >= MIN_SPAWN_DISTANCE && distance <= MAX_SPAWN_DISTANCE && i > 2 && i < points.size() - 3 && !inTown(data, points.get(i))) {
                start = i;
             }
          }
 
          if (!near || start < 0) {
+            continue;
+         }
+
+         // Only on land already loaded: making the world there on the spot stalls the server for seconds.
+         long at = points.get(start);
+         if (level.getChunkSource().getChunkNow(FactionRoads.unpackX(at) >> 4, FactionRoads.unpackZ(at) >> 4) == null) {
             continue;
          }
 
@@ -226,6 +238,19 @@ public final class FactionCaravans {
       }
    }
 
+   /** Whether a road point lies inside a town or fort, or just outside its edge; posts beside the road do not count. */
+   static boolean inTown(FactionWorldData data, long point) {
+      int x = FactionRoads.unpackX(point);
+      int z = FactionRoads.unpackZ(point);
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if ((FactionTownLife.isTown(settlement) || FactionAI.isFort(settlement)) && settlement.contains(x, z, TOWN_MARGIN)) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
    private static double distance(Entity entity, long point) {
       double dx = FactionRoads.unpackX(point) + 0.5 - entity.getX();
       double dz = FactionRoads.unpackZ(point) + 0.5 - entity.getZ();
@@ -242,6 +267,8 @@ public final class FactionCaravans {
       private int waits;
       private UUID trader;
       private final List<UUID> guards = new ArrayList<>();
+      /** The player hired to see the caravan through, if any. */
+      private UUID escort;
       private final List<UUID> bandits = new ArrayList<>();
       private final List<UUID> animals = new ArrayList<>();
       /** Carts of goods, each drawn by the animal at the same place in pullers. */
@@ -253,6 +280,16 @@ public final class FactionCaravans {
          this.faction = faction;
          this.index = index;
          this.direction = direction;
+      }
+
+      /** Safe at the gates: the escort, if still at hand, is paid. */
+      void payEscort(ServerLevel level, FactionNpcEntity trader) {
+         ServerPlayer escort = this.escort == null ? null : level.getServer().getPlayerList().getPlayer(this.escort);
+         if (escort != null && escort.distanceToSqr(trader) < 64.0 * 64.0) {
+            Coins.give(escort, ESCORT_PAY);
+            net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData.get(level).adjustStanding(escort.getUUID(), this.faction, 4);
+            escort.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_paid", ESCORT_PAY).withStyle(ChatFormatting.GREEN));
+         }
       }
 
       String tag() {
@@ -526,7 +563,9 @@ public final class FactionCaravans {
             this.index += this.direction;
             this.stuck = 0;
             next = true;
-            if (this.index < 0 || this.index >= points.size()) {
+            // A caravan is done at the gates: walled towns keep theirs shut, and it would only stand stuck inside.
+            if (this.index < 0 || this.index >= points.size() || inTown(data, points.get(this.index))) {
+               this.payEscort(level, traderNpc);
                return false;
             }
          } else if (++this.stuck >= STUCK_CHECKS && level.getNearestPlayer(traderNpc, HIDDEN_RANGE) == null) {
@@ -602,6 +641,10 @@ public final class FactionCaravans {
       private void hop(ServerLevel level, FactionNpcEntity npc, long point) {
          int x = FactionRoads.unpackX(point);
          int z = FactionRoads.unpackZ(point);
+         if (level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) {
+            return;
+         }
+
          npc.getNavigation().stop();
          double y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
          npc.moveTo(x + 0.5, y, z + 0.5);
@@ -668,6 +711,62 @@ public final class FactionCaravans {
    public static void hurry(boolean ambush) {
       LAST_CARAVAN.clear();
       forceAmbush = ambush;
+   }
+
+   /** A player takes the caravan master's offer to guard it to the next town. */
+   public static void escort(ServerPlayer player, int routeId) {
+      Caravan caravan = ACTIVE.get(routeId);
+      if (caravan == null || caravan.escort != null) {
+         player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_gone").withStyle(ChatFormatting.GRAY));
+         return;
+      }
+
+      caravan.escort = player.getUUID();
+      player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.escort_taken").withStyle(ChatFormatting.YELLOW));
+   }
+
+   /** The merchants' guild of a town hires the player to guard a caravan leaving it now for the next town. */
+   public static void hire(ServerPlayer player, FactionWorldData.Settlement town) {
+      ServerLevel level = player.serverLevel();
+      FactionWorldData data = FactionWorldData.get(level);
+      for (FactionWorldData.Route route : data.routes()) {
+         if (route.road() != FactionWorldData.RoadState.DONE || route.blocked() || ACTIVE.containsKey(route.id()) || route.points().size() < 12) {
+            continue;
+         }
+
+         boolean first = data.endpoint(route, true) == town;
+         if (!first && data.endpoint(route, false) != town) {
+            continue;
+         }
+
+         List<Long> points = route.points();
+         int direction = first ? 1 : -1;
+         int start = first ? 4 : points.size() - 5;
+         long at = points.get(start);
+         if (level.getChunkSource().getChunkNow(FactionRoads.unpackX(at) >> 4, FactionRoads.unpackZ(at) >> 4) == null) {
+            continue;
+         }
+
+         FactionWorldData.Settlement goal = data.endpoint(route, !first);
+         if (goal == null) {
+            continue;
+         }
+
+         Caravan caravan = new Caravan(route.id(), town.faction(), start, direction);
+         ACTIVE.put(route.id(), caravan);
+         if (!caravan.spawn(level, data, route)) {
+            ACTIVE.remove(route.id());
+            caravan.discard(level);
+            continue;
+         }
+
+         LAST_CARAVAN.put(route.id(), level.getGameTime());
+         caravan.escort = player.getUUID();
+         player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.hired", FactionNews.named(goal), ESCORT_PAY, FactionRoads.unpackX(at), FactionRoads.unpackZ(at)).withStyle(ChatFormatting.YELLOW));
+         return;
+      }
+
+      player.sendSystemMessage(Component.translatable("caravan.ancientwarfare.none_leaving").withStyle(ChatFormatting.GRAY));
    }
 
    public static int active() {

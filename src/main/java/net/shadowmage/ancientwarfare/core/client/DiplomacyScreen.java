@@ -35,8 +35,8 @@ import net.shadowmage.ancientwarfare.core.research.PlayerResearch;
  * overview with what the player can do, its court and what it wants, and a deal with its ruler.
  */
 public class DiplomacyScreen extends Screen {
-   private static final int MAX_WIDTH = 560;
-   private static final int MAX_HEIGHT = 340;
+   private static final int MAX_WIDTH = 640;
+   private static final int MAX_HEIGHT = 380;
    /** Below this height the header is a single line, without the large portrait. */
    private static final int ROOMY_HEIGHT = 300;
    private static final int DEAL_ROW = 17;
@@ -242,6 +242,14 @@ public class DiplomacyScreen extends Screen {
          }
          default -> this.initOverview(entry);
       }
+
+      // Every button in the window's own wood and gold rather than the stone grey of the menus.
+      for (net.minecraft.client.gui.components.events.GuiEventListener child : new ArrayList<>(this.children())) {
+         if (child instanceof Button button && !(child instanceof ParchmentButton)) {
+            this.removeWidget(button);
+            this.addRenderableWidget(ParchmentButton.restyle(button));
+         }
+      }
    }
 
    private void initOverview(PlayerDiplomacy.Entry entry) {
@@ -250,13 +258,14 @@ public class DiplomacyScreen extends Screen {
       int y = this.top() + this.panelHeight() - 8 - 3 * 21;
       PlayerDiplomacy.Action[][] grid = {
          {PlayerDiplomacy.Action.PEACE, PlayerDiplomacy.Action.PACT, PlayerDiplomacy.Action.ALLIANCE},
-         {PlayerDiplomacy.Action.TRADE, PlayerDiplomacy.Action.WAR, PlayerDiplomacy.Action.TOURNAMENT},
+         {PlayerDiplomacy.Action.TRADE, PlayerDiplomacy.Action.WAR},
          {PlayerDiplomacy.Action.GIFT, PlayerDiplomacy.Action.SUPPLY, PlayerDiplomacy.Action.MEDIATE}
       };
       for (int row = 0; row < grid.length; row++) {
          for (int column = 0; column < grid[row].length; column++) {
             PlayerDiplomacy.Action action = grid[row][column];
-            this.addAction(entry, action, x + column * (width + 2), y + row * 21, grid[row].length == 1 ? width * 2 + 2 : width, applicable(entry, action));
+            int cell = grid[row].length == 2 ? (width * 3 + 2) / 2 : width;
+            this.addAction(entry, action, x + column * (cell + 2), y + row * 21, cell, applicable(entry, action));
          }
       }
    }
@@ -286,7 +295,7 @@ public class DiplomacyScreen extends Screen {
          case SUPPLY -> Component.translatable(key, FactionCourt.SUPPLY_AMOUNT);
          default -> Component.translatable(key);
       };
-      Button button = Button.builder(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 19).build();
+      Button button = AwUi.button(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 19).build();
       boolean anywhere = action == PlayerDiplomacy.Action.WAR || action == PlayerDiplomacy.Action.SPY || action == PlayerDiplomacy.Action.TRADE && entry.trade();
       String research = PlayerDiplomacy.research(action);
       boolean known = research == null || ClientResearch.has(research);
@@ -315,7 +324,7 @@ public class DiplomacyScreen extends Screen {
          PlayerDiplomacy.Action action = gifts[i];
          int x = this.contentX() + (i % 2) * (cardWidth + 4);
          int y = this.contentY() + RULER_CARD + (i / 2) * COURT_CARD;
-         Button button = Button.builder(Component.translatable("gui.ancientwarfare.diplomacy.court_gift", FactionCourt.COURTIER_GIFT / 10), ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action))
+         Button button = AwUi.button(Component.translatable("gui.ancientwarfare.diplomacy.court_gift", FactionCourt.COURTIER_GIFT / 10), ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action))
             .bounds(x + cardWidth - 44, y + 24, 40, 14)
             .build();
          button.active = entry.leaderNear();
@@ -325,7 +334,7 @@ public class DiplomacyScreen extends Screen {
    }
 
    private void initDeal(PlayerDiplomacy.Entry entry) {
-      if (this.deal == null || !entry.leaderNear()) {
+      if (this.deal == null) {
          return;
       }
 
@@ -352,7 +361,7 @@ public class DiplomacyScreen extends Screen {
                : this.bond == FactionDeals.GIVE_DAUGHTER
                ? check(true, Component.translatable("gui.ancientwarfare.deal.give_daughter"))
                : check(false, canTreaty ? Component.translatable("gui.ancientwarfare.deal.treaty." + state.serializedName()) : Component.translatable("gui.ancientwarfare.deal.bond"));
-      Button treatyButton = Button.builder(bondLabel, ignored -> {
+      Button treatyButton = AwUi.button(bondLabel, ignored -> {
          if (this.treaty) {
             this.treaty = false;
             this.bond = FactionDeals.VASSAL;
@@ -374,7 +383,7 @@ public class DiplomacyScreen extends Screen {
       }).bounds(theirs, y + DEAL_ROW, column, 16).build();
       treatyButton.setTooltip(Tooltip.create(Component.translatable("gui.ancientwarfare.deal.bond.tip")));
       this.addRenderableWidget(treatyButton);
-      Button tradeButton = Button.builder(check(this.trade, Component.translatable("gui.ancientwarfare.deal.trade")), ignored -> {
+      Button tradeButton = AwUi.button(check(this.trade, Component.translatable("gui.ancientwarfare.deal.trade")), ignored -> {
          this.trade = !this.trade;
          this.changed();
       }).bounds(theirs, y + DEAL_ROW * 2, column, 16).build();
@@ -384,11 +393,11 @@ public class DiplomacyScreen extends Screen {
       int bottom = y + DEAL_ROW * 3;
       int half = (column - 2) / 2;
       this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.deal.propose"), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 1, this.offer()))
+         AwUi.button(Component.translatable("gui.ancientwarfare.deal.propose"), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 1, this.offer()))
             .bounds(mine, bottom, half, 16)
             .build()
       );
-      Button strike = Button.builder(Component.translatable("gui.ancientwarfare.deal.strike").withStyle(ChatFormatting.GOLD), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 2, this.offer()))
+      Button strike = AwUi.button(Component.translatable("gui.ancientwarfare.deal.strike").withStyle(ChatFormatting.GOLD), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 2, this.offer()))
          .bounds(mine + half + 2, bottom, half, 16)
          .build();
       strike.active = this.verdict == FactionDeals.ACCEPT;
@@ -414,7 +423,7 @@ public class DiplomacyScreen extends Screen {
       for (int i = 0; i < INTRIGUES.length; i++) {
          PlayerDiplomacy.Action action = INTRIGUES[i];
          boolean away = pending(entry, action);
-         Button button = Button.builder(
+         Button button = AwUi.button(
                Component.translatable(away ? "gui.ancientwarfare.intrigue.away" : "gui.ancientwarfare.intrigue.send"),
                ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)
             )
@@ -563,11 +572,11 @@ public class DiplomacyScreen extends Screen {
 
    /** Minus and plus at the right of a row whose icon and amount render() draws. */
    private void stepper(int x, int y, int width, Runnable less, Runnable more) {
-      this.addRenderableWidget(Button.builder(Component.literal("-"), ignored -> {
+      this.addRenderableWidget(AwUi.button(Component.literal("-"), ignored -> {
          less.run();
          this.changed();
       }).bounds(x + width - 34, y, 16, 16).build());
-      this.addRenderableWidget(Button.builder(Component.literal("+"), ignored -> {
+      this.addRenderableWidget(AwUi.button(Component.literal("+"), ignored -> {
          more.run();
          this.changed();
       }).bounds(x + width - 16, y, 16, 16).build());
@@ -576,7 +585,7 @@ public class DiplomacyScreen extends Screen {
    /** A button going round the possible enemies, and none. */
    private void cycle(int x, int y, int width, List<String> targets, String current, Consumer<String> set, String tip) {
       Component target = current.isEmpty() ? Component.translatable("gui.ancientwarfare.deal.nobody") : factionName(current);
-      Button button = Button.builder(Component.translatable("gui.ancientwarfare.deal.war", target), ignored -> {
+      Button button = AwUi.button(Component.translatable("gui.ancientwarfare.deal.war", target), ignored -> {
          int at = targets.indexOf(current);
          set.accept(at + 1 < targets.size() ? targets.get(at + 1) : "");
          this.changed();
@@ -623,7 +632,7 @@ public class DiplomacyScreen extends Screen {
       if (tab == DEAL && this.deal != null && (button == 0 || button == 1)) {
          int cell = this.goodsCell(mouseX, mouseY);
          PlayerDiplomacy.Entry entry = this.selectedEntry();
-         if (cell >= 0 && entry != null && entry.leaderNear()) {
+         if (cell >= 0 && entry != null) {
             int step = (hasShiftDown() ? 4 : 1) * (button == 0 ? 1 : -1);
             this.goods[cell] = Math.max(0, this.goods[cell] + step);
             this.playClick();
@@ -793,6 +802,14 @@ public class DiplomacyScreen extends Screen {
       }
 
       int textX = x + portrait + 6;
+      // A banner in the realm's colours behind its name, fading into the page, as a flag in a grand atlas.
+      for (int i = 0; i < 120 && textX + i < right; i++) {
+         int alpha = Math.max(0, 0x90 - i * 0x90 / 120);
+         graphics.fill(textX - 2 + i, y, textX - 1 + i, y + 14, alpha << 24 | color & 0xFFFFFF);
+      }
+
+      graphics.fill(x - 1, y, x + portrait + 1, y + 1, GOLD_COLOR);
+      graphics.fill(x - 1, y + portrait + 1, x + portrait + 1, y + portrait + 2, GOLD_COLOR);
       graphics.pose().pushPose();
       graphics.pose().translate(textX, y + 1, 0.0F);
       graphics.pose().scale(1.5F, 1.5F, 1.0F);
@@ -803,7 +820,7 @@ public class DiplomacyScreen extends Screen {
       // Whether the leader is near, or on the deal tab how far the player's word is taken, at the top right.
       Component leader = Component.translatable(entry.leaderNear() ? "gui.ancientwarfare.diplomacy.leader_here" : "gui.ancientwarfare.diplomacy.leader_away_short");
       int statusY = y + 2;
-      if (tab == DEAL && this.deal != null && entry.leaderNear()) {
+      if (tab == DEAL && this.deal != null) {
          this.renderWord(graphics, right, statusY, !roomy, mouseX, mouseY);
       } else {
          int leaderX = right - this.font.width(leader) - 10;
@@ -887,9 +904,6 @@ public class DiplomacyScreen extends Screen {
                if (!this.roomy()) {
                   // No room for the trade goods' own row: they are listed here.
                   tip.addAll(this.tradeGoodsTip(stores));
-                  if (stores.length == FactionDeals.KINDS + 2) {
-                     tip.add(armamentLine(stores));
-                  }
 
                   tip.addAll(entry.hosts());
                }
@@ -941,11 +955,6 @@ public class DiplomacyScreen extends Screen {
          graphics.drawString(this.font, trade, x + width / 2, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
       } else {
          graphics.drawString(this.font, Component.literal("◆ ").append(trade), x, y, entry.trade() ? GOOD_COLOR : MUTED_COLOR);
-         if (stores.length == FactionDeals.KINDS + 2) {
-            y += 12;
-            graphics.drawString(this.font, Component.literal("◆ ").append(armamentLine(stores)), x, y, TEXT_COLOR);
-         }
-
          for (Component host : entry.hosts()) {
             y += 12;
             graphics.drawString(this.font, Component.literal("◆ ").append(host), x, y, TEXT_COLOR);
@@ -1192,13 +1201,6 @@ public class DiplomacyScreen extends Screen {
       new ItemStack(Items.LEATHER), new ItemStack(Items.WHITE_WOOL), new ItemStack(Items.COAL), new ItemStack(Items.COPPER_INGOT)
    };
 
-   /** How the faction's soldiers are armed, by its stores. */
-   private static Component armamentLine(int[] stores) {
-      int tier = net.shadowmage.ancientwarfare.core.faction.FactionArmament.tier(java.util.Arrays.copyOfRange(stores, 1, FactionDeals.KINDS + 1));
-      ChatFormatting color = tier == 2 ? ChatFormatting.GREEN : tier == 1 ? ChatFormatting.YELLOW : ChatFormatting.GRAY;
-      return Component.translatable("gui.ancientwarfare.diplomacy.armament", Component.translatable("gui.ancientwarfare.diplomacy.armament." + tier).withStyle(color));
-   }
-
    /** The trade goods' stores, one a line, the faction's own marked. */
    private List<Component> tradeGoodsTip(int[] stores) {
       List<Component> lines = new ArrayList<>();
@@ -1222,41 +1224,40 @@ public class DiplomacyScreen extends Screen {
 
    /** The top of the goods table on the deal tab. */
    private int goodsY() {
-      return this.contentY() + 14 + DEAL_ROW * 4 + 4;
+      return this.contentY() + 14 + DEAL_ROW * 4 + 2;
    }
 
-   private int goodsLabelWidth() {
-      return Math.max(this.font.width(Component.translatable("gui.ancientwarfare.deal.goods_mine")), this.font.width(Component.translatable("gui.ancientwarfare.deal.goods_theirs"))) + 6;
+   private static final int GOODS_ROW = 13;
+
+   /** The goods are two lists side by side, under each side's column: what the player gives, what the faction gives. */
+   private int goodsColumn() {
+      return (this.contentWidth() - 8) / 2;
    }
 
-   private int goodsCellWidth() {
-      return (this.contentWidth() - this.goodsLabelWidth()) / FactionDeals.KINDS;
-   }
-
-   /** The goods table's cell under the mouse: the kind, plus KINDS for what the faction gives; -1 for none, -2 - kind for a heading. */
+   /** The goods cell under the mouse: the kind, plus KINDS for what the faction gives; -1 for none. */
    private int goodsCell(double mouseX, double mouseY) {
-      int x = this.contentX() + this.goodsLabelWidth();
+      int x = this.contentX();
       int y = this.goodsY();
-      int cell = this.goodsCellWidth();
-      if (mouseX < x || mouseX >= x + cell * FactionDeals.KINDS || mouseY < y || mouseY >= y + 43) {
+      int column = this.goodsColumn();
+      int rows = FactionDeals.KINDS / 2;
+      if (mouseY < y || mouseY >= y + GOODS_ROW * rows) {
          return -1;
       }
 
-      int kind = (int)((mouseX - x) / cell);
-      if (mouseY < y + 18) {
-         return -2 - kind;
+      int row = (int)((mouseY - y) / GOODS_ROW);
+      int side = mouseX >= x && mouseX < x + column ? 0 : mouseX >= x + column + 8 && mouseX < x + column * 2 + 8 ? 1 : -1;
+      if (side < 0) {
+         return -1;
       }
 
-      return mouseY < y + 31 ? kind : FactionDeals.KINDS + kind;
+      int half = (int)(mouseX - (side == 0 ? x : x + column + 8)) >= column / 2 ? 1 : 0;
+      return side * FactionDeals.KINDS + half * rows + row;
    }
 
    private void renderDeal(GuiGraphics graphics, PlayerDiplomacy.Entry entry, int mouseX, int mouseY) {
       int x = this.contentX();
       int y = this.contentY();
-      if (!entry.leaderNear()) {
-         graphics.drawWordWrap(this.font, Component.translatable("gui.ancientwarfare.deal.need_leader"), x, y + 4, this.contentWidth(), MUTED_COLOR);
-         return;
-      } else if (this.deal == null) {
+      if (this.deal == null) {
          graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.deal.loading"), x, y + 4, MUTED_COLOR);
          return;
       }
@@ -1276,40 +1277,55 @@ public class DiplomacyScreen extends Screen {
          graphics.renderTooltip(this.font, Component.translatable("gui.ancientwarfare.deal.tribute.tip", FactionDeals.TRIBUTE_WEEKS), mouseX, mouseY);
       }
 
-      // The goods: a column for each kind, what the player gives above, what the faction gives below.
+      // The goods, as at a Civilization trade table: everything the player carries on the left,
+      // everything in the faction's stores on the right; a click puts a load of it on the table.
       int gy = this.goodsY();
-      int label = this.goodsLabelWidth();
-      int cell = this.goodsCellWidth();
+      column = this.goodsColumn();
       int[] stores = entry.stores();
       int specialty = stores.length == FactionDeals.KINDS + 2 ? stores[stores.length - 1] : -1;
-      graphics.fill(x - 2, gy - 2, x + label + cell * FactionDeals.KINDS + 1, gy + 44, CARD_COLOR);
-      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.deal.goods_mine"), x + 1, gy + 20, MUTED_COLOR);
-      graphics.drawString(this.font, Component.translatable("gui.ancientwarfare.deal.goods_theirs"), x + 1, gy + 33, MUTED_COLOR);
       int hovered = this.goodsCell(mouseX, mouseY);
-      for (int kind = 0; kind < FactionDeals.KINDS; kind++) {
-         int cx = x + label + kind * cell;
-         if (kind == specialty) {
-            outline(graphics, cx, gy - 1, cell - 1, 18, GOLD_COLOR);
+      net.minecraft.world.entity.player.Player me = net.minecraft.client.Minecraft.getInstance().player;
+      for (int side = 0; side < 2; side++) {
+         int cx = side == 0 ? x : theirs;
+         int rows = FactionDeals.KINDS / 2;
+         int sideX = cx;
+         graphics.fill(sideX - 2, gy - 2, sideX + column + 2, gy + GOODS_ROW * rows + 1, CARD_COLOR);
+         for (int kind = 0; kind < FactionDeals.KINDS; kind++) {
+            int slot = side * FactionDeals.KINDS + kind;
+            int ry = gy + (kind % rows) * GOODS_ROW;
+            int full = column;
+            column = full / 2 - 1;
+            cx = sideX + (kind / rows) * (full / 2 + 1);
+            boolean hover = hovered == slot;
+            graphics.fill(cx, ry, cx + column, ry + GOODS_ROW - 1, hover ? 0xFF3A2E1E : 0xFF18130E);
+            if (side == 1 && kind == specialty) {
+               outline(graphics, cx, ry, column - 1, GOODS_ROW - 2, GOLD_COLOR);
+            }
+
+            graphics.pose().pushPose();
+            graphics.pose().translate(cx + 1, ry, 0.0F);
+            graphics.pose().scale(0.75F, 0.75F, 1.0F);
+            graphics.renderItem(GOODS_ICONS[kind], 0, 0);
+            graphics.pose().popPose();
+            int have = side == 0 ? (me == null ? 0 : countHeld(me, kind)) : 1 + kind < stores.length ? stores[1 + kind] : 0;
+
+            int amount = this.goods[slot] * FactionDeals.GOODS_STEP;
+            String right = (amount > 0 ? amount + " / " : "") + have;
+            graphics.drawString(this.font, right, cx + column - 3 - this.font.width(right), ry + 2, amount > 0 ? (amount > have ? BAD_COLOR : side == 0 ? GOLD_COLOR : GOOD_COLOR) : MUTED_COLOR, false);
+            column = full;
          }
 
-         graphics.renderItem(GOODS_ICONS[kind], cx + (cell - 17) / 2, gy);
-         for (int side = 0; side < 2; side++) {
-            int slot = side * FactionDeals.KINDS + kind;
-            int cy = gy + 18 + side * 13;
-            boolean hover = hovered == slot;
-            graphics.fill(cx, cy, cx + cell - 1, cy + 12, hover ? 0xFF3A2E1E : 0xFF18130E);
-            int amount = this.goods[slot] * FactionDeals.GOODS_STEP;
-            String text = amount > 0 ? Integer.toString(amount) : "·";
-            graphics.drawCenteredString(this.font, text, cx + cell / 2, cy + 2, amount > 0 ? (side == 0 ? BAD_COLOR : GOOD_COLOR) : MUTED_COLOR);
-         }
+         cx = sideX;
       }
 
       if (hovered != -1) {
-         int kind = hovered >= 0 ? hovered % FactionDeals.KINDS : -2 - hovered;
+         int kind = hovered % FactionDeals.KINDS;
          List<Component> lines = new ArrayList<>();
          lines.add(Component.translatable("trade.ancientwarfare.good." + net.shadowmage.ancientwarfare.core.faction.FactionResources.NAMES[kind]).withStyle(ChatFormatting.GOLD));
-         if (1 + kind < stores.length) {
+         if (hovered >= FactionDeals.KINDS && 1 + kind < stores.length) {
             lines.add(Component.translatable("gui.ancientwarfare.deal.goods_store", stores[1 + kind]).withStyle(ChatFormatting.GRAY));
+         } else if (hovered < FactionDeals.KINDS && me != null) {
+            lines.add(Component.translatable("gui.ancientwarfare.deal.goods_held", countHeld(me, kind)).withStyle(ChatFormatting.GRAY));
          }
 
          if (kind == specialty) {
@@ -1320,7 +1336,7 @@ public class DiplomacyScreen extends Screen {
          this.headerTip = lines;
       }
 
-      int answerY = gy + 47;
+      int answerY = gy + 4 + GOODS_ROW * FactionDeals.KINDS / 2;
       int color = switch (this.verdict) {
          case FactionDeals.ACCEPT, FactionDeals.DONE -> GOOD_COLOR;
          case FactionDeals.MORE -> GOLD_COLOR;
@@ -1329,6 +1345,17 @@ public class DiplomacyScreen extends Screen {
       };
       Component shown = this.verdict == FactionDeals.NONE ? Component.translatable("gui.ancientwarfare.deal.hint") : this.answer;
       graphics.drawWordWrap(this.font, shown, x, answerY, this.contentWidth(), color);
+   }
+
+   private static int countHeld(net.minecraft.world.entity.player.Player player, int kind) {
+      int count = 0;
+      for (ItemStack stack : player.getInventory().items) {
+         if (stack.is(FactionDeals.GOODS_TAGS[kind])) {
+            count += stack.getCount();
+         }
+      }
+
+      return count;
    }
 
    /** How far factions take the player's word, with their promises on hover. */

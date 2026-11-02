@@ -17,7 +17,7 @@ public final class FactionPeople {
    private static final int OLDEST = 95;
 
    /**
-    * A person's character: two of these, never a pair of opposites. Each weighs on what the ruler does,
+    * A person's character: three of these, never two that contradict each other. Each weighs on what the ruler does,
     * times the usual chance: of war with factions and with players, of raids, of how a gift moves
     * him, of falling ill and dying of age, of his courtiers plotting, of his secrets being found, and of
     * his traders' prices.
@@ -33,7 +33,29 @@ public final class FactionPeople {
       PARANOID(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.4, 1.0, 1.0, false),
       HEALTHY(1.0, 1.0, 1.0, 1.0, 0.5, 0.6, 1.0, 1.0, 1.0, true),
       SICKLY(1.0, 1.0, 1.0, 1.0, 2.0, 1.3, 1.0, 1.0, 1.0, false),
-      DRUNKARD(1.0, 1.0, 1.0, 1.0, 1.3, 1.0, 1.5, 1.0, 0.9, false);
+      DRUNKARD(1.0, 1.0, 1.0, 1.0, 1.3, 1.0, 1.5, 1.0, 0.9, false),
+      BRAVE(1.15, 1.1, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, true),
+      CRAVEN(0.7, 0.7, 0.8, 1.0, 1.0, 1.0, 1.2, 1.0, 1.0, false),
+      DILIGENT(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 1.0, 0.95, true),
+      LAZY(0.85, 1.0, 1.0, 1.0, 1.0, 1.0, 1.2, 1.0, 1.05, false),
+      PATIENT(0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 0.9, 1.0, 1.0, true),
+      WRATHFUL(1.2, 1.4, 1.2, 0.85, 1.0, 1.0, 1.0, 1.0, 1.0, false),
+      HUMBLE(1.0, 1.0, 1.0, 1.2, 1.0, 1.0, 0.8, 1.0, 1.0, true),
+      ARROGANT(1.1, 1.2, 1.0, 0.7, 1.0, 1.0, 1.2, 1.0, 1.05, false),
+      TEMPERATE(1.0, 1.0, 1.0, 1.0, 0.8, 0.85, 1.0, 1.0, 1.0, true),
+      GLUTTONOUS(1.0, 1.0, 1.0, 1.1, 1.3, 1.2, 1.0, 1.0, 1.0, false),
+      JUST(1.0, 0.9, 0.7, 1.0, 1.0, 1.0, 0.9, 0.8, 1.0, true),
+      ARBITRARY(1.0, 1.1, 1.3, 1.0, 1.0, 1.0, 1.3, 1.0, 1.1, false),
+      CYNICAL(1.0, 1.0, 1.0, 0.8, 1.0, 1.0, 1.0, 1.2, 1.0, false),
+      GREGARIOUS(1.0, 1.0, 1.0, 1.3, 1.0, 1.0, 1.0, 1.2, 1.0, true),
+      SHY(1.0, 1.0, 1.0, 0.8, 1.0, 1.0, 1.0, 0.8, 1.0, false),
+      TRUSTING(1.0, 0.9, 1.0, 1.1, 1.0, 1.0, 1.5, 1.2, 1.0, true),
+      FORGIVING(0.9, 0.7, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, true),
+      VENGEFUL(1.2, 1.4, 1.1, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, false),
+      // Traits of faith: the zealot hates other creeds, the tolerant shrugs, the lustful sins.
+      ZEALOUS(1.1, 1.1, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, true),
+      TOLERANT(0.9, 0.9, 1.0, 1.1, 1.0, 1.0, 1.0, 1.0, 1.0, true),
+      LUSTFUL(1.0, 1.0, 1.0, 1.0, 1.1, 1.0, 1.1, 1.5, 1.0, false);
 
       final double factionWar;
       final double playerWar;
@@ -72,17 +94,41 @@ public final class FactionPeople {
          return Component.translatable("character.ancientwarfare." + this.name().toLowerCase(java.util.Locale.ROOT) + ".tip");
       }
 
-      Character opposite() {
-         return switch (this) {
-            case AMBITIOUS -> CONTENT;
-            case CONTENT -> AMBITIOUS;
-            case CRUEL -> KIND;
-            case KIND -> CRUEL;
-            case HONEST -> DECEITFUL;
-            case DECEITFUL -> HONEST;
-            case HEALTHY -> SICKLY;
-            case SICKLY -> HEALTHY;
-            default -> this;
+      /** Whether a person could not be both this and that. */
+      boolean clashes(Character other) {
+         return other == this || clash(this, other) || clash(other, this);
+      }
+
+      private static boolean clash(Character one, Character two) {
+         return switch (one) {
+            case AMBITIOUS -> two == CONTENT || two == LAZY;
+            case CRUEL -> two == KIND || two == FORGIVING || two == JUST;
+            case HONEST -> two == DECEITFUL;
+            case HEALTHY -> two == SICKLY || two == DRUNKARD || two == GLUTTONOUS;
+            case PIOUS -> two == CYNICAL || two == LUSTFUL;
+            case ZEALOUS -> two == TOLERANT || two == CYNICAL;
+            case PARANOID -> two == TRUSTING || two == GREGARIOUS;
+            case DRUNKARD -> two == TEMPERATE;
+            case BRAVE -> two == CRAVEN;
+            case DILIGENT -> two == LAZY;
+            case PATIENT -> two == WRATHFUL;
+            case HUMBLE -> two == ARROGANT;
+            case TEMPERATE -> two == GLUTTONOUS;
+            case JUST -> two == ARBITRARY;
+            case GREGARIOUS -> two == SHY;
+            case FORGIVING -> two == VENGEFUL || two == WRATHFUL;
+            case KIND -> two == WRATHFUL || two == VENGEFUL;
+            default -> false;
+         };
+      }
+
+      /** Whether a ruler of this disposition could not be of this character: a warlike coward, a generous miser. */
+      boolean clashes(FactionRulers.Trait trait) {
+         return switch (trait) {
+            case WARLIKE -> this == CONTENT || this == CRAVEN || this == KIND || this == FORGIVING;
+            case CAUTIOUS -> this == WRATHFUL || this == BRAVE || this == ARROGANT || this == TRUSTING;
+            case GREEDY -> this == CONTENT || this == HUMBLE || this == KIND;
+            case GENEROUS -> this == CRUEL || this == ARBITRARY || this == GLUTTONOUS;
          };
       }
    }
@@ -92,15 +138,45 @@ public final class FactionPeople {
    private FactionPeople() {
    }
 
-   /** Two traits of character, drawn at random, never opposites. */
-   public static int newCharacter(RandomSource random) {
-      Character first = CHARACTERS[random.nextInt(CHARACTERS.length)];
-      Character second;
-      do {
-         second = CHARACTERS[random.nextInt(CHARACTERS.length)];
-      } while (second == first || second == first.opposite());
+   private static final int TRAITS_EACH = 3;
 
-      return first.bit() | second.bit();
+   /** Traits of character drawn at random, none contradicting another. */
+   public static int newCharacter(RandomSource random) {
+      return newCharacter(random, null);
+   }
+
+   /** Traits of character for a ruler or courtier of this disposition: none contradicting it either. */
+   public static int newCharacter(RandomSource random, FactionRulers.Trait disposition) {
+      List<Character> chosen = new ArrayList<>();
+      for (int tries = 0; chosen.size() < TRAITS_EACH && tries < 100; tries++) {
+         Character next = CHARACTERS[random.nextInt(CHARACTERS.length)];
+         if ((disposition == null || !next.clashes(disposition)) && chosen.stream().noneMatch(next::clashes)) {
+            chosen.add(next);
+         }
+      }
+
+      int character = 0;
+      for (Character trait : chosen) {
+         character |= trait.bit();
+      }
+
+      return character;
+   }
+
+   /** A character saved before contradictions were weeded out, with any trait that contradicts an earlier one or the disposition dropped. */
+   public static int consistent(int character, FactionRulers.Trait disposition) {
+      int kept = 0;
+      List<Character> chosen = new ArrayList<>();
+      for (Character trait : CHARACTERS) {
+         if ((character & trait.bit()) != 0
+            && (disposition == null || !trait.clashes(disposition))
+            && chosen.stream().noneMatch(trait::clashes)) {
+            chosen.add(trait);
+            kept |= trait.bit();
+         }
+      }
+
+      return kept;
    }
 
    /** The character of someone from a world saved before it was kept, the same each time it is read. */
