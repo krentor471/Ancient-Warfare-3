@@ -306,6 +306,39 @@ public final class TownTrades {
       );
    }
 
+   /** What the town truly lacks: walls when it has none or is restless, grain when it goes hungry, guards when brigands are near, and so on. */
+   private static Errand pickErrand(ServerLevel level, FactionWorldData.Settlement town, net.minecraft.util.RandomSource random) {
+      if (town == null) {
+         return ERRANDS[random.nextInt(ERRANDS.length)];
+      }
+
+      double[] weights = new double[ERRANDS.length];
+      int mouths = Math.max(1, town.population() + town.garrison());
+      boolean bandits = BanditCamps.standing(level).stream().anyMatch(camp -> town.horizontalDistanceSquared(camp[0], camp[1]) < 600.0 * 600.0);
+      for (int i = 0; i < ERRANDS.length; i++) {
+         weights[i] = switch (ERRANDS[i].key) {
+            case "walls" -> town.buildings().contains("stone_wall") ? 0.0 : town.buildings().contains("palisade") ? 1.0 : 4.0;
+            case "granary" -> town.famine() > 0 || town.food() / mouths < 6 ? 6.0 : 0.5;
+            case "watch" -> bandits || town.garrison() < 3 ? 4.0 : 0.5;
+            case "feast" -> town.order() < 60 ? 4.0 : 0.5;
+            case "records" -> town.buildings().contains("library") || town.buildings().contains("school") ? 2.0 : 0.5;
+            case "lamps" -> town.buildings().stream().filter("lamp"::equals).count() < 3 ? 2.0 : 0.3;
+            default -> 1.0;
+         };
+      }
+
+      double total = java.util.Arrays.stream(weights).sum();
+      double roll = random.nextDouble() * total;
+      for (int i = 0; i < ERRANDS.length; i++) {
+         roll -= weights[i];
+         if (roll < 0) {
+            return ERRANDS[i];
+         }
+      }
+
+      return ERRANDS[ERRANDS.length - 1];
+   }
+
    private static Errand errand(FactionNpcEntity head) {
       String key = head.getPersistentData().getString(ERRAND);
       for (Errand errand : ERRANDS) {
@@ -446,7 +479,7 @@ public final class TownTrades {
                return;
             }
 
-            Errand errand = ERRANDS[random.nextInt(ERRANDS.length)];
+            Errand errand = pickErrand(level, town(level, npc), random);
             npc.getPersistentData().putString(ERRAND, errand.key);
             FactionRumours.say(player, speaker, Component.translatable("head.ancientwarfare.errand." + errand.key, errand.count, item(errand.item), errand.reward));
          }
@@ -469,6 +502,22 @@ public final class TownTrades {
             FactionWorldData.Settlement town = town(level, npc);
             if (town != null) {
                town.wealth += 10;
+               // What was brought is put to the use it was asked for.
+               switch (errand.key) {
+                  case "granary" -> town.food += errand.count * 2;
+                  case "feast" -> town.order = Math.min(100, town.order + 8);
+                  case "walls" -> {
+                     String wall = town.buildings().contains("palisade") ? TownBuildings.Kind.STONE_WALL.key() : TownBuildings.Kind.PALISADE.key();
+                     if (!town.buildings().contains(wall) && !town.plan().contains(wall)) {
+                        town.plan().add(0, wall);
+                     }
+                  }
+                  case "watch" -> town.garrison += 2;
+                  case "lamps" -> town.order = Math.min(100, town.order + 3);
+                  default -> {
+                  }
+               }
+
                FactionWorldData.get(level).setDirty();
             }
 

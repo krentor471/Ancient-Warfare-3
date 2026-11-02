@@ -180,7 +180,7 @@ public final class TownsfolkFavours {
       if (need != null) {
          FactionRumours.say(player, speaker, request(need));
       } else if (npc.getRandom().nextDouble() < REQUEST_CHANCE) {
-         Need fresh = NEEDS[npc.getRandom().nextInt(NEEDS.length)];
+         Need fresh = pickNeed(player.serverLevel(), npc);
          npc.getPersistentData().putString(REQUEST, fresh.key);
          FactionRumours.say(player, speaker, request(fresh));
       } else {
@@ -205,6 +205,38 @@ public final class TownsfolkFavours {
                )
          );
       }
+   }
+
+   /** A household asks for what it truly runs short of: firewood and wool in winter, bread in famine, milk in sickness, honey or fish where nobody makes them. */
+   private static Need pickNeed(net.minecraft.server.level.ServerLevel level, FactionNpcEntity npc) {
+      FactionSeasons.Season season = FactionSeasons.season(level);
+      FactionWorldData data = FactionWorldData.get(level);
+      FactionWorldData.Settlement town = FactionSimulation.settlementAt(data, npc.getFactionName(), npc.getX(), npc.getZ(), 48);
+      double[] weights = new double[NEEDS.length];
+      for (int i = 0; i < NEEDS.length; i++) {
+         boolean has = town != null;
+         weights[i] = switch (NEEDS[i].key) {
+            case "firewood" -> season == FactionSeasons.Season.WINTER ? 6.0 : season == FactionSeasons.Season.AUTUMN ? 2.0 : 0.5;
+            case "wool" -> season == FactionSeasons.Season.WINTER ? 4.0 : 0.7;
+            case "bread" -> has && (town.famine() > 0 || town.food() < town.population() * 4) ? 6.0 : 1.0;
+            case "milk" -> has && town.plague() > 0 ? 6.0 : 0.8;
+            case "honey" -> has && town.buildings().contains("apiary") ? 0.3 : 1.5;
+            case "fish" -> has && town.buildings().contains("fishery") ? 0.3 : 1.5;
+            case "torches" -> season == FactionSeasons.Season.WINTER ? 2.5 : 1.0;
+            case "carrots" -> season == FactionSeasons.Season.WINTER || season == FactionSeasons.Season.SPRING ? 2.0 : 0.8;
+            default -> 1.0;
+         };
+      }
+
+      double roll = npc.getRandom().nextDouble() * java.util.Arrays.stream(weights).sum();
+      for (int i = 0; i < NEEDS.length; i++) {
+         roll -= weights[i];
+         if (roll < 0) {
+            return NEEDS[i];
+         }
+      }
+
+      return NEEDS[0];
    }
 
    private static Component request(Need need) {
