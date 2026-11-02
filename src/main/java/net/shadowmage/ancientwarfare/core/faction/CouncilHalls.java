@@ -267,6 +267,7 @@ public final class CouncilHalls extends SavedData {
          }
 
          buttons.append(button(Component.translatable("council.ancientwarfare.guild.caravan", FactionCaravans.ESCORT_PAY), id + "caravan_hire", ChatFormatting.GREEN));
+         buttons.append("  ").append(button(Component.translatable("venture.ancientwarfare.button"), id + "ventures", ChatFormatting.AQUA));
 
          player.sendSystemMessage(buttons);
          return;
@@ -310,7 +311,16 @@ public final class CouncilHalls extends SavedData {
 
       CouncilHalls councils = get(level);
       FactionStandingData standings = FactionStandingData.get(level);
+      if (action.startsWith("venture") && action.length() > 7 && Character.isDigit(action.charAt(7))) {
+         TradeVentures.start(player, town, action.charAt(7) - '0');
+         return true;
+      }
+
       switch (action) {
+         case "ventures" -> {
+            TradeVentures.show(player, npc, town);
+            return true;
+         }
          case "caravan_hire" -> {
             FactionCaravans.hire(player, town);
             return true;

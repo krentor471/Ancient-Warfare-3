@@ -3546,5 +3546,17 @@
   "disaster.ancientwarfare.fire_cry": "Fire!",
   "disaster.ancientwarfare.fire_saved": "The fire in%s is out! The townsfolk thank you and press coins into your hand.",
   "disaster.ancientwarfare.fire_lost": "A house in%s burned to the ground. People quietly sift the embers.",
-  "disaster.ancientwarfare.cured": "Milk... thank you. I feel better already."
+  "disaster.ancientwarfare.cured": "Milk... thank you. I feel better already.",
+  "venture.ancientwarfare.button": "[Trade routes]",
+  "venture.ancientwarfare.title": "Guild trade routes",
+  "venture.ancientwarfare.intro": "Fit out a caravan: you pay for the load (%s items) here, the guild carries and sells it there. Hover a route for the reckoning.",
+  "venture.ancientwarfare.running": "On the road: %2$s to %1$s, arrives in %3$s days.",
+  "venture.ancientwarfare.none": "No roads lead out of this town yet.",
+  "venture.ancientwarfare.offer": "%s: %s, invest %s → %s silver, %s days, risk %s%%",
+  "venture.ancientwarfare.hint": "Bought here: %s silver\nSold there: %s silver\nNet profit: %s silver\nOn the road: %s days\nRisk of robbery: %s%%\nOn average, with the risk: %s silver",
+  "venture.ancientwarfare.too_many": "You already have %s caravans on the road. Wait for them.",
+  "venture.ancientwarfare.no_profit": "This route loses money right now. Wait for prices to shift.",
+  "venture.ancientwarfare.started": "A caravan with %s set out for %s. Due in %s days.",
+  "venture.ancientwarfare.robbed": "Brigands took your caravan (%s) on the road to %s. The load is lost.",
+  "venture.ancientwarfare.arrived": "Your caravan (%s) reached %s. Takings: %s silver."
 }

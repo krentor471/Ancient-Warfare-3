@@ -3546,5 +3546,17 @@
   "disaster.ancientwarfare.fire_cry": "Пожар!",
   "disaster.ancientwarfare.fire_saved": "Пожар в поселении%s потушен! Жители благодарят тебя и суют в руки монеты.",
   "disaster.ancientwarfare.fire_lost": "Дом в поселении%s сгорел дотла. Люди молча разбирают головешки.",
-  "disaster.ancientwarfare.cured": "Молоко... спасибо. Кажется, мне легче."
+  "disaster.ancientwarfare.cured": "Молоко... спасибо. Кажется, мне легче.",
+  "venture.ancientwarfare.button": "[Торговые маршруты]",
+  "venture.ancientwarfare.title": "Торговые маршруты гильдии",
+  "venture.ancientwarfare.intro": "Снаряди караван: ты платишь за груз (%s шт.) здесь, гильдия везёт и продаёт его там. Наведи на маршрут, чтобы увидеть расчёт.",
+  "venture.ancientwarfare.running": "В пути: %2$s в %1$s, прибудет через %3$s дн.",
+  "venture.ancientwarfare.none": "Дорог из этого города пока нет, возить некуда.",
+  "venture.ancientwarfare.offer": "%s: %s, вложить %s → %s сер., %s дн., риск %s%%",
+  "venture.ancientwarfare.hint": "Закупка здесь: %s сер.\nПродажа там: %s сер.\nЧистая прибыль: %s сер.\nВ пути: %s дн.\nРиск грабежа: %s%%\nВ среднем с учётом риска: %s сер.",
+  "venture.ancientwarfare.too_many": "У тебя уже %s караванов в пути. Дождись их.",
+  "venture.ancientwarfare.no_profit": "Этот маршрут сейчас в убыток. Подожди, пока цены сдвинутся.",
+  "venture.ancientwarfare.started": "Караван с грузом (%s) вышел в %s. Ждать %s дн.",
+  "venture.ancientwarfare.robbed": "Разбойники взяли твой караван (%s) на пути в %s. Груз потерян.",
+  "venture.ancientwarfare.arrived": "Твой караван (%s) дошёл до %s. Выручка: %s сер."
 }
