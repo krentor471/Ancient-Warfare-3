@@ -3486,5 +3486,15 @@
   "gui.ancientwarfare.world_map.days": "%s days",
   "gui.ancientwarfare.deal.goods_held": "You carry: %s",
   "gui.ancientwarfare.deal.goods_mine": "You give (on table / have)",
-  "gui.ancientwarfare.deal.goods_theirs": "They give (on table / in stores)"
+  "gui.ancientwarfare.deal.goods_theirs": "They give (on table / in stores)",
+  "head.ancientwarfare.pray": "[Pray, %s silver]",
+  "head.ancientwarfare.pray.hint": "Pray at the village shrine. Once a day the faith blesses you. The first prayer makes you one of its faithful.",
+  "faith.ancientwarfare.pray.no_shrine": "We have no shrine or temple here. Pray in another village.",
+  "faith.ancientwarfare.pray.done": "You have prayed today already. The gods dislike pests.",
+  "faith.ancientwarfare.pray.joined": "You took up the faith: %s. Its realms see you as a fellow believer.",
+  "faith.ancientwarfare.pray.converted": "You forsook %s for %s. Your old brethren will not forgive it.",
+  "faith.ancientwarfare.pray.blessing.sun": "The Sun warms you: your wounds close.",
+  "faith.ancientwarfare.pray.blessing.old_gods": "The Old Gods put strength in your arm.",
+  "faith.ancientwarfare.pray.blessing.ancestors": "Your ancestors stand behind you: blows glance off.",
+  "faith.ancientwarfare.pray.blessing.flame": "The Flame keeps you: fire does not burn, hands work faster."
 }

@@ -298,6 +298,8 @@ public final class TownTrades {
             .append("  ")
             .append(button(Component.translatable("head.ancientwarfare.errand"), id + (errand == null ? "errand" : "deliver"), ChatFormatting.GOLD, Component.translatable("head.ancientwarfare.errand.hint")))
             .append("  ")
+            .append(button(Component.translatable("head.ancientwarfare.pray", Prayers.PRICE), id + "pray", ChatFormatting.LIGHT_PURPLE, Component.translatable("head.ancientwarfare.pray.hint")))
+            .append("  ")
             .append(button(Component.translatable("head.ancientwarfare.preach", FaithSpread.PREACHER_PRICE), id + "preach", ChatFormatting.LIGHT_PURPLE, Component.translatable("head.ancientwarfare.preach.hint")))
             .append("  ")
             .append(button(Component.translatable("head.ancientwarfare.steal"), id + "steal", ChatFormatting.RED, Component.translatable("head.ancientwarfare.steal.hint")))
@@ -501,6 +503,7 @@ public final class TownTrades {
                player.sendSystemMessage(Component.translatable("head.ancientwarfare.steal.bad").withStyle(ChatFormatting.RED));
             }
          }
+         case "pray" -> Prayers.pray(player, npc, town(level, npc), speaker);
          case "preach" -> {
             MutableComponent choices = Component.literal("  ");
             for (int faith = 0; faith < FactionFaith.KEYS.length; faith++) {

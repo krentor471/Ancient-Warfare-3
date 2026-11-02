@@ -3486,5 +3486,15 @@
   "gui.ancientwarfare.world_map.days": "%s дн.",
   "gui.ancientwarfare.deal.goods_held": "У тебя с собой: %s",
   "gui.ancientwarfare.deal.goods_mine": "Ты даёшь (на столе / есть)",
-  "gui.ancientwarfare.deal.goods_theirs": "Они дают (на столе / в запасах)"
+  "gui.ancientwarfare.deal.goods_theirs": "Они дают (на столе / в запасах)",
+  "head.ancientwarfare.pray": "[Помолиться, %s сер.]",
+  "head.ancientwarfare.pray.hint": "Помолиться в святилище деревни. Раз в день вера даёт благословение. Первая молитва делает тебя её последователем.",
+  "faith.ancientwarfare.pray.no_shrine": "У нас нет ни святилища, ни храма. Молись в другой деревне.",
+  "faith.ancientwarfare.pray.done": "Ты уже молился сегодня. Боги не любят назойливых.",
+  "faith.ancientwarfare.pray.joined": "Ты принял веру: %s. Царства этой веры видят в тебе единоверца.",
+  "faith.ancientwarfare.pray.converted": "Ты отрёкся от веры «%s» и принял «%s». Прежние единоверцы этого не простят.",
+  "faith.ancientwarfare.pray.blessing.sun": "Солнце согревает тебя: раны затягиваются.",
+  "faith.ancientwarfare.pray.blessing.old_gods": "Старые боги вливают силу в твою руку.",
+  "faith.ancientwarfare.pray.blessing.ancestors": "Предки стоят за твоей спиной: удары тебя не берут.",
+  "faith.ancientwarfare.pray.blessing.flame": "Пламя хранит тебя: огонь не жжёт, руки работают быстрее."
 }
