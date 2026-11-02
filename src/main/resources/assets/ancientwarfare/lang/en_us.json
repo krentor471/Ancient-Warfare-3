@@ -3541,5 +3541,10 @@
   "deal.ancientwarfare.envoy_fee": "The ruler is not at hand: an envoy needs %s silver for the road. Find the coin or come in person.",
   "town.ancientwarfare.curfew": "Curfew in%s: the watch is doubled, honest folk keep indoors.",
   "town.ancientwarfare.burglar": "A cry in the night in%s: a burglar climbed out of a window and runs %s!",
-  "town.ancientwarfare.burglar": "A cry in the night! A burglar climbed out of a window in %s and runs %s. The watch is after him."
+  "town.ancientwarfare.burglar": "A cry in the night! A burglar climbed out of a window in %s and runs %s. The watch is after him.",
+  "disaster.ancientwarfare.fire": "Fire in%s! A house is burning, the bell is ringing. Pour water from a bucket on it before it's too late.",
+  "disaster.ancientwarfare.fire_cry": "Fire!",
+  "disaster.ancientwarfare.fire_saved": "The fire in%s is out! The townsfolk thank you and press coins into your hand.",
+  "disaster.ancientwarfare.fire_lost": "A house in%s burned to the ground. People quietly sift the embers.",
+  "disaster.ancientwarfare.cured": "Milk... thank you. I feel better already."
 }

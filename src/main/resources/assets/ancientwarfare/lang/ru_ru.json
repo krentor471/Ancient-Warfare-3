@@ -3541,5 +3541,10 @@
   "deal.ancientwarfare.envoy_fee": "Правителя нет рядом: послу нужно %s сер. на дорогу. Найди деньги или приходи лично.",
   "town.ancientwarfare.curfew": "В поселении%s комендантский час: стража удвоена, честным людям положено сидеть по домам.",
   "town.ancientwarfare.burglar": "Крик в ночи в%s: вор вылез из чужого окна и бежит %s!",
-  "town.ancientwarfare.burglar": "Крик в ночи! Вор вылез из чужого окна в %s и бежит, %s. Стража за ним."
+  "town.ancientwarfare.burglar": "Крик в ночи! Вор вылез из чужого окна в %s и бежит, %s. Стража за ним.",
+  "disaster.ancientwarfare.fire": "Пожар в поселении%s! Горит дом, бьют в колокол. Залей огонь водой из ведра, пока не поздно.",
+  "disaster.ancientwarfare.fire_cry": "Пожар!",
+  "disaster.ancientwarfare.fire_saved": "Пожар в поселении%s потушен! Жители благодарят тебя и суют в руки монеты.",
+  "disaster.ancientwarfare.fire_lost": "Дом в поселении%s сгорел дотла. Люди молча разбирают головешки.",
+  "disaster.ancientwarfare.cured": "Молоко... спасибо. Кажется, мне легче."
 }

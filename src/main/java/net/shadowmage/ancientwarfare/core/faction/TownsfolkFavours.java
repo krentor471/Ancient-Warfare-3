@@ -145,6 +145,10 @@ public final class TownsfolkFavours {
          return;
       }
 
+      if (TownDisasters.cure(player, npc)) {
+         return;
+      }
+
       if (held.isEmpty() && TownTrades.headPanel(player, npc)) {
          hireButton(player, npc);
          return;
