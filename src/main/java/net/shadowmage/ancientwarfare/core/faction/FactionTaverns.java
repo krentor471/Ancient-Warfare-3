@@ -325,7 +325,7 @@ public final class FactionTaverns {
 
    /** Mug for mug with the house's hardest drinker: a full belly holds out longer; both end up reeling. */
    private static void drinkingMatch(ServerPlayer player, FactionNpcEntity barman, Component speaker) {
-      double chance = 0.35 + player.getFoodData().getFoodLevel() / 20.0 * 0.3 + (player.hasEffect(MobEffects.CONFUSION) ? -0.25 : 0.0);
+      double chance = 0.25 + player.getFoodData().getFoodLevel() / 20.0 * 0.3 + (player.hasEffect(MobEffects.CONFUSION) ? -0.25 : 0.0);
       boolean won = barman.getRandom().nextDouble() < chance;
       int mugs = 3 + barman.getRandom().nextInt(6);
       player.serverLevel().playSound(null, barman.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.NEUTRAL, 1.0F, 0.8F);

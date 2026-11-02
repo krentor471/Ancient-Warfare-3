@@ -1433,6 +1433,17 @@ public final class FactionGrowth {
             }
          }
 
+         // A door on the town side and a ladder up to the platform.
+         int sx = corner[0] == minX ? 1 : -1;
+         for (int dy = 1; dy <= 2; dy++) {
+            set(level, new BlockPos(corner[0] + sx * 2, ground + dy, corner[1]), Blocks.AIR.defaultBlockState());
+         }
+
+         Direction facing = sx > 0 ? Direction.EAST : Direction.WEST;
+         for (int dy = 1; dy <= 6; dy++) {
+            set(level, new BlockPos(corner[0] - sx, ground + dy, corner[1]), Blocks.LADDER.defaultBlockState().setValue(net.minecraft.world.level.block.LadderBlock.FACING, facing));
+         }
+
          set(level, new BlockPos(corner[0], ground + 7, corner[1]), Blocks.LANTERN.defaultBlockState());
       }
 
