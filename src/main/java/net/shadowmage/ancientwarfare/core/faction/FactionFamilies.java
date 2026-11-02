@@ -294,6 +294,38 @@ public final class FactionFamilies extends SavedData {
       }
    }
 
+   /**
+    * In a hardcore world a dead player's line goes on: his grown son at his side, or else his eldest
+    * living son, takes up the inheritance and the player plays on as him. Returns the heir's name,
+    * or null when there is no son and the line ends.
+    */
+   public static Component inherit(ServerLevel level, ServerPlayer player) {
+      for (net.minecraft.world.entity.Entity entity : level.getAllEntities()) {
+         if (entity.getTags().contains(SON_TAG) && entity instanceof net.shadowmage.ancientwarfare.core.entity.CombatNpcEntity son && son.isAlive()
+            && son.getOwner().filter(player.getUUID()::equals).isPresent()) {
+            Component name = son.getCustomName() == null ? Component.literal("?") : son.getCustomName();
+            player.teleportTo(son.getX(), son.getY(), son.getZ());
+            son.discard();
+            return name;
+         }
+      }
+
+      FactionFamilies families = get(level);
+      List<Person> children = families.playerChildren.get(player.getUUID());
+      if (children == null) {
+         return null;
+      }
+
+      Person eldest = children.stream().filter(child -> !child.female).min(Comparator.comparingLong(child -> child.born)).orElse(null);
+      if (eldest == null) {
+         return null;
+      }
+
+      children.remove(eldest);
+      families.setDirty();
+      return eldest.name();
+   }
+
    /** The player's children grow up: a son of age comes to serve at his father's side. */
    private void growChildren(ServerLevel level, long day) {
       RandomSource random = level.getRandom();

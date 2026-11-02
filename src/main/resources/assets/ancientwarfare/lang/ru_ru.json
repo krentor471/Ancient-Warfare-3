@@ -3558,5 +3558,7 @@
   "venture.ancientwarfare.no_profit": "Этот маршрут сейчас в убыток. Подожди, пока цены сдвинутся.",
   "venture.ancientwarfare.started": "Караван с грузом (%s) вышел в %s. Ждать %s дн.",
   "venture.ancientwarfare.robbed": "Разбойники взяли твой караван (%s) на пути в %s. Груз потерян.",
-  "venture.ancientwarfare.arrived": "Твой караван (%s) дошёл до %s. Выручка: %s сер."
+  "venture.ancientwarfare.arrived": "Твой караван (%s) дошёл до %s. Выручка: %s сер.",
+  "dynasty.ancientwarfare.heir": "Ты пал, но род продолжается. Твой сын %s принимает наследство: земли, имя и врагов отца.",
+  "dynasty.ancientwarfare.ended": "У тебя не осталось сыновей. Твой род угас."
 }

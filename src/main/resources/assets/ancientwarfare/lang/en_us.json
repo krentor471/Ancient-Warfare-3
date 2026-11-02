@@ -3558,5 +3558,7 @@
   "venture.ancientwarfare.no_profit": "This route loses money right now. Wait for prices to shift.",
   "venture.ancientwarfare.started": "A caravan with %s set out for %s. Due in %s days.",
   "venture.ancientwarfare.robbed": "Brigands took your caravan (%s) on the road to %s. The load is lost.",
-  "venture.ancientwarfare.arrived": "Your caravan (%s) reached %s. Takings: %s silver."
+  "venture.ancientwarfare.arrived": "Your caravan (%s) reached %s. Takings: %s silver.",
+  "dynasty.ancientwarfare.heir": "You have fallen, but the line goes on. Your son %s takes up the inheritance: his father's lands, name and enemies.",
+  "dynasty.ancientwarfare.ended": "No sons are left to you. Your line has ended."
 }

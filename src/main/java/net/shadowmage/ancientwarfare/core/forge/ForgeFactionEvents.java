@@ -48,6 +48,42 @@ public final class ForgeFactionEvents {
    private ForgeFactionEvents() {
    }
 
+   /** Hardcore: a dead player whose son lives plays on as the son; the game puts him back in survival a tick after the respawn. */
+   private static final java.util.Set<java.util.UUID> HEIRS = new java.util.HashSet<>();
+
+   @SubscribeEvent
+   public static void respawn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent event) {
+      if (event.isEndConquered() || !(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) || !player.server.isHardcore()) {
+         return;
+      }
+
+      net.minecraft.network.chat.Component heir = net.shadowmage.ancientwarfare.core.faction.FactionFamilies.inherit(player.serverLevel(), player);
+      if (heir == null) {
+         player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("dynasty.ancientwarfare.ended").withStyle(net.minecraft.ChatFormatting.DARK_RED));
+         return;
+      }
+
+      HEIRS.add(player.getUUID());
+      player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("dynasty.ancientwarfare.heir", heir).withStyle(net.minecraft.ChatFormatting.GOLD));
+   }
+
+   @SubscribeEvent
+   public static void heirs(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+      if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || HEIRS.isEmpty()) {
+         return;
+      }
+
+      for (java.util.UUID id : java.util.List.copyOf(HEIRS)) {
+         net.minecraft.server.level.ServerPlayer player = event.getServer().getPlayerList().getPlayer(id);
+         if (player != null && player.isSpectator()) {
+            player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+            HEIRS.remove(id);
+         } else if (player == null) {
+            HEIRS.remove(id);
+         }
+      }
+   }
+
    @SubscribeEvent
    public static void cropGrow(net.minecraftforge.event.level.BlockEvent.CropGrowEvent.Pre event) {
       if (net.shadowmage.ancientwarfare.core.faction.SeasonWeather.frozen(event.getLevel(), event.getPos())) {
