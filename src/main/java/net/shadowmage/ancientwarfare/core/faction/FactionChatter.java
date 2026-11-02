@@ -78,7 +78,17 @@ public final class FactionChatter {
       Map.entry("helper", 3),
       Map.entry("break", 4),
       Map.entry("attack", 4),
-      Map.entry("thanks", 2)
+      Map.entry("thanks", 2),
+      Map.entry("work", 8),
+      Map.entry("faith.same", 4),
+      Map.entry("faith.other", 4),
+      Map.entry("faith.none", 3),
+      Map.entry("neighbour", 6),
+      Map.entry("walls", 3),
+      Map.entry("palisade", 3),
+      Map.entry("tavern", 4),
+      Map.entry("caravan", 3),
+      Map.entry("bandits", 3)
    );
    /** When each player next hears someone, and when each speaker may speak again; not saved. */
    private static final Map<UUID, Long> NEXT_FOR_PLAYER = new HashMap<>();
@@ -305,6 +315,49 @@ public final class FactionChatter {
 
          if (markets.price(town.id(), cheapest) <= TownMarkets.CHEAP) {
             topics.add(new Topic("cheap", TownMarkets.goodName(cheapest), 2));
+         }
+
+         // Talk of their own work, their faith beside the player's, the town and its neighbours.
+         if (civilian(npc)) {
+            String trade = TownTrades.tradeOf(level, npc);
+            if (trade != null && !trade.isEmpty()) {
+               topics.add(new Topic("work", Component.translatable("trade.ancientwarfare." + trade), 3));
+            }
+         }
+
+         int theirFaith = FaithSpread.faith(level, town);
+         int mine = Prayers.faith(player);
+         topics.add(new Topic(mine < 0 ? "faith.none" : mine == theirFaith ? "faith.same" : "faith.other", FactionFaith.name(theirFaith), 1));
+         if (town.buildings().contains("stone_wall")) {
+            topics.add(new Topic("walls", null, 1));
+         } else if (town.buildings().contains("palisade")) {
+            topics.add(new Topic("palisade", null, 1));
+         }
+
+         if (town.buildings().contains("tavern") && time >= 11000L && time < 16000L) {
+            topics.add(new Topic("tavern", null, 3));
+         }
+
+         if (town.buildings().contains("guild") || town.buildings().contains("caravanserai")) {
+            topics.add(new Topic("caravan", null, 1));
+         }
+
+         FactionWorldData.Settlement neighbour = null;
+         double best = Double.MAX_VALUE;
+         for (FactionWorldData.Settlement other : data.settlements()) {
+            double d = other.horizontalDistanceSquared(town.center().getX(), town.center().getZ());
+            if (other != town && d < best && !other.name().isEmpty()) {
+               best = d;
+               neighbour = other;
+            }
+         }
+
+         if (neighbour != null) {
+            topics.add(new Topic("neighbour", neighbour.nameComponent(), 2));
+         }
+
+         if (BanditCamps.standing(level).stream().anyMatch(camp -> town.horizontalDistanceSquared(camp[0], camp[1]) < 600.0 * 600.0)) {
+            topics.add(new Topic("bandits", null, 2));
          }
 
          List<FactionQuests.Quest> quests = data.allQuests().get(player.getUUID());
