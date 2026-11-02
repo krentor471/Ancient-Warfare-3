@@ -280,7 +280,9 @@ public final class FactionTownLife {
    /** Now and then, by day, a pickpocket strikes in the town the player is in and runs for it. */
    private static void maybeTheft(ServerLevel level, FactionWorldData data, ServerPlayer player, long now) {
       long time = level.getDayTime() % FactionSimulation.DAY_TICKS;
-      if (time < MARKET_OPENS || time > MARKET_CLOSES || player.isSpectator() || level.getRandom().nextDouble() >= THIEF_CHANCE) {
+      // By day pickpockets work the market; by night burglars try the houses.
+      boolean night = time > 13000L && time < 23000L;
+      if ((!night && (time < MARKET_OPENS || time > MARKET_CLOSES)) || player.isSpectator() || level.getRandom().nextDouble() >= THIEF_CHANCE * (night ? 1.5 : 1.0)) {
          return;
       }
 
@@ -328,7 +330,7 @@ public final class FactionTownLife {
          Component way = FactionRumours.where(x, z, away.getX(), away.getZ());
          for (ServerPlayer near : level.players()) {
             if (near.distanceToSqr(x, near.getY(), z) < 96.0 * 96.0) {
-               near.sendSystemMessage(Component.translatable("town.ancientwarfare.thief", name, way).withStyle(ChatFormatting.YELLOW));
+               near.sendSystemMessage(Component.translatable(night ? "town.ancientwarfare.burglar" : "town.ancientwarfare.thief", name, way).withStyle(ChatFormatting.YELLOW));
             }
          }
 

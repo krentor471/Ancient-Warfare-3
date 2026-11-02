@@ -74,9 +74,18 @@ public final class TownWatch {
             continue;
          }
 
-         if (watch.size() < WATCHMEN) {
+         // A restless town keeps a curfew: twice the watch, and the player is told to keep indoors.
+         boolean curfew = town.order() < 50;
+         if (watch.size() < (curfew ? WATCHMEN * 2 : WATCHMEN)) {
             watchman(level, town, at);
          }
+
+         if (curfew && player.getPersistentData().getLong("AWCurfewTold") != level.getDayTime() / 24000L + 1 + town.id() * 100000L) {
+            player.getPersistentData().putLong("AWCurfewTold", level.getDayTime() / 24000L + 1 + town.id() * 100000L);
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("town.ancientwarfare.curfew", FactionNews.named(town)).withStyle(net.minecraft.ChatFormatting.RED));
+         }
+
+         nightSounds(level, player);
 
          int fine = player.getPersistentData().getCompound(WANTED).getInt(town.faction());
          if (fine > 0 && !player.isCreative()) {
@@ -99,6 +108,23 @@ public final class TownWatch {
             level.getEntitiesOfClass(FactionNpcEntity.class, player.getBoundingBox().inflate(NEAR * 2), npc -> npc.getTags().contains(WATCH_TAG)).forEach(FactionNpcEntity::discard);
          }
       }
+   }
+
+   /** The town at night: a dog barking, an owl, a shutter banging, now and then. */
+   private static void nightSounds(ServerLevel level, ServerPlayer player) {
+      net.minecraft.util.RandomSource random = level.getRandom();
+      if (random.nextInt(6) != 0) {
+         return;
+      }
+
+      net.minecraft.sounds.SoundEvent[] sounds = {
+         net.minecraft.sounds.SoundEvents.WOLF_AMBIENT, net.minecraft.sounds.SoundEvents.WOLF_HOWL, net.minecraft.sounds.SoundEvents.CAT_AMBIENT,
+         net.minecraft.sounds.SoundEvents.WOODEN_DOOR_CLOSE, net.minecraft.sounds.SoundEvents.WOODEN_TRAPDOOR_CLOSE, net.minecraft.sounds.SoundEvents.BELL_BLOCK
+      };
+      double x = player.getX() + random.nextInt(41) - 20;
+      double z = player.getZ() + random.nextInt(41) - 20;
+      int pick = random.nextInt(sounds.length);
+      level.playSound(null, x, player.getY(), z, sounds[pick], net.minecraft.sounds.SoundSource.AMBIENT, pick == 5 ? 0.3F : 0.6F, 0.8F + random.nextFloat() * 0.4F);
    }
 
    private static void watchman(ServerLevel level, FactionWorldData.Settlement town, BlockPos near) {
