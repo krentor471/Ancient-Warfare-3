@@ -18,9 +18,9 @@ public final class LetterScreen extends Screen {
    private static final int LINE_HEIGHT = 10;
    private static final int PAPER = 0xFFE8DCB8;
    private static final int PAPER_EDGE = 0xFF6E5530;
-   private static final int INK = 0xFF3A2A18;
-   private static final int OLD_INK = 0xFF8C7C62;
-   private static final int RULE = 0xFFB8A27A;
+   private static final int INK = AwUi.TEXT;
+   private static final int OLD_INK = AwUi.MUTED;
+   private static final int RULE = AwUi.FRAME;
 
    private LetterLog.Kind kind;
    /** The village head's page: his lines alone, no letters. */
@@ -78,7 +78,7 @@ public final class LetterScreen extends Screen {
             label = Component.literal("» ").append(label).append(" «").withStyle(net.minecraft.ChatFormatting.YELLOW);
          }
 
-         Button button = Button.builder(label, pressed -> {
+         Button button = AwUi.button(label, pressed -> {
             this.kind = tab;
             this.scroll = 0;
             this.init();
@@ -132,10 +132,9 @@ public final class LetterScreen extends Screen {
       int top = MARGIN;
       int right = this.width - MARGIN;
       int bottom = this.height - 8;
-      graphics.fill(left - 3, top - 3, right + 3, bottom + 3, PAPER_EDGE);
-      graphics.fill(left, top, right, bottom, PAPER);
+      AwUi.panel(graphics, left, top, right - left, bottom - top);
       if (this.panel != null) {
-         graphics.drawCenteredString(this.font, this.title, this.width / 2, 8, -1);
+         graphics.drawCenteredString(this.font, this.title, this.width / 2, 8, AwUi.GOLD);
       }
 
       int y = top + 8;

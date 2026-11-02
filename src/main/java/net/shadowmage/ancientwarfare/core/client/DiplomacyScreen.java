@@ -295,7 +295,7 @@ public class DiplomacyScreen extends Screen {
          case SUPPLY -> Component.translatable(key, FactionCourt.SUPPLY_AMOUNT);
          default -> Component.translatable(key);
       };
-      Button button = Button.builder(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 19).build();
+      Button button = AwUi.button(label, ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)).bounds(x, y, width, 19).build();
       boolean anywhere = action == PlayerDiplomacy.Action.WAR || action == PlayerDiplomacy.Action.SPY || action == PlayerDiplomacy.Action.TRADE && entry.trade();
       String research = PlayerDiplomacy.research(action);
       boolean known = research == null || ClientResearch.has(research);
@@ -324,7 +324,7 @@ public class DiplomacyScreen extends Screen {
          PlayerDiplomacy.Action action = gifts[i];
          int x = this.contentX() + (i % 2) * (cardWidth + 4);
          int y = this.contentY() + RULER_CARD + (i / 2) * COURT_CARD;
-         Button button = Button.builder(Component.translatable("gui.ancientwarfare.diplomacy.court_gift", FactionCourt.COURTIER_GIFT / 10), ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action))
+         Button button = AwUi.button(Component.translatable("gui.ancientwarfare.diplomacy.court_gift", FactionCourt.COURTIER_GIFT / 10), ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action))
             .bounds(x + cardWidth - 44, y + 24, 40, 14)
             .build();
          button.active = entry.leaderNear();
@@ -361,7 +361,7 @@ public class DiplomacyScreen extends Screen {
                : this.bond == FactionDeals.GIVE_DAUGHTER
                ? check(true, Component.translatable("gui.ancientwarfare.deal.give_daughter"))
                : check(false, canTreaty ? Component.translatable("gui.ancientwarfare.deal.treaty." + state.serializedName()) : Component.translatable("gui.ancientwarfare.deal.bond"));
-      Button treatyButton = Button.builder(bondLabel, ignored -> {
+      Button treatyButton = AwUi.button(bondLabel, ignored -> {
          if (this.treaty) {
             this.treaty = false;
             this.bond = FactionDeals.VASSAL;
@@ -383,7 +383,7 @@ public class DiplomacyScreen extends Screen {
       }).bounds(theirs, y + DEAL_ROW, column, 16).build();
       treatyButton.setTooltip(Tooltip.create(Component.translatable("gui.ancientwarfare.deal.bond.tip")));
       this.addRenderableWidget(treatyButton);
-      Button tradeButton = Button.builder(check(this.trade, Component.translatable("gui.ancientwarfare.deal.trade")), ignored -> {
+      Button tradeButton = AwUi.button(check(this.trade, Component.translatable("gui.ancientwarfare.deal.trade")), ignored -> {
          this.trade = !this.trade;
          this.changed();
       }).bounds(theirs, y + DEAL_ROW * 2, column, 16).build();
@@ -393,11 +393,11 @@ public class DiplomacyScreen extends Screen {
       int bottom = y + DEAL_ROW * 3;
       int half = (column - 2) / 2;
       this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.deal.propose"), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 1, this.offer()))
+         AwUi.button(Component.translatable("gui.ancientwarfare.deal.propose"), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 1, this.offer()))
             .bounds(mine, bottom, half, 16)
             .build()
       );
-      Button strike = Button.builder(Component.translatable("gui.ancientwarfare.deal.strike").withStyle(ChatFormatting.GOLD), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 2, this.offer()))
+      Button strike = AwUi.button(Component.translatable("gui.ancientwarfare.deal.strike").withStyle(ChatFormatting.GOLD), ignored -> AWCoreNetwork.sendDeal(entry.faction(), 2, this.offer()))
          .bounds(mine + half + 2, bottom, half, 16)
          .build();
       strike.active = this.verdict == FactionDeals.ACCEPT;
@@ -423,7 +423,7 @@ public class DiplomacyScreen extends Screen {
       for (int i = 0; i < INTRIGUES.length; i++) {
          PlayerDiplomacy.Action action = INTRIGUES[i];
          boolean away = pending(entry, action);
-         Button button = Button.builder(
+         Button button = AwUi.button(
                Component.translatable(away ? "gui.ancientwarfare.intrigue.away" : "gui.ancientwarfare.intrigue.send"),
                ignored -> AWCoreNetwork.sendDiplomacyAction(entry.faction(), action)
             )
@@ -572,11 +572,11 @@ public class DiplomacyScreen extends Screen {
 
    /** Minus and plus at the right of a row whose icon and amount render() draws. */
    private void stepper(int x, int y, int width, Runnable less, Runnable more) {
-      this.addRenderableWidget(Button.builder(Component.literal("-"), ignored -> {
+      this.addRenderableWidget(AwUi.button(Component.literal("-"), ignored -> {
          less.run();
          this.changed();
       }).bounds(x + width - 34, y, 16, 16).build());
-      this.addRenderableWidget(Button.builder(Component.literal("+"), ignored -> {
+      this.addRenderableWidget(AwUi.button(Component.literal("+"), ignored -> {
          more.run();
          this.changed();
       }).bounds(x + width - 16, y, 16, 16).build());
@@ -585,7 +585,7 @@ public class DiplomacyScreen extends Screen {
    /** A button going round the possible enemies, and none. */
    private void cycle(int x, int y, int width, List<String> targets, String current, Consumer<String> set, String tip) {
       Component target = current.isEmpty() ? Component.translatable("gui.ancientwarfare.deal.nobody") : factionName(current);
-      Button button = Button.builder(Component.translatable("gui.ancientwarfare.deal.war", target), ignored -> {
+      Button button = AwUi.button(Component.translatable("gui.ancientwarfare.deal.war", target), ignored -> {
          int at = targets.indexOf(current);
          set.accept(at + 1 < targets.size() ? targets.get(at + 1) : "");
          this.changed();

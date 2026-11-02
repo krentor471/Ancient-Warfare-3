@@ -97,7 +97,7 @@ public final class HeadScreen extends Screen {
          Component label = this.font.width(choice.label()) > half - 8
             ? Component.literal(this.font.plainSubstrByWidth(choice.label().getString(), half - 14) + "…")
             : choice.label();
-         Button button = Button.builder(label, pressed -> {
+         Button button = AwUi.button(label, pressed -> {
             LetterLog.prompted();
             this.onClose();
             String command = choice.command().startsWith("/") ? choice.command().substring(1) : choice.command();
@@ -114,7 +114,7 @@ public final class HeadScreen extends Screen {
          this.addRenderableWidget(button);
       }
 
-      this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), pressed -> this.onClose())
+      this.addRenderableWidget(AwUi.button(Component.translatable("gui.done"), pressed -> this.onClose())
          .bounds(left + WIDTH / 2 - 40, this.top + this.panelHeight - 22, 80, BUTTON_HEIGHT).build());
    }
 
@@ -122,10 +122,8 @@ public final class HeadScreen extends Screen {
    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
       this.renderBackground(graphics);
       int left = (this.width - WIDTH) / 2;
-      graphics.fill(left - 2, this.top - 2, left + WIDTH + 2, this.top + this.panelHeight + 2, FRAME);
-      graphics.fill(left, this.top, left + WIDTH, this.top + this.panelHeight, BACK);
-      graphics.fill(left, this.top, left + WIDTH, this.top + 20, TITLE_BAND);
-      graphics.drawCenteredString(this.font, this.title, this.width / 2, this.top + 6, 0xFFF2C14E);
+      AwUi.panel(graphics, left, this.top, WIDTH, this.panelHeight);
+      AwUi.title(graphics, this.font, this.title, left, this.top, WIDTH);
       int y = this.top + 28;
       for (FormattedCharSequence line : this.text) {
          graphics.drawString(this.font, line, left + 10, y, TEXT, false);

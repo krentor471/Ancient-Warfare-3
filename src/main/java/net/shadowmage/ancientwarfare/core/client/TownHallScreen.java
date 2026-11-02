@@ -38,7 +38,7 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
       for (int i = 0; i < 3; i++) {
          int level = i;
          this.taxButtons[i] = this.addRenderableWidget(
-            net.minecraft.client.gui.components.Button.builder(
+            AwUi.button(
                   Component.translatable("gui.ancientwarfare.town_hall.tax." + TAX_KEYS[i]),
                   button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, level)
                )
@@ -48,14 +48,14 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
       }
 
       this.countryButton = this.addRenderableWidget(
-         net.minecraft.client.gui.components.Button.builder(
+         AwUi.button(
                Component.translatable("gui.ancientwarfare.country.open_button"), button -> net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.sendCountryOpen()
             )
             .bounds(panelX + 4, this.topPos + 42, PANEL_WIDTH - 8, 16)
             .build()
       );
       this.foundButton = this.addRenderableWidget(
-         net.minecraft.client.gui.components.Button.builder(Component.translatable("gui.ancientwarfare.country.found_button"), button -> {
+         AwUi.button(Component.translatable("gui.ancientwarfare.country.found_button"), button -> {
                this.openingDeathRecords = true;
                this.minecraft.setScreen(new CountryNameScreen(this));
             })
@@ -145,7 +145,7 @@ public class TownHallScreen extends AbstractContainerScreen<TownHallMenu> {
    private void renderVillagePanel(GuiGraphics graphics) {
       int x = this.panelX();
       int y = this.topPos;
-      graphics.fill(x, y, x + PANEL_WIDTH, y + VILLAGE_PANEL_HEIGHT, 0xE0101010);
+      AwUi.panel(graphics, x, y, PANEL_WIDTH, VILLAGE_PANEL_HEIGHT);
       graphics.drawString(this.font, Component.translatable(this.menu.village().get(6) == 2 ? "gui.ancientwarfare.town_hall.capital" : this.menu.village().get(6) == 3 ? "gui.ancientwarfare.town_hall.country_village" : "gui.ancientwarfare.town_hall.village"), x + 6, y + 6, TEXT_COLOR, false);
       int loyalty = this.menu.village().get(1);
       int order = this.menu.village().get(2);
