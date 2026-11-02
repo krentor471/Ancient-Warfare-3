@@ -87,7 +87,7 @@ public final class LetterLog {
       Component panel = lines.stream().filter(line -> key(line).equals(PANEL)).findFirst().orElse(null);
       if (panel != null) {
          lines.remove(panel);
-         LetterScreen.openPanel(((TranslatableContents)panel.getContents()).getArgs().length > 0 && ((TranslatableContents)panel.getContents()).getArgs()[0] instanceof Component name ? name : panel, lines);
+         HeadScreen.open(((TranslatableContents)panel.getContents()).getArgs().length > 0 && ((TranslatableContents)panel.getContents()).getArgs()[0] instanceof Component name ? name : panel, lines);
          return;
       }
 
