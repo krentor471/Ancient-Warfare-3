@@ -49,6 +49,10 @@ public final class FactionResources {
 
    /** One day's work in every settlement. */
    static void simulateDay(FactionWorldData data) {
+      simulateDay(data, false);
+   }
+
+   static void simulateDay(FactionWorldData data, boolean winter) {
       java.util.Set<String> factions = new java.util.HashSet<>();
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          int[] made = output(settlement);
@@ -57,6 +61,22 @@ public final class FactionResources {
          for (int kind = 0; kind < KINDS; kind++) {
             store[kind] = Math.min(MAX_STORE, store[kind] + made[kind]);
          }
+      }
+
+      // Every settlement lives off the realm's stores: bread for its people, firewood (twice in winter),
+      // and iron and leather to keep its garrison armed. Stores no longer simply fill up.
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (FactionDiplomacy.isOutlaw(settlement.faction())) {
+            continue;
+         }
+
+         int[] store = data.stores(settlement.faction());
+         int people = settlement.population();
+         store[GRAIN] = Math.max(0, store[GRAIN] - people / 10);
+         store[WOOD] = Math.max(0, store[WOOD] - people / 20 * (winter ? 2 : 1));
+         store[IRON] = Math.max(0, store[IRON] - settlement.garrison() / 15);
+         store[LEATHER] = Math.max(0, store[LEATHER] - settlement.garrison() / 20);
+         store[COAL] = Math.max(0, store[COAL] - people / 60);
       }
 
       // A realm with no grain in its stores cannot send any to its towns: they eat into their own.

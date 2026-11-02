@@ -109,7 +109,7 @@ public final class TownCalendar {
       net.minecraft.sounds.SoundEvent[] tunes = "tournament".equals(reason)
          ? new net.minecraft.sounds.SoundEvent[]{net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BELL.value(), net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASEDRUM.value()}
          : new net.minecraft.sounds.SoundEvent[]{net.minecraft.sounds.SoundEvents.NOTE_BLOCK_FLUTE.value(), net.minecraft.sounds.SoundEvents.NOTE_BLOCK_GUITAR.value(), net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BANJO.value()};
-      for (int beat = 0; beat < 3; beat++) {
+      for (int beat = 0; beat < (random.nextInt(3) == 0 ? 3 : 0); beat++) {
          float pitch = (float)Math.pow(2.0, (random.nextInt(13) - 12) / 12.0);
          level.playSound(null, center.getX() + 0.5, ground + 1.0, center.getZ() + 0.5, tunes[random.nextInt(tunes.length)], net.minecraft.sounds.SoundSource.RECORDS, 1.2F, pitch);
       }

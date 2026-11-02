@@ -525,7 +525,13 @@ public final class ForgeFactionCommands {
                         false
                      );
                   return 1;
-               }))
+               }).then(Commands.argument("set", com.mojang.brigadier.arguments.StringArgumentType.word()).requires(source -> source.hasPermission(2)).executes(context -> {
+                  String name = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "set").toUpperCase(java.util.Locale.ROOT);
+                  net.shadowmage.ancientwarfare.core.faction.FactionSeasons.forced = name.equals("AUTO") ? null : net.shadowmage.ancientwarfare.core.faction.FactionSeasons.Season.valueOf(name);
+                  net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.sendSeason(context.getSource().getLevel(), net.shadowmage.ancientwarfare.core.faction.FactionSeasons.season(context.getSource().getLevel()).ordinal());
+                  context.getSource().sendSuccess(() -> Component.literal("season: " + name), false);
+                  return 1;
+               })))
                .then(Commands.literal("grow").requires(source -> source.hasPermission(2)).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(context.getSource().getLevel(), context.getSource().getPlayerOrException(), null);
                   return 1;

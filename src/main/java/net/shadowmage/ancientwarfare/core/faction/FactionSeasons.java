@@ -58,7 +58,14 @@ public final class FactionSeasons {
       return level instanceof ServerLevel server ? Math.max(0L, FactionWorldData.get(server).lastSimulatedDay()) : level.getDayTime() / FactionSimulation.DAY_TICKS;
    }
 
+   /** A season set by hand for testing; null follows the calendar. Not saved. */
+   public static Season forced;
+
    public static Season season(Level level) {
+      if (forced != null && level instanceof ServerLevel) {
+         return forced;
+      }
+
       return Season.values()[(int)Math.floorMod(day(level) / SEASON_DAYS, 4L)];
    }
 

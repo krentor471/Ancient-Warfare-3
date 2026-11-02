@@ -129,7 +129,7 @@ public final class FactionSimulation {
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       FactionSeasons.simulateDay(level);
       FactionLife.simulateDay(level, data);
-      FactionResources.simulateDay(data);
+      FactionResources.simulateDay(data, FactionSeasons.season(level) == FactionSeasons.Season.WINTER);
       FactionMarkets.simulateDay(level, data);
       FactionMusters.simulateDay(level, data);
       FactionRebellions.simulateDay(level, data);
