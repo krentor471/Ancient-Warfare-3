@@ -19,7 +19,7 @@ import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
  * little better of a fellow believer. Turning to another faith costs standing with the old one's realms.
  */
 public final class Prayers {
-   public static final int PRICE = 2;
+   public static final int PRICE = 8;
    private static final String FAITH_TAG = "AWFaith";
    private static final String DAY_TAG = "AWPrayedDay";
    private static final int BLESSING_TICKS = 20 * 60 * 10;

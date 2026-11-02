@@ -3537,5 +3537,6 @@
   "chatter.ancientwarfare.caravan.2": "Goods come from afar, and prices only climb for it.",
   "chatter.ancientwarfare.bandits.0": "Brigands on the road again. Don't leave the gates unarmed.",
   "chatter.ancientwarfare.bandits.1": "I heard the brigands have a lair in the woods nearby. There's a bounty on them.",
-  "chatter.ancientwarfare.bandits.2": "A merchant was robbed at the ford yesterday. When will it end?"
+  "chatter.ancientwarfare.bandits.2": "A merchant was robbed at the ford yesterday. When will it end?",
+  "deal.ancientwarfare.envoy_fee": "The ruler is not at hand: an envoy needs %s silver for the road. Find the coin or come in person."
 }
