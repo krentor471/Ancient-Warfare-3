@@ -108,6 +108,7 @@ public final class FactionSimulation {
       Perf.run("FactionTownLife", () -> FactionTownLife.tick(level, data));
       Perf.run("TownEncounters", () -> TownEncounters.tick(level, data));
       Perf.run("CouncilHalls", () -> CouncilHalls.tick(level, data));
+      Perf.run("TownStorehouses", () -> TownStorehouses.tick(level, data));
       Perf.run("CouncilHalls.tidy", () -> CouncilHalls.tidy(level));
       Perf.run("TownCalendar", () -> TownCalendar.tick(level, data));
       Perf.run("SeasonWeather", () -> SeasonWeather.tick(level));

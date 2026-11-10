@@ -3565,5 +3565,7 @@
   "conquest.ancientwarfare.bar_hiding": "Taking %s: no defender in sight, the rest give up in %s s",
   "conquest.ancientwarfare.surrender": "The last of the garrison of %s lay down their arms. The place is yours to decide.",
   "diplomacy.ancientwarfare.war_on_you": "%s have had enough of you and declare war!",
-  "news.ancientwarfare.war_on_player": "%s declare war on %s."
+  "news.ancientwarfare.war_on_player": "%s declare war on %s.",
+  "storehouse.ancientwarfare.barrel": "Realm's store: %s (%s in all)",
+  "storehouse.ancientwarfare.theft": "You took from the stores of %s without leave. Standing -%s."
 }

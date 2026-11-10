@@ -3565,5 +3565,7 @@
   "conquest.ancientwarfare.bar_hiding": "Захват: %s, защитников не видно, остальные сдадутся через %s с",
   "conquest.ancientwarfare.surrender": "Остатки гарнизона %s сложили оружие. Решай судьбу поселения.",
   "diplomacy.ancientwarfare.war_on_you": "%s больше не терпят тебя и объявляют войну!",
-  "news.ancientwarfare.war_on_player": "%s объявляют войну игроку %s."
+  "news.ancientwarfare.war_on_player": "%s объявляют войну игроку %s.",
+  "storehouse.ancientwarfare.barrel": "Склад державы: %s (всего %s)",
+  "storehouse.ancientwarfare.theft": "Ты взял со складов фракции %s без спроса. Отношение -%s."
 }
