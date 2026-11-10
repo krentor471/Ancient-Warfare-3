@@ -1557,7 +1557,7 @@
   "gui.ancientwarfare.conquest.plunder": "Plunder",
   "gui.ancientwarfare.conquest.plunder.desc": "%s silver coins, a third of its people are lost. They will hate you.",
   "gui.ancientwarfare.conquest.raze": "Raze",
-  "gui.ancientwarfare.conquest.raze.desc": "%s silver coins, the settlement is gone from the map. Every faction hears of it.",
+  "gui.ancientwarfare.conquest.raze.desc": "%s silver coins, the settlement is left empty and abandoned for good. Every faction hears of it.",
   "gui.ancientwarfare.conquest.later": "Decide later",
   "conquest.ancientwarfare.gone": "There is nothing here to decide any more.",
   "conquest.ancientwarfare.annexed": "The settlement of %s is yours. It pays %s silver coins a day into the town hall at %s, %s, %s.",
@@ -3560,5 +3560,8 @@
   "venture.ancientwarfare.arrived": "Your caravan (%s) reached %s. Takings: %s silver.",
   "dynasty.ancientwarfare.heir": "You have fallen, but the line goes on. Your son %s takes up the inheritance: his father's lands, name and enemies.",
   "dynasty.ancientwarfare.ended": "No sons are left to you. Your line has ended.",
-  "town.ancientwarfare.abandoned": "Nobody is left alive in %s. The place stands empty and abandoned; nobody will come back to it."
+  "town.ancientwarfare.abandoned": "Nobody is left alive in %s. The place stands empty and abandoned; nobody will come back to it.",
+  "conquest.ancientwarfare.bar": "Taking %s: %s defenders left",
+  "conquest.ancientwarfare.bar_hiding": "Taking %s: no defender in sight, the rest give up in %s s",
+  "conquest.ancientwarfare.surrender": "The last of the garrison of %s lay down their arms. The place is yours to decide."
 }

@@ -435,7 +435,7 @@
   "gui.ancientwarfare.conquest.plunder": "Разграбить",
   "gui.ancientwarfare.conquest.plunder.desc": "%s серебряных монет, треть жителей пропадёт. Фракция тебя возненавидит.",
   "gui.ancientwarfare.conquest.raze": "Разорить",
-  "gui.ancientwarfare.conquest.raze.desc": "%s серебряных монет, поселение исчезнет с карты. Об этом узнают все фракции.",
+  "gui.ancientwarfare.conquest.raze.desc": "%s серебряных монет, поселение опустеет и будет заброшено навсегда. Об этом узнают все фракции.",
   "gui.ancientwarfare.conquest.later": "Решить позже",
   "conquest.ancientwarfare.gone": "Здесь больше нечего решать.",
   "conquest.ancientwarfare.annexed": "Поселение фракции %s теперь твоё. Налог %s сер. монет в день идёт в ратушу у %s, %s, %s.",
@@ -3560,5 +3560,8 @@
   "venture.ancientwarfare.arrived": "Твой караван (%s) дошёл до %s. Выручка: %s сер.",
   "dynasty.ancientwarfare.heir": "Ты пал, но род продолжается. Твой сын %s принимает наследство: земли, имя и врагов отца.",
   "dynasty.ancientwarfare.ended": "У тебя не осталось сыновей. Твой род угас.",
-  "town.ancientwarfare.abandoned": "В %s не осталось ни души. Поселение опустело и заброшено, сюда больше никто не вернётся."
+  "town.ancientwarfare.abandoned": "В %s не осталось ни души. Поселение опустело и заброшено, сюда больше никто не вернётся.",
+  "conquest.ancientwarfare.bar": "Захват: %s, осталось защитников: %s",
+  "conquest.ancientwarfare.bar_hiding": "Захват: %s, защитников не видно, остальные сдадутся через %s с",
+  "conquest.ancientwarfare.surrender": "Остатки гарнизона %s сложили оружие. Решай судьбу поселения."
 }

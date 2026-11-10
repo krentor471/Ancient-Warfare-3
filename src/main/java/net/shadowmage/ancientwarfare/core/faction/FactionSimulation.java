@@ -32,6 +32,8 @@ public final class FactionSimulation {
    public static final long DAY_TICKS = 24000L;
    private static final int GARRISON_CHECK_TICKS = 100;
    private static final int RESPAWN_TICKS = 600;
+   private static final long MANNED_AFTER_TICKS = 1200L;
+   private static final Map<Integer, Long> INSIDE_SINCE = new HashMap<>();
    private static final double ACTIVE_RANGE = 128.0;
    private static final double HIDDEN_RANGE = 24.0;
    private static final int GARRISON_MARGIN = 24;
@@ -393,9 +395,19 @@ public final class FactionSimulation {
             // The town's own people are about whether or not its soldiers have taken up their posts yet.
             keepTownsfolk(level, data, settlement);
             if (!settlement.manned) {
-               if (spawnersRemain(level, settlement)) {
+               // The template's spawners fire as a player comes near each; in a big town some never
+               // do, so after a minute with a player inside it the town counts as manned anyway.
+               boolean inside = players.stream().anyMatch(player -> settlement.contains(player.getX(), player.getZ(), 0));
+               long since = inside ? INSIDE_SINCE.computeIfAbsent(settlement.id(), id -> level.getGameTime()) : 0L;
+               if (!inside) {
+                  INSIDE_SINCE.remove(settlement.id());
+               }
+
+               if ((!inside || level.getGameTime() - since < MANNED_AFTER_TICKS) && spawnersRemain(level, settlement)) {
                   continue;
                }
+
+               INSIDE_SINCE.remove(settlement.id());
 
                settlement.manned = true;
                data.setDirty();
@@ -557,7 +569,8 @@ public final class FactionSimulation {
          for (int cz = settlement.min().getZ() >> 4; cz <= settlement.max().getZ() >> 4; cz++) {
             LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
             if (chunk == null) {
-               return true;
+               // A big town reaches past what is loaded; its far end must not keep it unmanned (and untakeable) forever.
+               continue;
             }
 
             for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {

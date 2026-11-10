@@ -63,6 +63,7 @@ public final class FactionConquest {
          return;
       }
 
+      siegeBars(level, data);
       for (ServerPlayer player : level.players()) {
          FactionWorldData.Settlement settlement = conquered(level, data, player, 0);
          if (settlement == null) {
@@ -72,6 +73,94 @@ public final class FactionConquest {
             AWCoreNetwork.sendConquestOffer(player, offer(data, settlement));
          }
       }
+   }
+
+   /** Each player's capture bar, while they stand in a hostile settlement that still has defenders. */
+   private static final Map<UUID, net.minecraft.server.level.ServerBossEvent> BARS = new HashMap<>();
+   /** Most defenders seen at once in each settlement under a player's attack; not saved. */
+   private static final Map<Integer, Integer> MOST_SEEN = new HashMap<>();
+   /** Ticks each settlement has stood with no defender in sight while a player held it. */
+   private static final Map<Integer, Integer> EMPTY_TICKS = new HashMap<>();
+   /** With no defender in sight this long, the rest of the garrison gives up and the place is taken. */
+   private static final int SURRENDER_TICKS = 400;
+
+   /**
+    * Like a raid's bar: while a player is in a hostile settlement its remaining defenders are
+    * counted on a bar and glow through walls, so the last of them can be found. When none is left
+    * in sight for a while, the rest of its garrison lays down arms and the place can be taken.
+    */
+   private static void siegeBars(ServerLevel level, FactionWorldData data) {
+      FactionStandingData standings = FactionStandingData.get(level);
+      java.util.Set<UUID> shown = new java.util.HashSet<>();
+      java.util.Set<Integer> held = new java.util.HashSet<>();
+      for (ServerPlayer player : level.players()) {
+         if (player.isSpectator() || !player.isAlive()) {
+            continue;
+         }
+
+         FactionWorldData.Settlement town = null;
+         for (FactionWorldData.Settlement settlement : data.settlements()) {
+            String faction = settlement.faction();
+            if (settlement.contains(player.getX(), player.getZ(), 0) && settlement.manned() && !FactionDiplomacy.isOutlaw(faction) && !besieged(data, settlement)
+               && (standings.getTreaty(player.getUUID(), faction) == RelationState.WAR || standings.getStanding(player.getUUID(), faction) < 0)) {
+               town = settlement;
+               break;
+            }
+         }
+
+         if (town == null || town.garrison() == 0 && FactionSimulation.liveSoldiers(level, town) == 0) {
+            continue;
+         }
+
+         List<FactionNpcEntity> defenders = FactionSimulation.liveSoldierList(level, town);
+         int most = Math.max(Math.max(1, defenders.size()), MOST_SEEN.getOrDefault(town.id(), 0));
+         MOST_SEEN.put(town.id(), most);
+         for (FactionNpcEntity defender : defenders) {
+            defender.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, (int)CHECK_TICKS + 10, 0, false, false));
+         }
+
+         if (!held.contains(town.id())) {
+            held.add(town.id());
+            if (defenders.isEmpty()) {
+               int empty = EMPTY_TICKS.merge(town.id(), (int)CHECK_TICKS, Integer::sum);
+               if (empty >= SURRENDER_TICKS && town.garrison() > 0) {
+                  town.garrison = 0;
+                  data.setDirty();
+                  EMPTY_TICKS.remove(town.id());
+                  MOST_SEEN.remove(town.id());
+                  for (ServerPlayer other : level.players()) {
+                     if (town.contains(other.getX(), other.getZ(), 32)) {
+                        other.sendSystemMessage(Component.translatable("conquest.ancientwarfare.surrender", FactionNews.named(town)).withStyle(ChatFormatting.GOLD));
+                     }
+                  }
+               }
+            } else {
+               EMPTY_TICKS.remove(town.id());
+            }
+         }
+
+         net.minecraft.server.level.ServerBossEvent bar = BARS.computeIfAbsent(player.getUUID(), id -> {
+            net.minecraft.server.level.ServerBossEvent created = new net.minecraft.server.level.ServerBossEvent(
+               Component.empty(), net.minecraft.world.BossEvent.BossBarColor.RED, net.minecraft.world.BossEvent.BossBarOverlay.NOTCHED_10);
+            created.addPlayer(player);
+            return created;
+         });
+         int seconds = Math.max(0, (SURRENDER_TICKS - EMPTY_TICKS.getOrDefault(town.id(), 0)) / 20);
+         bar.setName(defenders.isEmpty()
+            ? Component.translatable("conquest.ancientwarfare.bar_hiding", FactionNews.named(town), seconds)
+            : Component.translatable("conquest.ancientwarfare.bar", FactionNews.named(town), defenders.size()));
+         bar.setProgress(defenders.isEmpty() ? 0.0F : Math.min(1.0F, defenders.size() / (float)most));
+         shown.add(player.getUUID());
+      }
+
+      BARS.entrySet().removeIf(entry -> {
+         if (!shown.contains(entry.getKey())) {
+            entry.getValue().removeAllPlayers();
+            return true;
+         }
+
+         return false;
+      });
    }
 
    /** The hostile, emptied settlement the player stands in, or null. */
