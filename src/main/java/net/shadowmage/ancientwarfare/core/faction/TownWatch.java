@@ -170,8 +170,8 @@ public final class TownWatch {
       FactionWorldData.Hall court = courthouse(town);
       BlockPos inside;
       if (court != null) {
-         inside = new BlockPos(court.min().getX() + 2, court.min().getY() + 1, court.min().getZ() + 2);
-         judgeAt(level, town, new BlockPos(court.min().getX() + 5, court.min().getY() + 1, court.min().getZ() + 2));
+         inside = courtFloor(level, court, 2, 2);
+         judgeAt(level, town, courtFloor(level, court, 5, 2));
       } else {
          int x = town.center().getX() + 6;
          int z = town.center().getZ() + 6;
@@ -191,6 +191,25 @@ public final class TownWatch {
 
       level.setBlockAndUpdate(inside.above(2), Blocks.LANTERN.defaultBlockState().setValue(net.minecraft.world.level.block.LanternBlock.HANGING, true));
       return inside;
+   }
+
+   /**
+    * The courthouse's floor at an offset from its corner: the first spot from the hall's bottom up
+    * with room to stand. A hall's box can start below the ground, and a cell or a judge put there
+    * was dug into the earth, with the judge stuck in a hole one block high.
+    */
+   static BlockPos courtFloor(ServerLevel level, FactionWorldData.Hall court, int dx, int dz) {
+      int x = court.min().getX() + dx;
+      int z = court.min().getZ() + dz;
+      for (int y = Math.max(level.getMinBuildHeight() + 1, court.min().getY()); y < court.max().getY(); y++) {
+         BlockPos at = new BlockPos(x, y, z);
+         if (level.getBlockState(at).getCollisionShape(level, at).isEmpty() && level.getBlockState(at.above()).getCollisionShape(level, at.above()).isEmpty()
+            && !level.getBlockState(at.below()).getCollisionShape(level, at.below()).isEmpty()) {
+            return at;
+         }
+      }
+
+      return new BlockPos(x, court.min().getY() + 1, z);
    }
 
    private static void judgeAt(ServerLevel level, FactionWorldData.Settlement town, BlockPos at) {
@@ -236,7 +255,7 @@ public final class TownWatch {
          FactionWorldData.Settlement town = FactionCrime.settlementAt(level, player.blockPosition());
          FactionWorldData.Hall court = town == null ? null : courthouse(town);
          if (court != null && level.isLoaded(court.min()) && player.blockPosition().closerThan(court.min(), 48)) {
-            judgeAt(level, town, new BlockPos(court.min().getX() + 5, court.min().getY() + 1, court.min().getZ() + 2));
+            judgeAt(level, town, courtFloor(level, court, 5, 2));
          }
       }
    }

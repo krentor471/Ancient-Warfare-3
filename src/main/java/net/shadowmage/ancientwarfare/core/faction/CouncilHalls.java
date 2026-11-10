@@ -95,10 +95,12 @@ public final class CouncilHalls extends SavedData {
 
    /** A table down the middle of the hall and chairs either side, where the floor is free; returns the chairs. */
    private static List<BlockPos> furnish(ServerLevel level, FactionWorldData.Hall hall) {
-      int floor = hall.min().getY() + 1;
       int midX = (hall.min().getX() + hall.max().getX()) / 2;
       int midZ = (hall.min().getZ() + hall.max().getZ()) / 2;
+      // The hall's real floor: its box may start below the ground.
       boolean alongX = hall.max().getX() - hall.min().getX() >= hall.max().getZ() - hall.min().getZ();
+      // Read two blocks to the side of the table's line, where neither table nor chairs stand.
+      int floor = TownWatch.courtFloor(level, hall, midX - hall.min().getX() + (alongX ? 0 : 2), midZ - hall.min().getZ() + (alongX ? 2 : 0)).getY();
       List<BlockPos> chairs = new ArrayList<>();
       for (int i = -2; i <= 2; i++) {
          BlockPos table = alongX ? new BlockPos(midX + i, floor, midZ) : new BlockPos(midX, floor, midZ + i);
