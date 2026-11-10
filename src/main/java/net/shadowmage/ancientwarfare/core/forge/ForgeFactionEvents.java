@@ -271,6 +271,7 @@ public final class ForgeFactionEvents {
             }
 
             net.shadowmage.ancientwarfare.core.faction.FactionTownLife.onNpcKilled(serverLevel, npc, player);
+            FactionSimulation.checkWiped(serverLevel, npc);
             net.shadowmage.ancientwarfare.core.faction.FactionQuests.onNpcKilled(serverLevel, npc, player);
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                FactionEnvoys.onKill(serverPlayer, npc);
@@ -282,6 +283,7 @@ public final class ForgeFactionEvents {
             FactionStandingData.get(serverLevel).adjustStanding(player.getUUID(), faction, FactionRegistry.get(faction).killStandingChange());
          } else if (event.getSource().getEntity() instanceof net.shadowmage.ancientwarfare.core.entity.PlayerOwnedNpcEntity soldier && soldier.getOwner().isPresent()) {
             net.shadowmage.ancientwarfare.core.faction.FactionIncidents.onKilled(serverLevel, soldier.getOwner().get(), npc, soldier);
+            FactionSimulation.checkWiped(serverLevel, npc);
          } else if (event.getSource().getEntity() instanceof FactionNpcEntity killer) {
             if (FactionDiplomacy.isOutlaw(killer.getFactionName())) {
                FactionCaravans.onKilledByOutlaws(serverLevel, npc);

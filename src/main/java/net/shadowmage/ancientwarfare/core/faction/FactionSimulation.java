@@ -270,6 +270,40 @@ public final class FactionSimulation {
    }
 
    /**
+    * A player (or their men) killed one of a settlement's people: when nobody of it is left alive
+    * (for an outlaw lair, none of its fighters) the place is abandoned for good and stands empty.
+    */
+   public static void checkWiped(ServerLevel level, FactionNpcEntity npc) {
+      if (FactionCampaigns.campaignId(npc) != 0 || FactionArmies.armyId(npc) != 0 || FactionCaravans.caravanId(npc) != 0
+         || FactionTravellers.isTraveller(npc) || FactionTownLife.isFairgoer(npc) || PlayerDiplomacy.isLeader(npc)) {
+         return;
+      }
+
+      FactionWorldData data = FactionWorldData.get(level);
+      FactionWorldData.Settlement settlement = settlementAt(data, npc.getFactionName(), npc.getX(), npc.getZ(), LOSS_MARGIN);
+      if (settlement == null || !settlement.built() || !settlement.manned() || FactionTownLife.underAttack(data, settlement)) {
+         return;
+      }
+
+      boolean outlaw = FactionDiplomacy.isOutlaw(settlement.faction());
+      AABB area = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(GARRISON_MARGIN, 32.0, GARRISON_MARGIN);
+      boolean anyone = !level.getEntitiesOfClass(FactionNpcEntity.class, area, other -> other != npc && other.isAlive()
+         && other.getFactionName().equals(settlement.faction()) && (outlaw ? !isCivilian(other) : true)).isEmpty();
+      if (anyone || !outlaw && settlement.garrison() > 0) {
+         return;
+      }
+
+      data.abandon(settlement, level.getGameTime());
+      AncientWarfareCore.LOG.info("Settlement #{} of {} was wiped out and is abandoned", settlement.id(), settlement.faction());
+      for (ServerPlayer player : level.players()) {
+         if (settlement.contains(player.getX(), player.getZ(), 96)) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("town.ancientwarfare.abandoned", FactionNews.named(settlement))
+               .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+         }
+      }
+   }
+
+   /**
     * A faction NPC entered the world: if it belongs to the faction its settlement was taken from,
     * it fell in that battle (soldiers) or now serves the new owner (civilians). Returns false when
     * the NPC should not be added.

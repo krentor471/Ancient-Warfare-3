@@ -3540,7 +3540,6 @@
   "chatter.ancientwarfare.bandits.2": "Купца вчера ограбили у переправы. Когда это кончится?",
   "deal.ancientwarfare.envoy_fee": "Правителя нет рядом: послу нужно %s сер. на дорогу. Найди деньги или приходи лично.",
   "town.ancientwarfare.curfew": "В поселении%s комендантский час: стража удвоена, честным людям положено сидеть по домам.",
-  "town.ancientwarfare.burglar": "Крик в ночи в%s: вор вылез из чужого окна и бежит %s!",
   "town.ancientwarfare.burglar": "Крик в ночи! Вор вылез из чужого окна в %s и бежит, %s. Стража за ним.",
   "disaster.ancientwarfare.fire": "Пожар в поселении%s! Горит дом, бьют в колокол. Залей огонь водой из ведра, пока не поздно.",
   "disaster.ancientwarfare.fire_cry": "Пожар!",
@@ -3560,5 +3559,6 @@
   "venture.ancientwarfare.robbed": "Разбойники взяли твой караван (%s) на пути в %s. Груз потерян.",
   "venture.ancientwarfare.arrived": "Твой караван (%s) дошёл до %s. Выручка: %s сер.",
   "dynasty.ancientwarfare.heir": "Ты пал, но род продолжается. Твой сын %s принимает наследство: земли, имя и врагов отца.",
-  "dynasty.ancientwarfare.ended": "У тебя не осталось сыновей. Твой род угас."
+  "dynasty.ancientwarfare.ended": "У тебя не осталось сыновей. Твой род угас.",
+  "town.ancientwarfare.abandoned": "В %s не осталось ни души. Поселение опустело и заброшено, сюда больше никто не вернётся."
 }

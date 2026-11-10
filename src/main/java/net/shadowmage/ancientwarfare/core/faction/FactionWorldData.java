@@ -245,6 +245,28 @@ public final class FactionWorldData extends SavedData {
       this.setDirty();
    }
 
+   /** What is left of a settlement whose people were all killed or which was razed: it stands empty, nobody rebuilds it. */
+   public static record Ruin(int id, String name, String faction, BlockPos min, BlockPos max, long province, long fell) {
+      public boolean contains(double x, double z, int margin) {
+         return x >= this.min.getX() - margin && x <= this.max.getX() + margin && z >= this.min.getZ() - margin && z <= this.max.getZ() + margin;
+      }
+   }
+
+   private final List<Ruin> ruins = new ArrayList<>();
+
+   public List<Ruin> ruins() {
+      return Collections.unmodifiableList(this.ruins);
+   }
+
+   /** The settlement is abandoned: off every list that keeps a town alive, left standing as a ruin. */
+   public Ruin abandon(Settlement settlement, long time) {
+      Ruin ruin = new Ruin(settlement.id(), settlement.name, settlement.faction(), settlement.min(), settlement.max(), settlement.province(), time);
+      this.ruins.add(ruin);
+      this.settlements.remove(settlement);
+      this.setDirty();
+      return ruin;
+   }
+
    public void removeSettlement(Settlement settlement) {
       this.settlements.remove(settlement);
       this.setDirty();
@@ -579,6 +601,19 @@ public final class FactionWorldData extends SavedData {
       }
 
       tag.put("Settlements", list);
+      ListTag ruinList = new ListTag();
+      for (Ruin ruin : this.ruins) {
+         CompoundTag entry = new CompoundTag();
+         entry.putInt("Id", ruin.id());
+         entry.putString("Name", ruin.name());
+         entry.putString("Faction", ruin.faction());
+         entry.putLong("Min", ruin.min().asLong());
+         entry.putLong("Max", ruin.max().asLong());
+         entry.putLong("Province", ruin.province());
+         entry.putLong("Fell", ruin.fell());
+         ruinList.add(entry);
+      }
+      tag.put("Ruins", ruinList);
       tag.putInt("NextSettlementId", this.nextSettlementId);
       CompoundTag gold = new CompoundTag();
       this.treasuries.forEach(gold::putInt);
@@ -785,6 +820,12 @@ public final class FactionWorldData extends SavedData {
             entry.getString("Other"),
             new FactionDiplomacy.Relation(entry.getInt("Opinion"), RelationState.byName(entry.getString("State")), entry.getLong("Since"))
          );
+      }
+
+      for (Tag element : tag.getList("Ruins", Tag.TAG_COMPOUND)) {
+         CompoundTag entry = (CompoundTag)element;
+         data.ruins.add(new Ruin(entry.getInt("Id"), entry.getString("Name"), entry.getString("Faction"),
+            BlockPos.of(entry.getLong("Min")), BlockPos.of(entry.getLong("Max")), entry.getLong("Province"), entry.getLong("Fell")));
       }
 
       for (Tag element : tag.getList("Settlements", Tag.TAG_COMPOUND)) {

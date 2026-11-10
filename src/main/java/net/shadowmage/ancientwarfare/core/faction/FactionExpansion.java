@@ -627,6 +627,7 @@ public final class FactionExpansion {
       // Not on top of a village already standing there, unless every province has one.
       Set<Long> settled = new HashSet<>();
       data.settlements().forEach(settlement -> settled.add(settlement.province()));
+      data.ruins().forEach(ruin -> settled.add(ruin.province()));
       if (provinces.stream().anyMatch(province -> !settled.contains(province.key()))) {
          provinces.removeIf(province -> settled.contains(province.key()));
       }
@@ -723,6 +724,7 @@ public final class FactionExpansion {
       List<FactionRegions.Province> other = new ArrayList<>();
       Set<Long> settled = new HashSet<>();
       data.settlements().forEach(settlement -> settled.add(settlement.province()));
+      data.ruins().forEach(ruin -> settled.add(ruin.province()));
       Set<Long> seen = new HashSet<>();
 
       for (long owned : data.provincesOf(faction)) {

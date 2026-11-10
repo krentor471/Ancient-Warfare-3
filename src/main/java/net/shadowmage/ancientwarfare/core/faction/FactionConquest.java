@@ -173,7 +173,7 @@ public final class FactionConquest {
          case RAZE -> {
             pay(player, data, faction, offer.razeLoot());
             civilians(level, settlement).forEach(FactionNpcEntity::discard);
-            data.removeSettlement(settlement);
+            data.abandon(settlement, level.getGameTime());
             standings.adjustStanding(id, faction, RAZE_STANDING);
             for (String other : FactionRegistry.factionNames()) {
                // Everyone hears of it.

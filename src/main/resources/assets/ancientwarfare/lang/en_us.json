@@ -3540,7 +3540,6 @@
   "chatter.ancientwarfare.bandits.2": "A merchant was robbed at the ford yesterday. When will it end?",
   "deal.ancientwarfare.envoy_fee": "The ruler is not at hand: an envoy needs %s silver for the road. Find the coin or come in person.",
   "town.ancientwarfare.curfew": "Curfew in%s: the watch is doubled, honest folk keep indoors.",
-  "town.ancientwarfare.burglar": "A cry in the night in%s: a burglar climbed out of a window and runs %s!",
   "town.ancientwarfare.burglar": "A cry in the night! A burglar climbed out of a window in %s and runs %s. The watch is after him.",
   "disaster.ancientwarfare.fire": "Fire in%s! A house is burning, the bell is ringing. Pour water from a bucket on it before it's too late.",
   "disaster.ancientwarfare.fire_cry": "Fire!",
@@ -3560,5 +3559,6 @@
   "venture.ancientwarfare.robbed": "Brigands took your caravan (%s) on the road to %s. The load is lost.",
   "venture.ancientwarfare.arrived": "Your caravan (%s) reached %s. Takings: %s silver.",
   "dynasty.ancientwarfare.heir": "You have fallen, but the line goes on. Your son %s takes up the inheritance: his father's lands, name and enemies.",
-  "dynasty.ancientwarfare.ended": "No sons are left to you. Your line has ended."
+  "dynasty.ancientwarfare.ended": "No sons are left to you. Your line has ended.",
+  "town.ancientwarfare.abandoned": "Nobody is left alive in %s. The place stands empty and abandoned; nobody will come back to it."
 }
