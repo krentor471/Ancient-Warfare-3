@@ -183,8 +183,7 @@ public final class FactionExpansion {
 
                   if ((anywhere || !level.hasNearbyAlivePlayer(x, level.getSeaLevel(), z, PLAN_PLAYER_RANGE))
                      && !nearFailedFort(x, z)
-                     && !nearPlannedFort(data, x, z)
-                     && AwtWorldGenerator.roughSiteAcceptable(level, x, z, 1)) {
+                     && !nearPlannedFort(data, x, z)) {
                      candidates.add(new FactionWorldData.PlannedSettlement(faction, x, z, owned, day, true));
                   }
                }
@@ -192,11 +191,20 @@ public final class FactionExpansion {
          }
       }
 
-      if (candidates.isEmpty()) {
+      // Terrain checks sample world noise and are slow, so test candidates in random order and stop at the first good one.
+      java.util.Collections.shuffle(candidates, new java.util.Random(level.getRandom().nextLong()));
+      FactionWorldData.PlannedSettlement plan = null;
+      for (FactionWorldData.PlannedSettlement candidate : candidates) {
+         if (AwtWorldGenerator.roughSiteAcceptable(level, candidate.x(), candidate.z(), 1)) {
+            plan = candidate;
+            break;
+         }
+      }
+
+      if (plan == null) {
          return null;
       }
 
-      FactionWorldData.PlannedSettlement plan = candidates.get(level.getRandom().nextInt(candidates.size()));
       data.addPlannedSettlement(plan);
       data.setLastFounding(FORT_KEY + faction, day);
       AncientWarfareCore.LOG.info("Faction {} plans a border fort at {}, {}", faction, plan.x(), plan.z());
@@ -373,9 +381,9 @@ public final class FactionExpansion {
       net.minecraft.world.level.levelgen.RandomState random = level.getChunkSource().randomState();
       for (int dx = -DRY_FOOTPRINT; dx <= DRY_FOOTPRINT; dx += DRY_FOOTPRINT) {
          for (int dz = -DRY_FOOTPRINT; dz <= DRY_FOOTPRINT; dz += DRY_FOOTPRINT) {
-            int surface = generator.getBaseHeight(x + dx, z + dz, net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG, level, random);
+            // Solid ground at or below sea level means water over it; one noise column per point.
             int floor = generator.getBaseHeight(x + dx, z + dz, net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR_WG, level, random);
-            if (surface > floor || surface <= level.getSeaLevel()) {
+            if (floor <= level.getSeaLevel()) {
                return false;
             }
          }

@@ -213,7 +213,26 @@ public final class AwtWorldGenerator {
     * sea over the terrain or too steep a spread of heights rules it out at once. Lakes, rivers cut
     * by carvers and the like only show in the real check that follows, which loads the land.
     */
+   private static final java.util.Map<String, Boolean> ROUGH_SITES = java.util.Collections.synchronizedMap(new java.util.LinkedHashMap<>(256, 0.75F, true) {
+      @Override
+      protected boolean removeEldestEntry(java.util.Map.Entry<String, Boolean> eldest) {
+         return size() > 4096;
+      }
+   });
+
+   /** Noise-only terrain check; cached, since the same seeds are asked about again and again. */
    public static boolean roughSiteAcceptable(ServerLevel level, int x, int z, int chunks) {
+      String key = level.dimension().location() + "/" + level.getSeed() + "/" + x + "/" + z + "/" + chunks;
+      Boolean known = ROUGH_SITES.get(key);
+      if (known == null) {
+         known = computeRoughSite(level, x, z, chunks);
+         ROUGH_SITES.put(key, known);
+      }
+
+      return known;
+   }
+
+   private static boolean computeRoughSite(ServerLevel level, int x, int z, int chunks) {
       net.minecraft.world.level.chunk.ChunkGenerator generator = level.getChunkSource().getGenerator();
       net.minecraft.world.level.levelgen.RandomState random = level.getChunkSource().randomState();
       int halfSize = Math.max(16, chunks * 8);
@@ -223,9 +242,9 @@ public final class AwtWorldGenerator {
          for (int gz = 0; gz < 5; gz++) {
             int sx = x - halfSize + halfSize * 2 * gx / 4;
             int sz = z - halfSize + halfSize * 2 * gz / 4;
-            int surface = generator.getBaseHeight(sx, sz, Types.WORLD_SURFACE_WG, level, random);
-            int floor = generator.getBaseHeight(sx, sz, Types.OCEAN_FLOOR_WG, level, random);
-            if (surface > floor) {
+            // One noise column per sample: solid ground below sea level is sea (rivers and lakes above it are rare).
+            int surface = generator.getBaseHeight(sx, sz, Types.OCEAN_FLOOR_WG, level, random);
+            if (surface < level.getSeaLevel()) {
                AncientWarfareCore.LOG.debug("Faction town site {}, {}: sea at {}, {} (noise)", x, z, sx, sz);
                return false;
             }

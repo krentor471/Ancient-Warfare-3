@@ -120,6 +120,7 @@ public final class FactionPrebuild {
    }
 
    private static void finish(ServerLevel level, FactionWorldData data) {
+      net.shadowmage.ancientwarfare.core.AncientWarfareCore.LOG.info("Prebuild finished after {} s of game time", started < 0L ? 0L : (level.getGameTime() - started) / 20L);
       active = false;
       data.setPrebuilt(true);
       // A new world raises the whole map before play; a later prebuild is asked for by command.
