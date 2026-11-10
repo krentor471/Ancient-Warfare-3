@@ -172,7 +172,7 @@ public final class FactionGrowth {
 
    public static void tick(ServerLevel level, FactionWorldData data) {
       boolean prebuild = FactionPrebuild.active();
-      if (level.getGameTime() % (prebuild ? PREBUILD_INTERVAL : TICK_INTERVAL) != 0L || level.players().isEmpty()) {
+      if (level.getGameTime() % (prebuild ? PREBUILD_INTERVAL : TICK_INTERVAL) != 0L || !prebuild && level.players().isEmpty()) {
          return;
       }
 

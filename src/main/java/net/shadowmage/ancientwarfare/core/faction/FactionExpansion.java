@@ -233,7 +233,14 @@ public final class FactionExpansion {
     */
    public static void tick(ServerLevel level, FactionWorldData data) {
       if (level.getGameTime() % BUILD_CHECK_TICKS != 0L) {
-         if (level.getGameTime() % (FactionPrebuild.active() ? 2 : LAYOUT_CHECK_TICKS) == 0L) {
+         if (FactionPrebuild.active()) {
+            // Prebuild: keep searching for sites while this tick has time left; a town being laid out stops it.
+            long until = System.nanoTime() + PREBUILD_TICK_BUDGET_NS;
+            boolean[] worked = new boolean[1];
+            do {
+               Perf.run("exp.buildNearest", () -> worked[0] = buildNearest(level, data));
+            } while (worked[0] && !AwtWorldGenerator.busy(level) && System.nanoTime() < until);
+         } else if (level.getGameTime() % LAYOUT_CHECK_TICKS == 0L) {
             Perf.run("exp.buildNearest", () -> buildNearest(level, data));
          }
 
@@ -353,6 +360,8 @@ public final class FactionExpansion {
    private static final int DRY_STEP = 48;
    private static final int DRY_RINGS = 10;
    private static final int DRY_FOOTPRINT = 24;
+   /** Time per tick the prebuild may spend looking for town sites. */
+   private static final long PREBUILD_TICK_BUDGET_NS = 35_000_000L;
 
    /** Settlements planned on paper over a lake or the sea (from before the land was looked at) move ashore. */
    private static void moveOffWater(ServerLevel level, FactionWorldData data) {
@@ -436,11 +445,14 @@ public final class FactionExpansion {
     * room for a full town looks again for room for one the size of a village, then stays on paper;
     * a village that finds none becomes a single dry-land building of its faction.
     */
-   private static void buildNearest(ServerLevel level, FactionWorldData data) {
-      if (AwtWorldGenerator.busy(level) || level.players().isEmpty()) {
-         return;
+   private static boolean buildNearest(ServerLevel level, FactionWorldData data) {
+      // While the world is prebuilt nobody needs to be online: an empty server measures from spawn.
+      boolean alone = level.players().isEmpty();
+      if (AwtWorldGenerator.busy(level) || alone && !FactionPrebuild.active()) {
+         return false;
       }
 
+      BlockPos spawn = level.getSharedSpawnPos();
       FactionWorldData.Settlement target = null;
       double best = Double.MAX_VALUE;
       FactionWorldData.Settlement far = null;
@@ -451,7 +463,7 @@ public final class FactionExpansion {
             continue;
          }
 
-         double nearest = Double.MAX_VALUE;
+         double nearest = alone ? settlement.horizontalDistanceSquared(spawn.getX(), spawn.getZ()) + BUILD_PLAYER_RANGE * BUILD_PLAYER_RANGE : Double.MAX_VALUE;
 
          for (ServerPlayer player : level.players()) {
             nearest = Math.min(nearest, settlement.horizontalDistanceSquared(player.getX(), player.getZ()));
@@ -481,11 +493,11 @@ public final class FactionExpansion {
          // too, capitals first, slowly, so lands nobody visits still get their towns, mines and roads.
          target = far;
          distant = true;
-         nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 1L : FAR_STEP_TICKS);
+         nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 0L : FAR_STEP_TICKS);
       }
 
       if (target == null) {
-         return;
+         return false;
       }
 
       String faction = target.faction();
@@ -531,19 +543,19 @@ public final class FactionExpansion {
             }
 
             AncientWarfareCore.LOG.info("Faction {} lays out its {} #{} at {}, {}", faction, target.kind(), target.id(), site[0], site[1]);
-            return;
+            return true;
          }
       }
 
       if (resume >= 0) {
          // Look again at the first site still loading next time.
          SITE_SEARCH.put(target.id(), resume);
-         return;
+         return true;
       }
 
       if (chunks > 0 && checked < points) {
          SITE_SEARCH.put(target.id(), checked);
-         return;
+         return true;
       }
 
       SITE_SEARCH.remove(target.id());
@@ -555,19 +567,19 @@ public final class FactionExpansion {
             CAPITAL_PROVINCE_TRIES.put(target.id(), tried);
             SEARCH_CENTER.put(target.id(), new int[]{next.seedX(), next.seedZ()});
             AncientWarfareCore.LOG.info("Faction {} looks for room for its capital in another province, near {}, {}", faction, next.seedX(), next.seedZ());
-            return;
+            return true;
          }
 
          GIVEN_UP.add(target.id());
          AncientWarfareCore.LOG.info("Faction {} found no dry, flat land for its capital near {}, {}; it stays on paper", faction, center.getX(), center.getZ());
-         return;
+         return true;
       }
 
       if (!fortLandLoaded(level, center.getX(), center.getZ())) {
          // As for a fort: the land is generated off the main thread first, or far from every player
          // the building's land was generated on the spot and stalled the server for seconds.
          SITE_SEARCH.put(target.id(), checked);
-         return;
+         return true;
       }
 
       // No room for a laid-out village: a hamlet is founded on dry land instead and grows house by
@@ -578,7 +590,7 @@ public final class FactionExpansion {
          // Only water about: the hamlet stays on paper rather than standing in a lake with roads led to it.
          GIVEN_UP.add(target.id());
          AncientWarfareCore.LOG.info("Faction {} found only water for hamlet #{} near {}, {}; it stays on paper", faction, target.id(), center.getX(), center.getZ());
-         return;
+         return true;
       }
 
       target.place("", new BlockPos(dry[0] - 4, y - 1, dry[1] - 4), new BlockPos(dry[0] + 4, y + 6, dry[1] + 4));
@@ -588,6 +600,7 @@ public final class FactionExpansion {
       }
       data.setDirty();
       AncientWarfareCore.LOG.info("Faction {} founds hamlet #{} near {}, {}; it will grow", faction, target.id(), dry[0], dry[1]);
+      return true;
    }
 
    /** A generated town nobody founded (the test command) was finished: tell the world. */
