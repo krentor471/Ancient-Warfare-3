@@ -1411,6 +1411,11 @@ public class DiplomacyScreen extends Screen {
    }
 
    static Component factionName(String faction) {
+      if (faction.startsWith("player:")) {
+         // Another player's country, by its founder's name.
+         return Component.translatable("gui.ancientwarfare.diplomacy.player_country", faction.substring("player:".length()));
+      }
+
       return Component.translatable("faction.ancientwarfare." + faction);
    }
 

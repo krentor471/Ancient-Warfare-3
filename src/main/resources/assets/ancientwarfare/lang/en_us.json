@@ -3582,5 +3582,14 @@
   "country.ancientwarfare.member_joined": "%s joined your country.",
   "country.ancientwarfare.not_member": "You are not a member of anyone's country.",
   "country.ancientwarfare.left": "You left the country.",
-  "country.ancientwarfare.members": "Country: %s (* founder)"
+  "country.ancientwarfare.members": "Country: %s (* founder)",
+  "gui.ancientwarfare.diplomacy.player_country": "Country of %s",
+  "country.ancientwarfare.only_founder_decides": "Only your country's founder decides on war and peace.",
+  "country.ancientwarfare.not_for_players": "That is only for the realms of the world, not for players' countries.",
+  "country.ancientwarfare.proposed": "You offered %s: %s. They must offer the same in return.",
+  "country.ancientwarfare.proposal": "%s offers your country: %s. Choose the same in diplomacy to agree.",
+  "news.ancientwarfare.countries_war": "The countries of %s and %s are at war.",
+  "news.ancientwarfare.countries_neutral": "The countries of %s and %s made peace.",
+  "news.ancientwarfare.countries_pact": "The countries of %s and %s made a pact.",
+  "news.ancientwarfare.countries_alliance": "The countries of %s and %s are allies."
 }

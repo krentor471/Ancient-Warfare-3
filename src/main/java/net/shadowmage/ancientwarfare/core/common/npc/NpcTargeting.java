@@ -70,8 +70,27 @@ public final class NpcTargeting {
          } else {
             UUID observerOwner = ownerId(observer);
             UUID targetOwner = ownerId(target);
-            return observerOwner != null && (observerOwner.equals(target.getUUID()) || observerOwner.equals(targetOwner))
-               || targetOwner != null && targetOwner.equals(observer.getUUID());
+            if (observerOwner != null && (observerOwner.equals(target.getUUID()) || observerOwner.equals(targetOwner))
+               || targetOwner != null && targetOwner.equals(observer.getUUID())) {
+               return true;
+            }
+
+            // Players of one country, and their men, are on the same side.
+            UUID observerPerson = observer instanceof Player ? observer.getUUID() : observerOwner;
+            UUID targetPerson = target instanceof Player ? target.getUUID() : targetOwner;
+            if (observerPerson == null || targetPerson == null || !(observer.level() instanceof net.minecraft.server.level.ServerLevel server)) {
+               return false;
+            }
+
+            UUID a = net.shadowmage.ancientwarfare.core.faction.CountryMembers.countryOf(server, observerPerson);
+            UUID b = net.shadowmage.ancientwarfare.core.faction.CountryMembers.countryOf(server, targetPerson);
+            if (a.equals(b)) {
+               return true;
+            }
+
+            // Countries in a pact or an alliance spare each other's people.
+            net.shadowmage.ancientwarfare.core.faction.RelationState relation = net.shadowmage.ancientwarfare.core.faction.PlayerDiplomacy.countryRelation(server, a, b);
+            return relation == net.shadowmage.ancientwarfare.core.faction.RelationState.PACT || relation == net.shadowmage.ancientwarfare.core.faction.RelationState.ALLIANCE;
          }
       } else {
          return true;

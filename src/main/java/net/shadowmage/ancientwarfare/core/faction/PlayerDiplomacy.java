@@ -109,6 +109,12 @@ public final class PlayerDiplomacy {
    }
 
    public static void act(ServerPlayer player, String faction, Action action) {
+      if (faction.startsWith(COUNTRY_PREFIX)) {
+         actOnCountry(player, faction.substring(COUNTRY_PREFIX.length()), action);
+         AWCoreNetwork.sendDiplomacyData(player, faction, false, entries(player));
+         return;
+      }
+
       FactionStandingData standings = FactionStandingData.get(player.serverLevel());
       if (!standings.knownFactions(player.getUUID()).contains(faction) || action == null) {
          return;
@@ -350,7 +356,95 @@ public final class PlayerDiplomacy {
          );
       }
 
+      countryEntries(player, entries);
       return entries;
+   }
+
+   /** Other players' countries show in the list as "player:" and the founder's name. */
+   public static final String COUNTRY_PREFIX = "player:";
+
+   private static String founderName(ServerLevel level, java.util.UUID founder) {
+      net.minecraft.server.players.GameProfileCache cache = level.getServer().getProfileCache();
+      return cache == null ? null : cache.get(founder).map(com.mojang.authlib.GameProfile::getName).orElse(null);
+   }
+
+   /** The relation between two players' countries, kept on both founders. */
+   public static RelationState countryRelation(ServerLevel level, java.util.UUID founderA, java.util.UUID founderB) {
+      String other = founderName(level, founderB);
+      return other == null ? RelationState.NEUTRAL : FactionStandingData.get(level).getTreaty(founderA, COUNTRY_PREFIX + other);
+   }
+
+   private static void countryEntries(ServerPlayer player, List<Entry> entries) {
+      if (entries.isEmpty()) {
+         // The list's cards need a faction entry to copy their shape from.
+         return;
+      }
+
+      ServerLevel level = player.serverLevel();
+      FactionWorldData data = FactionWorldData.get(level);
+      java.util.UUID mine = CountryMembers.countryOf(level, player.getUUID());
+      Entry shape = entries.get(0);
+      java.util.Set<java.util.UUID> founders = new java.util.TreeSet<>(data.villages().values());
+      for (java.util.UUID founder : founders) {
+         String name = founderName(level, founder);
+         if (founder.equals(mine) || name == null || data.country(founder) == null) {
+            continue;
+         }
+
+         int villages = (int)data.villages().values().stream().filter(founder::equals).count();
+         entries.add(new Entry(
+            COUNTRY_PREFIX + name, 0, countryRelation(level, mine, founder), List.of(), villages, true, false, 0, 0, 0,
+            new int[shape.stores().length], new int[shape.court().length], List.of(), 0, List.of(), new int[0], List.of(),
+            new int[shape.person().length], new int[shape.family().length], List.of(), List.of()
+         ));
+      }
+   }
+
+   /** War, peace, a pact or an alliance with another player's country; only founders decide. */
+   private static void actOnCountry(ServerPlayer player, String otherName, Action action) {
+      ServerLevel level = player.serverLevel();
+      if (CountryMembers.joined(level, player.getUUID()).isPresent()) {
+         player.sendSystemMessage(Component.translatable("country.ancientwarfare.only_founder_decides").withStyle(ChatFormatting.RED));
+         return;
+      }
+
+      net.minecraft.server.players.GameProfileCache cache = level.getServer().getProfileCache();
+      java.util.UUID other = cache == null ? null : cache.get(otherName).map(com.mojang.authlib.GameProfile::getId).orElse(null);
+      String myName = player.getGameProfile().getName();
+      if (other == null || action == null) {
+         return;
+      }
+
+      RelationState state = switch (action) {
+         case WAR -> RelationState.WAR;
+         case PEACE -> RelationState.NEUTRAL;
+         case PACT -> RelationState.PACT;
+         case ALLIANCE -> RelationState.ALLIANCE;
+         default -> null;
+      };
+      if (state == null) {
+         player.sendSystemMessage(Component.translatable("country.ancientwarfare.not_for_players").withStyle(ChatFormatting.GRAY));
+         return;
+      }
+
+      FactionStandingData standings = FactionStandingData.get(level);
+      RelationState now = standings.getTreaty(player.getUUID(), COUNTRY_PREFIX + otherName);
+      ServerPlayer otherPlayer = level.getServer().getPlayerList().getPlayer(other);
+      if (state != RelationState.WAR && state.ordinal() > now.ordinal()) {
+         // Friendship takes two: the other founder must ask for the same.
+         if (standings.getTreaty(other, COUNTRY_PREFIX + "asks:" + myName) != state) {
+            standings.setTreaty(player.getUUID(), COUNTRY_PREFIX + "asks:" + otherName, state);
+            player.sendSystemMessage(Component.translatable("country.ancientwarfare.proposed", otherName, Component.translatable("gui.ancientwarfare.diplomacy.state." + state.serializedName())));
+            if (otherPlayer != null) {
+               otherPlayer.sendSystemMessage(Component.translatable("country.ancientwarfare.proposal", myName, Component.translatable("gui.ancientwarfare.diplomacy.state." + state.serializedName())));
+            }
+            return;
+         }
+      }
+
+      standings.setTreaty(player.getUUID(), COUNTRY_PREFIX + otherName, state);
+      standings.setTreaty(other, COUNTRY_PREFIX + myName, state);
+      FactionNews.tell(level, Component.translatable("news.ancientwarfare.countries_" + state.serializedName(), myName, otherName));
    }
 
    /** The realm's armies and troubles: a civil war, risings, hosts mustering or on the march. */

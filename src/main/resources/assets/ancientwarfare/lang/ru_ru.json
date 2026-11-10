@@ -3582,5 +3582,14 @@
   "country.ancientwarfare.member_joined": "%s вступил в твою страну.",
   "country.ancientwarfare.not_member": "Ты не состоишь в чужой стране.",
   "country.ancientwarfare.left": "Ты покинул страну.",
-  "country.ancientwarfare.members": "Страна: %s (* основатель)"
+  "country.ancientwarfare.members": "Страна: %s (* основатель)",
+  "gui.ancientwarfare.diplomacy.player_country": "Страна игрока %s",
+  "country.ancientwarfare.only_founder_decides": "О войне и мире решает основатель твоей страны.",
+  "country.ancientwarfare.not_for_players": "Это только для держав мира, не для стран игроков.",
+  "country.ancientwarfare.proposed": "Ты предложил стране %s: %s. Она должна предложить то же в ответ.",
+  "country.ancientwarfare.proposal": "%s предлагает твоей стране: %s. Выбери то же в дипломатии, чтобы согласиться.",
+  "news.ancientwarfare.countries_war": "Страны игроков %s и %s воюют.",
+  "news.ancientwarfare.countries_neutral": "Страны игроков %s и %s заключили мир.",
+  "news.ancientwarfare.countries_pact": "Страны игроков %s и %s заключили договор.",
+  "news.ancientwarfare.countries_alliance": "Страны игроков %s и %s стали союзниками."
 }
