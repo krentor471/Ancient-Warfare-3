@@ -401,12 +401,45 @@ public final class FactionSimulation {
                data.setDirty();
             }
 
-            if (level.getGameTime() - settlement.lastRespawn >= RESPAWN_TICKS && liveSoldiers(level, settlement) < settlement.garrison) {
+            long every = respawnTicks(settlement);
+            if (every > 0L && level.getGameTime() - settlement.lastRespawn >= every && liveSoldiers(level, settlement) < settlement.garrison) {
                settlement.lastRespawn = level.getGameTime();
-               respawnSoldier(level, settlement);
+               boolean outlaw = FactionDiplomacy.isOutlaw(settlement.faction());
+               if (outlaw || FactionResources.hasIron(data, settlement.faction())) {
+                  // A fresh man is armed out of the realm's stores; with no iron left none comes out.
+                  if (!outlaw) {
+                     FactionResources.spendIron(data, settlement.faction());
+                  }
+
+                  respawnSoldier(level, settlement);
+               }
             }
          }
       }
+   }
+
+   /**
+    * How often a fallen defender is replaced from the garrison: soldiers come out of a barracks,
+    * more slowly from a watch post, tower or gatehouse, and a town with none of them gets no more
+    * than the men it started with. Outlaws drift back to their lair slowly. Zero: never.
+    */
+   static long respawnTicks(FactionWorldData.Settlement settlement) {
+      if (FactionDiplomacy.isOutlaw(settlement.faction())) {
+         return RESPAWN_TICKS * 4L;
+      }
+
+      java.util.List<String> buildings = settlement.buildings();
+      if (buildings.contains(TownBuildings.Kind.BARRACKS.key()) || FactionAI.isFort(settlement) || FactionTowns.CAPITAL.equals(settlement.kind())) {
+         return RESPAWN_TICKS;
+      }
+
+      for (TownBuildings.Kind kind : new TownBuildings.Kind[]{TownBuildings.Kind.WATCH_POST, TownBuildings.Kind.TOWER, TownBuildings.Kind.GATEHOUSE, TownBuildings.Kind.ARCHERY}) {
+         if (buildings.contains(kind.key())) {
+            return RESPAWN_TICKS * 3L;
+         }
+      }
+
+      return 0L;
    }
 
    /** A capital always has its leader: one stands near the town's centre, back a day after he falls. */

@@ -566,6 +566,13 @@ public final class FactionExpansion {
       // house, clearing the woods around it, rather than standing forever as a single shack.
       int[] dry = dryPoint(level, center.getX(), center.getZ());
       int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, dry[0], dry[1]);
+      if (!dry(level, dry[0], dry[1]) || !level.getFluidState(new BlockPos(dry[0], y - 1, dry[1])).isEmpty()) {
+         // Only water about: the hamlet stays on paper rather than standing in a lake with roads led to it.
+         GIVEN_UP.add(target.id());
+         AncientWarfareCore.LOG.info("Faction {} found only water for hamlet #{} near {}, {}; it stays on paper", faction, target.id(), center.getX(), center.getZ());
+         return;
+      }
+
       target.place("", new BlockPos(dry[0] - 4, y - 1, dry[1] - 4), new BlockPos(dry[0] + 4, y + 6, dry[1] + 4));
       target.plan().clear();
       for (TownBuildings.Kind kind : new TownBuildings.Kind[]{TownBuildings.Kind.WELL, TownBuildings.Kind.HOUSE, TownBuildings.Kind.HOUSE, TownBuildings.Kind.FAMILY_HOUSE}) {
