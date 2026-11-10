@@ -20,6 +20,10 @@ public final class SeasonColors {
    /** The server's season, sent now and then. */
    public static void set(int season) {
       server = FactionSeasons.Season.values()[Math.floorMod(season, 4)];
+      net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
+      if (minecraft.level != null) {
+         net.shadowmage.ancientwarfare.core.faction.SeasonClimate.apply(minecraft.level.registryAccess(), server == FactionSeasons.Season.WINTER);
+      }
    }
 
    private static FactionSeasons.Season season() {

@@ -17,6 +17,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 public final class SeasonWeather {
    private static final int RADIUS = 48;
    private static final int TRIES = 40;
+   private static Boolean appliedWinter;
 
    private SeasonWeather() {
    }
@@ -27,6 +28,12 @@ public final class SeasonWeather {
       }
 
       FactionSeasons.Season season = FactionSeasons.season(level);
+      boolean winter = season == FactionSeasons.Season.WINTER;
+      if (appliedWinter == null || appliedWinter != winter || level.getGameTime() % 200L == 0L) {
+         appliedWinter = winter;
+         SeasonClimate.apply(level.registryAccess(), winter);
+         net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.sendSeason(level, season.ordinal());
+      }
       if (level.getGameTime() % 200L == 0L) {
          net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.sendSeason(level, season.ordinal());
       }
@@ -46,7 +53,7 @@ public final class SeasonWeather {
 
             BlockPos top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, new BlockPos(x, 0, z));
             BlockPos below = top.below();
-            if (!level.getBiome(top).value().warmEnoughToRain(top)) {
+            if (!SeasonClimate.mild(level.getBiome(top).value(), top)) {
                continue;
             }
 
@@ -83,6 +90,6 @@ public final class SeasonWeather {
    /** Fields lie still in winter. */
    public static boolean frozen(net.minecraft.world.level.LevelAccessor level, BlockPos pos) {
       return level instanceof ServerLevel server && FactionSeasons.season(server) == FactionSeasons.Season.WINTER
-         && server.getBiome(pos).value().warmEnoughToRain(pos);
+         && SeasonClimate.mild(server.getBiome(pos).value(), pos);
    }
 }
