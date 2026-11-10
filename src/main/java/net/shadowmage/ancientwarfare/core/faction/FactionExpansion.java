@@ -85,6 +85,8 @@ public final class FactionExpansion {
    private static final int[] PENDING = new int[0];
    /** Sites whose land may load at once during a search. */
    private static final int SITE_LOOKAHEAD = 4;
+   /** Sites whose land loads at once during the prebuild, when nothing else needs the server. */
+   private static final int PREBUILD_SITE_LOOKAHEAD = 12;
    /** Capitals that found no site this session. */
    private static final Set<Integer> GIVEN_UP = new HashSet<>();
 
@@ -273,7 +275,7 @@ public final class FactionExpansion {
          }
 
          if (far) {
-            nextFarWork = level.getGameTime() + FAR_LAYOUT_REST_TICKS;
+            nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 0L : FAR_LAYOUT_REST_TICKS);
          }
 
          iterator.remove();
@@ -448,7 +450,10 @@ public final class FactionExpansion {
    private static boolean buildNearest(ServerLevel level, FactionWorldData data) {
       // While the world is prebuilt nobody needs to be online: an empty server measures from spawn.
       boolean alone = level.players().isEmpty();
-      if (AwtWorldGenerator.busy(level) || alone && !FactionPrebuild.active()) {
+      // During the prebuild, while a town is being built, the land under the next sites is
+      // already asked for, so it is generated in the background instead of after the town is done.
+      boolean prefetch = AwtWorldGenerator.busy(level) && FactionPrebuild.active();
+      if (AwtWorldGenerator.busy(level) && !prefetch || alone && !FactionPrebuild.active()) {
          return false;
       }
 
@@ -488,12 +493,14 @@ public final class FactionExpansion {
       }
 
       boolean distant = false;
-      if (target == null && far != null && (FactionPrebuild.active() || level.getServer().getAverageTickTime() < FAR_BUILD_MAX_TICK_MS) && level.getGameTime() >= nextFarWork) {
+      if (target == null && far != null && (prefetch || FactionPrebuild.active() || level.getServer().getAverageTickTime() < FAR_BUILD_MAX_TICK_MS) && level.getGameTime() >= nextFarWork) {
          // Beyond reach of every player: while the server keeps up, the rest of the world is built
          // too, capitals first, slowly, so lands nobody visits still get their towns, mines and roads.
          target = far;
          distant = true;
-         nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 0L : FAR_STEP_TICKS);
+         if (!prefetch) {
+            nextFarWork = level.getGameTime() + (FactionPrebuild.active() ? 0L : FAR_STEP_TICKS);
+         }
       }
 
       if (target == null) {
@@ -514,6 +521,15 @@ public final class FactionExpansion {
       // the next few candidates loads alongside it.
       int resume = -1;
       int pending = 0;
+      int lookahead = FactionPrebuild.active() ? PREBUILD_SITE_LOOKAHEAD : SITE_LOOKAHEAD;
+      if (prefetch) {
+         for (int i = 0, ahead = checked; i < lookahead && ahead < points && chunks > 0; i++, ahead++) {
+            int index = small ? ahead - points / 2 : ahead;
+            checkSite(level, data, faction, center.getX(), center.getZ(), index, capital ? CAPITAL_SEARCH_STEP : VILLAGE_SEARCH_STEP, chunks, target, true);
+         }
+
+         return false;
+      }
 
       for (int i = 0; i < SITE_CHECKS_PER_TICK + pending && checked < points && chunks > 0; i++, checked++) {
          if (capital && !small && checked >= points / 2) {
@@ -527,7 +543,7 @@ public final class FactionExpansion {
                resume = checked;
             }
 
-            if (++pending >= SITE_LOOKAHEAD) {
+            if (++pending >= lookahead) {
                break;
             }
 

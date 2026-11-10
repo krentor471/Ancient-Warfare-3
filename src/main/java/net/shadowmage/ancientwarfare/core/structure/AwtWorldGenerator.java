@@ -51,6 +51,8 @@ public final class AwtWorldGenerator {
    /** Land under the faction town site being looked at, loaded ahead of the check. */
    private static final java.util.LinkedHashMap<Long, IslandChunkWindow> SITE_LOADS = new java.util.LinkedHashMap<>();
    private static final int MAX_SITE_LOADS = 4;
+   /** During the prebuild the land under more sites loads at once. */
+   private static final int PREBUILD_SITE_LOADS = 16;
    private static BlockPos forcedOwner;
 
    private AwtWorldGenerator() {
@@ -155,7 +157,7 @@ public final class AwtWorldGenerator {
       IslandChunkWindow window = SITE_LOADS.remove(key.asLong());
       if (window == null) {
          window = new IslandChunkWindow();
-         if (SITE_LOADS.size() >= MAX_SITE_LOADS) {
+         if (SITE_LOADS.size() >= (net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.active() ? PREBUILD_SITE_LOADS : MAX_SITE_LOADS)) {
             // The site asked about longest ago gives up its land.
             var oldest = SITE_LOADS.entrySet().iterator().next();
             oldest.getValue().releaseAll();
