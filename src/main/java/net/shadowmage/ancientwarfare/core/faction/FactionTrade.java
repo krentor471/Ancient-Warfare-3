@@ -29,9 +29,9 @@ public final class FactionTrade {
    private static final int BASE_ROUTE_RANGE = 1200;
    /** Settlements this close are parts of one town and do not trade over a road. */
    private static final int MIN_ROUTE = 96;
-   private static final int LINKS = 2;
+   private static final int LINKS = 4;
    /** Two roads out of a town closer than this in direction would run side by side. */
-   private static final double SAME_WAY_DEGREES = 50.0;
+   private static final double SAME_WAY_DEGREES = 40.0;
    private static final int INCOME_DIVISOR = 20;
    private static final int ROBBERY_RANGE = 320;
    private static final double ROBBERY_CHANCE = 0.3;

@@ -117,10 +117,73 @@ public final class FactionRoads {
       return count;
    }
 
+   /** Road ends already led into their towns this session. */
+   private static final java.util.Set<Long> CONNECTED = new java.util.HashSet<>();
+
+   /**
+    * Roads finished before they were led into the towns stopped at the town's edge: when a player
+    * comes near such an end, the last stretch from the edge to the town's middle is paved.
+    */
+   private static void connectEnds(ServerLevel level, FactionWorldData data) {
+      for (FactionWorldData.Route route : data.routes()) {
+         if (route.road() != FactionWorldData.RoadState.DONE || route.points().size() < 2) {
+            continue;
+         }
+
+         for (boolean first : new boolean[]{true, false}) {
+            FactionWorldData.Settlement town = data.endpoint(route, first);
+            long key = (long)route.id() << 1 | (first ? 1L : 0L);
+            if (town == null || CONNECTED.contains(key) || !level.hasNearbyAlivePlayer(town.center().getX(), town.center().getY(), town.center().getZ(), 160.0)) {
+               continue;
+            }
+
+            // The road's point nearest this town that lies outside it.
+            long edge = 0L;
+            double best = Double.MAX_VALUE;
+            for (long point : route.points()) {
+               int px = unpackX(point);
+               int pz = unpackZ(point);
+               double d = town.horizontalDistanceSquared(px, pz);
+               if (!town.contains(px, pz, 0) && d < best) {
+                  best = d;
+                  edge = point;
+               }
+            }
+
+            if (best == Double.MAX_VALUE || !level.hasChunk(unpackX(edge) >> 4, unpackZ(edge) >> 4) || !level.hasChunk(town.center().getX() >> 4, town.center().getZ() >> 4)) {
+               continue;
+            }
+
+            CONNECTED.add(key);
+            int x0 = unpackX(edge);
+            int z0 = unpackZ(edge);
+            int x1 = town.center().getX();
+            int z1 = town.center().getZ();
+            double dx = x1 - x0;
+            double dz = z1 - z0;
+            double length = Math.max(1.0, Math.sqrt(dx * dx + dz * dz));
+            for (int t = 0; t <= (int)length; t++) {
+               for (int side = -1; side <= 1; side++) {
+                  int x = (int)Math.floor(x0 + dx * t / length - dz / length * side + 0.5);
+                  int z = (int)Math.floor(z0 + dz * t / length + dx / length * side + 0.5);
+                  if (level.hasChunk(x >> 4, z >> 4)) {
+                     pave(level, x, z);
+                  }
+               }
+            }
+            return;
+         }
+      }
+   }
+
    /** Lays one stretch of one unfinished road no player is near. */
    public static void tick(ServerLevel level, FactionWorldData data) {
       if (level.getGameTime() % TICK_INTERVAL != 0L) {
          return;
+      }
+
+      if (level.getGameTime() % 100L == 0L) {
+         connectEnds(level, data);
       }
 
       for (FactionWorldData.Route route : level.getGameTime() % POST_INTERVAL == 0L ? data.routes() : List.<FactionWorldData.Route>of()) {
@@ -464,7 +527,12 @@ public final class FactionRoads {
          for (int side = -1; side <= 1; side++) {
             int x = (int)Math.floor(cx + sideX * side + 0.5);
             int z = (int)Math.floor(cz + sideZ * side + 0.5);
-            if (!blocked(obstacles, x, z) && !insideEndpoint(obstacles, x, z)) {
+            if (!blocked(obstacles, x, z) && insideEndpoint(obstacles, x, z)) {
+               // Into the town itself: the road runs on to its middle over open ground (grass, dirt,
+               // sand), never over its houses or fields and without digging, so it reaches the town.
+               pave(level, x, z);
+               previous[side + 1] = null;
+            } else if (!blocked(obstacles, x, z)) {
                water |= pave(level, x, z) && side == 0;
                BlockPos here = new BlockPos(x, ground(level, x, z), z);
                BlockPos before = previous[side + 1];
