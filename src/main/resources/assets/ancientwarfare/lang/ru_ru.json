@@ -3563,5 +3563,7 @@
   "town.ancientwarfare.abandoned": "В %s не осталось ни души. Поселение опустело и заброшено, сюда больше никто не вернётся.",
   "conquest.ancientwarfare.bar": "Захват: %s, осталось защитников: %s",
   "conquest.ancientwarfare.bar_hiding": "Захват: %s, защитников не видно, остальные сдадутся через %s с",
-  "conquest.ancientwarfare.surrender": "Остатки гарнизона %s сложили оружие. Решай судьбу поселения."
+  "conquest.ancientwarfare.surrender": "Остатки гарнизона %s сложили оружие. Решай судьбу поселения.",
+  "diplomacy.ancientwarfare.war_on_you": "%s больше не терпят тебя и объявляют войну!",
+  "news.ancientwarfare.war_on_player": "%s объявляют войну игроку %s."
 }

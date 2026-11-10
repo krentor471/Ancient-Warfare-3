@@ -59,6 +59,7 @@ public final class FactionConquest {
    }
 
    public static void tick(ServerLevel level, FactionWorldData data) {
+      PlayerDiplomacy.autoWar(level);
       if (level.getGameTime() % CHECK_TICKS != 0L) {
          return;
       }

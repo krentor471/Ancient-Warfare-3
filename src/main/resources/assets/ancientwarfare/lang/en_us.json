@@ -3563,5 +3563,7 @@
   "town.ancientwarfare.abandoned": "Nobody is left alive in %s. The place stands empty and abandoned; nobody will come back to it.",
   "conquest.ancientwarfare.bar": "Taking %s: %s defenders left",
   "conquest.ancientwarfare.bar_hiding": "Taking %s: no defender in sight, the rest give up in %s s",
-  "conquest.ancientwarfare.surrender": "The last of the garrison of %s lay down their arms. The place is yours to decide."
+  "conquest.ancientwarfare.surrender": "The last of the garrison of %s lay down their arms. The place is yours to decide.",
+  "diplomacy.ancientwarfare.war_on_you": "%s have had enough of you and declare war!",
+  "news.ancientwarfare.war_on_player": "%s declare war on %s."
 }

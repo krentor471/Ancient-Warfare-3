@@ -235,6 +235,36 @@ public final class PlayerDiplomacy {
       }
    }
 
+   /** Below this, a faction the player keeps wronging declares war on them by itself. */
+   public static final int AUTO_WAR_STANDING = -50;
+
+   /**
+    * A faction does not wait for the player to declare war: once it hates the player enough (its
+    * people killed, its caravans robbed) it declares war itself, and everyone hears of it.
+    */
+   public static void autoWar(net.minecraft.server.level.ServerLevel level) {
+      if (level.getGameTime() % 200L != 0L) {
+         return;
+      }
+
+      FactionStandingData standings = FactionStandingData.get(level);
+      for (ServerPlayer player : level.players()) {
+         for (String faction : new java.util.ArrayList<>(standings.knownFactions(player.getUUID()))) {
+            if (FactionDiplomacy.isOutlaw(faction)) {
+               continue;
+            }
+
+            RelationState treaty = standings.getTreaty(player.getUUID(), faction);
+            if (treaty != RelationState.WAR && standings.getStanding(player.getUUID(), faction) <= AUTO_WAR_STANDING) {
+               standings.setTreaty(player.getUUID(), faction, RelationState.WAR);
+               player.sendSystemMessage(Component.translatable("diplomacy.ancientwarfare.war_on_you", FactionNews.factionName(faction))
+                  .withStyle(net.minecraft.ChatFormatting.RED));
+               FactionNews.tell(level, Component.translatable("news.ancientwarfare.war_on_player", FactionNews.factionName(faction), player.getDisplayName()));
+            }
+         }
+      }
+   }
+
    /** Takes a price in silver coins; false when the player has too little. */
    static boolean takeEmeralds(ServerPlayer player, int count) {
       return Coins.take(player, count);
