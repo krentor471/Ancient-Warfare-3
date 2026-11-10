@@ -3567,5 +3567,20 @@
   "diplomacy.ancientwarfare.war_on_you": "%s больше не терпят тебя и объявляют войну!",
   "news.ancientwarfare.war_on_player": "%s объявляют войну игроку %s.",
   "storehouse.ancientwarfare.barrel": "Склад державы: %s (всего %s)",
-  "storehouse.ancientwarfare.theft": "Ты взял со складов фракции %s без спроса. Отношение -%s."
+  "storehouse.ancientwarfare.theft": "Ты взял со складов фракции %s без спроса. Отношение -%s.",
+  "guistrings.research.not_your_country": "Эта ратуша принадлежит другой стране.",
+  "guistrings.research.country_set": "Книга служит стране игрока %s: её исследования получат все участники.",
+  "guistrings.research.researcher_other": "Теперь это книга игрока %s.",
+  "country.ancientwarfare.invite_self": "Нельзя пригласить самого себя.",
+  "country.ancientwarfare.not_founder": "Приглашать может только основатель страны.",
+  "country.ancientwarfare.invited": "Приглашение отправлено игроку %s.",
+  "country.ancientwarfare.invitation": "%s зовёт тебя в свою страну.",
+  "country.ancientwarfare.accept": "[Вступить]",
+  "country.ancientwarfare.no_invitation": "%s тебя не приглашал.",
+  "country.ancientwarfare.has_members": "В твою страну уже вступили другие, в чужую ты вступить не можешь.",
+  "country.ancientwarfare.joined": "Ты вступил в страну игрока %s.",
+  "country.ancientwarfare.member_joined": "%s вступил в твою страну.",
+  "country.ancientwarfare.not_member": "Ты не состоишь в чужой стране.",
+  "country.ancientwarfare.left": "Ты покинул страну.",
+  "country.ancientwarfare.members": "Страна: %s (* основатель)"
 }

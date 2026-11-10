@@ -62,6 +62,25 @@ public final class ForgeFactionCommands {
       RequiredArgumentBuilder<CommandSourceStack, String> factionArgument = Commands.argument("faction", StringArgumentType.word())
          .suggests((context, builder) -> SharedSuggestionProvider.suggest(FactionRegistry.factionNames(), builder));
       registerWorldCommands(event);
+      event.getDispatcher().register(
+         Commands.literal("awcountry")
+            .then(Commands.literal("invite").then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player()).executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.CountryMembers.invite(context.getSource().getPlayerOrException(), net.minecraft.commands.arguments.EntityArgument.getPlayer(context, "player"));
+               return 1;
+            })))
+            .then(Commands.literal("join").then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player()).executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.CountryMembers.join(context.getSource().getPlayerOrException(), net.minecraft.commands.arguments.EntityArgument.getPlayer(context, "player"));
+               return 1;
+            })))
+            .then(Commands.literal("leave").executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.CountryMembers.leave(context.getSource().getPlayerOrException());
+               return 1;
+            }))
+            .then(Commands.literal("members").executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.CountryMembers.list(context.getSource().getPlayerOrException());
+               return 1;
+            }))
+      );
       event.getDispatcher()
          .register(
             (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("awfaction")

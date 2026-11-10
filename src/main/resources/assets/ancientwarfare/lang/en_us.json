@@ -3567,5 +3567,20 @@
   "diplomacy.ancientwarfare.war_on_you": "%s have had enough of you and declare war!",
   "news.ancientwarfare.war_on_player": "%s declare war on %s.",
   "storehouse.ancientwarfare.barrel": "Realm's store: %s (%s in all)",
-  "storehouse.ancientwarfare.theft": "You took from the stores of %s without leave. Standing -%s."
+  "storehouse.ancientwarfare.theft": "You took from the stores of %s without leave. Standing -%s.",
+  "guistrings.research.not_your_country": "This town hall belongs to another country.",
+  "guistrings.research.country_set": "The book now serves the country of %s: all its members share its research.",
+  "guistrings.research.researcher_other": "The book is now %s's.",
+  "country.ancientwarfare.invite_self": "You cannot invite yourself.",
+  "country.ancientwarfare.not_founder": "Only a country's founder can invite.",
+  "country.ancientwarfare.invited": "Invitation sent to %s.",
+  "country.ancientwarfare.invitation": "%s invites you to join their country.",
+  "country.ancientwarfare.accept": "[Join]",
+  "country.ancientwarfare.no_invitation": "%s has not invited you.",
+  "country.ancientwarfare.has_members": "Others have joined your own country; you cannot join another.",
+  "country.ancientwarfare.joined": "You joined the country of %s.",
+  "country.ancientwarfare.member_joined": "%s joined your country.",
+  "country.ancientwarfare.not_member": "You are not a member of anyone's country.",
+  "country.ancientwarfare.left": "You left the country.",
+  "country.ancientwarfare.members": "Country: %s (* founder)"
 }

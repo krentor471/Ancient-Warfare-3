@@ -117,6 +117,55 @@ public class ResearchBookItem extends Item {
       return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
    }
 
+   /** Used on a town hall: the book serves that town's country, so everyone in it shares what it teaches. */
+   @Override
+   public net.minecraft.world.InteractionResult useOn(net.minecraft.world.item.context.UseOnContext context) {
+      Level level = context.getLevel();
+      if (!(level.getBlockEntity(context.getClickedPos()) instanceof net.shadowmage.ancientwarfare.core.tile.TownHallBlockEntity hall) || context.getPlayer() == null) {
+         return net.minecraft.world.InteractionResult.PASS;
+      }
+
+      if (!level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel server) {
+         Player player = context.getPlayer();
+         java.util.Optional<java.util.UUID> owner = hall.getOwner();
+         if (owner.isEmpty()) {
+            return net.minecraft.world.InteractionResult.CONSUME;
+         }
+
+         java.util.UUID founder = net.shadowmage.ancientwarfare.core.faction.CountryMembers.countryOf(server, owner.get());
+         java.util.UUID mine = net.shadowmage.ancientwarfare.core.faction.CountryMembers.countryOf(server, player.getUUID());
+         if (!founder.equals(mine)) {
+            player.displayClientMessage(Component.translatable("guistrings.research.not_your_country").withStyle(ChatFormatting.RED), true);
+            return net.minecraft.world.InteractionResult.CONSUME;
+         }
+
+         net.minecraft.server.players.GameProfileCache cache = server.getServer().getProfileCache();
+         String name = cache == null ? null : cache.get(founder).map(com.mojang.authlib.GameProfile::getName).orElse(null);
+         if (name != null) {
+            ResearchBookData.setResearcherName(context.getItemInHand(), name);
+            player.displayClientMessage(Component.translatable("guistrings.research.country_set", name), true);
+         }
+      }
+
+      return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
+   }
+
+   /** Used on another player: the book is theirs, for their own research. */
+   @Override
+   public net.minecraft.world.InteractionResult interactLivingEntity(ItemStack stack, Player player, net.minecraft.world.entity.LivingEntity target, InteractionHand hand) {
+      if (!(target instanceof Player other)) {
+         return net.minecraft.world.InteractionResult.PASS;
+      }
+
+      if (!player.level().isClientSide) {
+         ItemStack held = player.getItemInHand(hand);
+         ResearchBookData.setResearcherName(held, other.getName().getString());
+         player.displayClientMessage(Component.translatable("guistrings.research.researcher_other", other.getName()), true);
+      }
+
+      return net.minecraft.world.InteractionResult.sidedSuccess(player.level().isClientSide);
+   }
+
    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
       String researcherName = getResearcherName(stack);
       if (researcherName == null) {
