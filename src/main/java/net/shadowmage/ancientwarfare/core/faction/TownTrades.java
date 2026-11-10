@@ -137,7 +137,14 @@ public final class TownTrades {
       FactionWorldData.Hall hall = halls.get(npc.getRandom().nextInt(halls.size()));
       int x = hall.min().getX() + npc.getRandom().nextInt(Math.max(1, hall.max().getX() - hall.min().getX() + 1));
       int z = hall.min().getZ() + npc.getRandom().nextInt(Math.max(1, hall.max().getZ() - hall.min().getZ() + 1));
-      return new net.minecraft.core.BlockPos(x, level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1, z);
+      // The hall's floor, not its roof: a worker sent up onto the roof stood about up there.
+      int floor = hall.min().getY();
+      net.minecraft.core.BlockPos ground = new net.minecraft.core.BlockPos(x, floor, z);
+      if (level.getBlockState(ground.above()).getCollisionShape(level, ground.above()).isEmpty()) {
+         return ground;
+      }
+
+      return new net.minecraft.core.BlockPos((hall.min().getX() + hall.max().getX()) / 2, floor, (hall.min().getZ() + hall.max().getZ()) / 2);
    }
 
    /** The townsperson's trade, picked the first time anyone asks; empty for children and beggars. */

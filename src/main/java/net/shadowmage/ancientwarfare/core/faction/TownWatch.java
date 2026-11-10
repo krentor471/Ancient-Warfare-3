@@ -30,6 +30,7 @@ import net.shadowmage.ancientwarfare.core.forge.init.AWCoreEntityTypes;
 public final class TownWatch {
    public static final String WATCH_TAG = "AWWatch";
    public static final String JUDGE_TAG = "AWJudge";
+   private static final java.util.Map<Integer, Long> JUDGE_SPAWNED = new java.util.HashMap<>();
    private static final String WANTED = "AWWanted";
    private static final String JAIL = "AWJail";
    private static final int WATCHMEN = 2;
@@ -193,9 +194,25 @@ public final class TownWatch {
    }
 
    private static void judgeAt(ServerLevel level, FactionWorldData.Settlement town, BlockPos at) {
-      if (!level.getEntitiesOfClass(FactionNpcEntity.class, new AABB(at).inflate(8), npc -> npc.getTags().contains(JUDGE_TAG)).isEmpty()) {
+      // One judge to a town: one who walked off from his lectern still counts.
+      AABB area = new AABB(town.min(), town.max().offset(1, 1, 1)).inflate(48.0, 32.0, 48.0);
+      if (!level.getEntitiesOfClass(FactionNpcEntity.class, area, npc -> npc.getTags().contains(JUDGE_TAG)).isEmpty()) {
          return;
       }
+
+      Long last = JUDGE_SPAWNED.get(town.id());
+      if (last != null && level.getGameTime() - last < FactionSimulation.DAY_TICKS) {
+         // A judge killed is replaced the next day, not at once.
+         return;
+      }
+
+      if (!level.getBlockState(at).getCollisionShape(level, at).isEmpty() || !level.getBlockState(at.above()).getCollisionShape(level, at.above()).isEmpty()
+         || level.getBlockState(at.below()).getCollisionShape(level, at.below()).isEmpty()) {
+         // The spot is inside a wall or over a hole in this courthouse: no judge stuck in the stone.
+         return;
+      }
+
+      JUDGE_SPAWNED.put(town.id(), level.getGameTime());
 
       FactionNpcEntity judge = AWCoreEntityTypes.FACTION_CIVILIAN_MALE_NPC.get().create(level);
       if (judge == null) {

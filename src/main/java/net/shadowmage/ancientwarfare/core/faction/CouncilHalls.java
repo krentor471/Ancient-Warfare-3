@@ -135,7 +135,10 @@ public final class CouncilHalls extends SavedData {
    private static void seat(ServerLevel level, FactionWorldData.Settlement settlement, FactionWorldData.Hall hall, List<BlockPos> chairs) {
       AABB box = new AABB(hall.min(), hall.max().offset(1, 1, 1)).inflate(1.0);
       String key = hall.kind() + "@" + hall.min().asLong();
-      List<FactionNpcEntity> seated = level.getEntitiesOfClass(FactionNpcEntity.class, box, npc -> key.equals(npc.getPersistentData().getString(COUNCIL_TAG)));
+      // Councillors who got off their chairs and wandered out of the hall still count, or a new one
+      // would be seated every few seconds and the hall would fill with people.
+      AABB town = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(48.0, 32.0, 48.0).minmax(box);
+      List<FactionNpcEntity> seated = level.getEntitiesOfClass(FactionNpcEntity.class, town, npc -> key.equals(npc.getPersistentData().getString(COUNCIL_TAG)));
       long night = level.getDayTime() % FactionSimulation.DAY_TICKS;
       if (night >= 13000L) {
          // They go home for the night; empty chairs until morning.
