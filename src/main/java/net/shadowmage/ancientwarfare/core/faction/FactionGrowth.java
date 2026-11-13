@@ -320,8 +320,10 @@ public final class FactionGrowth {
       RandomSource random = level.getRandom();
       boolean built = false;
       lastBox = null;
+      placing = kind;
       List<String> own = kind.words.length == 0 ? List.of() : hallTemplates(settlement.faction(), kind);
-      if (!own.isEmpty() && random.nextInt(3) > 0) {
+      // The faction's own buildings first, so a town keeps one style; foreign village houses and plain pieces only where it has none.
+      if (!own.isEmpty()) {
          built = hall(level, data, settlement, kind, own, watched);
       }
 
@@ -750,6 +752,9 @@ public final class FactionGrowth {
       ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, int sizeX, int sizeZ, int maxSlope, RandomSource random, boolean watched
    ) {
       BlockPos center = settlement.center();
+      Spot best = null;
+      double bestScore = Double.NEGATIVE_INFINITY;
+      int found = 0;
       for (int ring = 0; ring < SPOT_RINGS; ring++) {
          int radius = SPOT_START + ring * SPOT_STEP;
          double turn = random.nextDouble() * Math.PI * 2.0;
@@ -766,14 +771,100 @@ public final class FactionGrowth {
                continue;
             }
 
+            if (tooNearSameKind(settlement, x + sizeX / 2, z + sizeZ / 2)) {
+               continue;
+            }
+
             Integer ground = openGround(level, x, z, sizeX, sizeZ, maxSlope);
             if (ground != null) {
-               return new Spot(x, z, ground);
+               Spot spot = new Spot(x, z, ground);
+               double score = score(level, settlement, spot, sizeX, sizeZ, ring);
+               if (best == null || score > bestScore) {
+                  best = spot;
+                  bestScore = score;
+               }
+
+               if (++found >= SPOT_CHOICES) {
+                  return best;
+               }
             }
          }
       }
 
-      return null;
+      return best;
+   }
+
+   /** The kind of building being placed now, so its spot is weighed by what it is for. */
+   private static TownBuildings.Kind placing;
+   /** Good spots weighed against each other before one is chosen. */
+   private static final int SPOT_CHOICES = 5;
+   /** Two workshops, temples or halls of one kind stand at least this far apart. */
+   private static final int SAME_KIND_SPACING = 30;
+
+   private static boolean tooNearSameKind(FactionWorldData.Settlement settlement, int x, int z) {
+      TownBuildings.Kind kind = placing;
+      if (kind == null || kind.group == TownBuildings.Group.HOMES || kind.group == TownBuildings.Group.FOOD || kind == TownBuildings.Kind.STALL) {
+         return false;
+      }
+
+      for (FactionWorldData.Hall hall : settlement.halls()) {
+         if (hall.kind().equals(kind.key())) {
+            double dx = (hall.min().getX() + hall.max().getX()) / 2.0 - x;
+            double dz = (hall.min().getZ() + hall.max().getZ()) / 2.0 - z;
+            if (dx * dx + dz * dz < SAME_KIND_SPACING * SAME_KIND_SPACING) {
+               return true;
+            }
+         }
+      }
+
+      return false;
+   }
+
+   /**
+    * How well a spot suits the building: what matters to the town's culture (temples, squares,
+    * markets, learning) stands near its heart; what matters to its people (homes, wells) near a
+    * road and not too far out; what needs a road (trade, crafts) right by one; farms go out.
+    */
+   private static double score(ServerLevel level, FactionWorldData.Settlement settlement, Spot spot, int sizeX, int sizeZ, int ring) {
+      TownBuildings.Kind kind = placing;
+      if (kind == null) {
+         return -ring;
+      }
+
+      double culture = switch (kind.group) {
+         case FAITH, LEARNING -> 3.0;
+         case TRADE -> 2.0;
+         default -> kind == TownBuildings.Kind.SQUARE || kind == TownBuildings.Kind.WELL ? 3.0 : 0.5;
+      };
+      double road = switch (kind.group) {
+         case TRADE -> 3.0;
+         case CRAFT -> 2.0;
+         case HOMES -> 1.5;
+         case FOOD -> 0.3;
+         default -> 1.0;
+      };
+      boolean outskirts = kind.group == TownBuildings.Group.FOOD && kind != TownBuildings.Kind.BAKERY && kind != TownBuildings.Kind.GRANARY;
+      double centre = outskirts ? ring * 0.5 : -ring * culture;
+      int toRoad = distanceToPath(level, spot.x + sizeX / 2, spot.z + sizeZ / 2, spot.ground, 12);
+      return centre - toRoad * road / 4.0;
+   }
+
+   /** Blocks to the nearest path or road block around a point, looked for in rings up to range. */
+   private static int distanceToPath(ServerLevel level, int x, int z, int y, int range) {
+      for (int r = 1; r <= range; r += 2) {
+         for (int i = -r; i <= r; i += 2) {
+            for (int[] p : new int[][]{{x + i, z - r}, {x + i, z + r}, {x - r, z + i}, {x + r, z + i}}) {
+               for (int dy = -2; dy <= 2; dy++) {
+                  net.minecraft.world.level.block.state.BlockState state = level.getBlockState(new BlockPos(p[0], y + dy, p[1]));
+                  if (state.is(Blocks.DIRT_PATH) || state.is(Blocks.GRAVEL) || state.is(BlockTags.STONE_BRICKS) || state.is(Blocks.COBBLESTONE)) {
+                     return r;
+                  }
+               }
+            }
+         }
+      }
+
+      return range + 4;
    }
 
    /** The middle ground level of a spot and a margin around it, or null where anything but open land, trees and paths is there or it is too steep. */

@@ -43,9 +43,9 @@ public final class TownBuildings {
     * may be taken from, piece the plain building put up when neither is to hand.
     */
    public enum Kind {
-      HOUSE(Group.HOMES, 10, 0, 99, "", "small_house", FactionGrowth.Piece.HOUSE, 4, 0, 0, 0, 0, 0),
-      COTTAGE(Group.HOMES, 16, 0, 99, "cottage", "small_house", FactionGrowth.Piece.HOUSE, 5, 0, 0, 0, 0, 0),
-      FAMILY_HOUSE(Group.HOMES, 24, 1, 99, "house", "medium_house", FactionGrowth.Piece.HOUSE, 8, 0, 0, 0, 1, 0),
+      HOUSE(Group.HOMES, 10, 0, 99, "genhouse|poorhouse|dwelling", "small_house", FactionGrowth.Piece.HOUSE, 4, 0, 0, 0, 0, 0),
+      COTTAGE(Group.HOMES, 16, 0, 99, "cottage|genhouse|poorhouse", "small_house", FactionGrowth.Piece.HOUSE, 5, 0, 0, 0, 0, 0),
+      FAMILY_HOUSE(Group.HOMES, 24, 1, 99, "artisanshouse|genhouse", "medium_house", FactionGrowth.Piece.HOUSE, 8, 0, 0, 0, 1, 0),
       MANOR(Group.HOMES, 60, 2, 3, "manor|villa|estate", "big_house", FactionGrowth.Piece.HALL, 10, 0, 0, 1, 2, 0),
       WELL(Group.HOMES, 8, 0, 3, "well", "", FactionGrowth.Piece.WELL, 0, 0, 1, 0, 0, 0),
       LAMP(Group.HOMES, 3, 0, 8, "", "", FactionGrowth.Piece.LAMP, 0, 0, 0, 1, 0, 0),
