@@ -30,7 +30,7 @@ public final class Prayers {
 
    /** The player's faith, or -1 before their first prayer. */
    public static int faith(ServerPlayer player) {
-      return player.getPersistentData().contains(FAITH_TAG) ? player.getPersistentData().getInt(FAITH_TAG) : -1;
+      return PlayerFaith.faith(player);
    }
 
    static void pray(ServerPlayer player, FactionNpcEntity head, FactionWorldData.Settlement town, Component speaker) {
@@ -68,7 +68,7 @@ public final class Prayers {
             player.sendSystemMessage(Component.translatable("faith.ancientwarfare.pray.joined", FactionFaith.name(faith)).withStyle(ChatFormatting.LIGHT_PURPLE));
          }
 
-         player.getPersistentData().putInt(FAITH_TAG, faith);
+         PlayerFaith.set(player, faith);
       }
 
       player.getPersistentData().putLong(DAY_TAG, day + 1);

@@ -53,7 +53,17 @@ public final class PlayerFaith {
    /** The player's creed, or -1 for none. */
    public static int faith(Player player) {
       CompoundTag kept = kept(player);
+      if (!kept.contains(KEY) && player.getPersistentData().contains(KEY)) {
+         // Taken up by prayer before the faith was kept across death.
+         kept.putInt(KEY, player.getPersistentData().getInt(KEY));
+      }
+
       return kept.contains(KEY) ? kept.getInt(KEY) : -1;
+   }
+
+   /** Prayer at a shrine makes the player one of its faithful, as joining does. */
+   static void set(Player player, int faith) {
+      kept(player).putInt(KEY, faith);
    }
 
    public static int zeal(int faith) {
