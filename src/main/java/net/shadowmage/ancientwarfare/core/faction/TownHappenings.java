@@ -80,6 +80,7 @@ final class TownHappenings {
 
    static void resolve(ServerPlayer player, FactionWorldData.Settlement town, String key, String choice, boolean ok) {
       ServerLevel level = player.serverLevel();
+      lasting(player, town, key + "." + choice, ok);
       if (key.equals("fire")) {
          List<BlockPos> lit = FIRES.remove(player.getUUID());
          if (lit != null && choice.equals("help") && ok) {
@@ -103,6 +104,53 @@ final class TownHappenings {
             }
          }
       }
+   }
+
+   /**
+    * What stays with the town after the player has chosen: bread given feeds people, a cure shortens
+    * the plague, a sponsored apprentice opens a stall, a bribe taken makes the player wanted.
+    */
+   private static void lasting(ServerPlayer player, FactionWorldData.Settlement town, String what, boolean ok) {
+      switch (what) {
+         case "hungry_family.give_bread" -> town.food += 4;
+         case "baker.sell_wheat" -> town.food += 16;
+         case "cold_night.firewood" -> town.health = Math.min(100, town.health + 2);
+         case "sick_child.milk", "sick_child.pay_healer" -> {
+            if (town.plague > 0) {
+               town.plague--;
+            }
+         }
+         case "apprentice.sponsor" -> town.plan().add(0, TownBuildings.Kind.STALL.key());
+         case "pilgrim.alms" -> {
+            if (town.plan().stream().noneMatch(TownBuildings.Kind.SHRINE.key()::equals)) {
+               town.plan().add(TownBuildings.Kind.SHRINE.key());
+            }
+         }
+         case "guard_bribe.take_cut" -> TownWatch.wanted(player, town.faction(), 20);
+         case "fire.flee" -> town.plan().add(0, TownBuildings.Kind.GRANARY.key());
+         case "fire.help" -> {
+            if (!ok) {
+               town.plan().add(0, TownBuildings.Kind.GRANARY.key());
+            }
+         }
+         case "thief.pardon" -> town.order = Math.max(0, town.order - 1);
+         case "brawl.break_up" -> {
+            if (!ok) {
+               // The brawl spills over: the tavern's door and benches get smashed.
+               town.wealth = Math.max(0, town.wealth - 5);
+            }
+         }
+         case "bully.intervene" -> {
+            if (!ok) {
+               TownWatch.wanted(player, town.faction(), 5);
+            }
+         }
+         default -> {
+            return;
+         }
+      }
+
+      FactionWorldData.get(player.serverLevel()).setDirty();
    }
 
    static void reset() {

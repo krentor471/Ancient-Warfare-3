@@ -39,6 +39,8 @@ public final class FactionRepairs extends SavedData {
    private static final class Damage {
       final LinkedHashMap<Long, BlockState> blocks = new LinkedHashMap<>();
       long lastBlast;
+      /** Whether the town has looked over its ruined buildings since the last blast; not saved. */
+      boolean surveyed;
    }
 
    /** Blocks about to be broken by a blast or a shot: those inside a settlement are remembered. */
@@ -55,6 +57,7 @@ public final class FactionRepairs extends SavedData {
       FactionRepairs repairs = get(level);
       Damage damage = repairs.damage.computeIfAbsent(settlement.id(), id -> new Damage());
       damage.lastBlast = level.getGameTime();
+      damage.surveyed = false;
       for (BlockPos pos : positions) {
          BlockState state = level.getBlockState(pos);
          if (state.isAir() || !state.getFluidState().isEmpty() || state.is(Blocks.FIRE) || state.hasBlockEntity() || damage.blocks.size() >= MAX_REMEMBERED) {
@@ -102,12 +105,66 @@ public final class FactionRepairs extends SavedData {
             continue;
          }
 
+         FactionWorldData.Settlement settlement = data.settlement(entry.getKey());
+         if (!damage.surveyed) {
+            damage.surveyed = true;
+            relocateRuined(level, data, settlement, damage);
+         }
+
          mend(level, damage);
          repairs.setDirty();
          if (damage.blocks.isEmpty()) {
             AncientWarfareCore.LOG.info("Settlement #{} has mended its war damage", entry.getKey());
             entries.remove();
          }
+      }
+   }
+
+   /**
+    * A building the town put up as it grew that lies more than half in ruins is not patched up: the
+    * ruin is left standing, and the town raises it anew on the best spot it can find now, by the
+    * same rules as any new building (near the heart, by a road, apart from its like).
+    */
+   private static void relocateRuined(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement, Damage damage) {
+      Iterator<FactionWorldData.Hall> halls = settlement.halls().iterator();
+      while (halls.hasNext()) {
+         FactionWorldData.Hall hall = halls.next();
+         TownBuildings.Kind kind = TownBuildings.Kind.byKey(hall.kind());
+         if (kind == null) {
+            continue;
+         }
+
+         List<Long> inside = new ArrayList<>();
+         for (long key : damage.blocks.keySet()) {
+            int x = BlockPos.getX(key);
+            int y = BlockPos.getY(key);
+            int z = BlockPos.getZ(key);
+            if (x >= hall.min().getX() && x <= hall.max().getX() && z >= hall.min().getZ() && z <= hall.max().getZ() && y >= hall.min().getY() - 1 && y <= hall.max().getY()) {
+               inside.add(key);
+            }
+         }
+
+         if (inside.size() < 12) {
+            continue;
+         }
+
+         int standing = 0;
+         for (BlockPos pos : BlockPos.betweenClosed(hall.min(), hall.max())) {
+            if (!level.getBlockState(pos).isAir() && level.getBlockState(pos).getFluidState().isEmpty()) {
+               standing++;
+            }
+         }
+
+         if (inside.size() <= standing) {
+            continue;
+         }
+
+         // Ruined: left as it lies, and built again elsewhere first of all that waits.
+         inside.forEach(damage.blocks::remove);
+         halls.remove();
+         settlement.plan().add(0, kind.key());
+         data.setDirty();
+         AncientWarfareCore.LOG.info("Settlement #{} gives up its ruined {} at {} and will build it anew elsewhere", settlement.id(), kind, hall.min());
       }
    }
 
