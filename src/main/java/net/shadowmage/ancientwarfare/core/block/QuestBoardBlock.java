@@ -18,10 +18,10 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.shadowmage.ancientwarfare.core.faction.FactionQuests;
 
-/** A board of notices on two posts: a town's tasks for passers-by; see FactionQuests. */
+/** A tall board of notices on two posts under a little roof, wider than its block so a passer-by sees it: a town's tasks; see FactionQuests. */
 public class QuestBoardBlock extends HorizontalDirectionalBlock {
-   private static final VoxelShape ALONG_X = Block.box(0.0, 0.0, 6.0, 16.0, 16.0, 10.0);
-   private static final VoxelShape ALONG_Z = Block.box(6.0, 0.0, 0.0, 10.0, 16.0, 16.0);
+   private static final VoxelShape ALONG_X = Block.box(-4.0, 0.0, 6.0, 20.0, 30.0, 10.0);
+   private static final VoxelShape ALONG_Z = Block.box(6.0, 0.0, -4.0, 10.0, 30.0, 20.0);
 
    public QuestBoardBlock(Properties properties) {
       super(properties);

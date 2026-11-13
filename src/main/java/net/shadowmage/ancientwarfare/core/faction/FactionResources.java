@@ -49,6 +49,10 @@ public final class FactionResources {
 
    /** One day's work in every settlement. */
    static void simulateDay(FactionWorldData data) {
+      simulateDay(data, false);
+   }
+
+   static void simulateDay(FactionWorldData data, boolean winter) {
       java.util.Set<String> factions = new java.util.HashSet<>();
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          int[] made = output(settlement);
@@ -56,6 +60,29 @@ public final class FactionResources {
          factions.add(settlement.faction());
          for (int kind = 0; kind < KINDS; kind++) {
             store[kind] = Math.min(MAX_STORE, store[kind] + made[kind]);
+         }
+      }
+
+      // Every settlement lives off the realm's stores: bread for its people, firewood (twice in winter),
+      // and iron and leather to keep its garrison armed. Stores no longer simply fill up.
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (FactionDiplomacy.isOutlaw(settlement.faction())) {
+            continue;
+         }
+
+         int[] store = data.stores(settlement.faction());
+         int people = settlement.population();
+         store[GRAIN] = Math.max(0, store[GRAIN] - people / 10);
+         store[WOOD] = Math.max(0, store[WOOD] - people / 20 * (winter ? 2 : 1));
+         store[IRON] = Math.max(0, store[IRON] - settlement.garrison() / 15);
+         store[LEATHER] = Math.max(0, store[LEATHER] - settlement.garrison() / 20);
+         store[COAL] = Math.max(0, store[COAL] - people / 60);
+      }
+
+      // A realm with no grain in its stores cannot send any to its towns: they eat into their own.
+      for (FactionWorldData.Settlement settlement : data.settlements()) {
+         if (data.stores(settlement.faction())[GRAIN] < 20 && settlement.food > 0) {
+            settlement.food = Math.max(0, settlement.food - settlement.population() / 5);
          }
       }
 
@@ -96,8 +123,41 @@ public final class FactionResources {
          mines + hills + people / 40,
          mines + hills
       };
+      // The town's own workplaces add to what its people bring in.
+      for (String building : settlement.buildings()) {
+         switch (building) {
+            case "field", "large_farm", "garden" -> made[GRAIN] += building.equals("large_farm") ? 3 : 1;
+            case "mill", "granary" -> made[GRAIN] += 2;
+            case "animal_pen", "butcher" -> {
+               made[LEATHER]++;
+               made[WOOL]++;
+            }
+            case "tannery" -> made[LEATHER] += 2;
+            case "weaver" -> made[WOOL] += 2;
+            case "carpenter" -> made[WOOD] += 3;
+            case "mason" -> made[STONE] += 3;
+            case "mine" -> {
+               made[STONE] += 2;
+               made[IRON] += 2;
+               made[COAL] += 2;
+               made[COPPER]++;
+            }
+            case "smithy" -> made[IRON]++;
+            default -> {
+            }
+         }
+      }
+
       made[specialty(settlement.faction())] *= 2;
       return made;
+   }
+
+   /** Wood and stone a building of this kind takes: stone walls take a quarry's worth. */
+   static int[] buildCost(TownBuildings.Kind kind) {
+      int[] cost = new int[KINDS];
+      cost[WOOD] = kind.cost / 2;
+      cost[STONE] = kind == TownBuildings.Kind.STONE_WALL ? 300 : kind.cost / 3;
+      return cost;
    }
 
    public static boolean has(FactionWorldData data, String faction, int[] cost) {

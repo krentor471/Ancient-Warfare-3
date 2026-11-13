@@ -1,6 +1,8 @@
 package net.shadowmage.ancientwarfare.core.faction;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -35,8 +37,12 @@ public final class FactionRegions {
    public static final Set<String> OUTLAWS = Set.of("brigand", "pirate");
    private static final long REALM_SALT = 0x5EED_FAC7L;
    private static final long PROVINCE_SALT = 0x9A0B_1C3DL;
-   private static final double WILD_CHANCE = 0.15;
    private static final int TOWN_SCORE = 6;
+   /** Realms around the middle of the world shared out as homes, each way. */
+   private static final int HOME_CELLS = 4;
+   /** How many realms from its home a country reaches at most; farther land starts wild. */
+   private static final int HOME_REACH = 3;
+   private static final int REALMS_PER_COUNTRY = 2;
    private static final int MIN_FACTION_TEMPLATES = 5;
    private static final int[][] SAMPLE_OFFSETS = {{0, 0}, {320, 0}, {-320, 0}, {0, 320}, {0, -320}, {560, 560}, {-560, 560}, {560, -560}, {-560, -560}};
    private static final Map<ResourceKey<Biome>, Map<String, Integer>> BIOME_SCORES = new HashMap<>();
@@ -91,7 +97,7 @@ public final class FactionRegions {
       FactionWorldData data = FactionWorldData.get(level);
       String faction = data.realmFaction(cell.key());
       if (faction == null) {
-         faction = pickOwner(level, cell.key(), cell.seedX(), cell.seedZ());
+         faction = pickOwner(level, data, cell.key(), cell.seedX(), cell.seedZ());
          data.setRealmFaction(cell.key(), faction);
       }
 
@@ -144,23 +150,14 @@ public final class FactionRegions {
       return biomeScores(level.getUncachedNoiseBiome(x >> 2, 64 >> 2, z >> 2)).getOrDefault(faction, 0) > 0;
    }
 
-   private static String pickOwner(ServerLevel level, long key, int seedX, int seedZ) {
-      RandomSource random = RandomSource.create(level.getSeed() ^ key * 6364136223846793005L ^ 0x0A3E_2B1DL);
-      if (random.nextDouble() < WILD_CHANCE) {
-         return "";
-      }
-
-      Map<String, Integer> scores = new LinkedHashMap<>();
+   private static String pickOwner(ServerLevel level, FactionWorldData data, long key, int seedX, int seedZ) {
       int sea = 0;
 
       for (int[] offset : SAMPLE_OFFSETS) {
          Holder<Biome> biome = level.getUncachedNoiseBiome((seedX + offset[0]) >> 2, 64 >> 2, (seedZ + offset[1]) >> 2);
          if (biome.is(BiomeTags.IS_OCEAN)) {
             sea++;
-            continue;
          }
-
-         biomeScores(biome).forEach((faction, score) -> scores.merge(faction, score, Integer::sum));
       }
 
       if (sea * 2 > SAMPLE_OFFSETS.length) {
@@ -168,33 +165,124 @@ public final class FactionRegions {
          return "";
       }
 
-      // Square root, so a faction with many buildings for this climate (the Empire fits most forests)
-      // is favoured without crowding out smaller cultures; factions with only a handful of buildings
-      // never get a country they could not fill.
-      double total = 0.0;
+      // Each country is the land grown out from its home: one piece, never scattered over the world.
+      homes(level);
+      return lands.getOrDefault(key, "");
+   }
 
-      for (Map.Entry<String, Integer> entry : scores.entrySet()) {
-         if (factionTemplateCount(entry.getKey()) >= MIN_FACTION_TEMPLATES) {
-            total += Math.sqrt(entry.getValue());
+   private static long homesSeed;
+   private static Map<String, int[]> homes;
+   /** The faction of each realm cell, grown out a ring at a time from the homes over land. */
+   private static Map<Long, String> lands;
+
+   /**
+    * Where each country begins, the same for every run of a world: the land realms around the
+    * world's middle are shared out one per faction, each faction taking the realm that suits its
+    * buildings best among those farthest from the homes already given.
+    */
+   static synchronized Map<String, int[]> homes(ServerLevel level) {
+      if (homes != null && homesSeed == level.getSeed()) {
+         return homes;
+      }
+
+      List<String> factions = new ArrayList<>();
+      for (AwsWorldGenTemplateRegistry.Template template : AwsWorldGenTemplateRegistry.templates()) {
+         String faction = TemplateFactions.ofTemplate(template.path());
+         if (!faction.isEmpty() && !OUTLAWS.contains(faction) && !factions.contains(faction) && factionTemplateCount(faction) >= MIN_FACTION_TEMPLATES) {
+            factions.add(faction);
          }
       }
 
-      if (total <= 0.0) {
-         return "";
-      }
+      factions.sort(java.util.Comparator.comparingInt(FactionRegions::factionTemplateCount).reversed().thenComparing(faction -> faction));
+      List<Cell> land = new ArrayList<>();
+      Map<Cell, Map<String, Integer>> fit = new HashMap<>();
+      for (int cx = -HOME_CELLS; cx < HOME_CELLS; cx++) {
+         for (int cz = -HOME_CELLS; cz < HOME_CELLS; cz++) {
+            Cell cell = cell(level.getSeed(), cx, cz, realmSize(), REALM_SALT);
+            Map<String, Integer> scores = new HashMap<>();
+            int sea = 0;
+            for (int[] offset : SAMPLE_OFFSETS) {
+               Holder<Biome> biome = level.getUncachedNoiseBiome((cell.seedX() + offset[0]) >> 2, 64 >> 2, (cell.seedZ() + offset[1]) >> 2);
+               if (biome.is(BiomeTags.IS_OCEAN)) {
+                  sea++;
+               } else {
+                  biomeScores(biome).forEach((faction, score) -> scores.merge(faction, score, Integer::sum));
+               }
+            }
 
-      double pick = random.nextDouble() * total;
-
-      for (Map.Entry<String, Integer> entry : scores.entrySet()) {
-         if (factionTemplateCount(entry.getKey()) >= MIN_FACTION_TEMPLATES) {
-            pick -= Math.sqrt(entry.getValue());
-            if (pick < 0.0) {
-               return entry.getKey();
+            if (sea * 2 <= SAMPLE_OFFSETS.length) {
+               land.add(cell);
+               fit.put(cell, scores);
             }
          }
       }
 
-      return "";
+      Map<String, int[]> placed = new LinkedHashMap<>();
+      // Room for every country to hold a few realms: on a small world fewer countries, not crumbs of many.
+      int countries = Math.max(2, land.size() / REALMS_PER_COUNTRY);
+      for (String faction : factions) {
+         if (placed.size() >= countries) {
+            break;
+         }
+
+         Cell best = null;
+         double bestValue = -1.0;
+         for (Cell cell : land) {
+            double apart = Double.MAX_VALUE;
+            for (int[] other : placed.values()) {
+               apart = Math.min(apart, Math.hypot(other[0] - cell.seedX(), other[1] - cell.seedZ()));
+            }
+
+            // Away from the others first, then the climate its buildings fit.
+            double value = (placed.isEmpty() ? 1.0 : apart) * (1.0 + Math.sqrt(fit.get(cell).getOrDefault(faction, 0)));
+            if (value > bestValue && !taken(placed, cell)) {
+               bestValue = value;
+               best = cell;
+            }
+         }
+
+         if (best != null) {
+            placed.put(faction, new int[]{best.seedX(), best.seedZ()});
+         }
+      }
+
+      // From every home at once, one step at a time to the land beside it, so countries meet at borders.
+      Map<Long, String> owned = new HashMap<>();
+      java.util.Set<Long> landKeys = new java.util.HashSet<>();
+      land.forEach(cell -> landKeys.add(cell.key()));
+      List<Long> ring = new ArrayList<>();
+      for (Map.Entry<String, int[]> home : placed.entrySet()) {
+         long key = ChunkPos.asLong(Math.floorDiv(home.getValue()[0], realmSize()), Math.floorDiv(home.getValue()[1], realmSize()));
+         owned.put(key, home.getKey());
+         ring.add(key);
+      }
+
+      for (int step = 0; step < HOME_REACH && !ring.isEmpty(); step++) {
+         List<Long> next = new ArrayList<>();
+         for (long key : ring) {
+            int x = ChunkPos.getX(key);
+            int z = ChunkPos.getZ(key);
+            for (int[] side : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+               long beside = ChunkPos.asLong(x + side[0], z + side[1]);
+               if (landKeys.contains(beside) && !owned.containsKey(beside)) {
+                  owned.put(beside, owned.get(key));
+                  next.add(beside);
+               }
+            }
+         }
+
+         ring = next;
+      }
+
+      lands = owned;
+      net.shadowmage.ancientwarfare.core.AncientWarfareCore.LOG.info("Country homes {}; lands {}", placed.keySet(), owned.entrySet().stream().map(e -> ChunkPos.getX(e.getKey()) + "," + ChunkPos.getZ(e.getKey()) + "=" + e.getValue()).toList());
+      homes = placed;
+      homesSeed = level.getSeed();
+      return placed;
+   }
+
+   private static boolean taken(Map<String, int[]> placed, Cell cell) {
+      return placed.values().stream().anyMatch(home -> home[0] == cell.seedX() && home[1] == cell.seedZ());
    }
 
    /** Ground world-generation templates per faction, in any climate. */

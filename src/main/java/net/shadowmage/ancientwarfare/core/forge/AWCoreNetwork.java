@@ -239,6 +239,22 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.CountryOpenPacket::decode)
          .consumerMainThread(AWCoreNetwork.CountryOpenPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.EncounterPacket.class, 98, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.EncounterPacket::encode)
+         .decoder(AWCoreNetwork.EncounterPacket::decode)
+         .consumerMainThread((packet, supplier) -> {
+            supplier.get().enqueueWork(() -> net.shadowmage.ancientwarfare.core.client.EncounterScreen.open(packet));
+            supplier.get().setPacketHandled(true);
+         })
+         .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.SeasonPacket.class, 97, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder((packet, buffer) -> buffer.writeVarInt(packet.season()))
+         .decoder(buffer -> new AWCoreNetwork.SeasonPacket(buffer.readVarInt()))
+         .consumerMainThread((packet, supplier) -> {
+            supplier.get().enqueueWork(() -> net.shadowmage.ancientwarfare.core.client.SeasonColors.set(packet.season()));
+            supplier.get().setPacketHandled(true);
+         })
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.ResearchKnownPacket.class, 50, NetworkDirection.PLAY_TO_CLIENT)
          .encoder(AWCoreNetwork.ResearchKnownPacket::encode)
          .decoder(AWCoreNetwork.ResearchKnownPacket::decode)
@@ -1145,7 +1161,7 @@ public final class AWCoreNetwork {
          for (int i = 0; i < markerCount; i++) {
             markers.add(
                new WorldMap.Marker(
-                  buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64), buffer.readVarIntArray(8)
+                  buffer.readInt(), buffer.readInt(), buffer.readEnum(WorldMap.Kind.class), buffer.readVarInt(), buffer.readUtf(128), buffer.readUtf(64), buffer.readVarIntArray(32)
                )
             );
          }
@@ -1200,8 +1216,8 @@ public final class AWCoreNetwork {
             buffer.writeVarInt(entry.trait());
             buffer.writeVarIntArray(entry.stores());
             buffer.writeVarIntArray(entry.court());
-            buffer.writeVarInt(Math.min(4, entry.goals().size()));
-            entry.goals().stream().limit(4).forEach(buffer::writeComponent);
+            buffer.writeVarInt(Math.min(5, entry.goals().size()));
+            entry.goals().stream().limit(5).forEach(buffer::writeComponent);
             buffer.writeInt(entry.pending());
             writeNames(buffer, entry.ties());
             buffer.writeVarIntArray(entry.tieData());
@@ -1246,7 +1262,7 @@ public final class AWCoreNetwork {
       }
 
       private static List<net.minecraft.network.chat.Component> readGoals(FriendlyByteBuf buffer) {
-         return readLines(buffer, 4);
+         return readLines(buffer, 5);
       }
 
       private static List<net.minecraft.network.chat.Component> readLines(FriendlyByteBuf buffer, int max) {
@@ -1318,6 +1334,43 @@ public final class AWCoreNetwork {
             }
          });
          context.setPacketHandled(true);
+      }
+   }
+
+   public static void sendEncounter(ServerPlayer player, EncounterPacket packet) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+   }
+
+   /** A happening in a town, told by a townsperson, with what the player may do about it. */
+   public static record EncounterPacket(int id, net.minecraft.network.chat.Component speaker, net.minecraft.network.chat.Component text,
+      List<String> keys, List<net.minecraft.network.chat.Component> labels, List<net.minecraft.network.chat.Component> costs) {
+      private static void encode(EncounterPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarInt(packet.id);
+         buffer.writeComponent(packet.speaker);
+         buffer.writeComponent(packet.text);
+         buffer.writeVarInt(packet.keys.size());
+         for (int i = 0; i < packet.keys.size(); i++) {
+            buffer.writeUtf(packet.keys.get(i), 64);
+            buffer.writeComponent(packet.labels.get(i));
+            buffer.writeComponent(packet.costs.get(i));
+         }
+      }
+
+      private static EncounterPacket decode(FriendlyByteBuf buffer) {
+         int id = buffer.readVarInt();
+         net.minecraft.network.chat.Component speaker = buffer.readComponent();
+         net.minecraft.network.chat.Component text = buffer.readComponent();
+         int n = Math.min(8, buffer.readVarInt());
+         List<String> keys = new ArrayList<>();
+         List<net.minecraft.network.chat.Component> labels = new ArrayList<>();
+         List<net.minecraft.network.chat.Component> costs = new ArrayList<>();
+         for (int i = 0; i < n; i++) {
+            keys.add(buffer.readUtf(64));
+            labels.add(buffer.readComponent());
+            costs.add(buffer.readComponent());
+         }
+
+         return new EncounterPacket(id, speaker, text, keys, labels, costs);
       }
    }
 
@@ -1788,6 +1841,13 @@ public final class AWCoreNetwork {
          });
          context.setPacketHandled(true);
       }
+   }
+
+   public static record SeasonPacket(int season) {
+   }
+
+   public static void sendSeason(net.minecraft.server.level.ServerLevel level, int season) {
+      CHANNEL.send(PacketDistributor.DIMENSION.with(level::dimension), new AWCoreNetwork.SeasonPacket(season));
    }
 
    public static record DraftingPreviewPacket(int containerId, int templateIndex, int requestId, int chunkIndex, int chunkCount, DraftingPreviewData data) {

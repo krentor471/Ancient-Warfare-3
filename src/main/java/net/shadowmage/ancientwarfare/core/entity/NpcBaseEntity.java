@@ -1,5 +1,6 @@
 package net.shadowmage.ancientwarfare.core.entity;
 
+import net.minecraft.core.BlockPos;
 import java.util.UUID;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -168,6 +169,75 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       return this.usesMorale();
    }
 
+   private static final int STUCK_CHECK_TICKS = 40;
+   private static final int STUCK_LIMIT = 4;
+   private net.minecraft.world.phys.Vec3 stuckFrom;
+   private int stuckChecks;
+
+   /**
+    * An NPC walking a path that has not moved for a few seconds is stuck (a corner, a fence post,
+    * a slab edge): first it hops and its path is recomputed, then it gives the path up, and if it
+    * still cannot move it is nudged to the nearest free spot beside it.
+    */
+   private void checkStuck() {
+      if ((this.tickCount + this.getId()) % STUCK_CHECK_TICKS != 0 || this.isPassenger() || this.isSleeping()) {
+         return;
+      }
+
+      net.minecraft.world.entity.ai.navigation.PathNavigation navigation = this.getNavigation();
+      net.minecraft.world.phys.Vec3 here = this.position();
+      if (navigation.isDone() || this.stuckFrom == null || here.distanceToSqr(this.stuckFrom) > 0.36) {
+         this.stuckFrom = here;
+         this.stuckChecks = 0;
+         return;
+      }
+
+      this.stuckChecks++;
+      net.minecraft.world.level.pathfinder.Path path = navigation.getPath();
+      BlockPos target = path == null ? null : path.getTarget();
+      if (this.stuckChecks == 1) {
+         if (this.onGround()) {
+            this.getJumpControl().jump();
+         }
+
+         if (target != null) {
+            navigation.moveTo(target.getX() + 0.5, target.getY(), target.getZ() + 0.5, 1.0);
+         }
+      } else if (this.stuckChecks == 2) {
+         navigation.stop();
+      } else if (this.stuckChecks >= STUCK_LIMIT) {
+         com.mojang.logging.LogUtils.getLogger().debug("NPC {} stuck at {} on the way to {}", this.getName().getString(), this.blockPosition(), target);
+         BlockPos free = this.freeSpotNear();
+         if (free != null) {
+            this.teleportTo(free.getX() + 0.5, free.getY(), free.getZ() + 0.5);
+         }
+
+         this.stuckChecks = 0;
+         this.stuckFrom = null;
+      }
+   }
+
+   private BlockPos freeSpotNear() {
+      BlockPos at = this.blockPosition();
+      for (int r = 1; r <= 2; r++) {
+         for (int dx = -r; dx <= r; dx++) {
+            for (int dz = -r; dz <= r; dz++) {
+               for (int dy = -1; dy <= 1; dy++) {
+                  BlockPos spot = at.offset(dx, dy, dz);
+                  if (this.level().getBlockState(spot).getCollisionShape(this.level(), spot).isEmpty()
+                     && this.level().getBlockState(spot.above()).getCollisionShape(this.level(), spot.above()).isEmpty()
+                     && !this.level().getBlockState(spot.below()).getCollisionShape(this.level(), spot.below()).isEmpty()
+                     && this.level().getFluidState(spot).isEmpty()) {
+                     return spot;
+                  }
+               }
+            }
+         }
+      }
+
+      return null;
+   }
+
    public void tick() {
       this.updateShieldMovementSpeed();
       if (!this.level().isClientSide) {
@@ -190,6 +260,7 @@ public abstract class NpcBaseEntity extends PathfinderMob {
       super.tick();
       if (!this.level().isClientSide) {
          NpcWaterEscape.tick(this);
+         this.checkStuck();
          int flags = this.calculateStatusIconFlags();
          if (flags != this.getStatusIconFlags()) {
             this.entityData.set(STATUS_ICONS, flags);

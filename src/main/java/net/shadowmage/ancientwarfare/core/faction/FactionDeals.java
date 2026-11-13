@@ -33,6 +33,8 @@ public final class FactionDeals extends SavedData {
    private static final String DATA_NAME = "ancientwarfare_faction_deals";
    /** Steps of the gold buttons, in gold coins. */
    public static final int GOLD_STEP = 5;
+   /** Silver an envoy takes to carry a deal to a ruler who is not at hand. */
+   public static final int ENVOY_FEE = 15;
    /** Goods change hands in loads of this many items. */
    public static final int GOODS_STEP = 16;
    /** Wood, stone, iron and the goods made for trade; see FactionResources. */
@@ -159,15 +161,21 @@ public final class FactionDeals extends SavedData {
 
       int verdict = NONE;
       Component answer = Component.empty();
-      if (mode > 0 && !PlayerDiplomacy.leaderNear(player, faction)) {
-         verdict = REFUSE;
-         answer = Component.translatable("diplomacy.ancientwarfare.need_leader", FactionNews.factionName(faction));
-      } else if (mode > 0) {
+      // Deals go by envoy, as in a council of realms: the ruler need not stand beside the player.
+      if (mode > 0) {
          Weighed weighed = weigh(player, faction, offer);
          verdict = weighed.verdict;
          answer = weighed.answer;
-         if (mode == 2 && verdict == ACCEPT) {
+         boolean envoy = !PlayerDiplomacy.leaderNear(player, faction);
+         if (mode == 2 && verdict == ACCEPT && envoy && !player.isCreative() && !Coins.take(player, ENVOY_FEE)) {
+            verdict = REFUSE;
+            answer = Component.translatable("deal.ancientwarfare.envoy_fee", ENVOY_FEE);
+         } else if (mode == 2 && verdict == ACCEPT) {
             Component struck = strike(player, faction, offer);
+            if (struck != null && envoy && !player.isCreative()) {
+               Coins.give(player, ENVOY_FEE);
+            }
+
             verdict = struck == null ? DONE : REFUSE;
             answer = struck == null ? Component.translatable("deal.ancientwarfare.struck", FactionNews.factionName(faction)) : struck;
             if (struck == null) {
@@ -370,7 +378,7 @@ public final class FactionDeals extends SavedData {
       return refuse("deal.ancientwarfare.refuse", name);
    }
 
-   static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item>[] GOODS_TAGS = goodsTags();
+   public static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item>[] GOODS_TAGS = goodsTags();
    private static final net.minecraft.world.item.Item[] GOODS_ITEMS = {
       net.minecraft.world.item.Items.OAK_LOG, net.minecraft.world.item.Items.COBBLESTONE, net.minecraft.world.item.Items.IRON_INGOT,
       net.minecraft.world.item.Items.WHEAT, net.minecraft.world.item.Items.LEATHER, net.minecraft.world.item.Items.WHITE_WOOL,

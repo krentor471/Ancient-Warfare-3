@@ -41,7 +41,7 @@ public final class ChronicleScreen extends Screen {
    @Override
    protected void init() {
       this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.chronicle.back"), button -> AWCoreNetwork.sendWorldMapOpen()).bounds(MARGIN, 2, 70, 18).build()
+         AwUi.button(Component.translatable("gui.ancientwarfare.chronicle.back"), button -> AWCoreNetwork.sendWorldMapOpen()).bounds(MARGIN, 2, 70, 18).build()
       );
       this.lines.clear();
       this.lineColors.clear();

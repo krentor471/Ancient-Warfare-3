@@ -118,6 +118,10 @@ public class CannonShotEntity extends BlockGraceSiegeProjectileEntity {
          BlockState state = this.level().getBlockState(target);
          float destroySpeed = state.getDestroySpeed(this.level(), target);
          if (!state.isAir() && destroySpeed >= 0.0F && destroySpeed <= 3.0F) {
+            if (this.level() instanceof net.minecraft.server.level.ServerLevel server) {
+               net.shadowmage.ancientwarfare.core.faction.FactionRepairs.record(server, target, java.util.List.of(target));
+            }
+
             this.level().destroyBlock(target, true, this);
          }
       }
