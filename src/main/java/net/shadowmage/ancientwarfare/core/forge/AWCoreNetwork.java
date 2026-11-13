@@ -239,6 +239,14 @@ public final class AWCoreNetwork {
          .decoder(AWCoreNetwork.CountryOpenPacket::decode)
          .consumerMainThread(AWCoreNetwork.CountryOpenPacket::handle)
          .add();
+      CHANNEL.messageBuilder(AWCoreNetwork.EncounterPacket.class, 98, NetworkDirection.PLAY_TO_CLIENT)
+         .encoder(AWCoreNetwork.EncounterPacket::encode)
+         .decoder(AWCoreNetwork.EncounterPacket::decode)
+         .consumerMainThread((packet, supplier) -> {
+            supplier.get().enqueueWork(() -> net.shadowmage.ancientwarfare.core.client.EncounterScreen.open(packet));
+            supplier.get().setPacketHandled(true);
+         })
+         .add();
       CHANNEL.messageBuilder(AWCoreNetwork.SeasonPacket.class, 97, NetworkDirection.PLAY_TO_CLIENT)
          .encoder((packet, buffer) -> buffer.writeVarInt(packet.season()))
          .decoder(buffer -> new AWCoreNetwork.SeasonPacket(buffer.readVarInt()))
@@ -1326,6 +1334,43 @@ public final class AWCoreNetwork {
             }
          });
          context.setPacketHandled(true);
+      }
+   }
+
+   public static void sendEncounter(ServerPlayer player, EncounterPacket packet) {
+      CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+   }
+
+   /** A happening in a town, told by a townsperson, with what the player may do about it. */
+   public static record EncounterPacket(int id, net.minecraft.network.chat.Component speaker, net.minecraft.network.chat.Component text,
+      List<String> keys, List<net.minecraft.network.chat.Component> labels, List<net.minecraft.network.chat.Component> costs) {
+      private static void encode(EncounterPacket packet, FriendlyByteBuf buffer) {
+         buffer.writeVarInt(packet.id);
+         buffer.writeComponent(packet.speaker);
+         buffer.writeComponent(packet.text);
+         buffer.writeVarInt(packet.keys.size());
+         for (int i = 0; i < packet.keys.size(); i++) {
+            buffer.writeUtf(packet.keys.get(i), 64);
+            buffer.writeComponent(packet.labels.get(i));
+            buffer.writeComponent(packet.costs.get(i));
+         }
+      }
+
+      private static EncounterPacket decode(FriendlyByteBuf buffer) {
+         int id = buffer.readVarInt();
+         net.minecraft.network.chat.Component speaker = buffer.readComponent();
+         net.minecraft.network.chat.Component text = buffer.readComponent();
+         int n = Math.min(8, buffer.readVarInt());
+         List<String> keys = new ArrayList<>();
+         List<net.minecraft.network.chat.Component> labels = new ArrayList<>();
+         List<net.minecraft.network.chat.Component> costs = new ArrayList<>();
+         for (int i = 0; i < n; i++) {
+            keys.add(buffer.readUtf(64));
+            labels.add(buffer.readComponent());
+            costs.add(buffer.readComponent());
+         }
+
+         return new EncounterPacket(id, speaker, text, keys, labels, costs);
       }
    }
 

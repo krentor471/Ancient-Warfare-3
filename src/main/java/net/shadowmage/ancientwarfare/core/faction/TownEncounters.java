@@ -16,6 +16,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.shadowmage.ancientwarfare.core.common.npc.FactionStandingData;
+import net.shadowmage.ancientwarfare.core.entity.FactionNpcEntity;
 
 /**
  * Small happenings in a town while a player walks its streets: a thief caught with a loaf, a brawl
@@ -131,8 +132,14 @@ public final class TownEncounters {
          Choice.risky("taste", 4, 0.5, Out.of(0, 1, 0, 2, 2), Out.of(0, 0, 0, -2, 2)), Choice.bring("sell_eyes", "minecraft:spider_eye", 4, Out.of(8, 1, 0, 0, 0)), Choice.of("decline", NOTHING))
    };
 
-   private record Pending(int id, String encounter, int town, long until) {
+   /** A happening waiting on the player's answer; teller is the townsperson bringing it, null when none was near. */
+   private record Pending(int id, String encounter, int town, long until, UUID teller) {
    }
+
+   /** Townsfolk on their way to tell a player something; the screen opens when they arrive. */
+   private static final Map<UUID, Long> ARRIVE_BY = new HashMap<>();
+   /** How long a teller may take to reach the player before the news comes anyway. */
+   private static final long WALK_TICKS = 400L;
 
    private static final Map<UUID, Pending> PENDING = new HashMap<>();
    private static final Map<UUID, Long> LAST = new HashMap<>();
@@ -166,6 +173,10 @@ public final class TownEncounters {
 
    /** Now and then, to a player walking through a friendly town, something happens. */
    public static void tick(ServerLevel level, FactionWorldData data) {
+      if (level.getGameTime() % 20L == 0L && !ARRIVE_BY.isEmpty()) {
+         walkTellers(level, data, level.getGameTime());
+      }
+
       if (level.getGameTime() % CHECK_TICKS != 0L || level.players().isEmpty()) {
          return;
       }
@@ -204,25 +215,111 @@ public final class TownEncounters {
    }
 
    private static void start(ServerPlayer player, FactionWorldData.Settlement town, Encounter encounter, long now) {
-      Pending pending = new Pending(++nextId, encounter.key, town.id(), now + ANSWER_TICKS);
+      // Someone from the town comes up to the player to tell of it, rather than a line in the chat.
+      FactionNpcEntity teller = teller(player, town);
+      Pending pending = new Pending(++nextId, encounter.key, town.id(), now + ANSWER_TICKS + WALK_TICKS, teller == null ? null : teller.getUUID());
       PENDING.put(player.getUUID(), pending);
       LAST.put(player.getUUID(), now);
-      player.sendSystemMessage(
-         Component.translatable("encounter.ancientwarfare." + encounter.key, FactionNews.named(town)).withStyle(ChatFormatting.GOLD)
-      );
-      MutableComponent buttons = Component.literal("  ");
-      for (Choice choice : encounter.choices) {
-         buttons.append(FactionEnvoys.button("encounter.ancientwarfare." + encounter.key + "." + choice.key, "/awtown " + pending.id + " " + choice.key, ChatFormatting.YELLOW));
-         if (choice.price > 0) {
-            buttons.append(Component.literal(" (").append(Component.translatable("encounter.ancientwarfare.price", choice.price)).append(")").withStyle(ChatFormatting.GRAY));
-         } else if (!choice.need.isEmpty()) {
-            buttons.append(Component.literal(" (").append(Component.literal(choice.needCount + "× ")).append(itemName(choice.need)).append(")").withStyle(ChatFormatting.GRAY));
-         }
-
-         buttons.append("  ");
+      TownHappenings.begin(player, town, encounter.key);
+      if (teller == null) {
+         tell(player, town, pending, null);
+         return;
       }
 
-      player.sendSystemMessage(buttons);
+      teller.setGlowingTag(true);
+      teller.getNavigation().moveTo(player, 0.7);
+      ARRIVE_BY.put(player.getUUID(), now + WALK_TICKS);
+   }
+
+   /** A grown townsperson of the town near the player, not a soldier or a council member. */
+   private static FactionNpcEntity teller(ServerPlayer player, FactionWorldData.Settlement town) {
+      List<FactionNpcEntity> near = player.serverLevel().getEntitiesOfClass(FactionNpcEntity.class, player.getBoundingBox().inflate(28.0, 8.0, 28.0),
+         npc -> npc.isAlive() && !npc.isBaby() && npc.getFactionName().equals(town.faction()) && FactionSimulation.isCivilian(npc)
+            && npc.getPersistentData().getString(CouncilHalls.COUNCIL_TAG).isEmpty());
+      FactionNpcEntity best = null;
+      for (FactionNpcEntity npc : near) {
+         if (best == null || npc.distanceToSqr(player) < best.distanceToSqr(player)) {
+            best = npc;
+         }
+      }
+
+      return best;
+   }
+
+   private static FactionNpcEntity tellerOf(ServerLevel level, Pending pending) {
+      if (pending.teller == null) {
+         return null;
+      }
+
+      net.minecraft.world.entity.Entity entity = level.getEntity(pending.teller);
+      return entity instanceof FactionNpcEntity npc && npc.isAlive() ? npc : null;
+   }
+
+   /** Tellers walk on toward their player; once beside them, or out of time, they speak. */
+   private static void walkTellers(ServerLevel level, FactionWorldData data, long now) {
+      java.util.Iterator<Map.Entry<UUID, Long>> iterator = ARRIVE_BY.entrySet().iterator();
+      while (iterator.hasNext()) {
+         Map.Entry<UUID, Long> entry = iterator.next();
+         ServerPlayer player = level.getServer().getPlayerList().getPlayer(entry.getKey());
+         Pending pending = PENDING.get(entry.getKey());
+         if (player == null || pending == null) {
+            iterator.remove();
+            continue;
+         }
+
+         FactionNpcEntity teller = tellerOf(level, pending);
+         if (teller != null && teller.distanceToSqr(player) > 9.0 && now < entry.getValue()) {
+            teller.getNavigation().moveTo(player, 0.7);
+            continue;
+         }
+
+         iterator.remove();
+         if (teller != null) {
+            teller.getLookControl().setLookAt(player);
+            teller.getNavigation().stop();
+         }
+
+         tell(player, data.settlement(pending.town), pending, teller);
+      }
+   }
+
+   /** The player talks to the townsperson who brought news they have not answered: it is told again. */
+   public static boolean tellAgain(ServerPlayer player, FactionNpcEntity npc) {
+      Pending pending = PENDING.get(player.getUUID());
+      if (pending == null || pending.teller == null || !pending.teller.equals(npc.getUUID())) {
+         return false;
+      }
+
+      ARRIVE_BY.remove(player.getUUID());
+      tell(player, FactionWorldData.get(player.serverLevel()).settlement(pending.town), pending, npc);
+      return true;
+   }
+
+   /** Opens the happening on the player's screen, in the teller's words, with what may be done. */
+   private static void tell(ServerPlayer player, FactionWorldData.Settlement town, Pending pending, FactionNpcEntity teller) {
+      Encounter encounter = byKey(pending.encounter);
+      if (encounter == null || town == null) {
+         return;
+      }
+
+      List<String> keys = new ArrayList<>();
+      List<Component> labels = new ArrayList<>();
+      List<Component> costs = new ArrayList<>();
+      for (Choice choice : encounter.choices) {
+         keys.add(choice.key);
+         labels.add(Component.translatable("encounter.ancientwarfare." + encounter.key + "." + choice.key));
+         if (choice.price > 0) {
+            costs.add(Component.translatable("encounter.ancientwarfare.price", choice.price));
+         } else if (!choice.need.isEmpty()) {
+            costs.add(Component.literal(choice.needCount + "× ").append(itemName(choice.need)));
+         } else {
+            costs.add(Component.empty());
+         }
+      }
+
+      Component speaker = teller != null ? teller.getDisplayName() : FactionNews.named(town);
+      net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.sendEncounter(player, new net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.EncounterPacket(
+         pending.id, speaker, Component.translatable("encounter.ancientwarfare." + encounter.key, FactionNews.named(town)), keys, labels, costs));
    }
 
    /** For testing: start a happening at once, by key or at random. */
@@ -342,12 +439,21 @@ public final class TownEncounters {
       }
 
       String outcome = "encounter.ancientwarfare." + encounter.key + "." + choice.key + (choice.chance < 1.0 ? (ok ? ".ok" : ".bad") : ".done");
-      player.sendSystemMessage(Component.translatable(outcome).withStyle(ok ? ChatFormatting.GREEN : ChatFormatting.RED));
+      player.displayClientMessage(Component.translatable(outcome).withStyle(ok ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+      FactionNpcEntity teller = tellerOf(level, pending);
+      if (teller != null) {
+         teller.setGlowingTag(false);
+      }
+
+      if (town != null) {
+         TownHappenings.resolve(player, town, encounter.key, choice.key, ok);
+      }
    }
 
    /** A new server starts from scratch. */
    public static void reset() {
       PENDING.clear();
+      ARRIVE_BY.clear();
       LAST.clear();
    }
 }
