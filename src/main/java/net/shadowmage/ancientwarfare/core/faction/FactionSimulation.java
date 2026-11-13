@@ -141,6 +141,7 @@ public final class FactionSimulation {
       FactionMusters.simulateDay(level, data);
       FactionRebellions.simulateDay(level, data);
       FactionFaith.simulateDay(level, data);
+      PlayerFaith.simulateDay(level, data);
       FaithSpread.simulateDay(level, data);
       CouncilHalls.simulateDay(level, data);
       TownCalendar.simulateDay(level, data);

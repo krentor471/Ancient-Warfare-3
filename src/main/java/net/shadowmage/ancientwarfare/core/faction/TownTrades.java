@@ -439,6 +439,8 @@ public final class TownTrades {
             FactionWorldData.Settlement home = town(level, npc);
             // Guild members buy at the brothers' price.
             int price = home != null && CouncilHalls.member(player, home) ? Math.max(1, trade.sellPrice * 85 / 100) : trade.sellPrice;
+            // Kin in faith pay less; an unbeliever pays more, the more zealous the town.
+            price = Math.max(1, (int)Math.round(price * PlayerFaith.priceFactor(level, player, npc.getFactionName())));
             if (!Coins.take(player, price)) {
                player.sendSystemMessage(Component.translatable("traveller.ancientwarfare.no_silver").withStyle(ChatFormatting.RED));
                return;
@@ -458,7 +460,7 @@ public final class TownTrades {
 
             take(player, trade.buys, trade.buyCount);
             TownMarkets.moved(level, town(level, npc), new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(trade.buys)), trade.buyCount), false);
-            Coins.give(player, trade.buyPrice);
+            Coins.give(player, Math.max(1, (int)Math.round(trade.buyPrice / PlayerFaith.priceFactor(level, player, npc.getFactionName()))));
             FactionRumours.say(player, speaker, Component.translatable("trade.ancientwarfare.sold"));
          }
          case "gift" -> {

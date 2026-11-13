@@ -179,6 +179,13 @@ public final class TownsfolkFavours {
          return;
       }
 
+      int kin = PlayerFaith.kinship(player.serverLevel(), player, npc.getFactionName());
+      if (kin != 0 && npc.getRandom().nextInt(3) == 0) {
+         // The faithful bless one of their own and keep an unbeliever at arm's length.
+         FactionRumours.say(player, speaker, Component.translatable("faith.ancientwarfare.greet_" + (kin > 0 ? "kin" : "infidel") + "." + npc.getRandom().nextInt(3),
+            FactionFaith.name(PlayerFaith.faith(player))));
+      }
+
       if (isHero(player, npc.getFactionName())) {
          FactionRumours.say(player, speaker, Component.translatable("townsfolk.ancientwarfare.hero." + npc.getRandom().nextInt(HERO_LINES), player.getName()));
       } else if (isFriend(npc, player)) {

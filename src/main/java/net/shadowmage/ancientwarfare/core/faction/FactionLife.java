@@ -444,6 +444,7 @@ public final class FactionLife {
    /** A village the player took: his soldiers near the hall keep order, the tax decides the mood. */
    private static void village(ServerLevel level, FactionWorldData data, BlockPos hall, FactionWorldData.VillageState state, RandomSource random) {
       UUID owner = data.villages().get(hall);
+      PlayerFaith.village(level, state, owner);
       if (level.isLoaded(hall)) {
          state.guards = level.getEntitiesOfClass(
                CombatNpcEntity.class, new AABB(hall).inflate(GUARD_RANGE), npc -> npc.isAlive() && npc.getOwner().map(owner::equals).orElse(false)

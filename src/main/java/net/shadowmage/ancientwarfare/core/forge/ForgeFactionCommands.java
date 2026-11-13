@@ -288,6 +288,34 @@ public final class ForgeFactionCommands {
                   return 1;
                })))
          );
+      // The player's own faith: /awfaith, /awfaith join <creed>, /awfaith book <creed>.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awfaith")
+               .executes(context -> {
+                  if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                     net.shadowmage.ancientwarfare.core.faction.PlayerFaith.show(player);
+                  }
+
+                  return 1;
+               })
+               .then(Commands.literal("join").then(Commands.argument("creed", StringArgumentType.word()).executes(context -> {
+                  int faith = net.shadowmage.ancientwarfare.core.faction.PlayerFaith.byKey(StringArgumentType.getString(context, "creed"));
+                  if (faith >= 0 && context.getSource().getEntity() instanceof ServerPlayer player) {
+                     net.shadowmage.ancientwarfare.core.faction.PlayerFaith.join(player, faith);
+                  }
+
+                  return 1;
+               })))
+               .then(Commands.literal("book").then(Commands.argument("creed", StringArgumentType.word()).executes(context -> {
+                  int faith = net.shadowmage.ancientwarfare.core.faction.PlayerFaith.byKey(StringArgumentType.getString(context, "creed"));
+                  if (faith >= 0 && context.getSource().getEntity() instanceof ServerPlayer player) {
+                     net.shadowmage.ancientwarfare.core.faction.PlayerFaith.book(player, faith);
+                  }
+
+                  return 1;
+               })))
+         );
       // Run by clicking the buttons under a happening in a town.
       event.getDispatcher()
          .register(
