@@ -3591,5 +3591,6 @@
   "news.ancientwarfare.countries_war": "Страны игроков %s и %s воюют.",
   "news.ancientwarfare.countries_neutral": "Страны игроков %s и %s заключили мир.",
   "news.ancientwarfare.countries_pact": "Страны игроков %s и %s заключили договор.",
-  "news.ancientwarfare.countries_alliance": "Страны игроков %s и %s стали союзниками."
+  "news.ancientwarfare.countries_alliance": "Страны игроков %s и %s стали союзниками.",
+  "news.ancientwarfare.town_rank_fell": "%s опустело и теперь всего лишь %s (%s)"
 }

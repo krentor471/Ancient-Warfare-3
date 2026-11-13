@@ -108,6 +108,12 @@ public final class FactionLife {
          order(settlement, FactionFaith.order(level, data, settlement));
          loyalty(settlement);
          if (settlement.famine > 0) {
+            if (settlement.food < settlement.population * 2 && settlement.population > 4) {
+               // Hunger with little laid by: the old and the small die first.
+               settlement.population -= Math.max(1, settlement.population * 3 / 100);
+               settlement.health = Math.max(0, settlement.health - 4);
+            }
+
             settlement.famine--;
          }
 

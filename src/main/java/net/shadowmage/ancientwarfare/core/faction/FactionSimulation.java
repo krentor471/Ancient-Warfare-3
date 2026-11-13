@@ -113,6 +113,7 @@ public final class FactionSimulation {
       Perf.run("TownCalendar", () -> TownCalendar.tick(level, data));
       Perf.run("SeasonWeather", () -> SeasonWeather.tick(level));
       Perf.run("TownDisasters", () -> TownDisasters.tick(level, data));
+      Perf.run("TownPopulation", () -> TownPopulation.tick(level, data));
       Perf.run("TradeVentures", () -> TradeVentures.tick(level));
       Perf.run("TownWatch", () -> TownWatch.tick(level, data));
       Perf.run("BanditCamps", () -> BanditCamps.tick(level, data));
@@ -174,7 +175,7 @@ public final class FactionSimulation {
          int maxGarrison = FactionAI.isFort(settlement) ? FactionExpansion.FORT_GARRISON + settlement.tier * 4 : settlement.population / 3;
 
          for (int i = 0;
-            i < MAX_RECRUITS_PER_DAY && settlement.garrison < maxGarrison && settlement.population > 1 && gold >= RECRUIT_COST && FactionResources.hasIron(data, faction);
+            i < MAX_RECRUITS_PER_DAY && settlement.garrison < maxGarrison && settlement.population > Math.max(1, survivors(settlement)) && gold >= RECRUIT_COST && FactionResources.hasIron(data, faction);
             i++
          ) {
             FactionResources.spendIron(data, faction);
@@ -192,6 +193,10 @@ public final class FactionSimulation {
             settlement.tier++;
             gold -= tierCost;
             FactionPorts.rankRose(level, settlement);
+         } else if (settlement.tier > 0 && settlement.built() && settlement.population < demoteBelow(settlement)) {
+            // Emptied by plague, hunger or war: a town that cannot fill its streets falls a rank.
+            settlement.tier--;
+            FactionPorts.rankFell(level, settlement);
          }
 
          data.setTreasury(faction, gold);
@@ -263,7 +268,9 @@ public final class FactionSimulation {
       FactionWorldData.Settlement settlement = settlementAt(data, npc.getFactionName(), npc.getX(), npc.getZ(), LOSS_MARGIN);
       if (settlement != null) {
          if (isCivilian(npc)) {
-            settlement.population = Math.max(0, settlement.population - 1);
+            // During an assault some always hide in cellars: the town is not emptied to the last soul.
+            int floor = FactionTownLife.underAttack(data, settlement) ? survivors(settlement) : 0;
+            settlement.population = Math.max(Math.min(floor, settlement.population), settlement.population - 1);
          } else {
             settlement.garrison = Math.max(0, settlement.garrison - 1);
          }
@@ -356,6 +363,22 @@ public final class FactionSimulation {
    }
 
    /** The faction's settlement at a place; of two near each other, the one whose middle is closer. */
+   /** Fewer people than this and a town falls a rank: a third of what its rank below holds. */
+   static int demoteBelow(FactionWorldData.Settlement settlement) {
+      int base = switch (settlement.kind()) {
+         case FactionTowns.CAPITAL -> 90;
+         case "town" -> 60;
+         case FactionTowns.VILLAGE -> 30;
+         default -> 12;
+      };
+      return (base + (settlement.tier - 1) * base / 2) / 3;
+   }
+
+   /** However hard a town is bled by a siege, some of its people hide and live on: never below this. */
+   public static int survivors(FactionWorldData.Settlement settlement) {
+      return FactionAI.isFort(settlement) || FactionDiplomacy.isOutlaw(settlement.faction()) ? 0 : Math.max(4, capacity(settlement) / 8);
+   }
+
    public static FactionWorldData.Settlement settlementAt(FactionWorldData data, String faction, double x, double z, int margin) {
       FactionWorldData.Settlement best = null;
 

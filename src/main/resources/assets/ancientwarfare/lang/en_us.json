@@ -3591,5 +3591,6 @@
   "news.ancientwarfare.countries_war": "The countries of %s and %s are at war.",
   "news.ancientwarfare.countries_neutral": "The countries of %s and %s made peace.",
   "news.ancientwarfare.countries_pact": "The countries of %s and %s made a pact.",
-  "news.ancientwarfare.countries_alliance": "The countries of %s and %s are allies."
+  "news.ancientwarfare.countries_alliance": "The countries of %s and %s are allies.",
+  "news.ancientwarfare.town_rank_fell": "%s has dwindled: it is now only a %s (%s)"
 }
