@@ -106,7 +106,7 @@ public final class TownWatch {
       // At dawn the watch goes home.
       if (!night(level)) {
          for (ServerPlayer player : level.players()) {
-            level.getEntitiesOfClass(FactionNpcEntity.class, player.getBoundingBox().inflate(NEAR * 2), npc -> npc.getTags().contains(WATCH_TAG)).forEach(FactionNpcEntity::discard);
+            level.getEntitiesOfClass(FactionNpcEntity.class, player.getBoundingBox().inflate(NEAR * 2), npc -> npc.getTags().contains(WATCH_TAG)).forEach(TownWatch::offDuty);
          }
       }
    }
@@ -128,27 +128,38 @@ public final class TownWatch {
       level.playSound(null, x, player.getY(), z, sounds[pick], net.minecraft.sounds.SoundSource.AMBIENT, pick == 5 ? 0.3F : 0.6F, 0.8F + random.nextFloat() * 0.4F);
    }
 
+   /** Saved offhand of a soldier standing the night watch, given back at dawn. */
+   private static final String OFFHAND_TAG = "AWWatchOffhand";
+
+   /**
+    * One of the town's own soldiers takes up a lantern and walks the night watch; none appear from
+    * nowhere. A town with no soldier to spare keeps no watch.
+    */
    private static void watchman(ServerLevel level, FactionWorldData.Settlement town, BlockPos near) {
-      FactionNpcEntity man = AWCoreEntityTypes.FACTION_SOLDIER_NPC.get().create(level);
-      if (man == null) {
+      List<FactionNpcEntity> soldiers = level.getEntitiesOfClass(FactionNpcEntity.class, new net.minecraft.world.phys.AABB(near).inflate(96.0, 24.0, 96.0),
+         npc -> npc.isAlive() && !npc.getTags().contains(WATCH_TAG) && npc.getFactionName().equals(town.faction())
+            && !FactionSimulation.isCivilian(npc) && FactionArmies.armyId(npc) == 0 && FactionCaravans.caravanId(npc) == 0
+            && !FactionTravellers.isTraveller(npc) && npc.getTarget() == null && town.contains(npc.getX(), npc.getZ(), 16));
+      if (soldiers.isEmpty()) {
          return;
       }
 
-      int x = near.getX() + level.getRandom().nextInt(41) - 20;
-      int z = near.getZ() + level.getRandom().nextInt(41) - 20;
-      BlockPos at = new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z);
-      if (!town.contains(x, z, 0) || at.distSqr(near) < 100) {
-         return;
-      }
-
-      man.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
-      man.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
-      man.setFactionName(town.faction());
+      FactionNpcEntity man = soldiers.get(level.getRandom().nextInt(soldiers.size()));
+      man.getPersistentData().put(OFFHAND_TAG, man.getItemBySlot(EquipmentSlot.OFFHAND).save(new net.minecraft.nbt.CompoundTag()));
       man.addTag(WATCH_TAG);
       man.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.LANTERN));
       man.setCustomName(Component.translatable("watch.ancientwarfare.watchman"));
       man.restrictTo(town.center(), 48);
-      level.addFreshEntity(man);
+   }
+
+   /** At dawn the watchman puts the lantern away and is a soldier of the garrison again. */
+   private static void offDuty(FactionNpcEntity man) {
+      man.removeTag(WATCH_TAG);
+      net.minecraft.nbt.CompoundTag saved = man.getPersistentData().getCompound(OFFHAND_TAG);
+      man.setItemSlot(EquipmentSlot.OFFHAND, saved.isEmpty() ? ItemStack.EMPTY : ItemStack.of(saved));
+      man.getPersistentData().remove(OFFHAND_TAG);
+      man.setCustomName(null);
+      man.clearRestriction();
    }
 
    /** The town's courthouse, if it has one big enough for a cell. */
