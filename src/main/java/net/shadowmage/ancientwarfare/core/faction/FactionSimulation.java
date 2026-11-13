@@ -114,6 +114,7 @@ public final class FactionSimulation {
       Perf.run("SeasonWeather", () -> SeasonWeather.tick(level));
       Perf.run("TownDisasters", () -> TownDisasters.tick(level, data));
       Perf.run("TownPopulation", () -> TownPopulation.tick(level, data));
+      TownMarkets.tick(level);
       Perf.run("TradeVentures", () -> TradeVentures.tick(level));
       Perf.run("TownWatch", () -> TownWatch.tick(level, data));
       Perf.run("BanditCamps", () -> BanditCamps.tick(level, data));

@@ -157,7 +157,54 @@ public final class TownMarkets extends SavedData {
       }
 
       double days = Math.max(0.4, stock[kind] / use[kind]);
-      return Mth.clamp(Math.sqrt(TARGET_DAYS / days), MIN_PRICE, MAX_PRICE);
+      return Mth.clamp(Math.sqrt(TARGET_DAYS / days) * drift(town, kind), MIN_PRICE, MAX_PRICE);
+   }
+
+   /** How often the day's haggling moves prices a little. */
+   private static final int DRIFT_TICKS = 1200;
+   /** Prices wander at most this far either way from what the stocks say. */
+   private static final double MAX_DRIFT = 0.2;
+   /** Each town's passing swing in each good's price, as a factor; not saved, it is only the day's mood. */
+   private static final Map<Long, Double> DRIFT = new HashMap<>();
+
+   private static double drift(int town, int kind) {
+      return DRIFT.getOrDefault((long)town * 64L + kind, 1.0);
+   }
+
+   /** Through the day prices wander: a cart came in, a rumour went round. They drift back toward what the stocks say. */
+   static void tick(ServerLevel level) {
+      if (level.getGameTime() % DRIFT_TICKS != 0L) {
+         return;
+      }
+
+      TownMarkets markets = get(level);
+      net.minecraft.util.RandomSource random = level.getRandom();
+      for (int town : markets.stocks.keySet()) {
+         for (int kind = 0; kind < FactionResources.KINDS; kind++) {
+            long key = (long)town * 64L + kind;
+            double now = DRIFT.getOrDefault(key, 1.0);
+            now += (1.0 - now) * 0.15 + random.nextGaussian() * 0.04;
+            DRIFT.put(key, Mth.clamp(now, 1.0 - MAX_DRIFT, 1.0 + MAX_DRIFT));
+         }
+      }
+   }
+
+   /** What a ware costs in a town just now against its usual price: by the town's stocks where it is one of the goods, else by the town's leaning. */
+   public static double factor(ServerLevel level, FactionWorldData.Settlement town, ItemStack stack) {
+      if (town == null || stack.isEmpty()) {
+         return 1.0;
+      }
+
+      int kind = kindOf(stack);
+      return kind >= 0 ? get(level).price(town.id(), kind) : local(town, List.of(stack));
+   }
+
+   /** A ware bought or sold by the player in a town outside a trader's window. */
+   public static void moved(ServerLevel level, FactionWorldData.Settlement town, ItemStack stack, boolean bought) {
+      int kind = kindOf(stack);
+      if (town != null && kind >= 0) {
+         get(level).change(town.id(), kind, bought ? -stack.getCount() : stack.getCount());
+      }
    }
 
    /** Goods come into a town's stocks (the player sold or brought them) or, taken away, go out of them. */

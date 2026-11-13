@@ -152,6 +152,19 @@ public final class TownTrades {
       return grown(npc) && !npc.getPersistentData().getBoolean(HEAD) ? trade(level, npc).key : "";
    }
 
+   /** The trade at today's prices in the trader's town: scarce wares dearer, plentiful ones cheaper. */
+   private static Trade priced(ServerLevel level, FactionNpcEntity npc, Trade trade) {
+      FactionWorldData.Settlement home = town(level, npc);
+      if (home == null) {
+         return trade;
+      }
+
+      double sells = TownMarkets.factor(level, home, new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(trade.sells))));
+      double buys = TownMarkets.factor(level, home, new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(trade.buys))));
+      return new Trade(trade.key, trade.building, trade.sells, trade.sellCount, Math.max(1, (int)Math.round(trade.sellPrice * sells)),
+         trade.buys, trade.buyCount, Math.max(1, (int)Math.round(trade.buyPrice * buys)));
+   }
+
    private static Trade trade(ServerLevel level, FactionNpcEntity npc) {
       CompoundTag data = npc.getPersistentData();
       String key = data.getString(TRADE);
@@ -243,7 +256,7 @@ public final class TownTrades {
    }
 
    private static void offerTrade(ServerPlayer player, FactionNpcEntity npc) {
-      Trade trade = trade(player.serverLevel(), npc);
+      Trade trade = priced(player.serverLevel(), npc, trade(player.serverLevel(), npc));
       String id = "/awtownsfolk " + npc.getId() + " ";
       player.sendSystemMessage(
          Component.literal("  ")
@@ -266,7 +279,7 @@ public final class TownTrades {
          return;
       }
 
-      Trade trade = trade(level, npc);
+      Trade trade = priced(level, npc, trade(level, npc));
       String id = "/awtownsfolk " + npc.getId() + " ";
       player.sendSystemMessage(
          Component.literal("  ")
@@ -422,7 +435,7 @@ public final class TownTrades {
       boolean giver = npc.getPersistentData().getBoolean(HEAD) || !npc.getPersistentData().getString(CouncilHalls.COUNCIL_TAG).isEmpty();
       switch (action) {
          case "buy" -> {
-            Trade trade = trade(level, npc);
+            Trade trade = priced(level, npc, trade(level, npc));
             FactionWorldData.Settlement home = town(level, npc);
             // Guild members buy at the brothers' price.
             int price = home != null && CouncilHalls.member(player, home) ? Math.max(1, trade.sellPrice * 85 / 100) : trade.sellPrice;
@@ -431,17 +444,20 @@ public final class TownTrades {
                return;
             }
 
-            player.getInventory().placeItemBackInInventory(new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(trade.sells)), trade.sellCount));
+            ItemStack goods = new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(trade.sells)), trade.sellCount);
+            TownMarkets.moved(level, home, goods, true);
+            player.getInventory().placeItemBackInInventory(goods);
             FactionRumours.say(player, speaker, Component.translatable("trade.ancientwarfare.bought"));
          }
          case "sell" -> {
-            Trade trade = trade(level, npc);
+            Trade trade = priced(level, npc, trade(level, npc));
             if (count(player, trade.buys) < trade.buyCount) {
                player.sendSystemMessage(Component.translatable("encounter.ancientwarfare.lacking", trade.buyCount, item(trade.buys)).withStyle(ChatFormatting.RED));
                return;
             }
 
             take(player, trade.buys, trade.buyCount);
+            TownMarkets.moved(level, town(level, npc), new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(trade.buys)), trade.buyCount), false);
             Coins.give(player, trade.buyPrice);
             FactionRumours.say(player, speaker, Component.translatable("trade.ancientwarfare.sold"));
          }
