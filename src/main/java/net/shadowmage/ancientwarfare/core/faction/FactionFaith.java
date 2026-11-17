@@ -243,7 +243,7 @@ public final class FactionFaith extends SavedData {
 
       faiths.feasting.clear();
       for (int faith = 0; faith < KEYS.length; faith++) {
-         if (Math.floorMod(day, FactionSeasons.SEASON_DAYS * 4L) == (long)faith * FactionSeasons.SEASON_DAYS + FEAST_DAY) {
+         if (FactionSeasons.season(level).ordinal() == faith && FactionSeasons.dayOfSeason(level) == FEAST_DAY) {
             faiths.feast(level, data, faith, factions);
          }
       }

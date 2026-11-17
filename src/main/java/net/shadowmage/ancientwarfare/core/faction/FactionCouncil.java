@@ -82,7 +82,7 @@ public final class FactionCouncil extends SavedData {
          council.resolve(level, data);
       }
 
-      if (council.host == null && Math.floorMod(day, (long)FactionSeasons.SEASON_DAYS) == 0L && !FactionHistory.running()) {
+      if (council.host == null && FactionSeasons.dayOfSeason(level) == 0 && !FactionHistory.running()) {
          council.convene(level, data, null);
       }
    }
@@ -382,7 +382,7 @@ public final class FactionCouncil extends SavedData {
       FactionCouncil council = get(level);
       if (council.host == null) {
          long day = FactionWorldData.get(level).lastSimulatedDay();
-         long next = FactionSeasons.SEASON_DAYS - Math.floorMod(day, (long)FactionSeasons.SEASON_DAYS);
+         long next = FactionSeasons.daysLeft(level);
          player.sendSystemMessage(Component.translatable("council.ancientwarfare.next", next, Math.round(council.tolls * 100)).withStyle(ChatFormatting.GRAY));
          return;
       }

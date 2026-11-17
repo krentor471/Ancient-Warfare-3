@@ -66,12 +66,49 @@ public final class FactionSeasons {
          return forced;
       }
 
+      sereneseasons.api.season.ISeasonState state = serene(level);
+      if (state != null) {
+         return Season.valueOf(state.getSeason().name());
+      }
+
       return Season.values()[(int)Math.floorMod(day(level) / SEASON_DAYS, 4L)];
+   }
+
+   /**
+    * Serene Seasons keeps the year. While the world's history is played out on paper the
+    * clock does not move, so the faction calendar stands in for it then.
+    */
+   private static sereneseasons.api.season.ISeasonState serene(Level level) {
+      if (level instanceof ServerLevel && FactionHistory.running()) {
+         return null;
+      }
+
+      try {
+         return sereneseasons.api.season.SeasonHelper.getSeasonState(level);
+      } catch (RuntimeException e) {
+         return null;
+      }
+   }
+
+   /** Length of a season in days. */
+   public static int seasonDays(Level level) {
+      sereneseasons.api.season.ISeasonState state = serene(level);
+      return state != null ? Math.max(1, state.getSeasonDuration() / Math.max(1, state.getDayDuration())) : SEASON_DAYS;
+   }
+
+   /** Day of the current season, counted from 0. */
+   public static int dayOfSeason(Level level) {
+      sereneseasons.api.season.ISeasonState state = serene(level);
+      if (state != null) {
+         return Math.floorMod(state.getSeasonCycleTicks(), Math.max(1, state.getSeasonDuration())) / Math.max(1, state.getDayDuration());
+      }
+
+      return (int)Math.floorMod(day(level), (long)SEASON_DAYS);
    }
 
    /** Days left of the season, today included. */
    public static int daysLeft(Level level) {
-      return SEASON_DAYS - (int)Math.floorMod(day(level), (long)SEASON_DAYS);
+      return seasonDays(level) - dayOfSeason(level);
    }
 
    public static double yield(Level level) {
@@ -104,7 +141,7 @@ public final class FactionSeasons {
    /** Daily: a new season is told to everyone; winter days bring storms more often. */
    public static void simulateDay(ServerLevel level) {
       Season season = season(level);
-      if (Math.floorMod(day(level), (long)SEASON_DAYS) == 0L && !FactionHistory.running()) {
+      if (dayOfSeason(level) == 0 && !FactionHistory.running()) {
          level.getServer()
             .getPlayerList()
             .broadcastSystemMessage(

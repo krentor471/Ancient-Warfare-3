@@ -55,6 +55,10 @@ public final class SeasonColors {
    }
 
    public static void register(RegisterColorHandlersEvent.Block event) {
+      if (net.minecraftforge.fml.ModList.get().isLoaded("sereneseasons")) {
+         return; // Serene Seasons tints the leaves and grass
+      }
+
       event.register((state, level, pos, tint) -> {
          int base = level != null && pos != null ? BiomeColors.getAverageFoliageColor(level, pos) : FoliageColor.getDefaultColor();
          return foliage(base, pos == null ? 0 : (pos.getX() * 31L + pos.getZ() * 17L + pos.getY()) >> 2);
@@ -66,6 +70,10 @@ public final class SeasonColors {
 
    /** Redraws the world once the season has turned. */
    public static void tick() {
+      if (net.minecraftforge.fml.ModList.get().isLoaded("sereneseasons")) {
+         return;
+      }
+
       Minecraft mc = Minecraft.getInstance();
       if (mc.level == null || mc.level.getGameTime() % 40L != 0L) {
          return;

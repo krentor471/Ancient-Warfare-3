@@ -30,6 +30,27 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.ancientwarfare]]
+modId="glitchcore"
+mandatory=true
+versionRange="[0.0.1,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.ancientwarfare]]
+modId="sereneseasons"
+mandatory=true
+versionRange="[9.1,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.ancientwarfare]]
+modId="toughasnails"
+mandatory=true
+versionRange="[9.2,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.ancientwarfare]]
 modId="jei"
 mandatory=false
 versionRange="[15,16)"

@@ -15,6 +15,9 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * nothing grows in the fields under the snow. Cold biomes keep their own snow all year.
  */
 public final class SeasonWeather {
+   /** Serene Seasons brings the snow, the ice and the crops' growing season itself. */
+   static final boolean SERENE = net.minecraftforge.fml.ModList.get() == null || net.minecraftforge.fml.ModList.get().isLoaded("sereneseasons");
+
    private static final int RADIUS = 48;
    private static final int TRIES = 40;
    private static Boolean appliedWinter;
@@ -23,6 +26,10 @@ public final class SeasonWeather {
    }
 
    static void tick(ServerLevel level) {
+      if (SERENE) {
+         return;
+      }
+
       if (level.getGameTime() % 4L != 0L || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) {
          return;
       }
@@ -89,7 +96,7 @@ public final class SeasonWeather {
 
    /** Fields lie still in winter. */
    public static boolean frozen(net.minecraft.world.level.LevelAccessor level, BlockPos pos) {
-      return level instanceof ServerLevel server && FactionSeasons.season(server) == FactionSeasons.Season.WINTER
+      return !SERENE && level instanceof ServerLevel server && FactionSeasons.season(server) == FactionSeasons.Season.WINTER
          && SeasonClimate.mild(server.getBiome(pos).value(), pos);
    }
 }

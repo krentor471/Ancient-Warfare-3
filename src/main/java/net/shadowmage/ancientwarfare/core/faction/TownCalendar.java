@@ -49,7 +49,7 @@ public final class TownCalendar {
    static void simulateDay(ServerLevel level, FactionWorldData data) {
       RandomSource random = level.getRandom();
       long day = Math.max(0L, data.lastSimulatedDay());
-      int dayOfSeason = (int)Math.floorMod(day, FactionSeasons.SEASON_DAYS);
+      int dayOfSeason = FactionSeasons.dayOfSeason(level);
       FactionSeasons.Season season = FactionSeasons.season(level);
       TownMarkets markets = TownMarkets.get(level);
       for (FactionWorldData.Settlement town : data.settlements()) {
