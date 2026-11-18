@@ -30,7 +30,9 @@ import net.shadowmage.ancientwarfare.core.structure.AWStructureTemplateOverrides
 @Mod("ancientwarfare")
 public final class ForgeAncientWarfareCore {
    public ForgeAncientWarfareCore() {
-      net.shadowmage.ancientwarfare.core.faction.SeasonWarmth.register();
+      // Tough As Nails sets up its temperature API during its own construction, which may come after ours.
+      net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus().addListener(
+         (net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) -> event.enqueueWork(net.shadowmage.ancientwarfare.core.faction.SeasonWarmth::register));
       AWCorePlatform.setMenuOpener(new ForgeMenuOpener());
       AWCorePlatform.setChunkLoader(new ForgeChunkLoader());
       AWCorePlatform.setAttributeAccess(new ForgeAttributeAccess());
