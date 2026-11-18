@@ -294,6 +294,12 @@ public final class AwsTemplatePlacer {
       return template.occupiedBlocks(min, facing);
    }
 
+   /** The template's width along x and z when it faces this way. */
+   public static int[] footprint(String templatePath, Direction facing) {
+      AwsTemplatePlacer.AwsTemplate template = template(templatePath);
+      return facing.getAxis() == Axis.X ? new int[]{template.sizeZ(), template.sizeX()} : new int[]{template.sizeX(), template.sizeZ()};
+   }
+
    public static Set<Long> requiredChunks(BlockPos min, String templatePath, Direction facing) {
       AwsTemplatePlacer.AwsTemplate template = template(templatePath);
       int sizeX = facing.getAxis() == Axis.X ? template.sizeZ() : template.sizeX();

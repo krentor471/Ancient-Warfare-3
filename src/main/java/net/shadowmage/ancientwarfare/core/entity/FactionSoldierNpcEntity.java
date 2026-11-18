@@ -17,6 +17,10 @@ import net.shadowmage.ancientwarfare.core.common.npc.NpcEquipmentResolver;
 import net.shadowmage.ancientwarfare.core.common.npc.NpcShielding;
 
 public class FactionSoldierNpcEntity extends FactionNpcEntity {
+   /** How far a soldier drops to get at a foe. */
+   private static final int COMBAT_DROP = 10;
+   /** The part of a fall a soldier takes without harm, by climbing down the last of it. */
+   private static final float SOFT_DROP = 7.0F;
    public FactionSoldierNpcEntity(EntityType<? extends FactionSoldierNpcEntity> entityType, Level level) {
       super(entityType, level, FactionNpcRole.SOLDIER);
       this.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD));
@@ -27,6 +31,20 @@ public class FactionSoldierNpcEntity extends FactionNpcEntity {
       super(entityType, level, role);
       this.setItemInHand(InteractionHand.MAIN_HAND, weapon);
       this.applyFactionDefaults();
+   }
+
+   /**
+    * With a foe in sight a soldier will drop off a wall walk or down a bank to reach him, as a man
+    * would climb or jump down; he lands the softer for it.
+    */
+   @Override
+   public int getMaxFallDistance() {
+      return this.getTarget() != null ? Math.max(super.getMaxFallDistance(), COMBAT_DROP) : super.getMaxFallDistance();
+   }
+
+   @Override
+   public boolean causeFallDamage(float distance, float multiplier, net.minecraft.world.damagesource.DamageSource source) {
+      return super.causeFallDamage(Math.max(0.0F, distance - SOFT_DROP), multiplier, source);
    }
 
    @Override

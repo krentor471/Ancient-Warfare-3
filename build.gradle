@@ -46,6 +46,11 @@ minecraft {
 
 repositories {
     maven {
+        name = 'Glitchfiend'
+        url = 'https://maven.minecraftforge.net/'
+        content { includeGroup('com.github.glitchfiend') }
+    }
+    maven {
         name = 'GeckoLib'
         url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
         content { includeGroupByRegex('software\\.bernie.*') }
@@ -59,6 +64,9 @@ repositories {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation fg.deobf("com.github.glitchfiend:GlitchCore-forge:${minecraft_version}-${glitchcore_version}")
+    implementation fg.deobf("com.github.glitchfiend:SereneSeasons-forge:${minecraft_version}-${sereneseasons_version}")
+    implementation fg.deobf("com.github.glitchfiend:ToughAsNails-forge:${minecraft_version}-${toughasnails_version}")
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}")
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")

@@ -152,6 +152,12 @@ public final class FactionEnvoys {
             continue;
          }
 
+         // Envoys are sent to a ruler: only a player whose country (theirs, or the one they joined) holds a village.
+         java.util.UUID country = CountryMembers.countryOf(level, player.getUUID());
+         if (!FactionWorldData.get(level).villages().containsValue(country)) {
+            continue;
+         }
+
          CompoundTag tag = persisted(player);
          if (tag.getLong(NEXT_TAG) == 0L) {
             // The first envoy waits a while: the player has only just arrived.

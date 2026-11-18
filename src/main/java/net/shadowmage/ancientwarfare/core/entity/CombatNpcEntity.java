@@ -243,6 +243,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
       this.goalSelector.addGoal(5, new CombatNpcEntity.FaceHoldDirectionGoal(this));
       this.goalSelector.addGoal(4, new CombatNpcEntity.PatrolOrderGoal(this, 1.0));
       this.goalSelector.addGoal(5, new CombatNpcEntity.ReturnHomeGoal(this, 1.0));
+      this.goalSelector.addGoal(5, new CombatNpcEntity.ReturnToAnchorGoal(this, 1.0));
       this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
       this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
       this.targetSelector.addGoal(1, new CombatNpcEntity.PlayerSoldierHurtByTargetGoal(this));
@@ -256,7 +257,7 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
                false,
                false,
                target -> this.isHostileFactionNpc(target) && this.canAcquireCombatTarget(target),
-               () -> this.isRangedCombatant() ? 64.0 : 4.0
+               () -> this.isRangedCombatant() ? 64.0 : this.idleAnchor != null || this.isIdleSoldier() ? 12.0 : 4.0
             )
          );
       this.targetSelector
@@ -768,6 +769,10 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
    public void aiStep() {
       super.aiStep();
       this.ensureRangedFollowRange();
+      if (!this.level().isClientSide) {
+         this.trackIdleAnchor();
+      }
+
       if (!this.level().isClientSide && this.getCurrentCommand() == NpcCommandType.ATTACK && (this.getTarget() == null || !this.getTarget().isAlive())) {
          this.clearCommand();
       }
@@ -1693,6 +1698,92 @@ public class CombatNpcEntity extends PlayerOwnedNpcEntity implements RangedAttac
                   ally.setTarget(attacker);
                });
          }
+      }
+   }
+
+   /** Where a soldier left standing about stood when a fight came to him; he goes back there after it. Not saved. */
+   private BlockPos idleAnchor;
+
+   /** A soldier with no orders, no home, no patrol and no group to follow: he only defends himself. */
+   boolean isIdleSoldier() {
+      return !this.hasHome()
+         && !this.isPassenger()
+         && this.getCurrentCommand() == NpcCommandType.NONE
+         && !this.shouldFollowCombatGroupFormation()
+         && !(AWCoreRegistryAccess.is(this.getOrdersStack(), AWCoreIds.COMBAT_ORDER) && !CombatOrderData.getEntries(this.getOrdersStack()).isEmpty());
+   }
+
+   private void trackIdleAnchor() {
+      if (!this.isIdleSoldier()) {
+         this.idleAnchor = null;
+         return;
+      }
+
+      LivingEntity target = this.getTarget();
+      if (this.idleAnchor == null && target != null && target.isAlive()) {
+         this.idleAnchor = this.blockPosition();
+      }
+   }
+
+   private static class ReturnToAnchorGoal extends Goal {
+      private final CombatNpcEntity npc;
+      private final double speedModifier;
+      private int repathTicks;
+      private int ticks;
+
+      private ReturnToAnchorGoal(CombatNpcEntity npc, double speedModifier) {
+         this.npc = npc;
+         this.speedModifier = speedModifier;
+         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+      }
+
+      private boolean fightOver() {
+         LivingEntity target = this.npc.getTarget();
+         return this.npc.idleAnchor != null && (target == null || !target.isAlive()) && this.npc.isIdleSoldier() && !this.npc.isGettingFood();
+      }
+
+      public boolean canUse() {
+         if (!this.fightOver()) {
+            return false;
+         }
+
+         if (this.distanceSq() <= 4.0) {
+            this.npc.idleAnchor = null;
+            return false;
+         }
+
+         return true;
+      }
+
+      public boolean canContinueToUse() {
+         return this.fightOver() && this.distanceSq() > 2.0 && this.ticks < 1200;
+      }
+
+      public void start() {
+         this.repathTicks = 0;
+         this.ticks = 0;
+      }
+
+      public void tick() {
+         BlockPos anchor = this.npc.idleAnchor;
+         this.ticks++;
+         if (this.repathTicks-- <= 0 || this.npc.getNavigation().isDone()) {
+            this.npc.getNavigation().moveTo(anchor.getX() + 0.5, anchor.getY(), anchor.getZ() + 0.5, this.speedModifier);
+            this.repathTicks = 20;
+         }
+      }
+
+      public void stop() {
+         this.npc.getNavigation().stop();
+         LivingEntity target = this.npc.getTarget();
+         if (target == null || !target.isAlive()) {
+            this.npc.idleAnchor = null;
+         }
+      }
+
+      private double distanceSq() {
+         BlockPos anchor = this.npc.idleAnchor;
+         return anchor == null ? 0.0 : this.npc.distanceToSqr(anchor.getX() + 0.5, anchor.getY(), anchor.getZ() + 0.5);
       }
    }
 

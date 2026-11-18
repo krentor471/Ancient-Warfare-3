@@ -305,6 +305,8 @@ public final class FactionAI {
       TAKEN.put(target.id(), data.lastSimulatedDay());
       target.setFaction(attacker);
       target.garrison = garrison;
+      // The townsfolk mostly stay under their new lords; fewer, but the town is not empty.
+      target.population = Math.max(target.population, FactionSimulation.survivors(target));
       target.manned = true;
       data.setProvinceOwner(target.province(), attacker);
       data.setDirty();

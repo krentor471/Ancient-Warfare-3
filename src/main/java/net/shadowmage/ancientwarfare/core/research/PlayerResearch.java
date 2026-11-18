@@ -90,7 +90,22 @@ public final class PlayerResearch extends SavedData {
    }
 
    public static Set<String> known(ServerPlayer player) {
-      return get(player.serverLevel()).known.getOrDefault(key(player.getName().getString()), Set.of());
+      Set<String> own = get(player.serverLevel()).known.getOrDefault(key(player.getName().getString()), Set.of());
+      java.util.Optional<java.util.UUID> country = net.shadowmage.ancientwarfare.core.faction.CountryMembers.joined(player.serverLevel(), player.getUUID());
+      net.minecraft.server.players.GameProfileCache cache = player.getServer().getProfileCache();
+      if (country.isEmpty() || cache == null) {
+         return own;
+      }
+
+      // A member of another player's country knows what that country knows, as well as their own.
+      Set<String> shared = cache.get(country.get()).map(profile -> get(player.serverLevel()).known.getOrDefault(key(profile.getName()), Set.<String>of())).orElse(Set.of());
+      if (shared.isEmpty()) {
+         return own;
+      }
+
+      Set<String> all = new TreeSet<>(own);
+      all.addAll(shared);
+      return all;
    }
 
    public static boolean has(ServerPlayer player, String research) {

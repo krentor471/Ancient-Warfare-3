@@ -28,12 +28,19 @@ import net.shadowmage.ancientwarfare.core.tile.AdvancedSpawnerBlockEntity;
  * simulated garrison still has them.
  */
 public final class FactionSimulation {
+   private static final int FEW_PEOPLE = 6;
    public static final long DAY_TICKS = 24000L;
    private static final int GARRISON_CHECK_TICKS = 100;
    private static final int RESPAWN_TICKS = 600;
+   private static final long MANNED_AFTER_TICKS = 1200L;
+   private static final Map<Integer, Long> INSIDE_SINCE = new HashMap<>();
    private static final double ACTIVE_RANGE = 128.0;
    private static final double HIDDEN_RANGE = 24.0;
    private static final int GARRISON_MARGIN = 24;
+   /** Townsfolk out in a town's streets: one for so many of its people, within these bounds. */
+   private static final int PEOPLE_PER_TOWNSFOLK = 4;
+   private static final int MIN_TOWNSFOLK = 4;
+   private static final int MAX_TOWNSFOLK = 20;
    private static final int LOSS_MARGIN = 32;
    private static final int RECRUIT_COST = 5;
    private static final int MAX_RECRUITS_PER_DAY = 2;
@@ -61,12 +68,13 @@ public final class FactionSimulation {
          case FactionTowns.VILLAGE -> 30;
          default -> 12;
       };
-      return base + settlement.tier() * base / 2 + settlement.grown() * FactionGrowth.ROOM_PER_PIECE + settlement.garrison();
+      return base + settlement.tier() * base / 2 + TownBuildings.room(settlement) + settlement.garrison();
    }
 
    public static void tick(ServerLevel level) {
       FactionWorldData data = FactionWorldData.get(level);
       FactionHistory.runIfNeeded(level, data);
+      Perf.report();
       long clockDay = level.getGameTime() / DAY_TICKS;
       if (data.lastSimulatedDay() > clockDay + data.dayOffset()) {
          // Days simulated ahead of the clock (the history, the test command) count as already past.
@@ -78,55 +86,88 @@ public final class FactionSimulation {
          data.setLastSimulatedDay(day);
       } else if (day > data.lastSimulatedDay()) {
          data.setLastSimulatedDay(day);
-         simulateDay(level, data);
+         Perf.run("simulateDay", () -> simulateDay(level, data));
       }
 
-      FactionExpansion.tick(level, data);
-      FactionArmies.tick(level, data);
-      FactionConquest.tick(level, data);
-      PlayerCountry.tick(level, data);
-      FactionSpies.tick(level, data);
-      FactionIntrigue.tick(level, data);
-      FactionIncidents.tick(level, data);
-      FactionFeasts.tick(level, data);
-      FactionPastimes.tick(level, data);
-      FactionTournaments.tick(level);
-      FactionCampaigns.tick(level, data);
-      FactionRoads.tick(level, data);
-      FactionCaravans.tick(level, data);
-      FactionTravellers.tick(level, data);
-      FactionRumours.tick(level, data);
-      FactionTownLife.tick(level, data);
-      FactionGrowth.tick(level, data);
-      FactionPorts.tick(level, data);
-      FactionQuests.tick(level, data);
-      FactionChatter.tick(level, data);
-      FactionMercenaries.tick(level, data);
-      FactionEnvoys.tick(level);
+      Perf.run("FactionPrebuild", () -> FactionPrebuild.tick(level, data));
+      Perf.run("FactionExpansion", () -> FactionExpansion.tick(level, data));
+      Perf.run("FactionArmies", () -> FactionArmies.tick(level, data));
+      Perf.run("FactionConquest", () -> FactionConquest.tick(level, data));
+      Perf.run("PlayerCountry", () -> PlayerCountry.tick(level, data));
+      Perf.run("FactionSpies", () -> FactionSpies.tick(level, data));
+      Perf.run("FactionIntrigue", () -> FactionIntrigue.tick(level, data));
+      Perf.run("FactionIncidents", () -> FactionIncidents.tick(level, data));
+      Perf.run("FactionFeasts", () -> FactionFeasts.tick(level, data));
+      Perf.run("FactionPastimes", () -> FactionPastimes.tick(level, data));
+      Perf.run("FactionTournaments", () -> FactionTournaments.tick(level));
+      Perf.run("FactionCampaigns", () -> FactionCampaigns.tick(level, data));
+      Perf.run("FactionRoads", () -> FactionRoads.tick(level, data));
+      Perf.run("FactionCaravans", () -> FactionCaravans.tick(level, data));
+      Perf.run("FactionTravellers", () -> FactionTravellers.tick(level, data));
+      Perf.run("FactionRumours", () -> FactionRumours.tick(level, data));
+      Perf.run("FactionTownLife", () -> FactionTownLife.tick(level, data));
+      Perf.run("TownEncounters", () -> TownEncounters.tick(level, data));
+      Perf.run("CouncilHalls", () -> CouncilHalls.tick(level, data));
+      Perf.run("TownStorehouses", () -> TownStorehouses.tick(level, data));
+      Perf.run("CouncilHalls.tidy", () -> CouncilHalls.tidy(level));
+      Perf.run("TownCalendar", () -> TownCalendar.tick(level, data));
+      Perf.run("SeasonWeather", () -> SeasonWeather.tick(level));
+      Perf.run("TownDisasters", () -> TownDisasters.tick(level, data));
+      Perf.run("TownPopulation", () -> TownPopulation.tick(level, data));
+      TownMarkets.tick(level);
+      Perf.run("TradeVentures", () -> TradeVentures.tick(level));
+      Perf.run("TownWatch", () -> TownWatch.tick(level, data));
+      Perf.run("BanditCamps", () -> BanditCamps.tick(level, data));
+      Perf.run("BuildSites", () -> BuildSites.tick(level));
+      Perf.run("FactionGrowth", () -> FactionGrowth.tick(level, data));
+      Perf.run("FactionRepairs", () -> FactionRepairs.tick(level, data));
+      Perf.run("FreeVillages", () -> FreeVillages.tick(level, data));
+      Perf.run("FactionPorts", () -> FactionPorts.tick(level, data));
+      Perf.run("FactionQuests", () -> FactionQuests.tick(level, data));
+      Perf.run("FactionChatter", () -> FactionChatter.tick(level, data));
+      Perf.run("FactionMercenaries", () -> FactionMercenaries.tick(level, data));
+      Perf.run("FactionEnvoys", () -> FactionEnvoys.tick(level));
 
       if (level.getGameTime() % GARRISON_CHECK_TICKS == 0L && !level.players().isEmpty()) {
-         maintainGarrisons(level, data);
+         Perf.run("garrisons", () -> maintainGarrisons(level, data));
       }
    }
 
    public static void simulateDay(ServerLevel level, FactionWorldData data) {
       FactionSeasons.simulateDay(level);
       FactionLife.simulateDay(level, data);
-      FactionResources.simulateDay(data);
+      FactionResources.simulateDay(data, FactionSeasons.season(level) == FactionSeasons.Season.WINTER);
       FactionMarkets.simulateDay(level, data);
       FactionMusters.simulateDay(level, data);
       FactionRebellions.simulateDay(level, data);
       FactionFaith.simulateDay(level, data);
+      PlayerFaith.simulateDay(level, data);
+      FaithSpread.simulateDay(level, data);
+      CouncilHalls.simulateDay(level, data);
+      TownCalendar.simulateDay(level, data);
+      BanditCamps.simulateDay(level, data);
+      TownTroubles.simulateDay(level, data);
       Map<String, Integer> recruited = new HashMap<>();
       Map<String, Integer> settlements = new HashMap<>();
       data.settlements().forEach(settlement -> settlements.merge(settlement.faction(), 1, Integer::sum));
 
       for (FactionWorldData.Settlement settlement : data.settlements()) {
          int capacity = capacity(settlement);
+         // More soldiers than a settlement can keep go back to their fields: a few each day.
+         int keep = FactionAI.isFort(settlement) ? Integer.MAX_VALUE : Math.max(2, settlement.population / 2);
+         if (settlement.garrison > keep) {
+            int home = Math.max(1, (settlement.garrison - keep) / 4);
+            settlement.garrison -= home;
+            settlement.population += home;
+         }
+
          // People multiply only with food in store, in health and in order.
          boolean thriving = settlement.food() >= settlement.population && settlement.health() > 40 && settlement.order() >= 20;
          if (thriving && settlement.population < capacity) {
             settlement.population = Math.min(capacity, settlement.population + Math.max(1, settlement.population / 20));
+         } else if (settlement.population < FEW_PEOPLE && settlement.food() > 0 && settlement.plague() == 0 && settlement.built()) {
+            // A place nearly emptied fills again slowly: kin and drifters come back to empty houses.
+            settlement.population++;
          }
 
          String faction = settlement.faction();
@@ -136,7 +177,7 @@ public final class FactionSimulation {
          int maxGarrison = FactionAI.isFort(settlement) ? FactionExpansion.FORT_GARRISON + settlement.tier * 4 : settlement.population / 3;
 
          for (int i = 0;
-            i < MAX_RECRUITS_PER_DAY && settlement.garrison < maxGarrison && settlement.population > 1 && gold >= RECRUIT_COST && FactionResources.hasIron(data, faction);
+            i < MAX_RECRUITS_PER_DAY && settlement.garrison < maxGarrison && settlement.population > Math.max(1, survivors(settlement)) && gold >= RECRUIT_COST && FactionResources.hasIron(data, faction);
             i++
          ) {
             FactionResources.spendIron(data, faction);
@@ -154,6 +195,10 @@ public final class FactionSimulation {
             settlement.tier++;
             gold -= tierCost;
             FactionPorts.rankRose(level, settlement);
+         } else if (settlement.tier > 0 && settlement.built() && settlement.population < demoteBelow(settlement)) {
+            // Emptied by plague, hunger or war: a town that cannot fill its streets falls a rank.
+            settlement.tier--;
+            FactionPorts.rankFell(level, settlement);
          }
 
          data.setTreasury(faction, gold);
@@ -185,6 +230,8 @@ public final class FactionSimulation {
       FactionQuests.simulateDay(level, data);
       FactionConquest.simulateDay(level, data);
       FactionTrade.simulateDay(level, data);
+      TownMarkets.simulateDay(level, data);
+      FreeVillages.simulateDay(level, data);
       data.setDirty();
       AncientWarfareCore.LOG.debug("Simulated faction day {}: recruits {}", data.lastSimulatedDay(), recruited);
    }
@@ -223,12 +270,48 @@ public final class FactionSimulation {
       FactionWorldData.Settlement settlement = settlementAt(data, npc.getFactionName(), npc.getX(), npc.getZ(), LOSS_MARGIN);
       if (settlement != null) {
          if (isCivilian(npc)) {
-            settlement.population = Math.max(0, settlement.population - 1);
+            // During an assault some always hide in cellars: the town is not emptied to the last soul.
+            int floor = FactionTownLife.underAttack(data, settlement) ? survivors(settlement) : 0;
+            settlement.population = Math.max(Math.min(floor, settlement.population), settlement.population - 1);
          } else {
             settlement.garrison = Math.max(0, settlement.garrison - 1);
          }
 
          data.setDirty();
+      }
+   }
+
+   /**
+    * A player (or their men) killed one of a settlement's people: when nobody of it is left alive
+    * (for an outlaw lair, none of its fighters) the place is abandoned for good and stands empty.
+    */
+   public static void checkWiped(ServerLevel level, FactionNpcEntity npc) {
+      if (FactionCampaigns.campaignId(npc) != 0 || FactionArmies.armyId(npc) != 0 || FactionCaravans.caravanId(npc) != 0
+         || FactionTravellers.isTraveller(npc) || FactionTownLife.isFairgoer(npc) || PlayerDiplomacy.isLeader(npc)) {
+         return;
+      }
+
+      FactionWorldData data = FactionWorldData.get(level);
+      FactionWorldData.Settlement settlement = settlementAt(data, npc.getFactionName(), npc.getX(), npc.getZ(), LOSS_MARGIN);
+      if (settlement == null || !settlement.built() || !settlement.manned() || FactionTownLife.underAttack(data, settlement)) {
+         return;
+      }
+
+      boolean outlaw = FactionDiplomacy.isOutlaw(settlement.faction());
+      AABB area = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(GARRISON_MARGIN, 32.0, GARRISON_MARGIN);
+      boolean anyone = !level.getEntitiesOfClass(FactionNpcEntity.class, area, other -> other != npc && other.isAlive()
+         && other.getFactionName().equals(settlement.faction()) && (outlaw ? !isCivilian(other) : true)).isEmpty();
+      if (anyone || !outlaw && settlement.garrison() > 0) {
+         return;
+      }
+
+      data.abandon(settlement, level.getGameTime());
+      AncientWarfareCore.LOG.info("Settlement #{} of {} was wiped out and is abandoned", settlement.id(), settlement.faction());
+      for (ServerPlayer player : level.players()) {
+         if (settlement.contains(player.getX(), player.getZ(), 96)) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("town.ancientwarfare.abandoned", FactionNews.named(settlement))
+               .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+         }
       }
    }
 
@@ -282,6 +365,22 @@ public final class FactionSimulation {
    }
 
    /** The faction's settlement at a place; of two near each other, the one whose middle is closer. */
+   /** Fewer people than this and a town falls a rank: a third of what its rank below holds. */
+   static int demoteBelow(FactionWorldData.Settlement settlement) {
+      int base = switch (settlement.kind()) {
+         case FactionTowns.CAPITAL -> 90;
+         case "town" -> 60;
+         case FactionTowns.VILLAGE -> 30;
+         default -> 12;
+      };
+      return (base + (settlement.tier - 1) * base / 2) / 3;
+   }
+
+   /** However hard a town is bled by a siege, some of its people hide and live on: never below this. */
+   public static int survivors(FactionWorldData.Settlement settlement) {
+      return FactionAI.isFort(settlement) || FactionDiplomacy.isOutlaw(settlement.faction()) ? 0 : Math.max(4, capacity(settlement) / 8);
+   }
+
    public static FactionWorldData.Settlement settlementAt(FactionWorldData data, String faction, double x, double z, int margin) {
       FactionWorldData.Settlement best = null;
 
@@ -319,21 +418,66 @@ public final class FactionSimulation {
                keepLeader(level, settlement);
             }
 
+            // The town's own people are about whether or not its soldiers have taken up their posts yet.
+            keepTownsfolk(level, data, settlement);
             if (!settlement.manned) {
-               if (spawnersRemain(level, settlement)) {
+               // The template's spawners fire as a player comes near each; in a big town some never
+               // do, so after a minute with a player inside it the town counts as manned anyway.
+               boolean inside = players.stream().anyMatch(player -> settlement.contains(player.getX(), player.getZ(), 0));
+               long since = inside ? INSIDE_SINCE.computeIfAbsent(settlement.id(), id -> level.getGameTime()) : 0L;
+               if (!inside) {
+                  INSIDE_SINCE.remove(settlement.id());
+               }
+
+               if ((!inside || level.getGameTime() - since < MANNED_AFTER_TICKS) && spawnersRemain(level, settlement)) {
                   continue;
                }
+
+               INSIDE_SINCE.remove(settlement.id());
 
                settlement.manned = true;
                data.setDirty();
             }
 
-            if (level.getGameTime() - settlement.lastRespawn >= RESPAWN_TICKS && liveSoldiers(level, settlement) < settlement.garrison) {
+            long every = respawnTicks(settlement);
+            if (every > 0L && level.getGameTime() - settlement.lastRespawn >= every && liveSoldiers(level, settlement) < settlement.garrison) {
                settlement.lastRespawn = level.getGameTime();
-               respawnSoldier(level, settlement);
+               boolean outlaw = FactionDiplomacy.isOutlaw(settlement.faction());
+               if (outlaw || FactionResources.hasIron(data, settlement.faction())) {
+                  // A fresh man is armed out of the realm's stores; with no iron left none comes out.
+                  if (!outlaw) {
+                     FactionResources.spendIron(data, settlement.faction());
+                  }
+
+                  respawnSoldier(level, settlement);
+               }
             }
          }
       }
+   }
+
+   /**
+    * How often a fallen defender is replaced from the garrison: soldiers come out of a barracks,
+    * more slowly from a watch post, tower or gatehouse, and a town with none of them gets no more
+    * than the men it started with. Outlaws drift back to their lair slowly. Zero: never.
+    */
+   static long respawnTicks(FactionWorldData.Settlement settlement) {
+      if (FactionDiplomacy.isOutlaw(settlement.faction())) {
+         return RESPAWN_TICKS * 4L;
+      }
+
+      java.util.List<String> buildings = settlement.buildings();
+      if (buildings.contains(TownBuildings.Kind.BARRACKS.key()) || FactionAI.isFort(settlement) || FactionTowns.CAPITAL.equals(settlement.kind())) {
+         return RESPAWN_TICKS;
+      }
+
+      for (TownBuildings.Kind kind : new TownBuildings.Kind[]{TownBuildings.Kind.WATCH_POST, TownBuildings.Kind.TOWER, TownBuildings.Kind.GATEHOUSE, TownBuildings.Kind.ARCHERY}) {
+         if (buildings.contains(kind.key())) {
+            return RESPAWN_TICKS * 3L;
+         }
+      }
+
+      return 0L;
    }
 
    /** A capital always has its leader: one stands near the town's centre, back a day after he falls. */
@@ -386,12 +530,73 @@ public final class FactionSimulation {
       }
    }
 
+   /**
+    * A town's streets are not empty: while a player is near, as many of its people as its size
+    * calls for are out and about, one more coming out of a door at a time while nobody watches the
+    * spot. They keep the day of townsfolk (see CivilianRoutineGoal) and sleep in its beds at night.
+    */
+   private static void keepTownsfolk(ServerLevel level, FactionWorldData data, FactionWorldData.Settlement settlement) {
+      if (!FactionTownLife.isTown(settlement) || FactionTownLife.underAttack(data, settlement)) {
+         return;
+      }
+
+      int wanted = Math.max(MIN_TOWNSFOLK, Math.min(MAX_TOWNSFOLK, settlement.population / PEOPLE_PER_TOWNSFOLK));
+      AABB area = new AABB(settlement.min(), settlement.max().offset(1, 1, 1)).inflate(8.0, 16.0, 8.0);
+      int out = level.getEntitiesOfClass(FactionNpcEntity.class, area, npc -> npc.isAlive() && npc.getFactionName().equals(settlement.faction()) && isCivilian(npc)).size();
+      if (out >= wanted) {
+         return;
+      }
+
+      RandomSource random = level.getRandom();
+      for (int attempt = 0; attempt < 12; attempt++) {
+         int x = settlement.min().getX() + random.nextInt(settlement.max().getX() - settlement.min().getX() + 1);
+         int z = settlement.min().getZ() + random.nextInt(settlement.max().getZ() - settlement.min().getZ() + 1);
+         if (!level.hasChunkAt(new BlockPos(x, 0, z))) {
+            continue;
+         }
+
+         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+         BlockPos pos = new BlockPos(x, y, z);
+         if (level.getNearestPlayer(x + 0.5, y, z + 0.5, HIDDEN_RANGE, false) != null
+            || !level.getBlockState(pos.below()).getFluidState().isEmpty()
+            || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
+            || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()
+            || !onTheGround(level, pos)) {
+            continue;
+         }
+
+         EntityType<? extends FactionNpcEntity> type = random.nextBoolean()
+            ? AWCoreEntityTypes.FACTION_CIVILIAN_MALE_NPC.get()
+            : AWCoreEntityTypes.FACTION_CIVILIAN_FEMALE_NPC.get();
+         FactionNpcEntity npc = type.create(level);
+         if (npc == null) {
+            return;
+         }
+
+         npc.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
+         npc.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+         npc.setFactionName(settlement.faction());
+         if (random.nextInt(4) == 0) {
+            npc.setChild(true);
+         } else if (random.nextInt(6) == 0
+            && level.getEntitiesOfClass(FactionNpcEntity.class, area, TownsfolkFavours::isBeggar).isEmpty()) {
+            // One beggar to a town, sitting about the gates and the market.
+            npc.addTag(TownsfolkFavours.BEGGAR_TAG);
+            npc.setCustomName(net.minecraft.network.chat.Component.translatable("townsfolk.ancientwarfare.beggar"));
+         }
+
+         level.addFreshEntity(npc);
+         return;
+      }
+   }
+
    private static boolean spawnersRemain(ServerLevel level, FactionWorldData.Settlement settlement) {
       for (int cx = settlement.min().getX() >> 4; cx <= settlement.max().getX() >> 4; cx++) {
          for (int cz = settlement.min().getZ() >> 4; cz <= settlement.max().getZ() >> 4; cz++) {
             LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
             if (chunk == null) {
-               return true;
+               // A big town reaches past what is loaded; its far end must not keep it unmanned (and untakeable) forever.
+               continue;
             }
 
             for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
@@ -421,7 +626,7 @@ public final class FactionSimulation {
          int x = settlement.min().getX() + random.nextInt(settlement.max().getX() - settlement.min().getX() + 1);
          int z = settlement.min().getZ() + random.nextInt(settlement.max().getZ() - settlement.min().getZ() + 1);
          if (level.getNearestPlayer(x + 0.5, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z + 0.5, HIDDEN_RANGE, false) == null
-            && spawnSoldier(level, settlement.faction(), x, z) != null) {
+            && spawnDefender(level, settlement.faction(), x, z) != null) {
             return;
          }
       }
@@ -439,12 +644,23 @@ public final class FactionSimulation {
 
    /** As spawnSoldier, an archer with the given chance. */
    static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z, String tag, double archers) {
+      return spawnSoldier(level, faction, x, z, tag, archers, false);
+   }
+
+   /** A town's own defender: one may come out on its walls (never on a roof), and climbs down to fight. */
+   static FactionNpcEntity spawnDefender(ServerLevel level, String faction, int x, int z) {
+      return spawnSoldier(level, faction, x, z, null, 1.0 / 3.0, true);
+   }
+
+   private static FactionNpcEntity spawnSoldier(ServerLevel level, String faction, int x, int z, String tag, double archers, boolean walls) {
       RandomSource random = level.getRandom();
       int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
       BlockPos pos = new BlockPos(x, y, z);
       if (!level.getBlockState(pos.below()).getFluidState().isEmpty()
          || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
-         || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()) {
+         || !level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()
+         || onRoof(level, pos)
+         || !walls && onWall(level, pos)) {
          return null;
       }
 
@@ -462,6 +678,51 @@ public final class FactionSimulation {
       }
 
       return level.addFreshEntity(npc) ? npc : null;
+   }
+
+   /**
+    * Whether a spot is on the ground rather than up on a roof or a wall walk, where a soldier put
+    * down would stand stuck out of the fight: a roof has rooms under it, and a wall walk stands
+    * well above the land on either side of it.
+    */
+   static boolean onTheGround(ServerLevel level, BlockPos feet) {
+      return !onRoof(level, feet) && !onWall(level, feet);
+   }
+
+   /** A roof is built, not grown, and has rooms under it; land over a cave or the world's floor is not one. */
+   static boolean onRoof(ServerLevel level, BlockPos feet) {
+      net.minecraft.world.level.block.state.BlockState under = level.getBlockState(feet.below());
+      if (under.is(net.minecraft.tags.BlockTags.DIRT)
+         || under.is(net.minecraft.tags.BlockTags.SAND)
+         || under.is(net.minecraft.tags.BlockTags.BASE_STONE_OVERWORLD)
+         || under.is(net.minecraft.world.level.block.Blocks.GRAVEL)
+         || under.is(net.minecraft.world.level.block.Blocks.DIRT_PATH)
+         || under.is(net.minecraft.world.level.block.Blocks.SNOW_BLOCK)) {
+         return false;
+      }
+
+      for (int dy = 2; dy <= 5 && feet.getY() - dy >= level.getMinBuildHeight(); dy++) {
+         if (level.getBlockState(feet.below(dy)).isAir()) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   /** A wall walk stands well above the land on either side of it. */
+   static boolean onWall(ServerLevel level, BlockPos feet) {
+      int below = 0;
+      for (int i = 0; i < 8; i++) {
+         double angle = i * Math.PI / 4.0;
+         int x = feet.getX() + (int)Math.round(Math.cos(angle) * 4.0);
+         int z = feet.getZ() + (int)Math.round(Math.sin(angle) * 4.0);
+         if (level.hasChunkAt(new BlockPos(x, feet.getY(), z)) && level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) <= feet.getY() - 3) {
+            below++;
+         }
+      }
+
+      return below >= 4;
    }
 
    static boolean isCivilian(FactionNpcEntity npc) {

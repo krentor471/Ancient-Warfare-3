@@ -58,14 +58,14 @@ public final class CountryScreen extends Screen {
       int left = this.left();
       int bottom = this.top() + PANEL_HEIGHT - 24;
       this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.diplomacy.title"), button -> AWCoreNetwork.sendDiplomacyOpen())
+         AwUi.button(Component.translatable("gui.ancientwarfare.diplomacy.title"), button -> AWCoreNetwork.sendDiplomacyOpen())
             .bounds(left + 8, bottom, 110, 18)
             .build()
       );
       this.addRenderableWidget(
-         Button.builder(Component.translatable("gui.ancientwarfare.country.refresh"), button -> AWCoreNetwork.sendCountryOpen()).bounds(left + 122, bottom, 90, 18).build()
+         AwUi.button(Component.translatable("gui.ancientwarfare.country.refresh"), button -> AWCoreNetwork.sendCountryOpen()).bounds(left + 122, bottom, 90, 18).build()
       );
-      this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> this.onClose()).bounds(left + PANEL_WIDTH - 98, bottom, 90, 18).build());
+      this.addRenderableWidget(AwUi.button(Component.translatable("gui.done"), button -> this.onClose()).bounds(left + PANEL_WIDTH - 98, bottom, 90, 18).build());
    }
 
    @Override

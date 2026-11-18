@@ -237,7 +237,7 @@ public final class PlayerCountry {
    public static void open(ServerPlayer player) {
       ServerLevel level = player.serverLevel();
       FactionWorldData data = FactionWorldData.get(level);
-      UUID owner = player.getUUID();
+      UUID owner = CountryMembers.countryOf(level, player.getUUID());
       FactionWorldData.Country country = data.country(owner);
       if (country == null) {
          refuse(player, "country.ancientwarfare.none");

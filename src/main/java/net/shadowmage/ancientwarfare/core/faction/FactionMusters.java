@@ -244,6 +244,8 @@ public final class FactionMusters extends SavedData {
       might *= campaign.hungry ? 0.75 : 1.0;
       might *= has(level, campaign.faction(), FactionPeople.Character.AMBITIOUS) ? 1.1 : 1.0;
       might *= has(level, campaign.faction(), FactionPeople.Character.DRUNKARD) ? 0.85 : 1.0;
+      might *= has(level, campaign.faction(), FactionPeople.Character.BRAVE) ? 1.1 : 1.0;
+      might *= has(level, campaign.faction(), FactionPeople.Character.CRAVEN) ? 0.9 : 1.0;
       might *= !field && has(level, campaign.faction(), FactionPeople.Character.CRUEL) ? 1.1 : 1.0;
       return might;
    }

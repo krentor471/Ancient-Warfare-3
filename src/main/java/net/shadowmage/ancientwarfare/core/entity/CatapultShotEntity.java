@@ -124,6 +124,10 @@ public class CatapultShotEntity extends BlockGraceSiegeProjectileEntity {
          BlockPos target = new BlockPos(pos.getX(), pos.getY(), pos.getZ());
          BlockState state = this.level().getBlockState(target);
          if (!state.isAir() && state.getDestroySpeed(this.level(), target) >= 0.0F && state.getDestroySpeed(this.level(), target) <= 2.0F) {
+            if (this.level() instanceof net.minecraft.server.level.ServerLevel server) {
+               net.shadowmage.ancientwarfare.core.faction.FactionRepairs.record(server, target, java.util.List.of(target));
+            }
+
             this.level().destroyBlock(target, true, this);
          }
       }

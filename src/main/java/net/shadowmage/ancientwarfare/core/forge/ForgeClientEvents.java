@@ -196,6 +196,11 @@ public final class ForgeClientEvents {
    }
 
    @SubscribeEvent
+   public static void registerBlockColors(net.minecraftforge.client.event.RegisterColorHandlersEvent.Block event) {
+      net.shadowmage.ancientwarfare.core.client.SeasonColors.register(event);
+   }
+
+   @SubscribeEvent
    public static void registerItemColors(net.minecraftforge.client.event.RegisterColorHandlersEvent.Item event) {
       event.register((stack, tintIndex) -> tintIndex == 0 ? CoinItem.getMetal(stack).color() : 16777215, new ItemLike[]{(ItemLike)AWCoreItems.COIN.get()});
       event.register((stack, tintIndex) -> {

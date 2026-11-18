@@ -50,6 +50,13 @@ public final class FactionPorts {
    }
 
    /** A town rose a rank: a city is news across the land, a smaller step only near it. */
+   /** A town emptied below its rank falls one. */
+   static void rankFell(ServerLevel level, FactionWorldData.Settlement settlement) {
+      Component name = settlement.name().isEmpty() ? FactionNews.factionName(settlement.faction()) : settlement.nameComponent();
+      FactionCampaigns.tellNear(level, settlement.center().getX(), settlement.center().getZ(),
+         Component.translatable("news.ancientwarfare.town_rank_fell", name, rankName(rank(settlement)), FactionNews.factionName(settlement.faction())).withStyle(ChatFormatting.GRAY));
+   }
+
    static void rankRose(ServerLevel level, FactionWorldData.Settlement settlement) {
       int rank = rank(settlement);
       if (rank < 1) {

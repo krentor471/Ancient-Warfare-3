@@ -68,8 +68,9 @@ public final class FactionRulers {
       FactionWorldData.Ruler ruler = data.ruler(faction);
       if (ruler == null) {
          long day = Math.max(0L, data.lastSimulatedDay());
+         int trait = random.nextInt(TRAITS.length);
          ruler = new FactionWorldData.Ruler(
-            random.nextInt(NAMES), random.nextInt(TRAITS.length), day, FactionPeople.newLook(random), FactionPeople.bornAt(day, 25 + random.nextInt(26), random), false, FactionPeople.newCharacter(random)
+            random.nextInt(NAMES), trait, day, FactionPeople.newLook(random), FactionPeople.bornAt(day, 25 + random.nextInt(26), random), false, FactionPeople.newCharacter(random, TRAITS[trait])
          );
          data.setRuler(faction, ruler);
       }

@@ -62,6 +62,25 @@ public final class ForgeFactionCommands {
       RequiredArgumentBuilder<CommandSourceStack, String> factionArgument = Commands.argument("faction", StringArgumentType.word())
          .suggests((context, builder) -> SharedSuggestionProvider.suggest(FactionRegistry.factionNames(), builder));
       registerWorldCommands(event);
+      event.getDispatcher().register(
+         Commands.literal("awcountry")
+            .then(Commands.literal("invite").then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player()).executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.CountryMembers.invite(context.getSource().getPlayerOrException(), net.minecraft.commands.arguments.EntityArgument.getPlayer(context, "player"));
+               return 1;
+            })))
+            .then(Commands.literal("join").then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player()).executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.CountryMembers.join(context.getSource().getPlayerOrException(), net.minecraft.commands.arguments.EntityArgument.getPlayer(context, "player"));
+               return 1;
+            })))
+            .then(Commands.literal("leave").executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.CountryMembers.leave(context.getSource().getPlayerOrException());
+               return 1;
+            }))
+            .then(Commands.literal("members").executes(context -> {
+               net.shadowmage.ancientwarfare.core.faction.CountryMembers.list(context.getSource().getPlayerOrException());
+               return 1;
+            }))
+      );
       event.getDispatcher()
          .register(
             (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("awfaction")
@@ -102,6 +121,24 @@ public final class ForgeFactionCommands {
                                           ((CommandSourceStack)context.getSource()).getPlayerOrException(),
                                           StringArgumentType.getString(context, "faction"),
                                           IntegerArgumentType.getInteger(context, "value")
+                                       )
+                                 )
+                           )
+                     )
+               )
+               .then(
+                  Commands.literal("treaty").requires(source -> source.hasPermission(2))
+                     .then(
+                        Commands.argument("faction", StringArgumentType.word())
+                           .suggests((context, builder) -> SharedSuggestionProvider.suggest(FactionRegistry.factionNames(), builder))
+                           .then(
+                              Commands.argument("state", StringArgumentType.word())
+                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(java.util.Arrays.stream(RelationState.values()).map(r -> r.name().toLowerCase(java.util.Locale.ROOT)), builder))
+                                 .executes(
+                                    context -> setTreaty(
+                                          ((CommandSourceStack)context.getSource()).getPlayerOrException(),
+                                          StringArgumentType.getString(context, "faction"),
+                                          StringArgumentType.getString(context, "state")
                                        )
                                  )
                            )
@@ -242,6 +279,59 @@ public final class ForgeFactionCommands {
                   return 1;
                })))
          );
+      // Run by clicking a caravan master's offer of escort work.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awcaravan")
+               .then(Commands.literal("escort").then(Commands.argument("route", IntegerArgumentType.integer()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionCaravans.escort(context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "route"));
+                  return 1;
+               })))
+         );
+      // The player's own faith: /awfaith, /awfaith join <creed>, /awfaith book <creed>.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awfaith")
+               .executes(context -> {
+                  if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                     net.shadowmage.ancientwarfare.core.faction.PlayerFaith.show(player);
+                  }
+
+                  return 1;
+               })
+               .then(Commands.literal("join").then(Commands.argument("creed", StringArgumentType.word()).executes(context -> {
+                  int faith = net.shadowmage.ancientwarfare.core.faction.PlayerFaith.byKey(StringArgumentType.getString(context, "creed"));
+                  if (faith >= 0 && context.getSource().getEntity() instanceof ServerPlayer player) {
+                     net.shadowmage.ancientwarfare.core.faction.PlayerFaith.join(player, faith);
+                  }
+
+                  return 1;
+               })))
+               .then(Commands.literal("book").then(Commands.argument("creed", StringArgumentType.word()).executes(context -> {
+                  int faith = net.shadowmage.ancientwarfare.core.faction.PlayerFaith.byKey(StringArgumentType.getString(context, "creed"));
+                  if (faith >= 0 && context.getSource().getEntity() instanceof ServerPlayer player) {
+                     net.shadowmage.ancientwarfare.core.faction.PlayerFaith.book(player, faith);
+                  }
+
+                  return 1;
+               })))
+         );
+      // Run by clicking the buttons under a happening in a town.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awtown")
+               .then(Commands.argument("encounter", IntegerArgumentType.integer())
+                  .then(Commands.argument("choice", StringArgumentType.word()).executes(context -> {
+                     if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                        net.shadowmage.ancientwarfare.core.faction.TownEncounters.answer(
+                           player, IntegerArgumentType.getInteger(context, "encounter"), StringArgumentType.getString(context, "choice")
+                        );
+                        return 1;
+                     }
+
+                     return 0;
+                  })))
+         );
       // Run by clicking the buttons under a faction's demand after an incident.
       event.getDispatcher()
          .register(
@@ -295,6 +385,43 @@ public final class ForgeFactionCommands {
                               context -> serve(context.getSource(), IntegerArgumentType.getInteger(context, "barman"), StringArgumentType.getString(context, "offer"))
                            )
                      )
+               )
+         );
+      // Run by clicking a traveller's offer in chat.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awroad")
+               .then(
+                  Commands.argument("group", IntegerArgumentType.integer())
+                     .then(
+                        Commands.argument("action", StringArgumentType.word())
+                           .executes(context -> {
+                              net.shadowmage.ancientwarfare.core.faction.FactionTravellers.act(
+                                 context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "group"), StringArgumentType.getString(context, "action")
+                              );
+                              return 1;
+                           })
+                     )
+               )
+         );
+      // Run by clicking a townsperson's offer to work for the player.
+      event.getDispatcher()
+         .register(
+            Commands.literal("awtownsfolk")
+               .then(
+                  Commands.argument("npc", IntegerArgumentType.integer())
+                     .then(Commands.literal("hire").executes(context -> {
+                        net.shadowmage.ancientwarfare.core.faction.TownsfolkFavours.hire(
+                           context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "npc")
+                        );
+                        return 1;
+                     }))
+                     .then(Commands.argument("action", StringArgumentType.word()).executes(context -> {
+                        net.shadowmage.ancientwarfare.core.faction.TownTrades.act(
+                           context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "npc"), StringArgumentType.getString(context, "action")
+                        );
+                        return 1;
+                     }))
                )
          );
       // Run by clicking a mercenary captain's offer in chat.
@@ -445,11 +572,42 @@ public final class ForgeFactionCommands {
                         false
                      );
                   return 1;
-               }))
-               .then(Commands.literal("grow").requires(source -> source.hasPermission(2)).executes(context -> {
-                  net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(context.getSource().getLevel(), context.getSource().getPlayerOrException());
+               }).then(Commands.argument("set", com.mojang.brigadier.arguments.StringArgumentType.word()).requires(source -> source.hasPermission(2)).executes(context -> {
+                  String name = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "set").toUpperCase(java.util.Locale.ROOT);
+                  net.shadowmage.ancientwarfare.core.faction.FactionSeasons.forced = name.equals("AUTO") ? null : net.shadowmage.ancientwarfare.core.faction.FactionSeasons.Season.valueOf(name);
+                  net.shadowmage.ancientwarfare.core.forge.AWCoreNetwork.sendSeason(context.getSource().getLevel(), net.shadowmage.ancientwarfare.core.faction.FactionSeasons.season(context.getSource().getLevel()).ordinal());
+                  context.getSource().sendSuccess(() -> Component.literal("season: " + name), false);
                   return 1;
-               }))
+               })))
+               .then(Commands.literal("grow").requires(source -> source.hasPermission(2)).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(context.getSource().getLevel(), context.getSource().getPlayerOrException(), null);
+                  return 1;
+               }).then(Commands.argument("kind", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionGrowth.force(
+                     context.getSource().getLevel(), context.getSource().getPlayerOrException(), com.mojang.brigadier.arguments.StringArgumentType.getString(context, "kind")
+                  );
+                  return 1;
+               })))
+               .then(Commands.literal("encounter").requires(source -> source.hasPermission(2)).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.TownEncounters.force(context.getSource().getPlayerOrException(), "");
+                  return 1;
+               }).then(Commands.argument("key", StringArgumentType.word()).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.TownEncounters.force(context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "key"));
+                  return 1;
+               })))
+               .then(Commands.literal("prebuild").requires(source -> source.hasPermission(2)).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.start(context.getSource().getLevel(), 1000);
+                  return 1;
+               }).then(Commands.literal("all").executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.start(context.getSource().getLevel(), 0);
+                  return 1;
+               })).then(Commands.literal("stop").executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.stop(context.getSource().getLevel());
+                  return 1;
+               })).then(Commands.argument("radius", IntegerArgumentType.integer(500, 30000)).executes(context -> {
+                  net.shadowmage.ancientwarfare.core.faction.FactionPrebuild.start(context.getSource().getLevel(), IntegerArgumentType.getInteger(context, "radius"));
+                  return 1;
+               })))
                .then(Commands.literal("rankup").requires(source -> source.hasPermission(2)).executes(context -> {
                   net.shadowmage.ancientwarfare.core.faction.FactionPorts.force(context.getSource().getLevel(), context.getSource().getPlayerOrException(), false);
                   return 1;
@@ -624,6 +782,42 @@ public final class ForgeFactionCommands {
                               Commands.argument("state", StringArgumentType.word())
                                  .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("war", "neutral", "pact", "alliance"), builder))
                                  .executes(context -> setTreaty(context.getSource(), faction(context, "faction"), StringArgumentType.getString(context, "state")))
+                           )
+                     )
+               )
+               .then(
+                  Commands.literal("traveller")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        Commands.argument("kind", StringArgumentType.word())
+                           .suggests((context, builder) -> SharedSuggestionProvider.suggest(List.of("pilgrims", "peddler", "messenger", "refugees", "patrol", "shepherd", "hunter", "knight", "tax_collector", "procession"), builder))
+                           .executes(context -> {
+                              boolean sent = net.shadowmage.ancientwarfare.core.faction.FactionTravellers.spawnNear(
+                                 context.getSource().getLevel(), context.getSource().getPlayerOrException(), StringArgumentType.getString(context, "kind")
+                              );
+                              if (!sent) {
+                                 context.getSource().sendFailure(Component.literal("No finished road 40-90 blocks from you, or no such kind"));
+                              }
+
+                              return sent ? 1 : 0;
+                           })
+                     )
+               )
+               .then(
+                  Commands.literal("freevillage")
+                     .requires(source -> source.hasPermission(2))
+                     .then(
+                        Commands.literal("annex")
+                           .then(
+                              factionArgument("faction")
+                                 .executes(context -> freeVillage(context.getSource(), faction(context, "faction"), false))
+                           )
+                     )
+                     .then(
+                        Commands.literal("raid")
+                           .then(
+                              factionArgument("faction")
+                                 .executes(context -> freeVillage(context.getSource(), faction(context, "faction"), true))
                            )
                      )
                )
@@ -924,6 +1118,11 @@ public final class ForgeFactionCommands {
          return 0;
       }
 
+      if (offer.startsWith("answer") && offer.length() == 7) {
+         net.shadowmage.ancientwarfare.core.faction.FactionTaverns.answer(player, barman, offer.charAt(6) - '0');
+         return 1;
+      }
+
       for (net.shadowmage.ancientwarfare.core.faction.FactionTaverns.Offer candidate : net.shadowmage.ancientwarfare.core.faction.FactionTaverns.Offer.values()) {
          if (candidate.name().equalsIgnoreCase(offer)) {
             net.shadowmage.ancientwarfare.core.faction.FactionTaverns.serve(player, barman, candidate);
@@ -1068,6 +1267,21 @@ public final class ForgeFactionCommands {
 
       source.sendFailure(Component.literal("No settlement #" + settlementId));
       return 0;
+   }
+
+   /** The nearest free village to the caller is taken in by a faction, or raided by it. */
+   private static int freeVillage(CommandSourceStack source, String faction, boolean raid) {
+      net.minecraft.world.phys.Vec3 pos = source.getPosition();
+      boolean done = raid
+         ? net.shadowmage.ancientwarfare.core.faction.FreeVillages.raidNearest(source.getLevel(), faction, pos.x, pos.z)
+         : net.shadowmage.ancientwarfare.core.faction.FreeVillages.annexNearest(source.getLevel(), faction, pos.x, pos.z);
+      if (!done) {
+         source.sendFailure(Component.literal("No free village known near here"));
+         return 0;
+      }
+
+      tell(source, Component.literal(raid ? faction + " will raid the nearest free village" : faction + " took in the nearest free village"));
+      return 1;
    }
 
    private static int assault(CommandSourceStack source, String faction, int settlementId, int size) {
@@ -1266,6 +1480,19 @@ public final class ForgeFactionCommands {
       int standing = FactionStandingData.get(player.serverLevel()).setStanding(player.getUUID(), faction, value);
       player.sendSystemMessage(Component.literal("Faction " + faction + " standing set to " + standing));
       return standing;
+   }
+
+   private static int setTreaty(ServerPlayer player, String faction, String state) {
+      RelationState relation;
+      try {
+         relation = RelationState.valueOf(state.toUpperCase(java.util.Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+         player.sendSystemMessage(Component.literal("Unknown treaty " + state));
+         return 0;
+      }
+      FactionStandingData.get(player.serverLevel()).setTreaty(player.getUUID(), faction, relation);
+      player.sendSystemMessage(Component.literal("Faction " + faction + " treaty set to " + relation));
+      return 1;
    }
 
    private static int addStanding(ServerPlayer player, String faction, int value) {
